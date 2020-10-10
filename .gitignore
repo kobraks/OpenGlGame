@@ -1,0 +1,16 @@
+#ignore all vs studio config files
+**/Debug
+**/Release
+**/.vs
+**/.vscode
+**/x64
+**/fmt.dir
+**/*.bat
+
+#removing templorary files
+**/*.dat
+**/*.tmp
+#**/*.txt
+**/*.swp
+**/*.json
+**/*.bin
