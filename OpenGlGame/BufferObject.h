@@ -81,7 +81,7 @@ namespace Game
 		BufferUsage m_Usage;
 		BufferType m_Type;
 
-		size_t m_Size = 0;
+		mutable size_t m_Size = 0;
 
 		mutable bool m_Changed = false;
 
@@ -97,6 +97,12 @@ namespace Game
 
 		void SendData(const void* data, const size_t size) const;
 		void SendSubData(const void* data, const size_t size, const size_t offset) const;
+
+		template<class Type>
+		void SendData(const void* data, const size_t count) const;
+
+		template<class Type>
+		void SendSubData(const void* data, const size_t count, const size_t offset) const;
 	public:
 		virtual ~BufferObject() = default;
 
@@ -122,4 +128,16 @@ namespace Game
 	private:
 		static void Init();
 	};
+
+	template <class Type>
+	void BufferObject::SendData(const void *data, const size_t count) const
+	{
+		SendData(data, count * sizeof(Type));
+	}
+
+	template <class Type>
+	void BufferObject::SendSubData(const void *data, const size_t count, const size_t offset) const
+	{
+		SendSubData(data, count * sizeof(Type), offset * sizeof(Type));
+	}
 }
