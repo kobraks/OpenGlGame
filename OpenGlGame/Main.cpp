@@ -5,17 +5,14 @@
 
 int main(int argc, char **argv)
 {
-	system("pause");
-
 	Game::Log::Init();
 
 	int32_t exitCode = EXIT_SUCCESS;
 
-
 	try { }
 	catch(std::exception &ex)
 	{
-		PRINT_CRITICAL("Uncatched exception: {}", ex.what());
+		LOG_CRITICAL("Uncatched exception: {}", ex.what());
 		system("pause");
 		exitCode = EXIT_FAILURE;
 	}

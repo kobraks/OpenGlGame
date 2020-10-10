@@ -1,6 +1,6 @@
 #pragma once
 
-class OpenGlFunctions
+namespace Game
 {
-};
-
+	class OpenGlFunctions {};
+}
