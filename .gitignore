@@ -6,6 +6,7 @@
 **/x64
 **/fmt.dir
 **/*.bat
+**/*.vcxproj.*
 
 #removing templorary files
 **/*.dat

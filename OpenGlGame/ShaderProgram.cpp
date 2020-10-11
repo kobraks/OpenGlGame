@@ -87,7 +87,7 @@ namespace Game
 		GL_LOG_INFO(
 		            "Attaching {} shader {} to shader program {} (id: {})",
 		            shader.TypeToString(),
-		            shader.GetId(),
+		            shader.ID(),
 		            m_Name,
 		            *m_Program
 		           );
@@ -100,7 +100,7 @@ namespace Game
 		GL_LOG_INFO(
 		            "Detaching {} shader {} to shader program {} (id: {})",
 		            shader.TypeToString(),
-		            shader.GetId(),
+		            shader.ID(),
 		            m_Name,
 		            *m_Program
 		           );

@@ -109,7 +109,7 @@ namespace Game
 		{
 			const auto size = calcSize(*m_LastChange);
 
-			if(size < GetSize())
+			if(size < Size())
 				SendSubData(m_Values.data() + m_LastChange->first, size, m_LastChange->first);
 			else
 				SendData(m_Values.data(), m_Values.size() * sizeof(uint32_t));

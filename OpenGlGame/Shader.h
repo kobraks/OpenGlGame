@@ -47,7 +47,7 @@ namespace Game
 		std::string GetLog() const;
 
 		operator IdType() const { return *m_Shader; }
-		IdType GetId() const { return *m_Shader; }
+		IdType ID() const { return *m_Shader; }
 		Type GetType() const { return m_Type; }
 
 		std::string_view TypeToString() const;

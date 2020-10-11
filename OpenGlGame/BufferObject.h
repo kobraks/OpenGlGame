@@ -83,7 +83,7 @@ namespace Game
 
 		mutable size_t m_Size = 0;
 
-		mutable bool m_Changed = false;
+		mutable bool m_Changed = true;
 
 		inline static std::unordered_map<BufferType, BufferObject> m_Buffers = std::unordered_map<
 			BufferType, BufferObject>();
@@ -109,12 +109,12 @@ namespace Game
 		void Allocate(const size_t size);
 		
 		operator IdType() const { return *m_Buffer; }
-		IdType GetId() const { return *m_Buffer; }
+		IdType ID() const { return *m_Buffer; }
 
 		BufferUsage Usage() const { return m_Usage; }
 		BufferType Type() const { return m_Type; }
 
-		size_t GetSize() const { return m_Size; }
+		size_t Size() const { return m_Size; }
 		
 		void Bind() const;
 		void UnBind() const;
@@ -125,6 +125,10 @@ namespace Game
 		static BufferObject* GetDefault(BufferType type);
 
 		void Flush() const;
+
+		void GetData(void* data, const size_t offset, const size_t length) const;
+
+		virtual Pointer<BufferObject> Clone() const;
 	private:
 		static void Init();
 	};

@@ -42,7 +42,7 @@ namespace Game
 		}
 
 		operator IdType() const { return *m_Program; }
-		IdType GetId() const { return *m_Program; }
+		IdType ID() const { return *m_Program; }
 
 		bool IsLinked() const { return m_Linked; }
 

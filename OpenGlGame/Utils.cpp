@@ -165,7 +165,7 @@ namespace Game
 	}
 
 	template <class Type>
-	Type ReadVector(const sol::table &table)
+	static Type ReadVector(const sol::table &table)
 	{
 		Type result;
 
@@ -194,6 +194,8 @@ namespace Game
 				}
 			}
 		}
+		
+		return result;
 	}
 
 	glm::vec2 ReadVector2(const sol::table &vector)

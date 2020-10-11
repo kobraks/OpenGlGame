@@ -99,6 +99,22 @@ namespace Game
 		Bind();
 	}
 
+	void BufferObject::GetData(void* data, const size_t offset, const size_t length) const
+	{
+		Bind();
+		glGetBufferSubData(static_cast<GLenum>(Type()), offset, length, data);
+	}
+
+	Pointer<BufferObject> BufferObject::Clone() const
+	{
+		auto object = MakePointer<BufferObject>(Type(), Usage());
+
+		object->Allocate(Size());
+		glCopyBufferSubData(*this, *object, 0, 0, Size());
+
+		return object;
+	}
+
 	void BufferObject::Init()
 	{
 		m_Initialized = false;

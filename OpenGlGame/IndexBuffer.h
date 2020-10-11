@@ -40,6 +40,8 @@ namespace Game
 		uint32_t operator[](const size_t index) const { return Get(index); }
 		uint32_t& operator[](const size_t index) { return Get(index); }
 
+		const uint32_t* Data() const { return m_Values.data(); }
+
 	protected:
 		void SendValues() const override;
 

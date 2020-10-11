@@ -28,6 +28,7 @@
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Uniform.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="VertexArray.cpp" />
     <ClCompile Include="VertexBufferLayout.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -43,6 +44,7 @@
     <ClInclude Include="Types.h" />
     <ClInclude Include="Uniform.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="VertexArray.h" />
     <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="VertexBufferLayout.h" />
   </ItemGroup>

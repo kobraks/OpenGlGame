@@ -51,6 +51,9 @@
     <ClCompile Include="IndexBuffer.cpp">
       <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
+    <ClCompile Include="VertexArray.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -93,6 +96,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="IndexBuffer.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="VertexArray.h">
       <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
   </ItemGroup>
