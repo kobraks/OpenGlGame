@@ -3,14 +3,29 @@
 #include <unordered_map>
 #include <optional>
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+
+#include <glm/mat2x2.hpp>
+#include <glm/mat2x3.hpp>
+#include <glm/mat2x4.hpp>
+#include <glm/mat3x2.hpp>
+#include <glm/mat3x3.hpp>
+#include <glm/mat3x4.hpp>
+#include <glm/mat4x2.hpp>
+#include <glm/mat4x3.hpp>
+#include <glm/mat4x4.hpp>
+
 #include "Types.h"
 #include "Uniform.h"
 #include "Shader.h"
+#include "Texture.h"
 
 namespace Game
 {
-	#define DEFAULT_PROGRAM_SHADER_NAME "Default"
-	
+#define DEFAULT_PROGRAM_SHADER_NAME "Default"
+
 	class ShaderProgram
 	{
 	public:
@@ -18,6 +33,7 @@ namespace Game
 
 	private:
 		std::unordered_map<std::string, std::shared_ptr<UniformObject>> m_Uniforms;
+		mutable std::unordered_map<std::string, int32_t> m_UniformsLocation;
 		mutable std::unordered_map<std::string, int> m_Attributes;
 
 		Pointer<IdType> m_Program = nullptr;
@@ -25,7 +41,7 @@ namespace Game
 		bool m_Linked          = false;
 		mutable bool m_Changed = true;
 		std::string m_Name;
-		
+
 	public:
 		explicit ShaderProgram(const std::string &name);
 		ShaderProgram(IdType id, const std::string &name);
@@ -58,8 +74,32 @@ namespace Game
 		void Flush() const;
 
 		std::string GetLog() const;
-		int GetAttributeLocation(const std::string &name) const;
-		
+		int32_t GetAttributeLocation(const std::string &name) const;
+		int32_t GetUniformLocation(const std::string &name) const;
+
+		void UniformValue(const std::string &name, int32_t value);
+		void UniformValue(const std::string &name, int32_t value, int32_t value2);
+		void UniformValue(const std::string &name, int32_t value, int32_t value2, int32_t value3);
+		void UniformValue(const std::string &name, uint32_t value);
+		void UniformValue(const std::string &name, uint32_t value, uint32_t value2);
+		void UniformValue(const std::string &name, uint32_t value, uint32_t value2, uint32_t value3);
+		void UniformValue(const std::string &name, float value);
+		void UniformValue(const std::string &name, float value, float value2);
+		void UniformValue(const std::string &name, float value, float value2, float value3);
+		void UniformValue(const std::string &name, glm::vec2 value);
+		void UniformValue(const std::string &name, glm::vec3 value);
+		void UniformValue(const std::string &name, glm::vec4 value);
+		void UniformValue(const std::string &name, glm::mat2x2 value);
+		void UniformValue(const std::string &name, glm::mat2x3 value);
+		void UniformValue(const std::string &name, glm::mat2x4 value);
+		void UniformValue(const std::string &name, glm::mat3x2 value);
+		void UniformValue(const std::string &name, glm::mat3x3 value);
+		void UniformValue(const std::string &name, glm::mat3x4 value);
+		void UniformValue(const std::string &name, glm::mat4x2 value);
+		void UniformValue(const std::string &name, glm::mat4x3 value);
+		void UniformValue(const std::string &name, glm::mat4x4 value);
+		void UniformValue(const std::string &name, const Texture& texture, const int32_t sampleUnit);
+
 		bool HasUniform(const std::string &name) const;
 
 		static ShaderProgram* GetDefault();

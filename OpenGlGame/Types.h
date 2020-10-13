@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include "Vector2.h"
+
 namespace Game
 {
 	template <typename Type>
@@ -19,5 +21,20 @@ namespace Game
 	constexpr Pointer<Type> MakePointer(Args&&... args)
 	{
 		return std::make_shared<Type>(std::forward<Args>(args)...);
+	}
+
+	template<typename Type>
+	using Scope = std::unique_ptr<Type>;
+
+	template<typename Type, typename ...Args>
+	constexpr Scope<Type> CreateScope(Args&&... args)
+	{
+		return std::make_unique<Type>(std::forward<Args>(args)...);
+	}
+
+	template<typename Type, typename ...Args>
+	constexpr Scope<Type> MakeScope(Args&&... args)
+	{
+		return std::make_unique<Type>(std::forward<Args>(args)...);
 	}
 }

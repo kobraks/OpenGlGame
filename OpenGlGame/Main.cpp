@@ -2,11 +2,15 @@
 #include "Log.h"
 #include "Uniform.h"
 
+#include "Color.h"
 
 int main(int argc, char **argv)
 {
 	Game::Log::Init();
 
+
+	LOG_INFO("Color: {}", sizeof(Game::Color));
+	
 	int32_t exitCode = EXIT_SUCCESS;
 
 	try { }

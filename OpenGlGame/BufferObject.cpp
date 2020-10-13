@@ -107,11 +107,12 @@ namespace Game
 
 	Pointer<BufferObject> BufferObject::Clone() const
 	{
-		auto object = MakePointer<BufferObject>(Type(), Usage());
+		auto object = Pointer<BufferObject>(new BufferObject(Type(), Usage()));
 
 		object->Allocate(Size());
 		glCopyBufferSubData(*this, *object, 0, 0, Size());
-
+		GL_LOG_INFO("Coping contents of {} buffer (id: {}) to {} buffer (id: {})", GetBufferTypeAsString(Type()), ID(), GetBufferTypeAsString(object->Type()), object->ID());
+		
 		return object;
 	}
 

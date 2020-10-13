@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "ShaderProgram.h"
 
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Assert.h"
 #include "Log.h"
@@ -43,7 +44,7 @@ namespace Game
 
 		return shader;
 	}
-	
+
 	ShaderProgram::ShaderProgram(const std::string &name) : m_Name(name)
 	{
 		GL_LOG_INFO("Creating shader program");
@@ -140,7 +141,7 @@ namespace Game
 	void ShaderProgram::Flush() const
 	{
 		m_Changed = false;
-		
+
 		for(const auto &[name, uniform] : m_Uniforms)
 		{
 			if(uniform->IsChanged())
@@ -164,7 +165,7 @@ namespace Game
 		return {};
 	}
 
-	int ShaderProgram::GetAttributeLocation(const std::string &name) const
+	int32_t ShaderProgram::GetAttributeLocation(const std::string &name) const
 	{
 		auto iter    = m_Attributes.find(name);
 		int location = -1;
@@ -188,6 +189,187 @@ namespace Game
 		return location;
 	}
 
+	int32_t ShaderProgram::GetUniformLocation(const std::string &name) const
+	{
+		const auto iter = m_UniformsLocation.find(name);
+		if(iter != m_UniformsLocation.end())
+		{
+			return iter->second;
+		}
+
+		return m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second;
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const int32_t value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform1iv(location, 1, &value);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const int32_t value, const int32_t value2)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform2i(location, value, value2);
+	}
+
+	void ShaderProgram::UniformValue(
+		const std::string &name,
+		const int32_t value,
+		const int32_t value2,
+		const int32_t value3
+		)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform3i(location, value, value2, value3);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const uint32_t value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform1uiv(location, 1, &value);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const uint32_t value, const uint32_t value2)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform2ui(location, value, value2);
+	}
+
+	void ShaderProgram::UniformValue(
+		const std::string &name,
+		const uint32_t value,
+		const uint32_t value2,
+		const uint32_t value3
+		)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform3ui(location, value, value2, value3);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const float value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform1fv(location, 1, &value);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const float value, const float value2)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform2f(location, value, value2);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const float value, const float value2, const float value3)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform3f(location, value, value2, value3);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::vec2 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform2fv(location, 1, &value.x);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::vec3 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform3fv(location, 1, &value.x);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::vec4 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniform4fv(location, 1, &value.x);
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat2x2 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix2fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat2x3 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix2x3fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat2x4 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix2x4fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat3x2 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix3x2fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat3x3 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix3fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat3x4 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix3x4fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat4x2 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix4x2fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat4x3 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix4x3fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const glm::mat4x4 value)
+	{
+		const auto location = GetUniformLocation(name);
+		if(location != -1)
+			glUniformMatrix4fv(location, 1, false, value_ptr(value));
+	}
+
+	void ShaderProgram::UniformValue(const std::string &name, const Texture &texture, const int32_t sampleUnit)
+	{
+		const auto location = GetUniformLocation(name);
+		if (location != -1)
+		{
+			glActiveTexture(GL_TEXTURE0 + sampleUnit);
+			texture.Bind();
+			
+			glUniform1i(location, sampleUnit);
+			
+		}
+	}
+
 	bool ShaderProgram::HasUniform(const std::string &name) const
 	{
 		return m_Uniforms.find(name) != m_Uniforms.end();
@@ -207,7 +389,7 @@ namespace Game
 		GL_LOG_INFO("Shader program {} (id: {}) has {} active uniforms", m_Name, *m_Program, count);
 
 		static constexpr uint32_t BUFFER_SIZE = 524;
-		std::array<char, BUFFER_SIZE> buffer;
+		std::array<char, BUFFER_SIZE> buffer{};
 		int size      = 0;
 		int length    = 0;
 		uint32_t type = 0;
@@ -216,24 +398,27 @@ namespace Game
 		{
 			glGetActiveUniform(*m_Program, i, BUFFER_SIZE, &length, &size, &type, buffer.data());
 			std::string uniformName(buffer.data());
+			const auto location = glGetUniformLocation(*this, uniformName.c_str());
+
+			m_UniformsLocation.emplace(uniformName, location);
 
 			if(size != 1)
 			{
-				auto pos = uniformName.find_first_of("[");
-				if(pos != std::string::npos)
+				if(const auto pos = uniformName.find_first_of('['); pos != std::string::npos)
 					uniformName = uniformName.substr(0, pos);
 			}
+
 
 			const UniformDetails uniformDetails{
 				uniformName,
 				TranslateUniformType(type),
-				glGetUniformLocation(*m_Program, uniformName.c_str()),
+				location,
 				static_cast<uint32_t>(size)
 			};
 
 			GL_LOG_DEBUG("Uniform {}, Name: {} Size: {} Type: {}", i, uniformName, size, type);
 
-			m_Uniforms.emplace(std::make_pair(uniformName, std::make_shared<UniformObject>(*this, uniformDetails)));
+			m_Uniforms.emplace(uniformName, std::make_shared<UniformObject>(*this, uniformDetails));
 		}
 	}
 

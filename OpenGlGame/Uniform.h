@@ -11,7 +11,7 @@
 namespace Game
 {
 	constexpr int INVALID_UNIFORM_LOCATION = -1;
-	
+
 	enum class UniformType
 	{
 		Invalid = -1,
@@ -73,7 +73,7 @@ namespace Game
 
 		void SendData() const;
 
-		bool SetData(const void *data, const size_t size, const size_t offset);
+		bool SetData(const void *data, size_t size, size_t offset);
 		void* GetData() const { return m_Data; }
 
 		size_t GetSize() const { return TypeSize(m_Details.Type); }
@@ -158,12 +158,12 @@ namespace Game
 		uint32_t GetOffset() const { return m_Offset; }
 
 	protected:
-		static void SetData(UniformObject* object, const char* data, const size_t size, const size_t offset)
+		static void SetData(UniformObject *object, const char *data, const size_t size, const size_t offset)
 		{
 			object->SetData(data, size, offset);
 		}
 
-		Type GetData(const char* data, const size_t size, const size_t offset)
+		Type GetData(const char *data, const size_t size, const size_t offset)
 		{
 			Type value;
 			std::memcpy(&value, data + offset, size);
