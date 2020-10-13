@@ -24,7 +24,7 @@ namespace Game
 			};
 		};
 
-		Vector2(const ValueType x, const ValueType Y) : X(x),
+		Vector2(const ValueType x, const ValueType y) : X(x),
 		                                                Y(y) {}
 
 		Vector2(const ValueType value) : Vector2(value, value) {}

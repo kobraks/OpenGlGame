@@ -124,7 +124,7 @@ namespace Game
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
 	}
-
+	
 	void Texture::Create(const Image &image)
 	{
 		Bind();
@@ -147,7 +147,7 @@ namespace Game
 			std::vector<glm::vec4> allPixels(m_ActualSize.Width * m_ActualSize.Height);
 			Bind();
 			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &allPixels[0]);
-
+			
 			const glm::vec4 *src = &allPixels[0];
 			glm::vec4 *dst       = &pixels[0];
 
