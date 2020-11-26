@@ -5,17 +5,22 @@
 
 namespace Game
 {
-	static void DestroyFrameBuffer(FrameBuffer::IdType *id)
+	void FrameBuffer::DeleteFrameBuffer(IdType *id)
 	{
 		glDeleteFramebuffers(1, id);
 		delete id;
 	}
 
-	static auto CreateFrameBuffer()
+	auto FrameBuffer::CreateFrameBuffer()
 	{
-		auto frameBuffer = Pointer<FrameBuffer::IdType>(new FrameBuffer::IdType{}, DestroyFrameBuffer);
+		auto frameBuffer = Pointer<IdType>(new IdType{}, DeleteFrameBuffer);
 		glGenFramebuffers(1, &*frameBuffer);
 		return frameBuffer;
+	}
+
+	FrameBuffer::FrameBuffer(IdType id)
+	{
+		m_FrameBuffer = MakePointer<IdType>(id);
 	}
 
 	FrameBuffer::FrameBuffer(
@@ -32,23 +37,34 @@ namespace Game
 		else if(colorDepth == 32)
 			colorBufferFormat = InternalFormat::RGBA;
 		else
-			throw std::exception();
+		{
+			GL_LOG_WARN("Unknown clolor depth sselecting {}", colorDepth < 24 ? "24 bit" : "32 bit");
 
+			colorBufferFormat = colorDepth < 24 ? InternalFormat::RGB : InternalFormat::RGBA;
+		}
 
 		InternalFormat depthFormat;
-		if(depthBuffer == 8)
-			depthFormat = InternalFormat::DepthComponent;
-		else if(depthBuffer == 16)
-			depthFormat = InternalFormat::DepthComponent16;
-		else if(depthBuffer == 24)
-			depthFormat = InternalFormat::DepthComponent24;
-		else if(depthBuffer == 32)
-			depthFormat = InternalFormat::DepthComponent32F;
-		else
-			throw std::exception();
+		switch(depthBuffer)
+		{
+			case 0:
+				break;
+			case 8:
+				depthFormat = InternalFormat::DepthComponent;
+				break;
+			case 16:
+				depthFormat = InternalFormat::DepthComponent16;
+				break;
+			case 24:
+				depthFormat = InternalFormat::DepthComponent24;
+				break;
+			case 32:
+				depthFormat = InternalFormat::DepthComponent32F;
+				break;
+			default: GL_LOG_WARN("Unknown depth buffer size reseting it to 16 bites");
+				depthFormat = InternalFormat::DepthComponent16;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, 0);
-
 		m_FrameBuffer = CreateFrameBuffer();
 		Bind();
 
@@ -82,18 +98,31 @@ namespace Game
 			throw std::exception();
 	}
 
+	void FrameBuffer::Bind(int32_t x, int32_t y, int32_t width, int32_t height) const
+	{
+		Bind();
+		glViewport(x, y, width, height);
+	}
+
 	void FrameBuffer::Bind() const
 	{
 		glBindTexture(GL_TEXTURE_2D, 0);
-
 		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, *this);
 	}
 
-
-	void FrameBuffer::Bind(int32_t width, int32_t height) const
+	FrameBuffer* FrameBuffer::GetDefault()
 	{
-		glBindTexture(GL_TEXTURE_2D, 0);
-		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, *this);
-		glViewport(0, 0, width, height);
+		static FrameBuffer frameBuffer(0);
+		return &frameBuffer;
+	}
+
+	Vector2i FrameBuffer::MaxViewportSize()
+	{
+		static Vector2i value;
+
+		if(value == Vector2i())
+			glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &value.X);
+
+		return value;
 	}
 }

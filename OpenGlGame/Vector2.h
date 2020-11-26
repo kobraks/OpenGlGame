@@ -29,8 +29,8 @@ namespace Game
 
 		Vector2(const ValueType value) : Vector2(value, value) {}
 
-		Vector2() : X({}),
-		            Y({}) {}
+		Vector2() : X(ValueType{}),
+		            Y(ValueType{}) {}
 
 		bool operator==(const Vector2<Type>& vector) const
 		{

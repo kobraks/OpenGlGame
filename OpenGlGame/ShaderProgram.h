@@ -18,7 +18,6 @@
 #include <glm/mat4x4.hpp>
 
 #include "Types.h"
-#include "Uniform.h"
 #include "Shader.h"
 #include "Texture.h"
 
@@ -30,9 +29,13 @@ namespace Game
 	{
 	public:
 		using IdType = uint32_t;
+		using UniformLocationType = int32_t;
+		using AttributeLocationType = int32_t;
+		
+		constexpr static UniformLocationType INVALID_UNIFORM_LOCATION = -1;
+		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION = -1;
 
 	private:
-		std::unordered_map<std::string, std::shared_ptr<UniformObject>> m_Uniforms;
 		mutable std::unordered_map<std::string, int32_t> m_UniformsLocation;
 		mutable std::unordered_map<std::string, int> m_Attributes;
 
@@ -71,11 +74,9 @@ namespace Game
 
 		void Use() const;
 
-		void Flush() const;
-
 		std::string GetLog() const;
-		int32_t GetAttributeLocation(const std::string &name) const;
-		int32_t GetUniformLocation(const std::string &name) const;
+		AttributeLocationType GetAttributeLocation(const std::string &name) const;
+		UniformLocationType GetUniformLocation(const std::string &name) const;
 
 		void UniformValue(const std::string &name, int32_t value);
 		void UniformValue(const std::string &name, int32_t value, int32_t value2);
@@ -98,26 +99,16 @@ namespace Game
 		void UniformValue(const std::string &name, glm::mat4x2 value);
 		void UniformValue(const std::string &name, glm::mat4x3 value);
 		void UniformValue(const std::string &name, glm::mat4x4 value);
-		void UniformValue(const std::string &name, const Texture& texture, const int32_t sampleUnit);
+		void UniformValue(const std::string &name, const Texture &texture, int32_t sampleUnit);
 
 		bool HasUniform(const std::string &name) const;
 
 		static ShaderProgram* GetDefault();
+
 	private:
 		void Populate();
-
-		Pointer<UniformObject> GetUniformObject(const std::string &name) const;
+		
 	public:
-		template <typename Type>
-		std::optional<UniformTable<Type>> GetUniform(const std::string &name) const
-		{
-			const auto uniform = GetUniformObject(name);
-			if(uniform)
-				return UniformTable<Type>(*uniform);
-			return std::nullopt;
-		}
-
-	protected:
 		template <class ...Args>
 		void Attach(const Shader &shader, Args &&... args)
 		{

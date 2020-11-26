@@ -11,7 +11,7 @@ namespace Game
 		ShaderSource() = default;
 		static ShaderSource Load(const std::string &fileName);
 
-		ShaderSource(const std::string &source);
+		ShaderSource(const std::string &source) { m_Source = source; }
 
 		const std::string& GetSource() const { return m_Source; }
 		void SetSource(const std::string &source) { m_Source = source; }

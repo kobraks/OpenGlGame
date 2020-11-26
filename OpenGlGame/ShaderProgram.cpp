@@ -8,29 +8,6 @@
 
 namespace Game
 {
-	static constexpr UniformType TranslateUniformType(uint32_t type)
-	{
-		switch(type)
-		{
-			case GL_FLOAT:
-				return UniformType::Float;
-			case GL_INT:
-				return UniformType::Int;
-			case GL_FLOAT_VEC2:
-				return UniformType::Float2;
-			case GL_FLOAT_VEC3:
-				return UniformType::Float2;
-			case GL_FLOAT_VEC4:
-				return UniformType::Float2;
-			case GL_FLOAT_MAT3:
-				return UniformType::Mat3X3;
-			case GL_FLOAT_MAT4:
-				return UniformType::Mat4X4;
-			default:
-				return UniformType::Invalid;
-		}
-	}
-
 	static void DestroyShaderProgram(ShaderProgram::IdType *id)
 	{
 		glDeleteProgram(*id);
@@ -135,18 +112,6 @@ namespace Game
 			return;
 
 		glUseProgram(*m_Program);
-		Flush();
-	}
-
-	void ShaderProgram::Flush() const
-	{
-		m_Changed = false;
-
-		for(const auto &[name, uniform] : m_Uniforms)
-		{
-			if(uniform->IsChanged())
-				uniform->SendData();
-		}
 	}
 
 	std::string ShaderProgram::GetLog() const
@@ -165,10 +130,10 @@ namespace Game
 		return {};
 	}
 
-	int32_t ShaderProgram::GetAttributeLocation(const std::string &name) const
+	ShaderProgram::AttributeLocationType ShaderProgram::GetAttributeLocation(const std::string &name) const
 	{
 		auto iter    = m_Attributes.find(name);
-		int location = -1;
+		auto location = INVALID_ATTRIBUTE_LOCATION;
 
 		if(iter != m_Attributes.end())
 			location = iter->second;
@@ -189,15 +154,19 @@ namespace Game
 		return location;
 	}
 
-	int32_t ShaderProgram::GetUniformLocation(const std::string &name) const
+	ShaderProgram::UniformLocationType ShaderProgram::GetUniformLocation(const std::string &name) const
 	{
 		const auto iter = m_UniformsLocation.find(name);
+		auto location    = INVALID_UNIFORM_LOCATION;
 		if(iter != m_UniformsLocation.end())
-		{
-			return iter->second;
-		}
+			location = iter->second;
+		else
+			location = m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second;
 
-		return m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second;
+		if(location == -1)
+			GL_LOG_WARN("Uniform \"{}\" not found in shader \"{}\" (id: {})", name, m_Name, *m_Program);
+
+		return location;
 	}
 
 	void ShaderProgram::UniformValue(const std::string &name, const int32_t value)
@@ -360,19 +329,18 @@ namespace Game
 	void ShaderProgram::UniformValue(const std::string &name, const Texture &texture, const int32_t sampleUnit)
 	{
 		const auto location = GetUniformLocation(name);
-		if (location != -1)
+		if(location != -1)
 		{
 			glActiveTexture(GL_TEXTURE0 + sampleUnit);
 			texture.Bind();
-			
+
 			glUniform1i(location, sampleUnit);
-			
 		}
 	}
 
 	bool ShaderProgram::HasUniform(const std::string &name) const
 	{
-		return m_Uniforms.find(name) != m_Uniforms.end();
+		return GetUniformLocation(name) != INVALID_UNIFORM_LOCATION;
 	}
 
 	ShaderProgram* ShaderProgram::GetDefault()
@@ -401,38 +369,8 @@ namespace Game
 			const auto location = glGetUniformLocation(*this, uniformName.c_str());
 
 			m_UniformsLocation.emplace(uniformName, location);
-
-			if(size != 1)
-			{
-				if(const auto pos = uniformName.find_first_of('['); pos != std::string::npos)
-					uniformName = uniformName.substr(0, pos);
-			}
-
-
-			const UniformDetails uniformDetails{
-				uniformName,
-				TranslateUniformType(type),
-				location,
-				static_cast<uint32_t>(size)
-			};
-
+			
 			GL_LOG_DEBUG("Uniform {}, Name: {} Size: {} Type: {}", i, uniformName, size, type);
-
-			m_Uniforms.emplace(uniformName, std::make_shared<UniformObject>(*this, uniformDetails));
 		}
-	}
-
-	Pointer<UniformObject> ShaderProgram::GetUniformObject(const std::string &name) const
-	{
-		auto iter = m_Uniforms.find(name);
-		if(iter != m_Uniforms.end())
-		{
-			m_Changed = true;
-			return iter->second;
-		}
-
-		GL_LOG_ERROR("Shader program {} (id: {}) has not uniform with name: {}", m_Name, *m_Program, name);
-
-		return nullptr;
 	}
 }

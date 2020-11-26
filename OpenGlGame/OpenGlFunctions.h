@@ -84,7 +84,7 @@ namespace Game
 		CounterClockWise = GL_CCW
 	};
 
-	enum class FaceCulling : uint32_t
+	enum class PolygonFacing : uint32_t
 	{
 		Front = GL_FRONT,
 		Back = GL_BACK,
