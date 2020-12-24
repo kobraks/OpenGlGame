@@ -31,8 +31,8 @@ namespace Game
 		using IdType = uint32_t;
 		using UniformLocationType = int32_t;
 		using AttributeLocationType = int32_t;
-		
-		constexpr static UniformLocationType INVALID_UNIFORM_LOCATION = -1;
+
+		constexpr static UniformLocationType INVALID_UNIFORM_LOCATION     = -1;
 		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION = -1;
 
 	private:
@@ -78,28 +78,143 @@ namespace Game
 		AttributeLocationType GetAttributeLocation(const std::string &name) const;
 		UniformLocationType GetUniformLocation(const std::string &name) const;
 
-		void UniformValue(const std::string &name, int32_t value);
-		void UniformValue(const std::string &name, int32_t value, int32_t value2);
-		void UniformValue(const std::string &name, int32_t value, int32_t value2, int32_t value3);
-		void UniformValue(const std::string &name, uint32_t value);
-		void UniformValue(const std::string &name, uint32_t value, uint32_t value2);
-		void UniformValue(const std::string &name, uint32_t value, uint32_t value2, uint32_t value3);
-		void UniformValue(const std::string &name, float value);
-		void UniformValue(const std::string &name, float value, float value2);
-		void UniformValue(const std::string &name, float value, float value2, float value3);
-		void UniformValue(const std::string &name, glm::vec2 value);
-		void UniformValue(const std::string &name, glm::vec3 value);
-		void UniformValue(const std::string &name, glm::vec4 value);
-		void UniformValue(const std::string &name, glm::mat2x2 value);
-		void UniformValue(const std::string &name, glm::mat2x3 value);
-		void UniformValue(const std::string &name, glm::mat2x4 value);
-		void UniformValue(const std::string &name, glm::mat3x2 value);
-		void UniformValue(const std::string &name, glm::mat3x3 value);
-		void UniformValue(const std::string &name, glm::mat3x4 value);
-		void UniformValue(const std::string &name, glm::mat4x2 value);
-		void UniformValue(const std::string &name, glm::mat4x3 value);
-		void UniformValue(const std::string &name, glm::mat4x4 value);
-		void UniformValue(const std::string &name, const Texture &texture, int32_t sampleUnit);
+		void UniformValue(const std::string &name, int32_t value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, int32_t value, int32_t value2)
+		{
+			return UniformValue(GetUniformLocation(name), value, value2);
+		}
+
+		void UniformValue(const std::string &name, int32_t value, int32_t value2, int32_t value3)
+		{
+			return UniformValue(GetUniformLocation(name), value, value2, value3);
+		}
+
+		void UniformValue(const std::string &name, uint32_t value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, uint32_t value, uint32_t value2)
+		{
+			return UniformValue(GetUniformLocation(name), value, value2);
+		}
+
+		void UniformValue(const std::string &name, uint32_t value, uint32_t value2, uint32_t value3)
+		{
+			return UniformValue(GetUniformLocation(name), value, value2, value3);
+		}
+
+		void UniformValue(const std::string &name, float value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, float value, float value2)
+		{
+			return UniformValue(GetUniformLocation(name), value, value2);
+		}
+
+		void UniformValue(const std::string &name, float value, float value2, float value3)
+		{
+			return UniformValue(GetUniformLocation(name), value, value3);
+		}
+
+		void UniformValue(const std::string &name, glm::vec2 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::vec3 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::vec4 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat2x2 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat2x3 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat2x4 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat3x2 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat3x3 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat3x4 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat4x2 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat4x3 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, glm::mat4x4 value)
+		{
+			return UniformValue(GetUniformLocation(name), value);
+		}
+
+		void UniformValue(const std::string &name, const Texture &texture, int32_t sampleUnit = 0)
+		{
+			return UniformValue(GetUniformLocation(name), texture, sampleUnit);
+		}
+
+		void UniformValue(UniformLocationType location, int32_t value);
+		void UniformValue(UniformLocationType location, int32_t value, int32_t value2);
+		void UniformValue(UniformLocationType location, int32_t value, int32_t value2, int32_t value3);
+
+		void UniformValue(UniformLocationType location, uint32_t value);
+		void UniformValue(UniformLocationType location, uint32_t value, uint32_t value2);
+		void UniformValue(UniformLocationType location, uint32_t value, uint32_t value2, uint32_t value3);
+
+		void UniformValue(UniformLocationType location, float value);
+		void UniformValue(UniformLocationType location, float value, float value2);
+		void UniformValue(UniformLocationType location, float value, float value2, float value3);
+
+		void UniformValue(UniformLocationType location, glm::vec2 value);
+		void UniformValue(UniformLocationType location, glm::vec3 value);
+		void UniformValue(UniformLocationType location, glm::vec4 value);
+
+		void UniformValue(UniformLocationType location, glm::mat2x2 value);
+		void UniformValue(UniformLocationType location, glm::mat2x3 value);
+		void UniformValue(UniformLocationType location, glm::mat2x4 value);
+		void UniformValue(UniformLocationType location, glm::mat3x2 value);
+		void UniformValue(UniformLocationType location, glm::mat3x3 value);
+		void UniformValue(UniformLocationType location, glm::mat3x4 value);
+		void UniformValue(UniformLocationType location, glm::mat4x2 value);
+		void UniformValue(UniformLocationType location, glm::mat4x3 value);
+		void UniformValue(UniformLocationType location, glm::mat4x4 value);
+
+		void UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit = 0);
 
 		bool HasUniform(const std::string &name) const;
 
@@ -107,7 +222,7 @@ namespace Game
 
 	private:
 		void Populate();
-		
+
 	public:
 		template <class ...Args>
 		void Attach(const Shader &shader, Args &&... args)

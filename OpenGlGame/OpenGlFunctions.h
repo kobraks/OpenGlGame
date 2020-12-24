@@ -96,10 +96,15 @@ namespace Game
 		return static_cast<BufferBit>(static_cast<uint32_t>(left) | static_cast<uint32_t>(right));
 	}
 
+	class Context;
+	
 	class OpenGlFunctions
 	{
+		friend class Context;
+		
 		std::unordered_map<Capability, bool> m_Capabilities;
 
+		OpenGlFunctions() = default;
 	public:
 		void Clear(const BufferBit buffer);
 		
