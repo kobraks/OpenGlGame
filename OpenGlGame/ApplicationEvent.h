@@ -61,7 +61,9 @@ namespace Game
 		{}
 
 		uint32_t GetWidth() const { return m_Width; }
-		uint32_t GetHeigth() const {return m_Height; }
+		uint32_t GetHeight() const {return m_Height; }
+
+		Vector2u GetSize() const { return Vector2u(m_Width, m_Height); }
 
 		std::string ToString() const override
 		{

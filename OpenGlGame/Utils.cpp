@@ -5,6 +5,32 @@
 
 namespace Game
 {
+	struct InputTextCallbackData
+	{
+		std::string *String;
+		CallbackFunction Callback;
+		void *UserData;
+	};
+
+	static int InputTextCallback(ImGuiInputTextCallbackData *data)
+	{
+		auto userData = static_cast<InputTextCallbackData*>(data->UserData);
+		if(data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+		{
+			auto string = userData->String;
+			ASSERT((data->Buf == string->c_str()), "");
+			string->resize(data->BufTextLen);
+			data->Buf = const_cast<char*>(string->c_str());
+		}
+		else if(userData->Callback)
+		{
+			data->UserData = userData->UserData;
+			return userData->Callback(data);
+		}
+
+		return 0;
+	}
+
 	std::string& TrimLeft(std::string &string)
 	{
 		string.erase(
@@ -194,7 +220,7 @@ namespace Game
 				}
 			}
 		}
-		
+
 		return result;
 	}
 
@@ -211,5 +237,25 @@ namespace Game
 	glm::vec4 ReadVector4(const sol::table &vector)
 	{
 		return ReadVector<glm::vec4>(vector);
+	}
+
+	bool InputText(
+		const std::string_view &label,
+		std::string &string,
+		ImGuiInputTextFlags flags,
+		CallbackFunction callback,
+		void *userData
+		)
+	{
+		ASSERT((ImGuiInputTextFlags_CallbackResize & flags) == 0, "");
+		flags |= ImGuiInputTextFlags_CallbackResize;
+
+		InputTextCallbackData data{&string, callback, userData};
+		return ImGui::InputText(label.data(), string.data(), string.capacity(), flags, InputTextCallback, &data);
+	}
+
+	bool Combo(const std::string_view &label, int32_t &currentItem, const std::string_view &itemList, int32_t maxHeightInItems)
+	{
+		return ImGui::Combo(label.data(), &currentItem, itemList.data(), maxHeightInItems);
 	}
 }

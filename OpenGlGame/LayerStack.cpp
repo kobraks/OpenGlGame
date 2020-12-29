@@ -9,18 +9,18 @@ namespace Game
 			layer->OnDetach();
 	}
 	
-	void LayerStack::PushLayer(Pointer<Layer> layer)
+	void LayerStack::PushLayer(LayerStack::LayerPointer layer)
 	{
 		m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
 		m_LayerInsertIndex++;
 	}
 	
-	void LayerStack::PushOverlay(Pointer<Layer> overlay)
+	void LayerStack::PushOverlay(LayerStack::LayerPointer overlay)
 	{
 		m_Layers.emplace_back(overlay);
 	}
 	
-	void LayerStack::PopLayer(Pointer<Layer> layer)
+	void LayerStack::PopLayer(LayerStack::LayerPointer layer)
 	{
 		auto it = std::find(m_Layers.begin(), m_Layers.begin() + m_LayerInsertIndex, layer);
 		if (it != m_Layers.begin()  + m_LayerInsertIndex)
@@ -31,7 +31,7 @@ namespace Game
 		}
 	}
 	
-	void LayerStack::PopOverlay(Pointer<Layer> overlay)
+	void LayerStack::PopOverlay(LayerStack::LayerPointer overlay)
 	{
 		auto it = std::find(m_Layers.begin() + m_LayerInsertIndex, m_Layers.end(), overlay);
 		if (it != m_Layers.end())

@@ -17,16 +17,16 @@ namespace Game
 			Period              = 46, /* . */
 			Slash               = 47, /* / */
 
-			D0                  = 48, /* 0 */
-			D1                  = 49, /* 1 */
-			D2                  = 50, /* 2 */
-			D3                  = 51, /* 3 */
-			D4                  = 52, /* 4 */
-			D5                  = 53, /* 5 */
-			D6                  = 54, /* 6 */
-			D7                  = 55, /* 7 */
-			D8                  = 56, /* 8 */
-			D9                  = 57, /* 9 */
+			Num0                  = 48, /* 0 */
+			Num1                  = 49, /* 1 */
+			Num2                  = 50, /* 2 */
+			Num3                  = 51, /* 3 */
+			Num4                  = 52, /* 4 */
+			Num5                  = 53, /* 5 */
+			Num6                  = 54, /* 6 */
+			Num7                  = 55, /* 7 */
+			Num8                  = 56, /* 8 */
+			Num9                  = 57, /* 9 */
 
 			Semicolon           = 59, /* ; */
 			Equal               = 61, /* = */
@@ -110,26 +110,25 @@ namespace Game
 			F22                 = 311,
 			F23                 = 312,
 			F24                 = 313,
-			F25                 = 314,
 
 			/* Keypad */
-			KP0                 = 320,
-			KP1                 = 321,
-			KP2                 = 322,
-			KP3                 = 323,
-			KP4                 = 324,
-			KP5                 = 325,
-			KP6                 = 326,
-			KP7                 = 327,
-			KP8                 = 328,
-			KP9                 = 329,
-			KPDecimal           = 330,
-			KPDivide            = 331,
-			KPMultiply          = 332,
-			KPSubtract          = 333,
-			KPAdd               = 334,
-			KPEnter             = 335,
-			KPEqual             = 336,
+			Numpad0                 = 320,
+			Numpad1                 = 321,
+			Numpad2                 = 322,
+			Numpad3                 = 323,
+			Numpad4                 = 324,
+			Numpad5                 = 325,
+			Numpad6                 = 326,
+			Numpad7                 = 327,
+			Numpad8                 = 328,
+			Numpad9                 = 329,
+			NumpadDecimal           = 330,
+			NumpadDivide            = 331,
+			NumpadMultiply          = 332,
+			NumpadSubtract          = 333,
+			NumpadAdd               = 334,
+			NumpadEnter             = 335,
+			NumpadEqual             = 336,
 
 			LeftShift           = 340,
 			LeftControl         = 341,

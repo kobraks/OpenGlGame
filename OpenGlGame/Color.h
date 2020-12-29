@@ -4,7 +4,6 @@
 
 #include "Assert.h"
 
-
 namespace Game
 {
 	class Color
@@ -12,20 +11,33 @@ namespace Game
 	public:
 		union
 		{
-			struct
+			union
 			{
-				float Red;
-				float Green;
-				float Blue;
-				float Alpha;
+				struct
+				{
+					float Red;
+					float Green;
+					float Blue;
+					float Alpha;
+				};
+
+				struct
+				{
+					float R;
+					float G;
+					float B;
+					float A;
+				};
 			};
+
 
 			float Value[4];
 		};
 
-		Color() : Color(0.f, 0.f, 0.f, 0.f) {}
-
-		Color(float red, float green, float blue, float alpha) : Red(red),
+		constexpr static size_t Size() { return 4; }
+		
+		constexpr Color() : Color(0.f, 0.f, 0.f, 0.f) {}
+		constexpr Color(float red, float green, float blue, float alpha) : Red(red),
 		                                                         Green(green),
 		                                                         Blue(blue),
 		                                                         Alpha(alpha) {}
@@ -36,9 +48,9 @@ namespace Game
 
 		float& operator[](const size_t index)
 		{
-			ASSERT(index < 4, "Out of range");
+			ASSERT(index < Size(), "Out of range");
 
-			if(index < 4)
+			if(index >= Size())
 				throw std::out_of_range("Out of range");
 
 			return Value[index];
@@ -46,9 +58,9 @@ namespace Game
 
 		float operator[](const size_t index) const
 		{
-			ASSERT(index < 4, "Out of range");
+			ASSERT(index < Size(), "Out of range");
 
-			if(index < 4)
+			if(index >= Size())
 				throw std::out_of_range("Out of range");
 
 			return Value[index];

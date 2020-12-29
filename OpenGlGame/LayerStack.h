@@ -10,7 +10,9 @@ namespace Game
 	class LayerStack
 	{
 	public:
-		using LayerList = std::vector<Pointer<Layer>>;
+		using LayerPointer = Pointer<Layer>;
+		using LayerList = std::vector<LayerPointer>;
+		
 	private:
 		LayerList m_Layers;
 		size_t m_LayerInsertIndex = 0;
@@ -19,10 +21,10 @@ namespace Game
 		LayerStack() = default;
 		~LayerStack();
 
-		void PushLayer(Pointer<Layer> layer);
-		void PushOverlay(Pointer<Layer> overlay);
-		void PopLayer(Pointer<Layer> layer);
-		void PopOverlay(Pointer<Layer> overlay);
+		void PushLayer(LayerPointer layer);
+		void PushOverlay(LayerPointer overlay);
+		void PopLayer(LayerPointer layer);
+		void PopOverlay(LayerPointer overlay);
 
 		LayerList::iterator begin() { return m_Layers.begin(); }
 		LayerList::iterator end() { return m_Layers.end(); }

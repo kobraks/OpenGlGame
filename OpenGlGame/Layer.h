@@ -1,6 +1,6 @@
 #pragma once
 
-#include "TimeStep.h"
+#include "Time.h"
 #include "Event.h"
 
 namespace Game
@@ -16,9 +16,9 @@ namespace Game
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
 		virtual void OnUpdate() {}
-		virtual void OnConstUpdate(const TimeStep& timeStep){}
+		virtual void OnConstUpdate(const Time& timeStep){}
 		virtual void OnImGuiRender() {}
-		virtual void OnEvent(const Event& event) {}
+		virtual void OnEvent(Event& event) {}
 
 		const std::string& GetName() const { return m_Name; }
  	};

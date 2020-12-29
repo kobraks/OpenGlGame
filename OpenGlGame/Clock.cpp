@@ -1,0 +1,66 @@
+#include "pch.h"
+#include "Clock.h"
+
+#include <windows.h>
+#include <mutex>
+
+namespace
+{
+	LARGE_INTEGER GetFrequency()
+    {
+        LARGE_INTEGER frequency;
+        QueryPerformanceFrequency(&frequency);
+        return frequency;
+    }
+
+	bool IsWindowsXpOrOlder()
+	{
+		return false;
+		// return static_cast<DWORD>(LOBYTE(LOWORD(GetVersion()))) < 6;
+	}
+}
+
+namespace Game
+{
+	namespace Priv
+	{
+		class ClockImpl
+		{
+		public:
+			static Time GetTime()
+			{
+				static LARGE_INTEGER frequency = GetFrequency();
+				static bool oldWindows = IsWindowsXpOrOlder();
+
+				LARGE_INTEGER time;
+				
+				if (oldWindows)
+				{
+					static std::mutex mutex;
+					std::lock_guard<std::mutex> guard(mutex);
+
+					QueryPerformanceCounter(&time);
+				}
+				else
+					QueryPerformanceCounter(&time);
+
+				return Microseconds(1000000 * time.QuadPart / frequency.QuadPart);
+			}
+		};
+	}
+	
+	Clock::Clock() : m_StartTime(Priv::ClockImpl::GetTime()) {}
+	Time Clock::GetElapsedTime() const
+	{
+		return Priv::ClockImpl::GetTime() - m_StartTime;
+	}
+	
+	Time Clock::Restart()
+	{
+		Time now = Priv::ClockImpl::GetTime() ;
+		const Time elapesed = now - m_StartTime;
+		m_StartTime = now;
+
+		return elapesed;
+	}
+}
