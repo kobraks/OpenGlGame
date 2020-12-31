@@ -11,9 +11,9 @@ namespace Game
 		{
 			// From glfw3.h
 			Space               = 32,
-			Apostrophe          = 39, /* ' */
+			Quote          = 39, /* ' */
 			Comma               = 44, /* , */
-			Minus               = 45, /* - */
+			Hyphen               = 45, /* - */
 			Period              = 46, /* . */
 			Slash               = 47, /* / */
 
@@ -61,7 +61,7 @@ namespace Game
 			LeftBracket         = 91,  /* [ */
 			Backslash           = 92,  /* \ */
 			RightBracket        = 93,  /* ] */
-			GraveAccent         = 96,  /* ` */
+			Tilde         = 96,  /* ` */
 
 			World1              = 161, /* non-US #1 */
 			World2              = 162, /* non-US #2 */

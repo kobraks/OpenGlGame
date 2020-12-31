@@ -4,6 +4,7 @@
 #include "Log.h"
 
 #include "Application.h"
+#include "ImGuiUtils.h"
 #include "Utils.h"
 
 namespace Game
@@ -59,7 +60,7 @@ namespace Game
 		if(m_Show)
 		{
 			ImGui::SetNextWindowSize(ImVec2(700, 400), ImGuiCond_FirstUseEver);
-			ImGui::Begin("Log", &m_Show);
+			ImGuiUniqueGuard guard("Log", m_Show);
 
 			if(ImGui::CollapsingHeader("Options"))
 			{
@@ -84,8 +85,7 @@ namespace Game
 
 			m_Filter.Draw("Filter", -100.f);
 
-			ImGui::BeginChild("Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-
+			ImGuiChildUniqueGuard childGuard("Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 			if(copyButton)
 				ImGui::LogToClipboard();
 
@@ -101,9 +101,6 @@ namespace Game
 				ImGui::SetScrollHere(1.f);
 
 			m_ScrollToBottom = false;
-
-			ImGui::EndChild();
-			ImGui::End();
 		}
 	}
 

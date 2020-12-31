@@ -34,6 +34,12 @@
     <Filter Include="Source Files\ImGui">
       <UniqueIdentifier>{5be28be5-8ca4-44eb-af9d-b8e9e17cd19c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Input">
+      <UniqueIdentifier>{3555f6fc-92eb-41ff-a39a-f3789b245f0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{db96a8f1-a27a-4f4b-8afa-886b9a8e7a1f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -126,11 +132,20 @@
     <ClCompile Include="LogLayer.cpp">
       <Filter>Source Files\Layer</Filter>
     </ClCompile>
-    <ClCompile Include="Mouse.cpp">
+    <ClCompile Include="ThreadPool.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Keyboard.cpp">
+    <ClCompile Include="Thread.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mouse.cpp">
+      <Filter>Source Files\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Keyboard.cpp">
+      <Filter>Source Files\Input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -206,14 +221,8 @@
     <ClInclude Include="KeyEvent.h">
       <Filter>Header Files\Event</Filter>
     </ClInclude>
-    <ClInclude Include="KeyCodes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="MouseEvent.h">
       <Filter>Header Files\Event</Filter>
-    </ClInclude>
-    <ClInclude Include="MouseCodes.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ApplicationEvent.h">
       <Filter>Header Files\Event</Filter>
@@ -272,11 +281,23 @@
     <ClInclude Include="LuaRegister.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mouse.h">
+    <ClInclude Include="ThreadPool.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Keyboard.h">
+    <ClInclude Include="Thread.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KeyCodes.h">
+      <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Mouse.h">
+      <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Keyboard.h">
+      <Filter>Header Files\Input</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

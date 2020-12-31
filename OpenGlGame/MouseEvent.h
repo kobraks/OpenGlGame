@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Event.h"
-#include "MouseCodes.h"
+#include "Mouse.h"
 
 namespace Game
 {
@@ -52,11 +52,11 @@ namespace Game
 	class MouseButtonEvent: public Event
 	{
 	protected:
-		MouseCode m_Button;
+		Mouse::CodeType m_Button;
 
-		MouseButtonEvent(const MouseCode button) : m_Button(button) {}
+		MouseButtonEvent(const Mouse::CodeType button) : m_Button(button) {}
 	public:
-		MouseCode GetMouseButton() const { return m_Button; }
+		Mouse::CodeType GetMouseButton() const { return m_Button; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput | EventCategoryMouseButton)
 	};
@@ -64,7 +64,7 @@ namespace Game
 	class MouseButtonPressedEvent: public MouseButtonEvent
 	{
 	public:
-		MouseButtonPressedEvent(const MouseCode button) : MouseButtonEvent(button) {}
+		MouseButtonPressedEvent(const Mouse::CodeType button) : MouseButtonEvent(button) {}
 
 		std::string ToString() const override
 		{
@@ -79,7 +79,7 @@ namespace Game
 	class MouseButtonReleasedEvent : public MouseButtonEvent
 	{
 	public:
-		MouseButtonReleasedEvent(const MouseCode button) : MouseButtonEvent(button) {}
+		MouseButtonReleasedEvent(const Mouse::CodeType button) : MouseButtonEvent(button) {}
 
 		std::string ToString() const override
 		{

@@ -88,14 +88,60 @@ namespace Game
 		case Key::Enter: return VK_RETURN; 
 		case Key::NumpadEnter: return VK_RETURN;
 
-		case Key::NumpadAdd: return VK_OEM_PLUS;
-		case Key::NumpadSubtract: return VK_OEM_MINUS;
+		case Key::NumpadAdd: return VK_ADD;
+		case Key::NumpadSubtract: return VK_SUBTRACT;
+			
+		case Key::Pause: return VK_PAUSE;
+		case Key::Quote: return VK_OEM_7;
+		case Key::Comma: return VK_OEM_COMMA;
+		case Key::Hyphen: return VK_OEM_MINUS;
+		case Key::Period: return VK_OEM_PERIOD;
+		case Key::Slash: return VK_OEM_2;
+		case Key::Equal: return VK_OEM_PLUS;
+		case Key::Semicolon: return VK_OEM_1;
+
+		case Key::LeftBracket: return VK_OEM_4;
+		case Key::RightBracket: return VK_OEM_6;
+		case Key::Backslash: return VK_OEM_5;
+		case Key::Tilde: return VK_OEM_3;
+
+		case Key::World1: return 0;
+		case Key::World2: return 0;
+
+		case Key::Tab: return VK_TAB;
+		case Key::Backspace: return VK_BACK;
+		case Key::Insert: return VK_INSERT;
+		case Key::Delete: return VK_DELETE;
+		case Key::Right: return VK_RIGHT;
+		case Key::Left: return VK_LEFT;
+		case Key::Down: return VK_DOWN;
+		case Key::Up: return VK_UP;
+		case Key::PageUp: return VK_PRIOR;
+		case Key::PageDown: return VK_NEXT;
+		case Key::Home: return VK_HOME;
+		case Key::End: return VK_END;
+		case Key::CapsLock: return VK_CAPITAL;
+		case Key::ScrollLock: return VK_SCROLL;
+		case Key::NumLock: return VK_NUMLOCK;
+		case Key::PrintScreen: return VK_SNAPSHOT;
+
+		case Key::LeftShift: return VK_LSHIFT;
+		case Key::LeftControl: return VK_LCONTROL;
+		case Key::LeftAlt: return VK_LMENU;
+		case Key::LeftSuper: return VK_LWIN;
+
+		case Key::RightShift: return VK_RSHIFT;
+		case Key::RightControl: return VK_RCONTROL;
+		case Key::RightAlt: return VK_RMENU;
+		case Key::RightSuper: return VK_RWIN;
+			
+		case Key::Menu: return VK_MENU;
 		}
 	}
 	
 	bool Keyboard::IsKeyPressed(KeyCode key)
 	{
-		return GetAsyncKeyState(ToWinKey(key));
+		return (GetAsyncKeyState(ToWinKey(key)) & 0x8000) != 0;
 	}
 
 }

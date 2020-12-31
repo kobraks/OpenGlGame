@@ -1,10 +1,12 @@
-- 12/29/20 19:49:39 [info] Application: OpenGL Info: 
-- 12/29/20 19:49:39 [info] Application:  Vedor: Intel
-- 12/29/20 19:49:39 [info] Application:  Renderer: Intel(R) UHD Graphics 630
-- 12/29/20 19:49:39 [info] Application:  Version: 4.6.0 - Build 26.20.100.7637
-- 12/29/20 19:49:39 [debug] Application: Adding ImGuiLayer overlay
-- 12/29/20 19:49:39 [debug] Application: Adding StatistcLayer overlay
-- 12/29/20 19:49:39 [debug] Application: Adding LogLayer overlay
-- 12/29/20 19:49:39 [info] Application: Max updates: 60
-- 12/29/20 19:49:39 [info] Application: Update frequency 60.0
-- 12/29/20 19:49:47 [info] Application: Exited with code: 0
+- 12/31/20 11:05:54 [info] Application: Starting Lua machine
+- 12/31/20 11:05:55 [info] Application: OpenGL Info: 
+- 12/31/20 11:05:55 [info] Application:  Vedor: Intel
+- 12/31/20 11:05:55 [info] Application:  Renderer: Intel(R) UHD Graphics 630
+- 12/31/20 11:05:55 [info] Application:  Version: 4.6.0 - Build 26.20.100.7637
+- 12/31/20 11:05:55 [info] Application: Created Window [With: 800, Height: 600, Name: "Game"
+- 12/31/20 11:05:55 [info] Application: Max updates: 60
+- 12/31/20 11:05:55 [info] Application: Update frequency 60.0
+- 12/31/20 11:05:55 [debug] Application: Adding ImGuiLayer overlay
+- 12/31/20 11:05:55 [debug] Application: Adding StatistcLayer overlay
+- 12/31/20 11:05:55 [debug] Application: Adding LogLayer overlay
+- 12/31/20 11:06:01 [info] Application: Exited with code: 0

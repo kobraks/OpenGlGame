@@ -27,6 +27,7 @@
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="imgui.cpp" />
     <ClCompile Include="ImGuiLayer.cpp" />
+    <ClCompile Include="ImGuiUtils.cpp" />
     <ClCompile Include="imgui_demo.cpp" />
     <ClCompile Include="imgui_draw.cpp" />
     <ClCompile Include="imgui_impl_glfw.cpp" />
@@ -46,6 +47,8 @@
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="StatisticLayer.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="Thread.cpp" />
+    <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="VertexArray.cpp" />
@@ -68,6 +71,7 @@
     <ClInclude Include="imconfig.h" />
     <ClInclude Include="imgui.h" />
     <ClInclude Include="ImGuiLayer.h" />
+    <ClInclude Include="ImGuiUtils.h" />
     <ClInclude Include="imgui_impl_glfw.h" />
     <ClInclude Include="imgui_impl_opengl3.h" />
     <ClInclude Include="imgui_internal.h" />
@@ -84,7 +88,6 @@
     <ClInclude Include="LogLayer.h" />
     <ClInclude Include="LuaRegister.h" />
     <ClInclude Include="Mouse.h" />
-    <ClInclude Include="MouseCodes.h" />
     <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="OpenGlFunctions.h" />
     <ClInclude Include="pch.h" />
@@ -93,6 +96,8 @@
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="StatisticLayer.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="Thread.h" />
+    <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />

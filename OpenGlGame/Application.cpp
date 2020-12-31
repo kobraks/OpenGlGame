@@ -8,8 +8,12 @@
 #include "StatisticLayer.h"
 #include "LogLayer.h"
 
+#include "ImGui.h"
+
 namespace Game
 {
+	bool s_ShowImGuiTest = false;
+
 	Application *Application::s_Instance = nullptr;
 
 	Application::Application()
@@ -18,9 +22,7 @@ namespace Game
 		s_Instance = this;
 	}
 
-	Application::~Application()
-	{
-	}
+	Application::~Application() { }
 
 	void Application::OnEvent(Event &event)
 	{
@@ -29,10 +31,17 @@ namespace Game
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(Application::OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(Application::OnWindowResize));
 
+		if(event.IsInCategory(EventCategoryKeyboard) && event.GetEventType() == KeyPressedEvent::GetStaticType())
+		{
+			auto keyCode = dynamic_cast<KeyPressedEvent*>(&event)->GetKeyCode();
+
+			if(keyCode == Key::Escape) Close();
+			if(keyCode == Key::F1) s_ShowImGuiTest = !s_ShowImGuiTest;
+		}
+
 		for(auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
 		{
-			if(event.Handled)
-				break;
+			if(event.Handled) break;
 
 			(*it)->OnEvent(event);
 		}
@@ -76,7 +85,7 @@ namespace Game
 			{
 				m_FrameTime = clock.Restart();
 
-				for(Pointer<Layer>& layer : m_LayerStack)
+				for(Pointer<Layer> &layer : m_LayerStack)
 				{
 					layer->OnUpdate();
 				}
@@ -88,7 +97,7 @@ namespace Game
 				time = updateClock.GetElapsedTime();
 				while((time - nextTime) >= m_UpdateRate && updates++ < m_MaxUpdates)
 				{
-					for(Pointer<Layer>& layer : m_LayerStack)
+					for(Pointer<Layer> &layer : m_LayerStack)
 					{
 						layer->OnConstUpdate(m_UpdateRate);
 						nextTime += m_UpdateRate;
@@ -96,13 +105,13 @@ namespace Game
 					}
 				}
 
-				if(update)
-					updateClock.Restart();
+				if(update) updateClock.Restart();
 
 				m_ImGuiLayer->Begin();
 
-				for(Pointer<Layer>& layer : m_LayerStack)
-					layer->OnImGuiRender();
+				if(s_ShowImGuiTest) ImGui::ShowDemoWindow(&s_ShowImGuiTest);
+
+				for(Pointer<Layer> &layer : m_LayerStack) layer->OnImGuiRender();
 
 				m_ImGuiLayer->End();
 			}
@@ -115,8 +124,7 @@ namespace Game
 
 	void Application::ProcessArgs(int argc, char **argv)
 	{
-		for(int i = 0; i < argc; ++i)
-			m_Arguments.emplace_back(argv[i]);
+		for(int i = 0; i < argc; ++i) m_Arguments.emplace_back(argv[i]);
 	}
 
 	void Application::SetUpdateRate(float frequency)
@@ -146,18 +154,28 @@ namespace Game
 		Log::GetOpenGLLogger()->sinks().push_back(logLayer);
 		Log::GetApplicationLogger()->sinks().push_back(logLayer);
 		Log::GetAssertionLogger()->sinks().push_back(logLayer);
-		
+
+		LOG_INFO("Starting Lua machine");
+		m_Lua = MakeScope<sol::state>();
+		m_Lua->open_libraries(sol::lib::base);
+
+		(*m_Lua)["ArgumentCount"] = m_Arguments.size();
+		m_Lua->create_named_table("Arguments");
+
+		for(size_t i = 0; i < m_Arguments.size(); ++i) (*m_Lua)["Arguments"][i + 1] = m_Arguments[0];
+
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+
+		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
+		LOG_INFO("Max updates: {0}", m_MaxUpdates);
+		LOG_INFO("Update frequency {0}", m_Frequency);
 
 		m_ImGuiLayer = MakePointer<ImGuiLayer>();
 
 		PushOverlay(m_ImGuiLayer);
 		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(logLayer);
-
-		LOG_INFO("Max updates: {0}", m_MaxUpdates);
-		LOG_INFO("Update frequency {0}", m_Frequency);
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)
