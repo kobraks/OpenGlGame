@@ -73,6 +73,8 @@ namespace Game
 		Time GetFrameTime() const { return m_FrameTime; }
 
 		void LuaRegister(LuaRegister &luaObject);
+
+		sol::state& GetLua() const { return *m_Lua; }
 	private:
 		void Initialize();
 

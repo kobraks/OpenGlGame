@@ -116,6 +116,11 @@ namespace Game
 		return object;
 	}
 
+	Pointer<BufferContent> BufferObject::GetContent(const BufferAccess access) const
+	{
+		return MakePointer<BufferContent>(access, *this);
+	}
+
 	void BufferObject::Init()
 	{
 		m_Initialized = false;
@@ -123,5 +128,41 @@ namespace Game
 		m_Buffers.emplace(BufferType::Vertex, BufferObject(BufferType::Vertex, true));
 		m_Buffers.emplace(BufferType::Uniform, BufferObject(BufferType::Uniform, true));
 		m_Buffers.emplace(BufferType::Index, BufferObject(BufferType::Index, true));
+	}
+	
+	BufferContent::BufferContent(const BufferAccess access, const BufferObject &buffer) : m_Buffer(buffer), m_Access(access)
+	{
+		buffer.Bind();
+		m_Data = glMapBuffer(static_cast<GLenum>(buffer.Type()), static_cast<GLenum>(m_Access));
+	}
+
+	BufferContent::~BufferContent()
+	{
+		m_Buffer.Bind();
+		glUnmapBuffer(static_cast<GLenum>(m_Buffer.Type()));
+	}
+
+	void * BufferContent::Get()
+	{
+		ASSERT(m_Access != BufferAccess::WriteOnly, "No read access");
+
+		if (m_Access == BufferAccess::WriteOnly)
+			throw std::runtime_error("No read access");
+		
+		return m_Data;
+	}
+
+	void BufferContent::Set(void *data, const size_t size)
+	{
+		ASSERT(m_Access != BufferAccess::ReadOnly, "No write access");
+		ASSERT(size >= m_Buffer.Size(), "Data provided is too big");
+
+		if (m_Access == BufferAccess::ReadOnly)
+			throw std::runtime_error("No write access");
+		
+		if (size >= m_Buffer.Size())
+			throw std::out_of_range("Data size provided is too big");
+		
+		std::memcpy(m_Data, data, size);
 	}
 }

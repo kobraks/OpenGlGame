@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="BufferObject.cpp" />
     <ClCompile Include="Clock.cpp" />
+    <ClCompile Include="ConsoleLayer.cpp" />
     <ClCompile Include="Context.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Application.cpp" />
@@ -50,6 +51,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="UniformBuffer.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="VertexArray.cpp" />
     <ClCompile Include="VertexBufferLayout.cpp" />
@@ -60,6 +62,7 @@
     <ClInclude Include="BufferObject.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="Color.h" />
+    <ClInclude Include="ConsoleLayer.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="Defines.h" />
@@ -100,6 +103,7 @@
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
     <ClInclude Include="Types.h" />
+    <ClInclude Include="UniformBuffer.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="VertexArray.h" />

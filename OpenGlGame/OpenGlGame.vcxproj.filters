@@ -147,6 +147,12 @@
     <ClCompile Include="Keyboard.cpp">
       <Filter>Source Files\Input</Filter>
     </ClCompile>
+    <ClCompile Include="ConsoleLayer.cpp">
+      <Filter>Source Files\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="UniformBuffer.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -298,6 +304,12 @@
     </ClInclude>
     <ClInclude Include="Keyboard.h">
       <Filter>Header Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleLayer.h">
+      <Filter>Header Files\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="UniformBuffer.h">
+      <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,6 +6,7 @@
 
 #include "ImGuiLayer.h"
 #include "StatisticLayer.h"
+#include "ConsoleLayer.h"
 #include "LogLayer.h"
 
 #include "ImGui.h"
@@ -73,7 +74,7 @@ namespace Game
 		glfwSetTime(0.);
 
 		auto time = Time::Zero;
-
+		
 		m_Clock.Restart();
 
 		Clock clock;
@@ -144,7 +145,10 @@ namespace Game
 		}
 	}
 
-	void Application::LuaRegister(Game::LuaRegister &luaObject) { }
+	void Application::LuaRegister(Game::LuaRegister &luaObject)
+	{
+		luaObject.Register(*m_Lua);
+	}
 
 	void Application::Initialize()
 	{
@@ -174,8 +178,9 @@ namespace Game
 		m_ImGuiLayer = MakePointer<ImGuiLayer>();
 
 		PushOverlay(m_ImGuiLayer);
-		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(logLayer);
+		PushOverlay(MakePointer<StatisticLayer>());
+		PushOverlay(MakePointer<ConsoleLayer>());
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)

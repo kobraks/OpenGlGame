@@ -11,8 +11,10 @@
 #removing templorary files
 **/*.dat
 **/*.tmp
-#**/*.txt
+**/*.txt
 **/*.swp
 **/*.json
 **/*.bin
 **/*.log
+**/*.ini
+**/*.conf

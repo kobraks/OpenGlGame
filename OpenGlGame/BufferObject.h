@@ -26,30 +26,28 @@ namespace Game
 		Uniform = GL_UNIFORM_BUFFER
 	};
 
+	enum class BufferAccess: uint32_t
+	{
+		ReadOnly = GL_READ_ONLY,
+		WriteOnly = GL_WRITE_ONLY,
+		ReadWrite = GL_READ_WRITE
+	};
+
 	constexpr std::string_view GetBufferUsageAsString(const BufferUsage &usage)
 	{
 		switch(usage)
 		{
-			case BufferUsage::StreamDraw:
-				return "stream draw";
-			case BufferUsage::StreamRead:
-				return "stream read";
-			case BufferUsage::StreamCopy:
-				return "stream copy";
+			case BufferUsage::StreamDraw: return "stream draw";
+			case BufferUsage::StreamRead: return "stream read";
+			case BufferUsage::StreamCopy: return "stream copy";
 
-			case BufferUsage::StaticDraw:
-				return "static draw";
-			case BufferUsage::StaticRead:
-				return "static read";
-			case BufferUsage::StaticCopy:
-				return "static copy";
+			case BufferUsage::StaticDraw: return "static draw";
+			case BufferUsage::StaticRead: return "static read";
+			case BufferUsage::StaticCopy: return "static copy";
 
-			case BufferUsage::DynamicDraw:
-				return "dynamic draw";
-			case BufferUsage::DynamicRead:
-				return "dynamic read";
-			case BufferUsage::DynamicCopy:
-				return "dynamic copy";
+			case BufferUsage::DynamicDraw: return "dynamic draw";
+			case BufferUsage::DynamicRead: return "dynamic read";
+			case BufferUsage::DynamicCopy: return "dynamic copy";
 		}
 
 		return "";
@@ -59,16 +57,15 @@ namespace Game
 	{
 		switch(type)
 		{
-			case BufferType::Index:
-				return "index";
-			case BufferType::Vertex:
-				return "vertex";
-			case BufferType::Uniform:
-				return "uniform";
+			case BufferType::Index: return "index";
+			case BufferType::Vertex: return "vertex";
+			case BufferType::Uniform: return "uniform";
 		}
 
 		return "";
 	}
+
+	class BufferContent;
 
 	class BufferObject
 	{
@@ -93,21 +90,21 @@ namespace Game
 	protected:
 		explicit BufferObject(BufferType type, BufferUsage usage = BufferUsage::StaticDraw);
 
-		virtual void SendValues() const  {}
+		virtual void SendValues() const {}
 
-		void SendData(const void* data, const size_t size) const;
-		void SendSubData(const void* data, const size_t size, const size_t offset) const;
+		void SendData(const void *data, size_t size) const;
+		void SendSubData(const void *data, size_t size, size_t offset) const;
 
-		template<class Type>
-		void SendData(const void* data, const size_t count) const;
+		template <class Type>
+		void SendData(const void *data, size_t count) const;
 
-		template<class Type>
-		void SendSubData(const void* data, const size_t count, const size_t offset) const;
+		template <class Type>
+		void SendSubData(const void *data, size_t count, size_t offset) const;
 	public:
 		virtual ~BufferObject() = default;
 
-		void Allocate(const size_t size);
-		
+		void Allocate(size_t size);
+
 		operator IdType() const { return *m_Buffer; }
 		IdType ID() const { return *m_Buffer; }
 
@@ -115,9 +112,9 @@ namespace Game
 		BufferType Type() const { return m_Type; }
 
 		size_t Size() const { return m_Size; }
-		
-		void Bind() const;
-		void UnBind() const;
+
+		virtual void Bind() const;
+		virtual void UnBind() const;
 
 		bool IsChanged() const { return m_Changed; }
 		void MarkAsChanged() const { m_Changed = true; }
@@ -126,12 +123,33 @@ namespace Game
 
 		void Flush() const;
 
-		void GetData(void* data, const size_t offset, const size_t length) const;
+		void GetData(void *data, size_t offset, size_t length) const;
 
 		virtual Pointer<BufferObject> Clone() const;
+
+		Pointer<BufferContent> GetContent(const BufferAccess access) const;
 	private:
 		static void Init();
 	};
+
+	class BufferContent
+	{
+		const BufferObject& m_Buffer;
+		const BufferAccess m_Access;
+		
+		void* m_Data = nullptr;
+
+	public:
+		BufferContent(const BufferAccess access, const BufferObject &buffer);
+		~BufferContent();
+
+		void* Get();
+		void Set(void* data, const size_t size);
+
+		BufferAccess Access() const { return m_Access; }
+		const BufferObject& GetBuffer() const { return m_Buffer; }
+	};
+
 
 	template <class Type>
 	void BufferObject::SendData(const void *data, const size_t count) const
