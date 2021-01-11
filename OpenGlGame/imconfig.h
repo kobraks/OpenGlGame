@@ -108,20 +108,28 @@ namespace ImGui
 }
 */
 
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 #include "Vector2.h"
 #include "Color.h"
 
 #define IM_VEC2_CLASS_EXTRA                                             \
     template <typename T>                                               \
-    ImVec2(const Game::Vector2<T>& v) {                                   \
-        x = static_cast<float>(v.x);                                    \
-        y = static_cast<float>(v.y);                                    \
-    }                                                                   \
+    ImVec2(const Game::Vector2<T>& v) : x(v.X), y(v.Y) {}                                                                   \
                                                                         \
     template <typename T>                                               \
     operator Game::Vector2<T>() const {                                   \
         return Game::Vector2<T>(x, y);                                    \
-    }
+    }  \
+    \
+    template <typename T> \
+	ImVec2(const glm::vec<2, T> v) : x(v.x), y(v.y) {}\
+	\
+	template <typename T>\
+	operator glm::vec<2, T>() const {\
+		return glm::vec<2, T>(x, y);\
+	}
 
 #define IM_VEC4_CLASS_EXTRA                                             \
     ImVec4(const Game::Color & c)                                         \

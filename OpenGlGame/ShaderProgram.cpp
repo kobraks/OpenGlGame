@@ -5,19 +5,21 @@
 
 #include "Assert.h"
 #include "Log.h"
+#include "GLCheck.h"
 
 namespace Game
 {
 	static void DestroyShaderProgram(ShaderProgram::IdType *id)
 	{
-		glDeleteProgram(*id);
+		GL_CHECK(glDeleteProgram(*id));
 		delete id;
 	}
 
 	static Pointer<ShaderProgram::IdType> CreateShaderProgram()
 	{
 		auto shader = Pointer<ShaderProgram::IdType>(new ShaderProgram::IdType{}, DestroyShaderProgram);
-		*shader     = glCreateProgram();
+
+		GL_CHECK(*shader = glCreateProgram());
 
 		return shader;
 	}
@@ -31,16 +33,19 @@ namespace Game
 
 	ShaderProgram::ShaderProgram(IdType id, const std::string &name) : m_Name(name)
 	{
-		if(glIsProgram(id))
+		bool isProgram = false;
+		GL_CHECK(isProgram = glIsProgram(id) == GL_TRUE ? true : false);
+		
+		if(!isProgram)
 		{
 			ASSERT(false, "Provided id {} do not belong to shader program", id);
 			std::runtime_error(fmt::format("Provided id {} do not belong to shader program", id));
 		}
 
-		m_Program = std::shared_ptr<IdType>(new IdType(id), [](IdType *id) { glDeleteProgram(*id), delete id; });
+		m_Program = std::shared_ptr<IdType>(new IdType(id), [](IdType *id) { GL_CHECK(glDeleteProgram(*id)); delete id; });
 
 		int val = 0;
-		glGetProgramiv(id, GL_LINK_STATUS, &val);
+		GL_CHECK(glGetProgramiv(id, GL_LINK_STATUS, &val));
 
 		if(val == GL_TRUE)
 			m_Linked = true;
@@ -70,7 +75,7 @@ namespace Game
 		            *m_Program
 		           );
 
-		glAttachShader(*m_Program, shader);
+		GL_CHECK(glAttachShader(*m_Program, shader));
 	}
 
 	void ShaderProgram::Detach(const Shader &shader)
@@ -83,7 +88,7 @@ namespace Game
 		            *m_Program
 		           );
 
-		glDetachShader(*m_Program, shader);
+		GL_CHECK(glDetachShader(*m_Program, shader));
 	}
 
 	bool ShaderProgram::Link()
@@ -91,8 +96,8 @@ namespace Game
 		int status = GL_FALSE;
 		GL_LOG_INFO("Linking {} (id: {}) shader program", m_Name, *m_Program);
 
-		glLinkProgram(*m_Program);
-		glGetProgramiv(*m_Program, GL_LINK_STATUS, &status);
+		GL_CHECK(glLinkProgram(*m_Program));
+		GL_CHECK(glGetProgramiv(*m_Program, GL_LINK_STATUS, &status));
 
 		if(status == GL_FALSE)
 		{
@@ -111,19 +116,19 @@ namespace Game
 		if(!m_Linked)
 			return;
 
-		glUseProgram(*m_Program);
+		GL_CHECK(glUseProgram(*m_Program));
 	}
 
 	std::string ShaderProgram::GetLog() const
 	{
 		int length = 0;
 
-		glGetProgramiv(*m_Program, GL_INFO_LOG_LENGTH, &length);
+		GL_CHECK(glGetProgramiv(*m_Program, GL_INFO_LOG_LENGTH, &length));
 
 		if(length > 0)
 		{
 			std::string log(static_cast<IdType>(length), 0);
-			glGetProgramInfoLog(*m_Program, length, &length, &log[0]);
+			GL_CHECK(glGetProgramInfoLog(*m_Program, length, &length, &log[0]));
 			return log;
 		}
 
@@ -139,7 +144,7 @@ namespace Game
 			location = iter->second;
 		else
 		{
-			location = glGetAttribLocation(*m_Program, name.c_str());
+			GL_CHECK(location = glGetAttribLocation(*m_Program, name.c_str()));
 			m_Attributes.emplace(std::make_pair(name, location));
 		}
 
@@ -161,7 +166,7 @@ namespace Game
 		if(iter != m_UniformsLocation.end())
 			location = iter->second;
 		else
-			location = m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second;
+			GL_CHECK(location = m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second);
 
 		if(location == -1)
 			GL_LOG_WARN("Uniform \"{}\" not found in shader \"{}\" (id: {})", name, m_Name, *m_Program);
@@ -174,7 +179,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform1iv(location, 1, &value);
+		GL_CHECK(glUniform1iv(location, 1, &value));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value, int32_t value2)
@@ -182,7 +187,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform2i(location, value, value2);
+		GL_CHECK(glUniform2i(location, value, value2));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value, int32_t value2, int32_t value3)
@@ -190,7 +195,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform3i(location, value, value2, value3);
+		GL_CHECK(glUniform3i(location, value, value2, value3));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value)
@@ -198,7 +203,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform1uiv(location, 1, &value);
+		GL_CHECK(glUniform1uiv(location, 1, &value));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value, uint32_t value2)
@@ -206,7 +211,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform2ui(location, value, value2);
+		GL_CHECK(glUniform2ui(location, value, value2));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value, uint32_t value2, uint32_t value3)
@@ -214,7 +219,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform3ui(location, value, value2, value3);
+		GL_CHECK(glUniform3ui(location, value, value2, value3));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value)
@@ -222,7 +227,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform1fv(location, 1, &value);
+		GL_CHECK(glUniform1fv(location, 1, &value));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value, float value2)
@@ -230,7 +235,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform2f(location, value, value2);
+		GL_CHECK(glUniform2f(location, value, value2));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value, float value2, float value3)
@@ -238,7 +243,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform3f(location, value, value2, value3);
+		GL_CHECK(glUniform3f(location, value, value2, value3));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::vec2 value)
@@ -246,7 +251,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform2fv(location, 1, &value.x);
+		GL_CHECK(glUniform2fv(location, 1, &value.x));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::vec3 value)
@@ -254,7 +259,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform3fv(location, 1, &value.x);
+		GL_CHECK(glUniform3fv(location, 1, &value.x));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::vec4 value)
@@ -262,7 +267,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniform4fv(location, 1, &value.x);
+		GL_CHECK(glUniform4fv(location, 1, &value.x));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat2x2 value)
@@ -270,7 +275,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix2fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix2fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat2x3 value)
@@ -278,7 +283,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix2x3fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix2x3fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat2x4 value)
@@ -286,7 +291,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix2x4fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix2x4fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat3x2 value)
@@ -294,7 +299,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix3x2fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix3x2fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat3x3 value)
@@ -302,7 +307,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix3fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix3fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat3x4 value)
@@ -310,7 +315,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix3x4fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix3x4fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat4x2 value)
@@ -318,7 +323,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix4x2fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix4x2fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat4x3 value)
@@ -326,7 +331,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix4x3fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix4x3fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, glm::mat4x4 value)
@@ -334,7 +339,7 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glUniformMatrix4fv(location, 1, false, glm::value_ptr(value));
+		GL_CHECK(glUniformMatrix4fv(location, 1, false, glm::value_ptr(value)));
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit)
@@ -342,9 +347,9 @@ namespace Game
 		if(location == INVALID_UNIFORM_LOCATION)
 			return;
 
-		glActiveTexture(GL_TEXTURE0 + sampleUnit);
+		GL_CHECK(glActiveTexture(GL_TEXTURE0 + sampleUnit));
 		texture.Bind();
-		glUniform1i(location, sampleUnit);
+		GL_CHECK(glUniform1i(location, sampleUnit));
 	}
 
 	bool ShaderProgram::HasUniform(const std::string &name) const
@@ -362,7 +367,7 @@ namespace Game
 	void ShaderProgram::Populate()
 	{
 		int count = 0;
-		glad_glGetProgramiv(*m_Program, GL_ACTIVE_UNIFORMS, &count);
+		GL_CHECK(glGetProgramiv(*m_Program, GL_ACTIVE_UNIFORMS, &count));
 		GL_LOG_INFO("Shader program {} (id: {}) has {} active uniforms", m_Name, *m_Program, count);
 
 		static constexpr uint32_t BUFFER_SIZE = 524;
@@ -373,9 +378,10 @@ namespace Game
 
 		for(auto i = 0; i < count; ++i)
 		{
-			glGetActiveUniform(*m_Program, i, BUFFER_SIZE, &length, &size, &type, buffer.data());
+			GL_CHECK(glGetActiveUniform(*m_Program, i, BUFFER_SIZE, &length, &size, &type, buffer.data()));
 			std::string uniformName(buffer.data());
-			const auto location = glGetUniformLocation(*this, uniformName.c_str());
+			GLint location = INVALID_UNIFORM_LOCATION;
+			GL_CHECK(location = glGetUniformLocation(*this, uniformName.c_str()));
 
 			m_UniformsLocation.emplace(uniformName, location);
 

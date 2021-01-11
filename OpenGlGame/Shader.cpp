@@ -2,6 +2,7 @@
 #include "Shader.h"
 
 #include "Assert.h"
+#include "GLCheck.h"
 #include "Log.h"
 
 namespace Game
@@ -24,14 +25,15 @@ namespace Game
 
 	static void DestroyShader(Shader::IdType *id)
 	{
-		glDeleteShader(*id);
+		GL_CHECK(glDeleteShader(*id));
 		delete id;
 	}
 
 	static Pointer<Shader::IdType> CreateShader(uint32_t shaderType)
 	{
 		auto shader = Pointer<Shader::IdType>(new Shader::IdType{}, DestroyShader);
-		*shader = glCreateShader(shaderType);
+
+		GL_CHECK(*shader = glCreateShader(shaderType));
 		
 		return shader;
 	}
@@ -58,8 +60,8 @@ namespace Game
 
 		int status = GL_FALSE;
 
-		glCompileShader(*m_Shader);
-		glGetShaderiv(*m_Shader, GL_COMPILE_STATUS, &status);
+		GL_CHECK(glCompileShader(*m_Shader));
+		GL_CHECK(glGetShaderiv(*m_Shader, GL_COMPILE_STATUS, &status));
 
 		if(status == GL_FALSE)
 		{
@@ -79,19 +81,19 @@ namespace Game
 		GL_LOG_DEBUG("Source code: \n{}\nEND", source.GetSource());
 
 		m_Source = source;
-		glShaderSource(*m_Shader, 1, &cstr, nullptr);
+		GL_CHECK(glShaderSource(*m_Shader, 1, &cstr, nullptr));
 	}
 
 	std::string Shader::GetLog() const
 	{
 		int length = 0;
 
-		glGetShaderiv(*m_Shader, GL_INFO_LOG_LENGTH, &length);
+		GL_CHECK(glGetShaderiv(*m_Shader, GL_INFO_LOG_LENGTH, &length));
 
 		if(length > 0)
 		{
 			std::string log(static_cast<std::string::size_type>(length + 1), 0);
-			glGetShaderInfoLog(*m_Shader, length, &length, &log[0]);
+			GL_CHECK(glGetShaderInfoLog(*m_Shader, length, &length, &log[0]));
 
 			return log;
 		}

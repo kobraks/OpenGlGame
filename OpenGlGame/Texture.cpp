@@ -2,14 +2,16 @@
 #include "Texture.h"
 
 #include <vector>
+#include <glad/glad.h>
 
 #include "Assert.h"
+#include "GLCheck.h"
 
 namespace Game
 {
 	void DeleteTexture(Texture::IdType *id)
 	{
-		glDeleteTextures(1, id);
+		GL_CHECK(glDeleteTextures(1, id));
 
 		delete id;
 	}
@@ -17,7 +19,7 @@ namespace Game
 	Pointer<Texture::IdType> CreateTexture()
 	{
 		auto texture = Pointer<Texture::IdType>(new Texture::IdType(), DeleteTexture);
-		glGenTextures(1, &*texture);
+		GL_CHECK(glGenTextures(1, &*texture));
 
 		return texture;
 	}
@@ -38,70 +40,113 @@ namespace Game
 	{
 		Bind();
 
-		m_Size       = Vector2u(width, height);
-		m_ActualSize = Vector2u(GetValidSize(width), GetValidSize(height));
+		m_Size           = Vector2u(width, height);
+		m_InternalFormat = internalFormat;
 
-		glTexImage2D(
+		GL_CHECK(glTexImage2D(
 		             GL_TEXTURE_2D,
 		             0,
 		             static_cast<GLint>(internalFormat),
-		             m_ActualSize.Width,
-		             m_ActualSize.Height,
+		             m_Size.Width,
+		             m_Size.Height,
 		             0,
 		             static_cast<GLenum>(format),
 		             static_cast<GLenum>(type),
 		             data
-		            );
+		            ));
 	}
 
 	void Texture::SetWrapping(const Wrapping s)
 	{
+		m_S = s;
+		
 		Bind();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(s));
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(s)));
 	}
 
 	void Texture::SetWrapping(const Wrapping s, const Wrapping t)
 	{
-		Bind();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(s));
+		m_T = t;
+
+		SetWrapping(s);
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(t)));
 	}
 
 	void Texture::SetWrapping(const Wrapping s, const Wrapping t, const Wrapping r)
 	{
+		m_R = r;
+		
+		SetWrapping(s, t);
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, static_cast<GLint>(r)));
+	}
+
+	void Texture::SetWrappingS(Wrapping wrapping)
+	{
 		Bind();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, static_cast<GLint>(s));
+		m_S = wrapping;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapping)));
+	}
+
+	void Texture::SetWrappingT(Wrapping wrapping)
+	{
+		Bind();
+		m_T = wrapping;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapping)));
+	}
+
+	void Texture::SetWrappingR(Wrapping wrapping)
+	{
+		Bind();
+		m_R = wrapping;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, static_cast<GLint>(wrapping)));
 	}
 
 	void Texture::SetFilters(Filter min, Filter mag)
 	{
 		Bind();
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(min));
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(mag));
+		m_Min = min;
+		m_Mag = mag;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(min)));
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(mag)));
 	}
 
-	void Texture::SetBorderColor(const glm::vec4 &color)
+	void Texture::SetMinFilter(Filter min)
 	{
 		Bind();
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &color.x);
+		m_Min = min;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(min)));
+	}
+	void Texture::SetMagFilter(Filter mag)
+	{
+		Bind();
+		m_Mag = mag;
+		GL_CHECK(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(mag)));
+	}
+
+	void Texture::SetBorderColor(const Color &color)
+	{
+		Bind();
+		m_BorderColor = color;
+		GL_CHECK(glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, &color.R));
 	}
 
 	void Texture::Bind() const
 	{
-		glBindTexture(GL_TEXTURE_2D, *this);
+		GL_CHECK(glBindTexture(GL_TEXTURE_2D, *this));
 	}
 
 	void Texture::GenerateMipMaps() const
 	{
 		Bind();
-		glGenerateMipmap(GL_TEXTURE_2D);
+		m_MipmapGenerated = true;
+		GL_CHECK(glGenerateMipmap(GL_TEXTURE_2D));
 	}
 
 	void Texture::Create(const uint32_t width, const uint32_t height)
 	{
-		if(width == 0 || height == 0)
-			return;
+		if(width == 0 || height == 0) return;
 
-		Vector2u actualSize(GetValidSize(width), GetValidSize(height));
+		Vector2u actualSize(width, height);
 		uint32_t maxSize = GetMaxSize();
 
 		if(actualSize.X > maxSize || actualSize.Y > maxSize)
@@ -124,7 +169,7 @@ namespace Game
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
 	}
-	
+
 	void Texture::Create(const Image &image)
 	{
 		Bind();
@@ -135,34 +180,26 @@ namespace Game
 
 	Image Texture::ToImage() const
 	{
-		std::vector<glm::vec4> pixels(m_Size.Width * m_Size.Height);
-
-		if(m_Size == m_ActualSize)
-		{
-			Bind();
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &pixels[0]);
-		}
-		else
-		{
-			std::vector<glm::vec4> allPixels(m_ActualSize.Width * m_ActualSize.Height);
-			Bind();
-			glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &allPixels[0]);
-			
-			const glm::vec4 *src = &allPixels[0];
-			glm::vec4 *dst       = &pixels[0];
-
-			int srcPitch = m_ActualSize.X * 4;
-			int dstPitch = m_ActualSize.Y * 4;
-
-			for(size_t i = 0; i < m_Size.Height; ++i)
-			{
-				std::memcpy(dst, src, dstPitch);
-				src += srcPitch;
-				dst += dstPitch;
-			}
-		}
+		std::vector<glm::vec4> pixels;
+		pixels.resize(static_cast<size_t>(m_Size.Width) * m_Size.Height);
+		
+		Bind();
+		GL_CHECK(glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, &pixels[0]));
 
 		return Image(m_Size, pixels.data());
+	}
+
+	void Texture::Update(const float *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y)
+	{
+		ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
+		if(!(x + width >= m_Size.X && y + height >= m_Size.Y)) throw std::out_of_range("Out of range");
+
+		if (pixels)
+		{
+			Bind();
+			GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_FLOAT, pixels));
+			GL_CHECK(glFlush());
+		}
 	}
 
 	void Texture::Update(
@@ -173,23 +210,33 @@ namespace Game
 		const uint32_t y
 		)
 	{
-		ASSERT(x + width <= m_Size.X && y + height <= m_Size.Y, "Out of range");
-		if(!(x + width <= m_Size.X && y + height <= m_Size.Y))
-			throw std::out_of_range("Out of range");
+		ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
+		if(!(x + width >= m_Size.X && y + height >= m_Size.Y)) throw std::out_of_range("Out of range");
 
 		if(pixels)
 		{
 			Bind();
-			glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_FLOAT, pixels);
-			glFlush();
+			GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, GL_RGBA, GL_FLOAT, pixels));
+			GL_CHECK(glFlush());
 		}
 	}
 
 	void Texture::Swap(Texture &right) noexcept
 	{
 		std::swap(m_Size, right.m_Size);
-		std::swap(m_ActualSize, right.m_ActualSize);
 		std::swap(m_Texture, right.m_Texture);
+
+		std::swap(m_InternalFormat, right.m_InternalFormat);
+		
+		std::swap(m_S, right.m_S);
+		std::swap(m_T, right.m_T);
+		std::swap(m_R, right.m_R);
+
+		std::swap(m_Mag, right.m_Mag);
+		std::swap(m_Min, right.m_Min);
+
+		std::swap(m_BorderColor, right.m_BorderColor);
+		std::swap(m_MipmapGenerated, right.m_MipmapGenerated);
 	}
 
 	uint32_t Texture::GetMaxSize()
@@ -201,23 +248,9 @@ namespace Game
 		{
 			checked = true;
 
-			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size);
+			GL_CHECK(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size));
 		}
 
 		return static_cast<uint32_t>(size);
-	}
-
-	uint32_t Texture::GetValidSize(const uint32_t size)
-	{
-		if constexpr(true)
-			return size;
-		else
-		{
-			uint32_t pow = 1;
-			while(pow < size)
-				pow = pow << 1;
-
-			return pow;
-		}
 	}
 }

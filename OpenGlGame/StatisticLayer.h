@@ -41,8 +41,8 @@ namespace Game
 		
 		Clock m_Clock;
 
-		Metric m_Metric;
-	
+		Metric m_FrameMetric;
+		Metric m_UpdateMetric;
 	public:
 		StatisticLayer();
 

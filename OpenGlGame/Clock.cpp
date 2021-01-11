@@ -12,12 +12,6 @@ namespace
         QueryPerformanceFrequency(&frequency);
         return frequency;
     }
-
-	bool IsWindowsXpOrOlder()
-	{
-		return false;
-		// return static_cast<DWORD>(LOBYTE(LOWORD(GetVersion()))) < 6;
-	}
 }
 
 namespace Game
@@ -30,19 +24,9 @@ namespace Game
 			static Time GetTime()
 			{
 				static LARGE_INTEGER frequency = GetFrequency();
-				static bool oldWindows = IsWindowsXpOrOlder();
 
 				LARGE_INTEGER time;
-				
-				if (oldWindows)
-				{
-					static std::mutex mutex;
-					std::lock_guard<std::mutex> guard(mutex);
-
-					QueryPerformanceCounter(&time);
-				}
-				else
-					QueryPerformanceCounter(&time);
+				QueryPerformanceCounter(&time);
 
 				return Microseconds(1000000 * time.QuadPart / frequency.QuadPart);
 			}

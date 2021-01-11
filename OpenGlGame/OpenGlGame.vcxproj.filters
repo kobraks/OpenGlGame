@@ -153,6 +153,15 @@
     <ClCompile Include="UniformBuffer.cpp">
       <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Font.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GLCheck.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -309,6 +318,21 @@
       <Filter>Header Files\Layer</Filter>
     </ClInclude>
     <ClInclude Include="UniformBuffer.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Rect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Font.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Glyph.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLCheck.h">
       <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
   </ItemGroup>

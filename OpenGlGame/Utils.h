@@ -10,6 +10,15 @@
 
 namespace Game
 {
+	template <typename... Types>
+	struct TypeListLength
+	{
+		constexpr static size_t Length = sizeof ...(Types);
+	};
+
+	template <typename... Types>
+	constexpr size_t TypeListLengthV =TypeListLength<Types...>::Length; 
+	
 	std::string& TrimLeft(std::string &string);
 	std::string& TrimRight(std::string &string);
 	std::string& Trim(std::string &string);

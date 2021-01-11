@@ -8,8 +8,83 @@
 #include "StatisticLayer.h"
 #include "ConsoleLayer.h"
 #include "LogLayer.h"
+#include "Renderer.h"
 
 #include "ImGui.h"
+
+namespace
+{
+	constexpr spdlog::level::level_enum GetSeverity(GLenum severity)
+	{
+		switch(severity)
+		{
+		case GL_DEBUG_SEVERITY_HIGH:
+			return spdlog::level::critical;
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			return spdlog::level::err;
+		case GL_DEBUG_SEVERITY_LOW:
+			return spdlog::level::warn;
+		case GL_DEBUG_SEVERITY_NOTIFICATION:
+			return spdlog::level::info;
+		default:
+			return spdlog::level::trace;
+		}
+	}
+
+	constexpr std::string_view GetSource(GLenum source)
+	{
+		switch(source)
+		{
+		case GL_DEBUG_SOURCE_API:
+			return "API";
+		case GL_DEBUG_SOURCE_APPLICATION:
+			return "Application";
+		case GL_DEBUG_SOURCE_OTHER:
+			return "Other";
+		case GL_DEBUG_SOURCE_SHADER_COMPILER:
+			return "Shader Compiler";
+		case GL_DEBUG_SOURCE_THIRD_PARTY:
+			return "Third Party";
+		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+			return "Window System";
+		default:
+			return "Unknown";
+
+		}
+	}
+
+	constexpr std::string_view GetType(GLenum type)
+	{
+		switch(type)
+		{
+		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+			return "Deprecated Behavior";
+		case GL_DEBUG_TYPE_ERROR:
+			return "Error";
+		case GL_DEBUG_TYPE_MARKER:
+			return "Maker";
+		case GL_DEBUG_TYPE_OTHER:
+			return "Other";
+		case GL_DEBUG_TYPE_PERFORMANCE:
+			return "Performance";
+		case GL_DEBUG_TYPE_POP_GROUP:
+			return "Pop Group";
+		case GL_DEBUG_TYPE_PORTABILITY:
+			return "Portability";
+		case GL_DEBUG_TYPE_PUSH_GROUP:
+			return "Push Group";
+		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+			return "Undefined Behavior";
+		default:
+			return "Unknown";
+		}
+	}
+	
+	void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void *userParam)
+	{
+		Game::Log::GetOpenGLLogger()->log(GetSeverity(severity), "ID: {}, Source: {}, Type: {}, Message = {}", id, GetSource(source), GetType(type), message);
+	}
+}
 
 namespace Game
 {
@@ -73,15 +148,15 @@ namespace Game
 		Initialize();
 		glfwSetTime(0.);
 
-		auto time = Time::Zero;
-		
 		m_Clock.Restart();
 
 		Clock clock;
 		Clock updateClock;
-
+		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds(); 
+		
 		while(m_Running)
 		{
+			m_Window->GetFunctions().Clear(BufferBit::Color | BufferBit::Depth);
 			if(!m_Minimalized)
 			{
 				m_FrameTime = clock.Restart();
@@ -92,21 +167,14 @@ namespace Game
 				}
 
 				uint64_t updates = 0;
-				bool update      = false;
-				auto nextTime    = Time::Zero;
 
-				time = updateClock.GetElapsedTime();
-				while((time - nextTime) >= m_UpdateRate && updates++ < m_MaxUpdates)
+				int32_t updateTime = updateClock.GetElapsedTime().AsMilliseconds();
+				while((updateTime - updateNext) >= m_UpdateRate && updates++ < m_MaxUpdates)
 				{
 					for(Pointer<Layer> &layer : m_LayerStack)
-					{
-						layer->OnConstUpdate(m_UpdateRate);
-						nextTime += m_UpdateRate;
-						update = true;
-					}
+						layer->OnConstUpdate(Milliseconds(m_UpdateRate));
+					updateNext += m_UpdateRate;
 				}
-
-				if(update) updateClock.Restart();
 
 				m_ImGuiLayer->Begin();
 
@@ -128,12 +196,11 @@ namespace Game
 		for(int i = 0; i < argc; ++i) m_Arguments.emplace_back(argv[i]);
 	}
 
-	void Application::SetUpdateRate(float frequency)
+	void Application::SetUpdateRate(uint32_t rate)
 	{
-		if(200.f >= frequency && 1. <= frequency)
+		if(200 >= rate && 1 <= rate)
 		{
-			m_UpdateRate = Seconds(1.f / frequency);
-			m_Frequency  = frequency;
+			m_UpdateRate = static_cast<uint32_t>(1000.f / rate);
 		}
 	}
 
@@ -171,9 +238,14 @@ namespace Game
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
-		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
+		LOG_INFO(
+		         "Created Window [With: {}, Height: {}, Name: \"{}\"]",
+		         m_Window->GetWidth(),
+		         m_Window->GetHeight(),
+		         m_Window->GetTitle()
+		        );
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
-		LOG_INFO("Update frequency {0}", m_Frequency);
+		LOG_INFO("Update rate {0}", m_UpdateRate);
 
 		m_ImGuiLayer = MakePointer<ImGuiLayer>();
 
@@ -181,6 +253,14 @@ namespace Game
 		PushOverlay(logLayer);
 		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(MakePointer<ConsoleLayer>());
+
+		auto OpenGL = m_Window->GetFunctions();
+
+		OpenGL.Enable(Capability::Blend);
+		OpenGL.Enable(Capability::CullFace);
+		OpenGL.Enable(Capability::DepthTest);
+		OpenGL.Enable(Capability::DebugOutput);
+		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)

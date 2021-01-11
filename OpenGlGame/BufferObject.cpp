@@ -4,12 +4,13 @@
 
 #include "Assert.h"
 #include "Log.h"
+#include "GLCheck.h"
 
 namespace Game
 {
 	static void DeleteBuffer(BufferObject::IdType *id)
 	{
-		glDeleteBuffers(1, id);
+		GL_CHECK(glDeleteBuffers(1, id));
 
 		delete id;
 	}
@@ -17,7 +18,7 @@ namespace Game
 	static Pointer<BufferObject::IdType> CreateBuffer()
 	{
 		auto buffer = Pointer<BufferObject::IdType>(new BufferObject::IdType(), DeleteBuffer);
-		glGenBuffers(1, &*buffer);
+		GL_CHECK(glGenBuffers(1, &*buffer));
 
 		return buffer;
 	}
@@ -46,33 +47,42 @@ namespace Game
 		if(size > m_Size)
 		{
 			m_Size = size;
-			glBufferData(static_cast<uint32_t>(m_Type), size, data, static_cast<uint32_t>(m_Usage));
+			GL_CHECK(glBufferData(static_cast<uint32_t>(m_Type), size, data, static_cast<uint32_t>(m_Usage)));
 		}
-		else
-			SendSubData(data, size, 0);
+		else SendSubData(data, size, 0);
 	}
 
 	void BufferObject::SendSubData(const void *data, const size_t size, const size_t offset) const
 	{
-		ASSERT((m_Size < size + offset), "Updating chunk of data is to big buffer size: {}, requested space: {}", size, offset);
+		ASSERT(
+		       (m_Size < size + offset),
+		       "Updating chunk of data is to big, buffer size: {}, requested space: {}",
+		       size,
+		       offset
+		      );
 
-		if (m_Size < size + offset)
-			throw std::runtime_error(fmt::format("Updating chunk of data is to big buffer size: {}, requested space: {}", size, offset));
+		if(m_Size < size + offset)
+			throw std::runtime_error(
+			                         fmt::format(
+			                                     "Updating chunk of data is to big, buffer size: {}, requested space: {}",
+			                                     size,
+			                                     offset
+			                                    )
+			                        );
 
-		glBufferSubData(static_cast<uint32_t>(m_Type), offset, size, data);
+		GL_CHECK(glBufferSubData(static_cast<uint32_t>(m_Type), offset, size, data));
 	}
 
 	void BufferObject::Allocate(const size_t size)
 	{
-		glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer);
+		GL_CHECK(glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer));
 
-		if(size > m_Size)
-			SendData(nullptr, size);
+		if(size > m_Size) SendData(nullptr, size);
 	}
 
 	void BufferObject::Bind() const
 	{
-		glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer);
+		GL_CHECK(glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer));
 
 		if(m_Changed)
 		{
@@ -88,8 +98,7 @@ namespace Game
 
 	BufferObject* BufferObject::GetDefault(BufferType type)
 	{
-		if(!m_Initialized)
-			Init();
+		if(!m_Initialized) Init();
 
 		return &m_Buffers.at(type);
 	}
@@ -99,10 +108,10 @@ namespace Game
 		Bind();
 	}
 
-	void BufferObject::GetData(void* data, const size_t offset, const size_t length) const
+	void BufferObject::GetData(void *data, const size_t offset, const size_t length) const
 	{
 		Bind();
-		glGetBufferSubData(static_cast<GLenum>(Type()), offset, length, data);
+		GL_CHECK(glGetBufferSubData(static_cast<GLenum>(Type()), offset, length, data));
 	}
 
 	Pointer<BufferObject> BufferObject::Clone() const
@@ -110,9 +119,15 @@ namespace Game
 		auto object = Pointer<BufferObject>(new BufferObject(Type(), Usage()));
 
 		object->Allocate(Size());
-		glCopyBufferSubData(*this, *object, 0, 0, Size());
-		GL_LOG_INFO("Coping contents of {} buffer (id: {}) to {} buffer (id: {})", GetBufferTypeAsString(Type()), ID(), GetBufferTypeAsString(object->Type()), object->ID());
-		
+		GL_CHECK(glCopyBufferSubData(*this, *object, 0, 0, Size()));
+		GL_LOG_INFO(
+		            "Coping contents of {} buffer (id: {}) to {} buffer (id: {})",
+		            GetBufferTypeAsString(Type()),
+		            ID(),
+		            GetBufferTypeAsString(object->Type()),
+		            object->ID()
+		           );
+
 		return object;
 	}
 
@@ -129,40 +144,48 @@ namespace Game
 		m_Buffers.emplace(BufferType::Uniform, BufferObject(BufferType::Uniform, true));
 		m_Buffers.emplace(BufferType::Index, BufferObject(BufferType::Index, true));
 	}
-	
-	BufferContent::BufferContent(const BufferAccess access, const BufferObject &buffer) : m_Buffer(buffer), m_Access(access)
+
+	BufferContent::BufferContent(const BufferAccess access, const BufferObject &buffer) : m_Buffer(buffer),
+		m_Access(access)
 	{
 		buffer.Bind();
-		m_Data = glMapBuffer(static_cast<GLenum>(buffer.Type()), static_cast<GLenum>(m_Access));
+		GL_CHECK(m_Data = glMapBuffer(static_cast<GLenum>(buffer.Type()), static_cast<GLenum>(m_Access)));
 	}
 
 	BufferContent::~BufferContent()
 	{
 		m_Buffer.Bind();
-		glUnmapBuffer(static_cast<GLenum>(m_Buffer.Type()));
+		GL_CHECK(glUnmapBuffer(static_cast<GLenum>(m_Buffer.Type())));
 	}
 
-	void * BufferContent::Get()
+	const void* BufferContent::Get() const
 	{
-		ASSERT(m_Access != BufferAccess::WriteOnly, "No read access");
+		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
 
-		if (m_Access == BufferAccess::WriteOnly)
-			throw std::runtime_error("No read access");
-		
+		if(m_Access == BufferAccess::WriteOnly) throw std::runtime_error("No read access");
+
 		return m_Data;
 	}
 
-	void BufferContent::Set(void *data, const size_t size)
+	void* BufferContent::Get()
 	{
-		ASSERT(m_Access != BufferAccess::ReadOnly, "No write access");
-		ASSERT(size >= m_Buffer.Size(), "Data provided is too big");
+		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
 
-		if (m_Access == BufferAccess::ReadOnly)
-			throw std::runtime_error("No write access");
-		
-		if (size >= m_Buffer.Size())
-			throw std::out_of_range("Data size provided is too big");
-		
-		std::memcpy(m_Data, data, size);
+		if(m_Access == BufferAccess::WriteOnly) throw std::runtime_error("No read access");
+
+		return m_Data;
+	}
+
+
+	void BufferContent::Set(const void *data, const size_t size, const size_t offset)
+	{
+		ASSERT(m_Access == BufferAccess::WriteOnly, "No write access");
+		ASSERT(size < m_Buffer.Size(), "Data provided is too big");
+
+		if(m_Access == BufferAccess::ReadOnly) throw std::runtime_error("No write access");
+
+		if(size >= m_Buffer.Size()) throw std::out_of_range("Data size provided is too big");
+
+		std::memcpy(static_cast<char*>(m_Data) + offset, data, size);
 	}
 }

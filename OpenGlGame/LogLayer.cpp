@@ -5,6 +5,7 @@
 
 #include "Application.h"
 #include "ImGuiUtils.h"
+#include "Keyboard.h"
 #include "Utils.h"
 
 namespace Game
@@ -80,31 +81,38 @@ namespace Game
 
 			bool copyButton = ImGui::Button("Copy");
 			ImGui::SameLine();
-			if(ImGui::Button("Clear"))
-				Clear();
+			if(ImGui::Button("Clear")) Clear();
 
 			m_Filter.Draw("Filter", -100.f);
 
 			ImGuiChildUniqueGuard childGuard("Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
-			if(copyButton)
-				ImGui::LogToClipboard();
+			if(copyButton) ImGui::LogToClipboard();
 
 			for(const auto [message, color] : m_Messages)
 			{
-				if(!m_Filter.PassFilter(message.c_str()))
-					continue;
+				if(!m_Filter.PassFilter(message.c_str())) continue;
 
 				ImGui::TextColored(color, message.c_str());
 			}
 
-			if(m_AllowScrolling && m_ScrollToBottom)
-				ImGui::SetScrollHere(1.f);
+			if(m_AllowScrolling && m_ScrollToBottom) ImGui::SetScrollHere(1.f);
 
 			m_ScrollToBottom = false;
 		}
 	}
 
-	void LogLayer::OnUpdate() {}
+	void LogLayer::OnUpdate()
+	{
+		if(Keyboard::IsKeyPressed(Key::F2))
+		{
+			if(m_Process)
+			{
+				m_Process = false;
+				m_Show      = !m_Show;
+			}
+		}
+		else m_Process = true;
+	}
 
 	void LogLayer::Clear()
 	{
@@ -115,8 +123,7 @@ namespace Game
 	{
 		if(msg.level >= spdlog::level::err && msg.level < spdlog::level::off)
 		{
-			if(m_AutoPopUp)
-				m_Show = true;
+			if(m_AutoPopUp) m_Show = true;
 			m_ScrollToBottom = true;
 		}
 

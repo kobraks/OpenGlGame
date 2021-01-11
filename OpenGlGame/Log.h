@@ -13,7 +13,7 @@ namespace Game
 	class Log
 	{
 	public:
-		static void Init();
+		static void Init(bool consoleOutput = true, bool fileOutput = true);
 
 		static Pointer<spdlog::logger>& GetScriptLogger() { return m_ScriptLogger; }
 		static Pointer<spdlog::logger>& GetApplicationLogger() { return m_ApplicationLogger; }

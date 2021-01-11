@@ -2,6 +2,8 @@
 
 #include <glad/glad.h>
 
+
+#include "Color.h"
 #include "Types.h"
 #include "Image.h"
 
@@ -144,8 +146,20 @@ namespace Game
 	private:
 		Pointer<IdType> m_Texture;
 
-		Vector2u m_Size       = {0, 0};
-		Vector2u m_ActualSize = {0, 0};
+		Vector2u m_Size = {0, 0};
+
+		InternalFormat m_InternalFormat = InternalFormat::RGBA;
+
+		Wrapping m_S = Wrapping::Repeat;
+		Wrapping m_T = Wrapping::Repeat;
+		Wrapping m_R = Wrapping::Repeat;
+
+		Filter m_Mag = Filter::Linear;
+		Filter m_Min = Filter::NearestMipmapLinear;
+
+		Color m_BorderColor = Color(0.f, 0.f, 0.f, 0.f);
+
+		mutable bool m_MipmapGenerated = false;
 	public:
 		Texture();
 
@@ -165,12 +179,28 @@ namespace Game
 		void SetWrapping(Wrapping s, Wrapping t);
 		void SetWrapping(Wrapping s, Wrapping t, Wrapping r);
 
+		Wrapping GetWrappingS() const { return m_S; }
+		Wrapping GetWrappingT() const { return m_T; }
+		Wrapping GetWrappingR() const { return m_R; }
+
+		void SetWrappingS(Wrapping wrapping);
+		void SetWrappingT(Wrapping wrapping);
+		void SetWrappingR(Wrapping wrapping);
+
+		Filter GetMagFilter() const { return m_Mag; }
+		Filter GetMinFilter() const { return m_Min; }
+
 		void SetFilters(Filter min, Filter mag);
-		void SetBorderColor(const glm::vec4 &color);
+		void SetMinFilter(Filter min);
+		void SetMagFilter(Filter mag);
+
+		Color GetBorderColor() const { return m_BorderColor; }
+		void SetBorderColor(const Color &color);
 
 		void Bind() const;
 
 		void GenerateMipMaps() const;
+		bool IsMipMapsGenerated() const { return m_MipmapGenerated; }
 
 		void Create(uint32_t width, uint32_t height);
 		void Create(const Image &image);
@@ -179,7 +209,12 @@ namespace Game
 		uint32_t Width() const { return m_Size.Width; }
 		uint32_t Height() const { return m_Size.Height; }
 
+		InternalFormat GetInternalFormat() const { return m_InternalFormat; }
+
 		Image ToImage() const;
+
+		void Update(const float *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
+		void Update(const float *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
 
 		void Update(const glm::vec4 *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
 		void Update(const glm::vec4 *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
@@ -203,8 +238,5 @@ namespace Game
 		{
 			return *m_Texture == *texture.m_Texture;
 		}
-
-	protected:
-		static uint32_t GetValidSize(uint32_t size);
 	};
 }

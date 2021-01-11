@@ -36,43 +36,14 @@ namespace Game
 
 		template <typename Type>
 		void AddBuffer(const VertexBuffer<Type> &buffer, const VertexBufferLayout &layout);
+
+	private:
+		void AddVertexBuffer(const BufferObject& buffer, const VertexBufferLayout& layout);
 	};
 
 	template <typename Type>
-	void VertexArray::AddBuffer(const VertexBuffer<Type> &vertexBuffer, const VertexBufferLayout &layout)
+	void VertexArray::AddBuffer(const VertexBuffer<Type> &buffer, const VertexBufferLayout &layout)
 	{
-		GL_LOG_INFO("Adding buffer {} to vertex array: {}", vertexBuffer.ID(), ID());
-		Bind();
-		vertexBuffer.Bind();
-		const auto &elements = layout.GetElements();
-		uint32_t offset      = 0;
-
-		for(size_t i = 0; i < elements.size(); ++i)
-		{
-			const auto &element = elements[i];
-			glEnableVertexAttribArray(i);
-
-			GL_LOG_DEBUG("Enabling atribute array {}", i);
-
-			glVertexAttribPointer(
-			                      i,
-			                      element.Count,
-			                      element.Type,
-			                      element.Normalized ? GL_TRUE : GL_FALSE,
-			                      layout.GetStride(),
-			                      reinterpret_cast<const void*>(offset)
-			                     );
-
-			GL_LOG_DEBUG(
-			             "Element: (Count: {}, Type: {}, Normalized: {}, Offset: {}, Stride: {})",
-			             element.Count,
-			             element.Type,
-			             element.Normalized,
-			             offset,
-			             layout.GetStride()
-			            );
-
-			offset += element.Count * element.Size;
-		}
+		AddVertexBuffer(buffer, layout);
 	}
 }

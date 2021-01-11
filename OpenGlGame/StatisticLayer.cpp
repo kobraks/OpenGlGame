@@ -61,8 +61,8 @@ namespace Game
 		const auto &window  = game.GetWindow();
 		const auto mousePos = Mouse::GetPosition(window);
 
-		const auto guard = ImGuiUniqueGuard("Fixed overlay", m_Show, s_Flags);
-		m_Metric(game.GetFrameTime().AsMilliseconds());
+		const auto guard = ImGuiUniqueGuard(window.GetPosition(),"Fixed overlay", m_Show, s_Flags);
+		m_FrameMetric(game.GetFrameTime().AsMilliseconds());
 		
 		Text("Fps: {:.2f}", 1.f / game.GetFrameTime().AsSeconds());
 		Text("Ups: {:.2f}", 1.f / m_LastUpdates);
@@ -71,11 +71,11 @@ namespace Game
 		Text("Updates: {}", m_LastUpdates);
 		Text("Mouse Position: {}, {}", mousePos.X, mousePos.Y);
 
-		m_Metric.Draw();
+		m_FrameMetric.Draw();
 		
-		Text("Min frame Time: {:.2f}ms", m_Metric.Min());
-		Text("Max frame Time: {:.2f}ms", m_Metric.Max());
-		Text("Avr frame Time: {:.2f}ms", m_Metric.Avr());
+		Text("Min frame Time: {:.2f}ms", m_FrameMetric.Min());
+		Text("Max frame Time: {:.2f}ms", m_FrameMetric.Max());
+		Text("Avr frame Time: {:.2f}ms", m_FrameMetric.Avr());
 
 		if(m_Clock.GetElapsedTime().AsSeconds() >= 1.f)
 		{

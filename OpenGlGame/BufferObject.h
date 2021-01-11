@@ -143,9 +143,24 @@ namespace Game
 		BufferContent(const BufferAccess access, const BufferObject &buffer);
 		~BufferContent();
 
+		const void* Get() const;
 		void* Get();
-		void Set(void* data, const size_t size);
+		void Set(const void* data, const size_t size, const size_t offset = 0);
 
+		template<typename Type>
+		void Set(const Type& value, const size_t offset)
+		{
+			return Set(&value, sizeof(Type), offset);
+		}
+
+		template<typename Type>
+		Type Get(const size_t offset) const
+		{
+			Type value;
+			std::memcpy(&value, static_cast<const char*>(Get()) + offset, sizeof(Type));
+			return value;
+		}
+		
 		BufferAccess Access() const { return m_Access; }
 		const BufferObject& GetBuffer() const { return m_Buffer; }
 	};

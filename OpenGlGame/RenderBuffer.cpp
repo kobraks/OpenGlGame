@@ -1,18 +1,20 @@
 #include "pch.h"
 #include "RenderBuffer.h"
 
+#include "GLCheck.h"
+
 namespace Game
 {
 	static void DestroyRenderBuffer(RenderBuffer::IdType* id)
 	{
-		glDeleteRenderbuffers(1, id);
+		GL_CHECK(glDeleteRenderbuffers(1, id));
 		delete id;
 	}
 
 	static auto CreateRenderBuffer()
 	{
 		auto renderBuffer = Pointer<RenderBuffer::IdType>(new RenderBuffer::IdType{}, DestroyRenderBuffer);
-		glGenRenderbuffers(1, &*renderBuffer);
+		GL_CHECK(glGenRenderbuffers(1, &*renderBuffer));
 		
 		return renderBuffer;
 	}
@@ -34,13 +36,13 @@ namespace Game
 	
 	void RenderBuffer::Bind() const
 	{
-		glBindRenderbuffer(GL_RENDERBUFFER, *this);
+		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, *this));
 	}
 	
 	void RenderBuffer::Storage(uint32_t width, uint32_t height, InternalFormat format)
 	{
 		Bind();
-		glRenderbufferStorage(GL_RENDERBUFFER, static_cast<GLenum>(format), width, height);
+		GL_CHECK(glRenderbufferStorage(GL_RENDERBUFFER, static_cast<GLenum>(format), width, height));
 	}
 
 	RenderBuffer * RenderBuffer::GetDefault()

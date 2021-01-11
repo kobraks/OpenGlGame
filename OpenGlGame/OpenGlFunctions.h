@@ -4,6 +4,9 @@
 
 #include "Types.h"
 
+#include "Color.h"
+#include "Rect.h"
+
 namespace Game
 {
 	enum class Primitive : uint32_t
@@ -31,8 +34,18 @@ namespace Game
 	enum class Capability : uint32_t
 	{
 		Blend = GL_BLEND,
+		ClipDistance0 = GL_CLIP_DISTANCE0,
+		ClipDistance1 = GL_CLIP_DISTANCE1,
+		ClipDistance2 = GL_CLIP_DISTANCE2,
+		ClipDistance3 = GL_CLIP_DISTANCE3,
+		ClipDistance4 = GL_CLIP_DISTANCE4,
+		ClipDistance5 = GL_CLIP_DISTANCE5,
+		ClipDistance6 = GL_CLIP_DISTANCE6,
+		ClipDistance7 = GL_CLIP_DISTANCE7,
 		ColorLogicOp = GL_COLOR_LOGIC_OP,
 		CullFace = GL_CULL_FACE,
+		DebugOutput = GL_DEBUG_OUTPUT,
+		DebugOutputSynchronous = GL_DEBUG_OUTPUT_SYNCHRONOUS,
 		DepthClamp = GL_DEPTH_CLAMP,
 		DepthTest = GL_DEPTH_TEST,
 		Dither = GL_DITHER,
@@ -45,9 +58,12 @@ namespace Game
 		PolygonOffsetPoint = GL_POLYGON_OFFSET_POINT,
 		ProgramPointSize = GL_PROGRAM_POINT_SIZE,
 		PrimitiveRestart = GL_PRIMITIVE_RESTART,
+		PrimitiveRestartFixedIndex = GL_PRIMITIVE_RESTART_FIXED_INDEX,
+		RasterizerDiscard = GL_RASTERIZER_DISCARD,
 		SampleAlphaToCoverage = GL_SAMPLE_ALPHA_TO_COVERAGE,
 		SampleAlphaToOne = GL_SAMPLE_ALPHA_TO_ONE,
 		SampleCoverage = GL_SAMPLE_COVERAGE,
+		SampleShading = GL_SAMPLE_SHADING,
 		SampleMask = GL_SAMPLE_MASK,
 		ScissorTest = GL_SCISSOR_TEST,
 		StencilTest = GL_STENCIL_TEST,
@@ -96,21 +112,94 @@ namespace Game
 		return static_cast<BufferBit>(static_cast<uint32_t>(left) | static_cast<uint32_t>(right));
 	}
 
+
+	struct BlendMode
+	{
+		enum Factor
+		{
+			Zero = GL_ZERO,
+			One = GL_ONE,
+			SrcColor = GL_SRC_COLOR,
+			OneMinusSrcColor = GL_ONE_MINUS_SRC_COLOR,
+			DstColor = GL_DST_COLOR,
+			OneMinusDstColor = GL_ONE_MINUS_DST_COLOR,
+			SrcAlpha = GL_SRC_ALPHA,
+			OneMinusSrcAlpha = GL_ONE_MINUS_SRC_ALPHA,
+			DstAlpha = GL_DST_ALPHA,
+			OneMinusDstAlpha = GL_ONE_MINUS_DST_ALPHA
+		};
+
+		enum Equation
+		{
+			Add = GL_FUNC_ADD,
+			Subtract = GL_FUNC_SUBTRACT,
+			ReverseSubtract = GL_FUNC_REVERSE_SUBTRACT
+		};
+
+		BlendMode() = default;
+
+		BlendMode(
+			Factor sourceFactor,
+			Factor destinationFactor,
+			Equation blendEquation = Add
+			) : ColorSrcFactor(sourceFactor),
+			    ColorDstFactor(destinationFactor),
+			    ColorEquation(blendEquation),
+			    AlphaSrcFactor(sourceFactor),
+			    AlphaDstFactor(destinationFactor),
+			    AlphaEquation(blendEquation) {}
+
+		BlendMode(
+			Factor colorSourceFactor,
+			Factor colorDestinationFactor,
+			Equation colorBlendEquation,
+			Factor alphaSourceFactor,
+			Factor alphaDestinationFactor,
+			Equation alphaBlendEquation
+			) : ColorSrcFactor(colorSourceFactor),
+			    ColorDstFactor(colorDestinationFactor),
+			    ColorEquation(colorBlendEquation),
+			    AlphaSrcFactor(alphaSourceFactor),
+			    AlphaDstFactor(alphaDestinationFactor),
+			    AlphaEquation(alphaBlendEquation) {}
+
+		Factor ColorSrcFactor  = SrcAlpha;
+		Factor ColorDstFactor  = OneMinusSrcAlpha;
+		Equation ColorEquation = Add;
+		Factor AlphaSrcFactor  = One;
+		Factor AlphaDstFactor  = OneMinusSrcAlpha;
+		Equation AlphaEquation = Add;
+	};
+
 	class Context;
-	
+
 	class OpenGlFunctions
 	{
 		friend class Context;
-		
+
 		std::unordered_map<Capability, bool> m_Capabilities;
 
 		OpenGlFunctions() = default;
 	public:
-		void Clear(const BufferBit buffer);
-		
-		void Enable(const Capability capability);
-		void Disable(const Capability capability);
+		void Clear(BufferBit buffer);
 
-		bool Enabled(const Capability capability);
+		void Enable(Capability capability);
+		void Disable(Capability capability);
+
+		bool IsEnabled(Capability capability);
+
+		void SetClearColor(const Color &color);
+		void SetViewPort(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+
+		void SetViewPort(const UIntRect &viewPort)
+		{
+			return SetViewPort(viewPort.X, viewPort.Y, viewPort.Width, viewPort.Height);
+		}
+
+		void SetBlendMode(const BlendMode& mode);
+
+		void Flush();
+
+		void SetDebugMessageCallback(GLDEBUGPROC callback, const void* userParam);
 	};
 }

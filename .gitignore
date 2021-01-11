@@ -7,6 +7,10 @@
 **/fmt.dir
 **/*.bat
 **/*.vcxproj.*
+**/Obj
+**/*.obj
+**/*.exe
+**/*.pdb
 
 #removing templorary files
 **/*.dat

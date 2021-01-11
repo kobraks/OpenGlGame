@@ -30,13 +30,11 @@ namespace Game
 
 		Pointer<ImGuiLayer> m_ImGuiLayer;
 
-		float m_Frequency = 60.f;
-
 		int m_ExitCode = 0;
 
 		uint64_t m_MaxUpdates = 60;
+		uint32_t m_UpdateRate = static_cast<uint32_t>(1000.f / 60.f);
 
-		Time m_UpdateRate = Seconds(1.f / 60.f);
 		Time m_FrameTime  = Time::Zero;
 
 		Clock m_Clock;
@@ -63,8 +61,8 @@ namespace Game
 
 		void ProcessArgs(int argc, char **argv);
 
-		void SetUpdateRate(float frequency);
-		float GetUpdateRate() const { return m_Frequency; }
+		void SetUpdateRate(uint32_t rate);
+		float GetUpdateRate() const { return 1000.f / static_cast<float>(m_UpdateRate); }
 
 		void SetMaxUpdates(uint64_t maxUpdates);
 		uint64_t GetMaxUpdates() const { return m_MaxUpdates; }
