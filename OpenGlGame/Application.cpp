@@ -9,8 +9,11 @@
 #include "ConsoleLayer.h"
 #include "LogLayer.h"
 #include "Renderer.h"
+#include "GLFW/glfw3.h"
+#include "ConfigLayer.h"
 
 #include "ImGui.h"
+#include "Keyboard.h"
 
 namespace
 {
@@ -18,16 +21,11 @@ namespace
 	{
 		switch(severity)
 		{
-		case GL_DEBUG_SEVERITY_HIGH:
-			return spdlog::level::critical;
-		case GL_DEBUG_SEVERITY_MEDIUM:
-			return spdlog::level::err;
-		case GL_DEBUG_SEVERITY_LOW:
-			return spdlog::level::warn;
-		case GL_DEBUG_SEVERITY_NOTIFICATION:
-			return spdlog::level::info;
-		default:
-			return spdlog::level::trace;
+			case GL_DEBUG_SEVERITY_HIGH: return spdlog::level::critical;
+			case GL_DEBUG_SEVERITY_MEDIUM: return spdlog::level::err;
+			case GL_DEBUG_SEVERITY_LOW: return spdlog::level::warn;
+			case GL_DEBUG_SEVERITY_NOTIFICATION: return spdlog::level::info;
+			default: return spdlog::level::trace;
 		}
 	}
 
@@ -35,21 +33,13 @@ namespace
 	{
 		switch(source)
 		{
-		case GL_DEBUG_SOURCE_API:
-			return "API";
-		case GL_DEBUG_SOURCE_APPLICATION:
-			return "Application";
-		case GL_DEBUG_SOURCE_OTHER:
-			return "Other";
-		case GL_DEBUG_SOURCE_SHADER_COMPILER:
-			return "Shader Compiler";
-		case GL_DEBUG_SOURCE_THIRD_PARTY:
-			return "Third Party";
-		case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-			return "Window System";
-		default:
-			return "Unknown";
-
+			case GL_DEBUG_SOURCE_API: return "API";
+			case GL_DEBUG_SOURCE_APPLICATION: return "Application";
+			case GL_DEBUG_SOURCE_OTHER: return "Other";
+			case GL_DEBUG_SOURCE_SHADER_COMPILER: return "Shader Compiler";
+			case GL_DEBUG_SOURCE_THIRD_PARTY: return "Third Party";
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "Window System";
+			default: return "Unknown";
 		}
 	}
 
@@ -57,30 +47,59 @@ namespace
 	{
 		switch(type)
 		{
-		case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-			return "Deprecated Behavior";
-		case GL_DEBUG_TYPE_ERROR:
-			return "Error";
-		case GL_DEBUG_TYPE_MARKER:
-			return "Maker";
-		case GL_DEBUG_TYPE_OTHER:
-			return "Other";
-		case GL_DEBUG_TYPE_PERFORMANCE:
-			return "Performance";
-		case GL_DEBUG_TYPE_POP_GROUP:
-			return "Pop Group";
-		case GL_DEBUG_TYPE_PORTABILITY:
-			return "Portability";
-		case GL_DEBUG_TYPE_PUSH_GROUP:
-			return "Push Group";
-		case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-			return "Undefined Behavior";
-		default:
-			return "Unknown";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "Deprecated Behavior";
+			case GL_DEBUG_TYPE_ERROR: return "Error";
+			case GL_DEBUG_TYPE_MARKER: return "Maker";
+			case GL_DEBUG_TYPE_OTHER: return "Other";
+			case GL_DEBUG_TYPE_PERFORMANCE: return "Performance";
+			case GL_DEBUG_TYPE_POP_GROUP: return "Pop Group";
+			case GL_DEBUG_TYPE_PORTABILITY: return "Portability";
+			case GL_DEBUG_TYPE_PUSH_GROUP: return "Push Group";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "Undefined Behavior";
+			default: return "Unknown";
 		}
 	}
-	
-	void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void *userParam)
+
+	void EnableInputMode(int inputMode)
+	{
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			Game::Application::Get().GetWindow().SetInputMode(true, static_cast<Game::InputMode>(inputMode));
+		else
+			throw std::runtime_error("Unknown input mode recived");
+	}
+
+	void DisableInputMode(int inputMode)
+	{
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			Game::Application::Get().GetWindow().SetInputMode(false, static_cast<Game::InputMode>(inputMode));
+		else
+			throw std::runtime_error("Unknown input mode recived");
+	}
+
+	bool GetInputMode(int inputMode)
+	{
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			Game::Application::Get().GetWindow().GetInputMode(static_cast<Game::InputMode>(inputMode));
+		else
+			throw std::runtime_error("Unknown input mode recived");
+	}
+
+	void SetCursorMode(int cursorMode)
+	{
+		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(Game::CursorMode::Hidden) || cursorMode == static_cast<int
+		>(Game::CursorMode::Disabled))
+			Game::Application::Get().GetWindow().SetCursorMode(static_cast<Game::CursorMode>(cursorMode));
+	}
+
+	int GetCursorMode()
+	{
+		return static_cast<int>(Game::Application::Get().GetWindow().GetCursorMode());
+	}
+
+	void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
 	{
 		Game::Log::GetOpenGLLogger()->log(GetSeverity(severity), "ID: {}, Source: {}, Type: {}, Message = {}", id, GetSource(source), GetType(type), message);
 	}
@@ -111,13 +130,19 @@ namespace Game
 		{
 			auto keyCode = dynamic_cast<KeyPressedEvent*>(&event)->GetKeyCode();
 
-			if(keyCode == Key::Escape) Close();
-			if(keyCode == Key::F1) s_ShowImGuiTest = !s_ShowImGuiTest;
+			if(keyCode == Key::Escape)
+				Close();
+			if(keyCode == Key::F1)
+				s_ShowImGuiTest = !s_ShowImGuiTest;
 		}
+
+		for(auto shortcut : m_Shortcuts)
+			shortcut.OnEvent(event);
 
 		for(auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
 		{
-			if(event.Handled) break;
+			if(event.Handled)
+				break;
 
 			(*it)->OnEvent(event);
 		}
@@ -137,6 +162,11 @@ namespace Game
 		overlay->OnAttach();
 	}
 
+	void Application::RegisterShortcut(const Shortcut &shortcut)
+	{
+		m_Shortcuts.emplace_back(shortcut);
+	}
+
 	void Application::Exit(int exitCode)
 	{
 		m_ExitCode = exitCode;
@@ -152,8 +182,8 @@ namespace Game
 
 		Clock clock;
 		Clock updateClock;
-		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds(); 
-		
+		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
+
 		while(m_Running)
 		{
 			m_Window->GetFunctions().Clear(BufferBit::Color | BufferBit::Depth);
@@ -178,9 +208,11 @@ namespace Game
 
 				m_ImGuiLayer->Begin();
 
-				if(s_ShowImGuiTest) ImGui::ShowDemoWindow(&s_ShowImGuiTest);
+				if(s_ShowImGuiTest)
+					ImGui::ShowDemoWindow(&s_ShowImGuiTest);
 
-				for(Pointer<Layer> &layer : m_LayerStack) layer->OnImGuiRender();
+				for(Pointer<Layer> &layer : m_LayerStack)
+					layer->OnImGuiRender();
 
 				m_ImGuiLayer->End();
 			}
@@ -193,7 +225,8 @@ namespace Game
 
 	void Application::ProcessArgs(int argc, char **argv)
 	{
-		for(int i = 0; i < argc; ++i) m_Arguments.emplace_back(argv[i]);
+		for(int i = 0; i < argc; ++i)
+			m_Arguments.emplace_back(argv[i]);
 	}
 
 	void Application::SetUpdateRate(uint32_t rate)
@@ -226,33 +259,21 @@ namespace Game
 		Log::GetApplicationLogger()->sinks().push_back(logLayer);
 		Log::GetAssertionLogger()->sinks().push_back(logLayer);
 
-		LOG_INFO("Starting Lua machine");
-		m_Lua = MakeScope<sol::state>();
-		m_Lua->open_libraries(sol::lib::base);
-
-		(*m_Lua)["ArgumentCount"] = m_Arguments.size();
-		m_Lua->create_named_table("Arguments");
-
-		for(size_t i = 0; i < m_Arguments.size(); ++i) (*m_Lua)["Arguments"][i + 1] = m_Arguments[0];
+		InitializeLua();
 
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
-		LOG_INFO(
-		         "Created Window [With: {}, Height: {}, Name: \"{}\"]",
-		         m_Window->GetWidth(),
-		         m_Window->GetHeight(),
-		         m_Window->GetTitle()
-		        );
+		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
 
-		m_ImGuiLayer = MakePointer<ImGuiLayer>();
-
-		PushOverlay(m_ImGuiLayer);
+		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());
 		PushOverlay(logLayer);
 		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(MakePointer<ConsoleLayer>());
+
+		PushOverlay(MakePointer<ConfigLayer>());
 
 		auto OpenGL = m_Window->GetFunctions();
 
@@ -260,7 +281,90 @@ namespace Game
 		OpenGL.Enable(Capability::CullFace);
 		OpenGL.Enable(Capability::DepthTest);
 		OpenGL.Enable(Capability::DebugOutput);
+		OpenGL.Enable(Capability::DebugOutputSynchronous);
+
 		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
+
+		int count;
+		GLFWmonitor **monitors = glfwGetMonitors(&count);
+
+		for(int i = 0; i < count; ++i)
+		{
+			LOG_INFO("Monitor name: {}", glfwGetMonitorName(monitors[i]));
+		}
+	}
+
+	void Application::InitializeLua()
+	{
+		LOG_INFO("Starting Lua machine");
+		m_Lua     = MakeScope<sol::state>();
+		auto &lua = *m_Lua;
+
+		lua.open_libraries(sol::lib::base);
+
+		lua["ArgumentCount"] = m_Arguments.size();
+		lua.create_named_table("Arguments");
+
+		for(size_t i                = 0; i < m_Arguments.size(); ++i)
+			lua["Arguments"][i + 1] = m_Arguments[0];
+
+		Mouse::RegisterLua(lua);
+		Keyboard::RegisterLua(lua);
+
+		auto InputModeTable = lua.create_table_with(
+		                                            "LockKeyModes",
+		                                            static_cast<int>(InputMode::LockKeyModes),
+		                                            "RawMouseMotion",
+		                                            static_cast<int>(InputMode::RawMouseMotion),
+		                                            "StickyKeys",
+		                                            static_cast<int>(InputMode::StickyKeys),
+		                                            "StickyMouseButtons",
+		                                            static_cast<int>(InputMode::StickyMouseButtons)
+		                                           );
+		auto CursorModeTable = lua.create_table_with(
+		                                             "Normal",
+		                                             static_cast<int>(CursorMode::Normal),
+		                                             "Hidden",
+		                                             static_cast<int>(CursorMode::Hidden),
+		                                             "Disabled",
+		                                             static_cast<int>(CursorMode::Disabled)
+		                                            );
+
+		lua.create_named_table(
+		                       "Input",
+		                       "CursorMode",
+		                       CursorModeTable,
+		                       "SetCursorMode",
+		                       SetCursorMode,
+		                       "GetCursorMode",
+		                       GetCursorMode,
+		                       "EnableMode",
+		                       EnableInputMode,
+		                       "Mode",
+		                       InputModeTable,
+		                       "DisableMode",
+		                       DisableInputMode,
+		                       "GetMode",
+		                       GetInputMode,
+		                       "IsRawMouseMotionSupported",
+		                       [this]() { return m_Window->IsRawMouseInputSupported(); }
+		                      );
+
+		lua["Input"]["Keyboard"] = lua["Keyboard"];
+		lua["Input"]["Mouse"]    = lua["Mouse"];
+
+		lua.create_named_table(
+		                       "Application",
+		                       "Exit",
+		                       [this]() { Exit(0); },
+		                       "Quit",
+		                       [this](int exitCode) { Exit(exitCode); },
+		                       "GetTime",
+		                       [this]() { return m_Clock.GetElapsedTime().AsSeconds(); }
+		                      );
+
+		lua["Exit"] = lua["Application"]["Exit"];
+		lua["Quit"] = lua["Application"]["Quit"];
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)

@@ -77,7 +77,7 @@ namespace Game
 		m_Height(height)
 	{
 		m_Pixels = new glm::vec4[width * height];
-		std::memcpy(m_Pixels, pixels, width * height);
+		std::memcpy(m_Pixels, pixels, width * height * sizeof(glm::vec4));
 	}
 
 	Image::Image(const Vector2u &size, const glm::vec4 &background) : Image(size.X, size.Y, background) {}
@@ -248,7 +248,7 @@ namespace Game
 		const size_t size = m_Width * m_Height;
 
 		m_Pixels = new glm::vec4[size];
-		std::memcpy(m_Pixels, image.m_Pixels, size);
+		std::memcpy(m_Pixels, image.m_Pixels, size * sizeof(glm::vec4));
 
 		return *this;
 	}

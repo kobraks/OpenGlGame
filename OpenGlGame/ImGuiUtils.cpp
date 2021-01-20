@@ -31,166 +31,61 @@ namespace Game
 		return 0;
 	}
 
-	ImGuiUniqueGuard::ImGuiUniqueGuard(
-		const ImVec2 &position,
-		const std::string_view &name,
-		bool &open,
-		ImGuiWindowFlags flags
-		)
+	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props) : m_Props(props) {}
+
+	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowPosition &position) : ImGuiMainWindow(props)
 	{
-		ImGui::SetNextWindowPos(position);
-		m_Opened = ImGui::Begin(name.data(), &open, flags);
+		m_PosSet = true;
+		m_Pos = position;
 	}
 
-	ImGuiUniqueGuard::ImGuiUniqueGuard(const std::string_view &name, bool &open, ImGuiWindowFlags flags)
+	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowPosition &position, const ImGuiWindowSize &size) : ImGuiMainWindow(props, position)
 	{
-		m_Opened = ImGui::Begin(name.data(), &open, flags);
+		m_SizeSet = true;
+		m_Size = size;
 	}
 
-	ImGuiUniqueGuard::~ImGuiUniqueGuard()
+	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowSize &size) : ImGuiMainWindow(props)
+	{
+		m_SizeSet = true;
+		m_Size = size;
+	}
+
+	void ImGuiMainWindow::Begin()
+	{
+		if (m_PosSet)
+			SetPosition(m_Pos);
+		if (m_SizeSet)
+			SetSize(m_Size);
+		m_Opened = ImGui::Begin(m_Props.Name.data(), &m_Props.Open, m_Props.Flags);
+	}
+
+	void ImGuiMainWindow::End()
 	{
 		ImGui::End();
 	}
 
-	ImGuiGuard::ImGuiGuard(const ImVec2 &position, const std::string_view &name, bool &open, ImGuiWindowFlags flags)
+	void ImGuiMainWindow::SetPosition(const ImGuiWindowPosition &position)
 	{
-		m_ReferenceCount = new size_t(1);
-
-		ImGui::SetNextWindowPos(position);
-		m_Opened = ImGui::Begin(name.data(), &open, flags);
+		ImGui::SetNextWindowPos(position.Position, position.Cond, position.Pivot);
 	}
 
-	ImGuiGuard::ImGuiGuard(const std::string_view &name, bool &open, ImGuiWindowFlags flags)
+	void ImGuiMainWindow::SetSize(const ImGuiWindowSize &size)
 	{
-		m_ReferenceCount = new size_t(1);
-		m_Opened         = ImGui::Begin(name.data(), &open, flags);
+		ImGui::SetNextWindowSize(size.Size, size.Cond);
 	}
 
-	ImGuiGuard::~ImGuiGuard()
+	ImGuiChildWindow::ImGuiChildWindow(const ImGuiChildWindowProps &props) : m_Props(props) {}
+	void ImGuiChildWindow::Begin()
 	{
-		if(*m_ReferenceCount == 1)
-		{
-			delete m_ReferenceCount;
-			ImGui::End();
-		}
-		else
-		{
-			--(*m_ReferenceCount);
-		}
+		ImGui::BeginChild(m_Props.Id.data(), m_Props.Size, m_Props.Border, m_Props.Flags);
 	}
-
-	ImGuiGuard::ImGuiGuard(const ImGuiGuard &guard)
-	{
-		*this = guard;
-	}
-
-	ImGuiGuard::ImGuiGuard(ImGuiGuard &&guard)
-	{
-		*this = std::move(guard);
-	}
-
-	ImGuiGuard& ImGuiGuard::operator=(const ImGuiGuard &guard)
-	{
-		m_ReferenceCount = guard.m_ReferenceCount;
-		++(*m_ReferenceCount);
-		m_Opened = guard.m_Opened;
-
-		return *this;
-	}
-
-	ImGuiGuard& ImGuiGuard::operator=(ImGuiGuard &&guard)
-	{
-		m_ReferenceCount       = guard.m_ReferenceCount;
-		guard.m_ReferenceCount = nullptr;
-		m_Opened               = guard.m_Opened;
-
-		return *this;
-	}
-
-	ImGuiChildUniqueGuard::ImGuiChildUniqueGuard(ImGuiID id, const ImVec2 &size, bool border, ImGuiWindowFlags flags)
-	{
-		m_Opened = ImGui::BeginChild(id, size, border, flags);
-	}
-
-	ImGuiChildUniqueGuard::ImGuiChildUniqueGuard(
-		const std::string_view &id,
-		const ImVec2 &size,
-		bool border,
-		ImGuiWindowFlags flags
-		)
-	{
-		m_Opened = ImGui::BeginChild(id.data(), size, border, flags);
-	}
-
-	ImGuiChildUniqueGuard::~ImGuiChildUniqueGuard()
+	void ImGuiChildWindow::End()
 	{
 		ImGui::EndChild();
 	}
 
-	ImGuiChildGuard::ImGuiChildGuard(ImGuiID id, const ImVec2 &size, bool border, ImGuiWindowFlags flags)
-	{
-		m_ReferenceCount = new size_t(1);
-
-		m_Opened = ImGui::BeginChild(id, size, border, flags);
-	}
-
-	ImGuiChildGuard::ImGuiChildGuard(
-		const std::string_view &id,
-		const ImVec2 &size,
-		bool border,
-		ImGuiWindowFlags flags
-		)
-	{
-		m_ReferenceCount = new size_t(1);
-
-		m_Opened = ImGui::BeginChild(id.data(), size, border, flags);
-	}
-
-	ImGuiChildGuard::~ImGuiChildGuard()
-	{
-		if(*m_ReferenceCount == 1)
-		{
-			delete m_ReferenceCount;
-			ImGui::EndChild();
-		}
-		else --(*m_ReferenceCount);
-	}
-
-	ImGuiChildGuard::ImGuiChildGuard(const ImGuiChildGuard &guard)
-	{
-		*this = guard;
-	}
-
-	ImGuiChildGuard::ImGuiChildGuard(ImGuiChildGuard &&guard)
-	{
-		*this = std::move(guard);
-	}
-
-	ImGuiChildGuard& ImGuiChildGuard::operator=(const ImGuiChildGuard &guard)
-	{
-		m_ReferenceCount = guard.m_ReferenceCount;
-		++(*m_ReferenceCount);
-		m_Opened = guard.m_Opened;
-
-		return *this;
-	}
-
-	ImGuiChildGuard& ImGuiChildGuard::operator=(ImGuiChildGuard &&guard)
-	{
-		m_ReferenceCount       = guard.m_ReferenceCount;
-		guard.m_ReferenceCount = nullptr;
-		m_Opened               = guard.m_Opened;
-
-		return *this;
-	}
-
-	bool InputText(
-		const std::string_view &label,
-		std::string &string,
-		ImGuiInputTextFlags flags,
-		CallbackFunction callback,
-		void *userData
-		)
+	bool InputText(const std::string_view &label, std::string &string, ImGuiInputTextFlags flags, CallbackFunction callback, void *userData)
 	{
 		ASSERT((ImGuiInputTextFlags_CallbackResize & flags) == 0, "");
 		flags |= ImGuiInputTextFlags_CallbackResize;
@@ -199,12 +94,7 @@ namespace Game
 		return ImGui::InputText(label.data(), string.data(), string.capacity(), flags, InputTextCallback, &data);
 	}
 
-	bool Combo(
-		const std::string_view &label,
-		int32_t &currentItem,
-		const std::string_view &itemList,
-		int32_t maxHeightInItems
-		)
+	bool Combo(const std::string_view &label, int32_t &currentItem, const std::string_view &itemList, int32_t maxHeightInItems)
 	{
 		return ImGui::Combo(label.data(), &currentItem, itemList.data(), maxHeightInItems);
 	}

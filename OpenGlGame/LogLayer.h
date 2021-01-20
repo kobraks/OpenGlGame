@@ -34,6 +34,8 @@ namespace Game
 		virtual void OnUpdate() override;
 
 		void Clear();
+		void ClearHistory();
+
 		void Visible(bool visible) { m_Show = visible; }
 		bool IsVisible() const { return m_Show; }
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <String>
+#include <vector>
 #include <functional>
 #include <GLFW/glfw3.h>
 #include <string_view>
@@ -8,10 +9,75 @@
 #include "Types.h"
 #include "Vector2.h"
 #include "Context.h"
+#include "Rect.h"
 
 
 namespace Game
 {
+	class Cursor;
+
+	enum class InputMode
+	{
+		StickyKeys = GLFW_STICKY_KEYS,
+		StickyMouseButtons = GLFW_STICKY_MOUSE_BUTTONS,
+		LockKeyModes = GLFW_LOCK_KEY_MODS,
+		RawMouseMotion = GLFW_RAW_MOUSE_MOTION
+	};
+
+	enum class CursorMode
+	{
+		Normal = GLFW_CURSOR_NORMAL,
+		Hidden = GLFW_CURSOR_HIDDEN,
+		Disabled = GLFW_CURSOR_DISABLED
+	};
+
+	struct GammaRamp
+	{
+		size_t Size;
+		uint16_t *Red   = nullptr;
+		uint16_t *Green = nullptr;
+		uint16_t *Blue  = nullptr;
+
+		~GammaRamp();
+	};
+
+	struct VideoMode
+	{
+		Vector2u Size;
+
+		int RedBits     = 0;
+		int GreenBits   = 0;
+		int BlueBits    = 0;
+		int RefreshRate = 0;
+	};
+
+	inline bool operator==(const VideoMode &left, const VideoMode &right)
+	{
+		return left.Size == right.Size && left.RedBits == right.RedBits && left.GreenBits == right.GreenBits && left.BlueBits == right.BlueBits && left.
+			RefreshRate == right.RefreshRate;
+	}
+
+	struct Monitor
+	{
+		std::string Name;
+
+		Vector2u Size;
+		Vector2f Scale;
+		Vector2i Position;
+		IntRect WorkArea;
+		void *Pointer       = nullptr;
+		void *NativePointer = nullptr;
+
+		VideoMode CurrentVideoMode;
+		std::vector<VideoMode> VideoModes;
+
+		void SetUserPointer(void *pointer);
+		void SetGamma(const float &gamma);
+		void SetGammaRamp(const GammaRamp &ramp);
+
+		GammaRamp GetGammaRamp() const;
+	};
+
 	struct WindowProperties
 	{
 		std::string Title;
@@ -19,8 +85,8 @@ namespace Game
 		uint32_t Height;
 
 		WindowProperties(const std::string title, uint32_t width, uint32_t height) : Title(title),
-			Width(width),
-			Height(height) { }
+		                                                                             Width(width),
+		                                                                             Height(height) { }
 	};
 
 	class Window
@@ -35,28 +101,49 @@ namespace Game
 			uint32_t Width;
 			uint32_t Height;
 
-			Vector2u Position;
+			uint32_t X;
+			uint32_t Y;
 
 			bool VSync;
 			EventCallbackFunction EventCallback;
 		};
 
+		Vector2u m_BackupPosition;
+		Vector2u m_BackupSize;
+
+		bool m_Fullscreen = false;
 
 		GLFWwindow *m_Window;
+		GLFWwindow *m_WindowContext;
 		Scope<Context> m_Context;
 
 		WindowData m_Data;
+
+		Scope<Monitor> m_Monitor = nullptr;
+		Scope<Cursor> m_Cursor   = nullptr;
+
 	public:
 		explicit Window(const WindowProperties &properties);
 		virtual ~Window();
 
 		void OnUpdate();
 
+		void SetInputMode(bool enabled, InputMode mode);
+		bool GetInputMode(InputMode mode) const;
+		
+		void SetCursorMode(CursorMode mode);
+		bool GetCursorMode(CursorMode mode);
+		CursorMode GetCursorMode();
+		
+		static bool IsRawMouseInputSupported();
+
 		uint32_t GetWidth() const { return m_Data.Width; }
 		uint32_t GetHeight() const { return m_Data.Height; }
 		std::string_view GetTitle() const { return m_Data.Title; }
 
 		Vector2<uint32_t> GetSize() const { return Vector2u{GetWidth(), GetHeight()}; }
+		void SetSize(Vector2u size);
+		void SetSize(size_t width, size_t height);
 
 		void SetEventCallback(const EventCallbackFunction &callback) { m_Data.EventCallback = callback; }
 		void SetVSync(bool enabled);
@@ -66,19 +153,48 @@ namespace Game
 
 		OpenGlFunctions GetFunctions() const;
 
-		void SetPosition(const uint32_t x, const uint32_t y);
-		void SetPosition(const Vector2u& position) { return SetPosition(position.X, position.Y); }
+		void SetPosition(uint32_t x, uint32_t y);
+		void SetPosition(const Vector2u &position) { return SetPosition(position.X, position.Y); }
 
-		Vector2u GetPosition() const { return m_Data.Position; }
+		Vector2u GetPosition() const { return {m_Data.X, m_Data.Y}; }
 
-		void SetTitle(const std::string& title);
+		void SetTitle(const std::string &title);
 
-		void Visible(const bool visible);
+		void Visible(bool visible);
 
 		bool IsVisible() const;
 
 		void AttentionRequest();
+
+		Vector2u GetRelativePosition(const Vector2u &position) const;
+
+		Monitor GetMonitor() const { return *m_Monitor; }
+		VideoMode GetVideoMode() const { return m_Monitor->CurrentVideoMode; }
+
+		void ToggleFullscreen();
+		void ToggleFullscreen(const Monitor &monitor);
+		void ToggleFullscreen(const Monitor &monitor, const VideoMode &mode);
+
+		Cursor* GetCursor() const;
+		void SetCursor(std::unique_ptr<Cursor> &&cursor);
+
+		void Invalidate();
+
+		bool IsFullscreen() const;
+
+		static std::vector<Monitor> GetMonitors();
+		static Monitor GetMonitor(size_t monitor);
+		static Monitor GetPrimaryMonitor();
+
+		void Minimalize();
+		void Restore();
+		void Maximalize();
 	protected:
+		static Monitor PopulateMonitor(GLFWmonitor *monitor);
+		static std::vector<VideoMode> GetVideoModes(GLFWmonitor *monitor);
+		static VideoMode GetVideoMode(GLFWvidmode mode);
+		static void InitializeGlfw();
+
 		void Init(const WindowProperties &props);
 		void Shutdown();
 	};

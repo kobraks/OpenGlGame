@@ -104,7 +104,7 @@ namespace Game
 			result.append(ToString(lua, key));
 			result.append(" = ");
 
-			if(value.is<sol::table>())
+			if(value.get_type() == sol::type::table)
 			{
 				wasTable = true;
 				result.append("{\n");

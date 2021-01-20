@@ -12,41 +12,16 @@
 
 namespace Game
 {
-	StatisticLayer::Metric::Metric()
-	{
-		std::fill(m_History, m_History + s_HISTORY_SAMPLES, 0.f);
-	}
+	constexpr int s_Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings |
+		ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking |
+		ImGuiWindowFlags_NoInputs;
 
-	void StatisticLayer::Metric::operator()(float time)
-	{
-		if(!m_First) m_Min = std::min(m_Min, time);
-		else
-		{
-			m_First = false;
-			m_Min   = time;
-		}
-
-		m_Max = std::max(m_Max, time);
-
-		m_Total -= m_History[0];
-		m_Total += time;
-		
-		memmove(m_History, m_History + 1, (s_HISTORY_SAMPLES - 1) * sizeof(float));
-
-		m_History[s_HISTORY_SAMPLES - 1] = time;
-		m_HistoryCount                   = std::min(s_HISTORY_SAMPLES, m_HistoryCount + 1);
-	}
-
-	void StatisticLayer::Metric::Draw() const
-	{
-		ImGui::Text("Frame Times: ");
-		ImGui::SameLine();
-		ImGui::PlotLines("", m_History, m_HistoryCount, s_HISTORY_SAMPLES - m_HistoryCount);
-	}
 
 	StatisticLayer::StatisticLayer() : Layer("StatistcLayer") {}
-	constexpr int s_Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize;
+	void StatisticLayer::OnAttach()
+	{
+		// Application::Get().RegisterShortcut(Shortcut(ShortcutFunction, Key::F, Key::LeftControl));
+	}
 
 	void StatisticLayer::OnConstUpdate(const Time &ts)
 	{
@@ -55,40 +30,38 @@ namespace Game
 
 	void StatisticLayer::OnImGuiRender()
 	{
-		if(!m_Show) return;
+		if(!m_Show)
+			return;
 
 		const auto &game    = Application::Get();
 		const auto &window  = game.GetWindow();
 		const auto mousePos = Mouse::GetPosition(window);
-
-		const auto guard = ImGuiUniqueGuard(window.GetPosition(),"Fixed overlay", m_Show, s_Flags);
-		m_FrameMetric(game.GetFrameTime().AsMilliseconds());
+		const auto windowPos = window.GetPosition();
 		
+		ImGuiWindowPosition position{windowPos};
+		
+		const auto guard = ImGuiUniqueGuard<ImGuiMainWindow>(ImGuiMainWindowProps{"Fixed overlay", m_Show, s_Flags}, position);
+
+		if(m_Clock.GetElapsedTime().AsSeconds() >= 1.f)
+		{
+			m_LastUpdates = m_Updates;
+			m_Updates     = 0;
+
+			m_Clock.Restart();
+		}
+
 		Text("Fps: {:.2f}", 1.f / game.GetFrameTime().AsSeconds());
 		Text("Ups: {:.2f}", 1.f / m_LastUpdates);
 		Text("Frame Time: {}ms", game.GetFrameTime().AsMilliseconds());
 		Text("Elapsed Time: {:.2f}s", game.GetElapsedTime().AsSeconds());
 		Text("Updates: {}", m_LastUpdates);
 		Text("Mouse Position: {}, {}", mousePos.X, mousePos.Y);
-
-		m_FrameMetric.Draw();
-		
-		Text("Min frame Time: {:.2f}ms", m_FrameMetric.Min());
-		Text("Max frame Time: {:.2f}ms", m_FrameMetric.Max());
-		Text("Avr frame Time: {:.2f}ms", m_FrameMetric.Avr());
-
-		if(m_Clock.GetElapsedTime().AsSeconds() >= 1.f)
-		{
-			m_LastUpdates = m_Updates;
-			m_Updates     = 0;
-			m_Clock.Restart();
-		}
+		Text("Window Position: {}, {}", windowPos.X, windowPos.Y);
 	}
 
 	void StatisticLayer::OnUpdate()
 	{
-		if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) ||
-			Keyboard::IsKeyPressed(Key::RightControl)))
+		if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl)))
 		{
 			if(!m_Processed)
 			{
@@ -96,6 +69,12 @@ namespace Game
 				m_Show      = !m_Show;
 			}
 		}
-		else m_Processed = false;
+		else
+			m_Processed = false;
+	}
+
+	void StatisticLayer::ShortcutFunction()
+	{
+		m_Show = !m_Show;
 	}
 }

@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "ImGuiUtils.h"
 #include "Utils.h"
+#include "KeyEvent.h"
 
 namespace Game
 {
@@ -18,8 +19,9 @@ namespace Game
 
 	void ConsoleLayer::OnAttach()
 	{
-		auto &game = Application::Get();
-
+		m_App = &Application::Get();
+		auto& game= *m_App;
+		
 		m_Lua = &game.GetLua();
 		m_Messages.reserve(255);
 
@@ -40,18 +42,16 @@ namespace Game
 	{
 		if(!m_Show) return;
 
-		ImGui::SetNextWindowSize({520, 600}, ImGuiCond_Appearing);
-		ImGuiUniqueGuard guard("Console", m_Show);
+
+		ImGuiMainWindowProps props {"Console", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
+		ImGuiWindowSize size{ {520, 600}, ImGuiCond_Appearing};
+		ImGuiUniqueGuard<ImGuiMainWindow> guard(props, size);
 
 		const float footerHeightToReserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 
 		{
-			ImGuiChildGuard childGuard(
-			                           "ConsoleLog",
-			                           {520 - ImGui::GetStyle().ItemSpacing.x, -footerHeightToReserve},
-			                           false,
-			                           ImGuiWindowFlags_HorizontalScrollbar
-			                          );
+			ImGuiChildWindowProps childProps {"ConsoleLog", {520 - ImGui::GetStyle().ItemSpacing.x, -footerHeightToReserve}, false, ImGuiWindowFlags_HorizontalScrollbar};
+			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
 
 			for(auto &[message, color] : m_Messages) ImGui::TextColored(color, message.c_str());
 		}
@@ -90,17 +90,15 @@ namespace Game
 		}
 	}
 
-	void ConsoleLayer::OnUpdate()
+	void ConsoleLayer::OnEvent(Event &event)
 	{
-		if(Keyboard::IsKeyPressed(Key::Tilde))
+		if (event.GetEventType() == KeyReleasedEvent::GetStaticType())
 		{
-			if(!m_Processed)
-			{
-				m_Processed = true;
-				m_Show      = !m_Show;
-			}
+			auto e = dynamic_cast<KeyReleasedEvent*>(&event);
+			if (e)
+				if (e->GetKeyCode() == Key::Tilde)
+					m_Show = !m_Show;
 		}
-		else m_Processed = false;
 	}
 
 	void ConsoleLayer::OnDetach()

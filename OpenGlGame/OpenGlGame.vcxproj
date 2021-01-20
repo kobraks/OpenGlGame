@@ -21,8 +21,10 @@
   <ItemGroup>
     <ClCompile Include="BufferObject.cpp" />
     <ClCompile Include="Clock.cpp" />
+    <ClCompile Include="ConfigLayer.cpp" />
     <ClCompile Include="ConsoleLayer.cpp" />
     <ClCompile Include="Context.cpp" />
+    <ClCompile Include="Cursor.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Application.cpp" />
@@ -49,6 +51,7 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
+    <ClCompile Include="Shortcut.cpp" />
     <ClCompile Include="StatisticLayer.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Thread.cpp" />
@@ -65,9 +68,11 @@
     <ClInclude Include="BufferObject.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="Color.h" />
+    <ClInclude Include="ConfigLayer.h" />
     <ClInclude Include="ConsoleLayer.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Core.h" />
+    <ClInclude Include="Cursor.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="Font.h" />
@@ -105,6 +110,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ShaderProgram.h" />
+    <ClInclude Include="Shortcut.h" />
     <ClInclude Include="StatisticLayer.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Thread.h" />

@@ -25,7 +25,7 @@ namespace Game
 		}
 
 		const auto level   = static_cast<spdlog::level::level_enum>(severity);
-		const auto message = ToString(args.lua_state(), args.begin(), args.end());
+		const auto message = ToString(args.lua_state(), args);
 
 		Log::GetScriptLogger()->log(level, message);
 	}
@@ -60,8 +60,9 @@ namespace Game
 
 		if(m_Show)
 		{
-			ImGui::SetNextWindowSize(ImVec2(700, 400), ImGuiCond_FirstUseEver);
-			ImGuiUniqueGuard guard("Log", m_Show);
+			ImGuiWindowSize size {ImVec2(700, 400), ImGuiCond_FirstUseEver};
+			ImGuiMainWindowProps props{"Log", m_Show};
+			ImGuiUniqueGuard<ImGuiMainWindow> guard(props, size);
 
 			if(ImGui::CollapsingHeader("Options"))
 			{
@@ -85,7 +86,8 @@ namespace Game
 
 			m_Filter.Draw("Filter", -100.f);
 
-			ImGuiChildUniqueGuard childGuard("Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+			ImGuiChildWindowProps childProps {"Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar};
+			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
 			if(copyButton) ImGui::LogToClipboard();
 
 			for(const auto [message, color] : m_Messages)
@@ -164,7 +166,7 @@ namespace Game
 		                         "Level",
 		                         levelTable,
 		                         "Print",
-		                         [](int severity, const sol::variadic_args &args) { Print(severity, args); },
+		                         Print,
 		                         "Trace",
 		                         [](const sol::variadic_args &args) { Print(0, args); },
 		                         "Debug",
@@ -181,7 +183,7 @@ namespace Game
 		                         [](const sol::variadic_args &args) { Print(5, args); },
 		                         "SetLevel",
 		                         [](const int severity) { SetLogLevel(severity); },
-		                         "Level",
+		                         "CurrentLevel",
 		                         []() { static_cast<int>(Log::GetScriptLogger()->level()); },
 		                         "DumpBacktrace",
 		                         []() { Log::GetScriptLogger()->dump_backtrace(); },

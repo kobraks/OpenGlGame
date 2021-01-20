@@ -1,3 +1,4 @@
+#pragma once
 #include "Types.h"
 #include "Vector2.h"
 
@@ -8,26 +9,26 @@ namespace Game
 	{
 	public:
 		using ValueType = Type;
-		
-		Type X;
-		Type Y;
-		Type Width;
-		Type Height;
 
-		constexpr Rect() : X(Type{}),
-		                   Y(Type{}),
-		                   Width(Type{}),
-		                   Height(Type{}) {}
+		ValueType X;
+		ValueType Y;
+		ValueType Width;
+		ValueType Height;
 
-		constexpr Rect(Type x, Type y, Type width, Type height) : X(x),
-		                                                          Y(y),
-		                                                          Width(width),
-		                                                          Height(height) {}
+		constexpr Rect() : X(ValueType{}),
+		                   Y(ValueType{}),
+		                   Width(ValueType{}),
+		                   Height(ValueType{}) {}
+
+		constexpr Rect(ValueType x, ValueType y, ValueType width, ValueType height) : X(x),
+		                                                                              Y(y),
+		                                                                              Width(width),
+		                                                                              Height(height) {}
 
 		constexpr Rect(const Vector2<Type> &position, const Vector2<Type> &size) : X(position.X),
-			Y(position.Y),
-			Width(size.Width),
-			Height(size.Height) {}
+		                                                                           Y(position.Y),
+		                                                                           Width(size.Width),
+		                                                                           Height(size.Height) {}
 
 		template <typename U>
 		explicit Rect(const Rect<U> &rect) : X(static_cast<Type>(rect.X)),
@@ -35,13 +36,13 @@ namespace Game
 		                                     Width(static_cast<Type>(rect.Width)),
 		                                     Height(static_cast<Type>(rect.Height)) {}
 
-		constexpr bool Contains(Type x, Type y) const
+		constexpr bool Contains(ValueType x, ValueType y) const
 		{
-			const Type minX = std::min(X, static_cast<Type>(X + Width));
-			const Type maxX = std::max(X, static_cast<Type>(X + Width));
+			const ValueType minX = std::min(X, static_cast<ValueType>(X + Width));
+			const ValueType maxX = std::max(X, static_cast<ValueType>(X + Width));
 
-			const Type minY = std::min(Y, static_cast<Type>(Y + Height));
-			const Type maxY = std::max(Y, static_cast<Type>(Y + Height));
+			const ValueType minY = std::min(Y, static_cast<ValueType>(Y + Height));
+			const ValueType maxY = std::max(Y, static_cast<ValueType>(Y + Height));
 
 			return (x >= minX) && (x < maxX) && (y >= minY) && (y < maxY);
 		}
@@ -90,7 +91,7 @@ namespace Game
 	{
 		return (left.X == right.X) && (left.Width == right.Width) && (left.Y == right.Y) && (left.Height == right.Height); 
 	}
-
+	
 	template<typename Type>
 	constexpr bool operator!=(const Rect<Type>& left, const Rect<Type>& right)
 	{

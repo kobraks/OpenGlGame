@@ -9,10 +9,11 @@
 
 namespace Game
 {
+	class Application;
+	
 	class ConsoleLayer : public Layer, public LuaRegister
 	{
 		bool m_Show = true;
-		bool m_Processed = false;
 		bool m_ReclaimFocus = false;
 		
 		sol::state* m_Lua = nullptr;
@@ -24,16 +25,23 @@ namespace Game
 		std::vector<std::pair<std::string, Color>> m_Messages;
 		std::vector<std::string> m_History;
 
+		Application* m_App;
 	public:
 		ConsoleLayer();
 
 		void OnAttach() override;
 		void OnImGuiRender() override;
-		void OnUpdate() override;
+		void OnEvent(Event &event) override;
 		void OnDetach() override;
 
 		void Clear();
 		void ClearHistory();
+
+		template<typename ...Args>
+		void PrintMessage(const Color& color, const std::string_view& format, Args&&... args)
+		{
+			std::invoke(PrintMessage, fmt::format(format, std::forward<Args>(args)...), color);
+		}
 		
 		void PrintMessage(const std::string &message, const Color& color = Color(1.f, 1.f, 1.f, 1.f));
 

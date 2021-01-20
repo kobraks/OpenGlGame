@@ -12,6 +12,8 @@
 #include "Time.h"
 #include "Clock.h"
 
+#include "Shortcut.h"
+
 namespace Game
 {
 	class LuaRegister;
@@ -40,6 +42,8 @@ namespace Game
 		Clock m_Clock;
 
 		std::vector<std::string> m_Arguments;
+		
+		std::vector<Shortcut> m_Shortcuts;
 
 		static Application *s_Instance;
 
@@ -50,6 +54,8 @@ namespace Game
 		void OnEvent(Event &event);
 		void PushLayer(Pointer<Layer> layer);
 		void PushOverlay(Pointer<Layer> overlay);
+
+		void RegisterShortcut(const Shortcut& shortcut);
 
 		Window& GetWindow() const { return *m_Window; }
 
@@ -75,7 +81,8 @@ namespace Game
 		sol::state& GetLua() const { return *m_Lua; }
 	private:
 		void Initialize();
-
+		void InitializeLua();
+		
 		bool OnWindowClose(WindowCloseEvent &event);
 		bool OnWindowResize(WindowResizeEvent &event);
 	};

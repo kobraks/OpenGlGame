@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <functional>
+#include <optional>
 
 #include "Types.h"
 
@@ -13,14 +14,91 @@ namespace Game
 {
 	using CallbackFunction = std::function<int(ImGuiInputTextCallbackData *)>;
 
-	class ImGuiUniqueGuard
+	struct ImGuiWindowPosition
+	{
+		ImVec2 Position;
+		ImGuiCond Cond = 0;
+		ImVec2 Pivot = {0, 0};
+	};
+
+	struct ImGuiWindowSize
+	{
+		ImVec2 Size;
+		ImGuiCond Cond = 0;
+	};
+	
+	struct ImGuiMainWindowProps
+	{
+		std::string_view Name;
+		bool& Open;
+		ImGuiWindowFlags Flags = 0;
+	};
+
+	struct ImGuiChildWindowProps
+	{
+		std::string_view Id;
+		ImVec2 Size = {0, 0};
+		bool Border = false;
+		ImGuiWindowFlags Flags = 0;
+	};
+
+	class ImGuiMainWindow
 	{
 		bool m_Opened = false;
 
+		bool m_SizeSet = false;
+		bool m_PosSet = false;
+
+		ImGuiMainWindowProps m_Props;
+		ImGuiWindowSize m_Size;
+		ImGuiWindowPosition m_Pos;
 	public:
-		ImGuiUniqueGuard(const ImVec2 &position, const std::string_view &name, bool &open, ImGuiWindowFlags flags = 0);
-		ImGuiUniqueGuard(const std::string_view &name, bool &open, ImGuiWindowFlags flags = 0);
-		~ImGuiUniqueGuard();
+		ImGuiMainWindow(const ImGuiMainWindowProps& props);
+		ImGuiMainWindow(const ImGuiMainWindowProps& props, const ImGuiWindowPosition& position);
+		ImGuiMainWindow(const ImGuiMainWindowProps& props, const ImGuiWindowPosition& position, const ImGuiWindowSize& size);
+		ImGuiMainWindow(const ImGuiMainWindowProps& props, const ImGuiWindowSize& size);
+		
+		void Begin();
+		void End();
+
+		operator bool() const { return m_Opened; }
+		bool IsOpened() const { return m_Opened; }
+		
+		void SetPosition(const ImGuiWindowPosition& position);
+		void SetSize(const ImGuiWindowSize& size);
+	};
+
+	class ImGuiChildWindow
+	{
+		bool m_Opened = false;
+		ImGuiChildWindowProps m_Props;
+	
+	public:
+		ImGuiChildWindow(const ImGuiChildWindowProps& props);
+		
+		void Begin();
+		void End();
+
+		operator bool() const { return m_Opened; }
+		bool IsOpened() const { return m_Opened; }
+		
+	};
+	
+	template<class ImGuiMenu>
+	class ImGuiUniqueGuard
+	{
+		ImGuiMenu m_ImGuiMenu;
+	public:
+		template<typename ...Args>
+		ImGuiUniqueGuard(Args&& ... args) : m_ImGuiMenu(std::forward<Args>(args)...)
+		{
+			m_ImGuiMenu.Begin();
+		}
+		
+		~ImGuiUniqueGuard()
+		{
+			m_ImGuiMenu.End();
+		}
 
 		ImGuiUniqueGuard(const ImGuiUniqueGuard &) = delete;
 		ImGuiUniqueGuard(ImGuiUniqueGuard &&)      = delete;
@@ -28,90 +106,65 @@ namespace Game
 		ImGuiUniqueGuard& operator =(const ImGuiUniqueGuard &) = delete;
 		ImGuiUniqueGuard& operator =(ImGuiUniqueGuard &&)      = delete;
 
-		bool Get() const { return m_Opened; }
+		ImGuiMenu Get() const { return m_ImGuiMenu; }
 
-		operator bool() const { return m_Opened; }
+		operator ImGuiMenu() const { return m_ImGuiMenu; }
 	};
 
+	template<class ImGuiMenu>
 	class ImGuiGuard
 	{
-		bool m_Opened       = false;
+		ImGuiMenu m_ImGuiMenu;
 		size_t *m_ReferenceCount = nullptr;
 
 	public:
-		ImGuiGuard(const ImVec2 &position, const std::string_view &name, bool &open, ImGuiWindowFlags flags = 0);
-		ImGuiGuard(const std::string_view &name, bool &open, ImGuiWindowFlags flags = 0);
-		~ImGuiGuard();
+		template<typename ...Args>
+		ImGuiGuard(Args&&... args) : m_ImGuiMenu(std::forward<Args>(args)...), m_ReferenceCount(new size_t(1))
+		{
+			m_ImGuiMenu.Begin();
+		}
+		~ImGuiGuard()
+		{
+			--(*m_ReferenceCount);
 
-		ImGuiGuard(const ImGuiGuard &guard);
-		ImGuiGuard(ImGuiGuard &&guard);
+			if ((*m_ReferenceCount) == 0)
+			{
+				delete m_ReferenceCount;
+				m_ImGuiMenu.End();
+			}
+		}
 
-		ImGuiGuard& operator=(const ImGuiGuard &guard);
-		ImGuiGuard& operator=(ImGuiGuard &&guard);
+		ImGuiGuard(const ImGuiGuard &guard)
+		{
+			*this = guard;
+		}
+		ImGuiGuard(ImGuiGuard &&guard) noexcept
+		{
+			*this = std::move(guard);
+		}
 
-		bool Get() const { return m_Opened; }
-		operator bool() const { return m_Opened; }
+		ImGuiGuard& operator=(const ImGuiGuard &guard)
+		{
+			m_ReferenceCount = guard.m_ReferenceCount;
+			m_ImGuiMenu = guard.m_ImGuiMenu;
 
-		size_t GetReferenceCount() const { return *m_ReferenceCount; }
-	};
+			++(*m_ReferenceCount);
+			
+			return *this;
+		}
+		ImGuiGuard& operator=(ImGuiGuard &&guard) noexcept
+		{
+			m_ReferenceCount = guard.m_ReferenceCount;
+			m_ImGuiMenu = guard.m_ImGuiMenu;
 
-	class ImGuiChildUniqueGuard
-	{
-		bool m_Opened;
+			guard.m_ReferenceCount = nullptr;
+			
+			return *this;
+		}
 
-	public:
-		ImGuiChildUniqueGuard(
-			ImGuiID id,
-			const ImVec2 &size     = ImVec2(0, 0),
-			bool border            = false,
-			ImGuiWindowFlags flags = 0
-			);
-		ImGuiChildUniqueGuard(
-			const std::string_view &id,
-			const ImVec2 &size     = ImVec2(0, 0),
-			bool border            = false,
-			ImGuiWindowFlags flags = 0
-			);
+		ImGuiMenu Get() const { return m_ImGuiMenu; }
+		operator ImGuiMenu() const { return m_ImGuiMenu; }
 
-		~ImGuiChildUniqueGuard();
-
-		ImGuiChildUniqueGuard(const ImGuiChildUniqueGuard &) = delete;
-		ImGuiChildUniqueGuard(ImGuiChildUniqueGuard &&)      = delete;
-
-
-		ImGuiChildUniqueGuard& operator =(const ImGuiChildUniqueGuard &) = delete;
-		ImGuiChildUniqueGuard& operator =(ImGuiChildUniqueGuard &&)      = delete;
-
-		bool Get() const { return m_Opened; }
-		operator bool() const { return m_Opened; }
-	};
-
-	class ImGuiChildGuard
-	{
-		bool m_Opened;
-		size_t *m_ReferenceCount;
-
-	public:
-		ImGuiChildGuard(ImGuiID id, const ImVec2 &size = ImVec2(0, 0), bool border = false, ImGuiWindowFlags flags = 0);
-		ImGuiChildGuard(
-			const std::string_view &id,
-			const ImVec2 &size     = ImVec2(0, 0),
-			bool border            = false,
-			ImGuiWindowFlags flags = 0
-			);
-
-		~ImGuiChildGuard();
-
-		ImGuiChildGuard(const ImGuiChildGuard &guard);
-		ImGuiChildGuard(ImGuiChildGuard &&guard);
-
-
-		ImGuiChildGuard& operator =(const ImGuiChildGuard &guard);
-		ImGuiChildGuard& operator =(ImGuiChildGuard &&guard);
-
-		bool Get() const { return m_Opened; }
-		operator bool() const { return m_Opened; }
-		
 		size_t GetReferenceCount() const { return *m_ReferenceCount; }
 	};
 
@@ -151,5 +204,17 @@ namespace Game
 	void TextColored(const ImVec4 &color, const std::string_view &text, Args &&... args)
 	{
 		return ImGui::TextColored(color, fmt::format(text, std::forward<Args>(args)...));
+	}
+
+	template <class ...Args>
+	void BulletText(const std::string_view& text, Args&&... args)
+	{
+		return ImGui::BulletText(fmt::format(text, std::forward<Args>(args)...).c_str());
+	}
+
+	template <class ...Args>
+	bool TreeNodeEx(const std::string_view& label, ImGuiTreeNodeFlags flags = 0, Args&&...args)
+	{
+		return ImGui::TreeNodeEx(fmt::format(label, std::forward<Args>(args)...).c_str(), flags);
 	}
 }

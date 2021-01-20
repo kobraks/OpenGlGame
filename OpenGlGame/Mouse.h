@@ -1,6 +1,7 @@
 #pragma once
-#include "Types.h"
+#include <sol/state.hpp>
 
+#include "Types.h"
 #include "Vector2.h"
 
 namespace Game
@@ -27,15 +28,22 @@ namespace Game
 			ButtonLeft = Button0,
 			ButtonRight = Button1,
 			ButtonMiddle = Button2,
-			
+
 			ButtonLast = Button7
-		};
+		};;
 
 		static bool IsButtonPressed(CodeType button);
+		static bool IsButtonPressed(CodeType button, const Window &relative);
+
 		static Vector2i GetPosition();
 		static Vector2i GetPosition(const Window &relative);
 
 		static void SetPosition(const Vector2i &position);
 		static void SetPosition(const Vector2i &position, const Window &relative);
+
+		static void SetPosition(int x, int y, const Window &relative);
+		static void SetPosition(int x, int y);
+
+		static void RegisterLua(sol::state& lua);
 	};
 }

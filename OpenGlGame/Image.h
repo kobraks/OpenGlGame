@@ -92,6 +92,12 @@ namespace Game
 
 		glm::vec4 operator()(uint32_t x, uint32_t y) const { return GetPixel(x, y); }
 		glm::vec4& operator()(uint32_t x, uint32_t y) { return GetPixel(x, y); }
+
+		glm::vec4* begin() { return m_Pixels; }
+		glm::vec4* end() { return m_Pixels + (m_Width * m_Height); }
+		
+		const glm::vec4* begin() const { return m_Pixels; }
+		const glm::vec4* end() const { return m_Pixels + (m_Width * m_Height); }
 	private:
 		void LoadToMemory(void *imageFile);
 	};
