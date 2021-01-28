@@ -35,13 +35,17 @@ namespace Game
 		};
 
 		constexpr static size_t Size() { return 4; }
-		
+
+
 		constexpr Color() : Color(0.f, 0.f, 0.f, 0.f) {}
-		constexpr Color(float red, float green, float blue, float alpha) : Red(red),
+		constexpr Color(float red, float green, float blue, float alpha = 1.f) : Red(red),
 		                                                         Green(green),
 		                                                         Blue(blue),
 		                                                         Alpha(alpha) {}
 
+		constexpr Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) : Red(red / 255.f), Green(green / 255.f), Blue(blue / 255.f), Alpha(alpha / 255.f){}
+		constexpr Color(int red, int green, int blue, int alpha = 255) : Red(red / 255.f), Green(green / 255.f), Blue(blue / 255.f), Alpha(alpha / 255.f){}
+		
 		Color(glm::vec4 color) : Color(color.x, color.y, color.z, color.w) {}
 
 		operator glm::vec4() const { return glm::vec4(Red, Green, Blue, Alpha); }
