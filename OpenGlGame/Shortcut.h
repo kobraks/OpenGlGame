@@ -1,7 +1,7 @@
 #pragma once
 
 #include <functional>
-#include <unordered_map>
+#include <unordered_set>
 
 #include "Event.h"
 #include "Types.h"
@@ -10,7 +10,9 @@
 
 namespace Game
 {
-	
+	class KeyReleasedEvent;
+	class KeyPressedEvent;
+
 	class Shortcut
 	{
 	public:
@@ -22,7 +24,7 @@ namespace Game
 		bool m_Detected = false;
 		ShortcutFunction m_Function;
 
-		std::unordered_map<KeyCode, bool> m_KeyCodes;
+		std::unordered_set<KeyCode> m_KeyCodes;
 	public:
 		template<typename ...Args>
 		explicit Shortcut(const ShortcutFunction& function, Args&&... args) : m_Function(function)
@@ -38,12 +40,15 @@ namespace Game
 			if constexpr (TypeListLengthV<Args...> > 0) Register(std::forward<Args>(args)...); 
 		}
 
-		void OnEvent(const Event& event);
+		void OnEvent(Event &event);
 
 	private:
+		bool OnKeyPress(KeyPressedEvent &event);
+		bool OnKeyRelease(KeyReleasedEvent &event);
+		
 		void RegisterPriv(KeyCode code);
 
-		void ProcessKeyPressed(KeyCode code);
-		void ProcessKeyReleased(KeyCode code);
+		// void ProcessKeyPressed(KeyCode code);
+		// void ProcessKeyReleased(KeyCode code);
 	};
 }
