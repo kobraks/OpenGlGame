@@ -57,4 +57,22 @@ namespace Game
 	
 	Time operator%(const Time& left, const Time& right);
 	Time& operator%=(Time& left, const Time& right);
+
+	namespace Literals
+	{
+		inline Time operator"" _Sec(long double time)
+		{
+			return Seconds(static_cast<float>(time));
+		}
+
+		inline Time operator"" _Ms(unsigned long long time)
+		{
+			return Milliseconds(static_cast<int32_t>(time));
+		}
+
+		inline Time operator"" _Ns(unsigned long long time)
+		{
+			return Microseconds(static_cast<int64_t>(time));
+		}
+	}
 }
