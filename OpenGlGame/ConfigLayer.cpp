@@ -2,6 +2,7 @@
 #include "ConfigLayer.h"
 
 #include "imgui.h"
+#include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
 #include "Application.h"
 #include "KeyEvent.h"

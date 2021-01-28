@@ -6,6 +6,7 @@
 #include "Application.h"
 #include "Keyboard.h"
 #include "imgui.h"
+#include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
 #include "Utils.h"
 #include "KeyEvent.h"
@@ -41,7 +42,6 @@ namespace Game
 	void ConsoleLayer::OnImGuiRender()
 	{
 		if(!m_Show) return;
-
 
 		ImGuiMainWindowProps props {"Console", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
 		ImGuiWindowSize size{ {520, 600}, ImGuiCond_Appearing};

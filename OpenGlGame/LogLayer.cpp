@@ -4,9 +4,30 @@
 #include "Log.h"
 
 #include "Application.h"
+#include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
 #include "Keyboard.h"
 #include "Utils.h"
+
+#include "KeyEvent.h"
+
+namespace
+{
+	constexpr Game::Color SelectColor(spdlog::level::level_enum level)
+	{
+		switch(level)
+		{
+			case spdlog::level::trace: return Game::Color(255, 255, 255);
+			case spdlog::level::debug: return Game::Color(58, 150, 221);
+			case spdlog::level::info: return Game::Color(19, 161, 14);
+			case spdlog::level::warn: return Game::Color(255, 255, 0);
+			case spdlog::level::err: ;
+			case spdlog::level::critical: return Game::Color(255, 0, 0);
+			case spdlog::level::off:
+			case spdlog::level::n_levels: default: return Game::Color(0, 0, 0, 0);
+		}
+	}
+}
 
 namespace Game
 {
@@ -60,7 +81,7 @@ namespace Game
 
 		if(m_Show)
 		{
-			ImGuiWindowSize size {ImVec2(700, 400), ImGuiCond_FirstUseEver};
+			ImGuiWindowSize size{ImVec2(700, 400), ImGuiCond_FirstUseEver};
 			ImGuiMainWindowProps props{"Log", m_Show};
 			ImGuiUniqueGuard<ImGuiMainWindow> guard(props, size);
 
@@ -80,40 +101,27 @@ namespace Game
 				}
 			}
 
-			bool copyButton = ImGui::Button("Copy");
-			ImGui::SameLine();
-			if(ImGui::Button("Clear")) Clear();
+			// bool copyButton = ImGui::Button("Copy");
+			// ImGui::SameLine();
+			if(ImGui::Button("Clear"))
+				Clear();
 
 			m_Filter.Draw("Filter", -100.f);
 
-			ImGuiChildWindowProps childProps {"Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar};
-			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
-			if(copyButton) ImGui::LogToClipboard();
-
-			for(const auto [message, color] : m_Messages)
-			{
-				if(!m_Filter.PassFilter(message.c_str())) continue;
-
-				ImGui::TextColored(color, message.c_str());
-			}
-
-			if(m_AllowScrolling && m_ScrollToBottom) ImGui::SetScrollHere(1.f);
-
-			m_ScrollToBottom = false;
+			PrintMessagesTable();
 		}
 	}
 
-	void LogLayer::OnUpdate()
+	void LogLayer::OnEvent(Event &event)
 	{
-		if(Keyboard::IsKeyPressed(Key::F2))
+		if(event.GetEventType() == KeyReleasedEvent::GetStaticType())
 		{
-			if(m_Process)
+			if(const auto release = dynamic_cast<KeyReleasedEvent*>(&event); release)
 			{
-				m_Process = false;
-				m_Show      = !m_Show;
+				if(release->GetKeyCode() == Key::F2)
+					m_Show = !m_Show;
 			}
 		}
-		else m_Process = true;
 	}
 
 	void LogLayer::Clear()
@@ -125,15 +133,30 @@ namespace Game
 	{
 		if(msg.level >= spdlog::level::err && msg.level < spdlog::level::off)
 		{
-			if(m_AutoPopUp) m_Show = true;
+			if(m_AutoPopUp)
+				m_Show = true;
 			m_ScrollToBottom = true;
 		}
 
 		spdlog::memory_buf_t formatted;
 		formatter_->format(msg, formatted);
+		// std::string desc = msg.payload.data();
+		// std::string sDesc(desc.begin(), desc.size() < 15 ? desc.end() : desc.begin() + 15);
+		// std::string time(text.begin() + 1, text.begin() + text.find("]"));
+		// std::string severity = fmt::format("{}", to_string_view(msg.level).data());
 
-		auto message = fmt::to_string(formatted);
-		m_Messages.emplace_back(std::make_pair(message, SelectColor(msg.level)));
+		// sDesc = Trim(sDesc);
+
+		// Message message{
+		// msg.logger_name.data(),
+		// std::move(desc),
+		// std::move(sDesc),
+		// std::move(time),
+		// std::move(severity),
+		// std::move(text),
+		// SelectColor(msg.level)
+		// };
+		m_Messages.emplace_back(Message{fmt::to_string(formatted), SelectColor(msg.level)});
 	}
 
 	void LogLayer::flush_() {}
@@ -201,5 +224,33 @@ namespace Game
 		{
 			logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
 		}
+	}
+
+	void LogLayer::PrintMessagesTable()
+	{
+		const ImGuiChildWindowProps childProps{"Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar};
+		ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
+		// if(copyButton) ImGui::LogToClipboard();
+		size_t i = 0;
+		for(size_t i = 0; i < m_Messages.size(); ++i)
+		{
+			auto &message = m_Messages[i];
+
+			if(!m_Filter.PassFilter(message.Text.c_str()))
+				continue;
+
+			PrintMessage(i, message);
+		}
+
+		if(m_AllowScrolling && m_ScrollToBottom)
+			ImGui::SetScrollHereY();
+
+
+		m_ScrollToBottom = false;
+	}
+
+	void LogLayer::PrintMessage(size_t i, Message &message)
+	{
+		TextColored(message.Color, message.Text);
 	}
 }

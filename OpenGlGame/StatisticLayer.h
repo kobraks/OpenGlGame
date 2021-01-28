@@ -28,9 +28,6 @@ namespace Game
 		virtual void OnUpdate() override;
 
 		void IsVisible(bool visible) { m_Show = visible; }
-		bool IsVisible() { return m_Show; }
-
-	private:
-		void ShortcutFunction();
+		bool IsVisible() const { return m_Show; }
 	};
 }

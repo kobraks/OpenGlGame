@@ -8,6 +8,7 @@
 #include "Mouse.h"
 
 #include "imgui.h"
+#include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
 
 namespace Game
@@ -20,7 +21,8 @@ namespace Game
 	StatisticLayer::StatisticLayer() : Layer("StatistcLayer") {}
 	void StatisticLayer::OnAttach()
 	{
-		// Application::Get().RegisterShortcut(Shortcut(ShortcutFunction, Key::F, Key::LeftControl));
+		Application::Get().RegisterShortcut(Shortcut([this](){ m_Show = !m_Show; }, Key::F, Key::LeftControl));
+		Application::Get().RegisterShortcut(Shortcut([this](){ m_Show = !m_Show; }, Key::F, Key::RightControl));
 	}
 
 	void StatisticLayer::OnConstUpdate(const Time &ts)
@@ -61,20 +63,15 @@ namespace Game
 
 	void StatisticLayer::OnUpdate()
 	{
-		if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl)))
-		{
-			if(!m_Processed)
-			{
-				m_Processed = true;
-				m_Show      = !m_Show;
-			}
-		}
-		else
-			m_Processed = false;
-	}
-
-	void StatisticLayer::ShortcutFunction()
-	{
-		m_Show = !m_Show;
+		// if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl)))
+		// {
+		// 	if(!m_Processed)
+		// 	{
+		// 		m_Processed = true;
+		// 		m_Show      = !m_Show;
+		// 	}
+		// }
+		// else
+		// 	m_Processed = false;
 	}
 }

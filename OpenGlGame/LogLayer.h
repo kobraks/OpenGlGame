@@ -15,9 +15,14 @@ namespace Game
 {
 	class LogLayer: public Layer, public LuaRegister, public spdlog::sinks::base_sink<std::mutex>
 	{
+		struct Message
+		{
+			std::string Text;
+			Color Color;
+		};
+		
 		bool m_Show           = true;
 		bool m_ScrollToBottom = true;
-		bool m_Process        = true;
 		bool m_AutoPopUp      = true;
 		bool m_AllowScrolling = true;
 
@@ -25,16 +30,15 @@ namespace Game
 
 		ImGuiTextFilter m_Filter;
 
-		std::vector<std::pair<std::string, Color>> m_Messages;
+		std::vector<Message> m_Messages;
 	public:
 		LogLayer();
 
 		virtual void OnAttach() override;
 		virtual void OnImGuiRender() override;
-		virtual void OnUpdate() override;
-
+		virtual void OnEvent(Event& event) override;
+		
 		void Clear();
-		void ClearHistory();
 
 		void Visible(bool visible) { m_Show = visible; }
 		bool IsVisible() const { return m_Show; }
@@ -63,30 +67,9 @@ namespace Game
 		virtual void Register(sol::state& state) override;
 
 	private:
-		constexpr static Color SelectColor(spdlog::level::level_enum level);
-
 		void LoggerCombo(Pointer<spdlog::logger> logger);
+		
+		void PrintMessagesTable();
+		void PrintMessage(size_t i, Message& message);
 	};
-
-	constexpr Color LogLayer::SelectColor(spdlog::level::level_enum level)
-	{
-		switch(level)
-		{
-			case spdlog::level::trace:
-				return Color(1.f, 1.f, 1.f, 1.f);
-			case spdlog::level::debug:
-				return Color(0.f, 0.f, 0.7f, 1.f);
-			case spdlog::level::info:
-				return Color(0.f, 1.f, 0.f, 1.f);
-			case spdlog::level::warn:
-				return Color(1.f, 1.f, 0.f, 1.f);
-			case spdlog::level::err:
-			case spdlog::level::critical:
-				return Color(1.f, 0.f, 0.f, 1.f);
-			case spdlog::level::off:
-			case spdlog::level::n_levels: default:
-				return Color(0.f, 0.f, 0.f, 0.f);
-		}
-		return Color(0.f, 0.f, 0.f, 0.f);
-	}
 }
