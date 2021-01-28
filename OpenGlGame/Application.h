@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Types.h"
+#include "PropertyManager.h"
 
 #include "Window.h"
 #include "LayerStack.h"
@@ -24,6 +25,7 @@ namespace Game
 	{
 		Scope<Window> m_Window;
 		Scope<sol::state> m_Lua;
+		Scope<PropertyManager> m_Properties;
 
 		bool m_Running     = true;
 		bool m_Minimalized = false;
@@ -42,7 +44,6 @@ namespace Game
 		Clock m_Clock;
 
 		std::vector<std::string> m_Arguments;
-		
 		std::vector<Shortcut> m_Shortcuts;
 
 		static Application *s_Instance;
@@ -75,6 +76,8 @@ namespace Game
 
 		Time GetElapsedTime() const { return m_Clock.GetElapsedTime(); }
 		Time GetFrameTime() const { return m_FrameTime; }
+
+		PropertyManager& GetProperties() const { return *m_Properties; }
 
 		void LuaRegister(LuaRegister &luaObject);
 

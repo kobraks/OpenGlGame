@@ -63,28 +63,51 @@ namespace
 	void EnableInputMode(int inputMode)
 	{
 		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().SetInputMode(true, static_cast<Game::InputMode>(inputMode));
 		else
-			throw std::runtime_error("Unknown input mode recived");
+			SCRIPT_LOG_ERROR(
+		                 "Unknown input mode: {}, Expected: {}, {}, {} or {}",
+		                 inputMode,
+		                 static_cast<int>(Game::InputMode::StickyKeys),
+		                 static_cast<int>(Game::InputMode::StickyMouseButtons),
+		                 static_cast<int>(Game::InputMode::LockKeyModes),
+		                 static_cast<int>(Game::InputMode::RawMouseMotion)
+		                );
 	}
 
 	void DisableInputMode(int inputMode)
 	{
 		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().SetInputMode(false, static_cast<Game::InputMode>(inputMode));
 		else
-			throw std::runtime_error("Unknown input mode recived");
+			SCRIPT_LOG_ERROR(
+		                 "Unknown input mode: {}, Expected: {}, {}, {} or {}",
+		                 inputMode,
+		                 static_cast<int>(Game::InputMode::StickyKeys),
+		                 static_cast<int>(Game::InputMode::StickyMouseButtons),
+		                 static_cast<int>(Game::InputMode::LockKeyModes),
+		                 static_cast<int>(Game::InputMode::RawMouseMotion)
+		                );
 	}
 
 	bool GetInputMode(int inputMode)
 	{
 		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyKeys))
+			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().GetInputMode(static_cast<Game::InputMode>(inputMode));
 		else
-			throw std::runtime_error("Unknown input mode recived");
+			SCRIPT_LOG_ERROR(
+		                 "Unknown input mode: {}, Expected: {}, {}, {} or {}",
+		                 inputMode,
+		                 static_cast<int>(Game::InputMode::StickyKeys),
+		                 static_cast<int>(Game::InputMode::StickyMouseButtons),
+		                 static_cast<int>(Game::InputMode::LockKeyModes),
+		                 static_cast<int>(Game::InputMode::RawMouseMotion)
+		                );
+
+		return false;
 	}
 
 	void SetCursorMode(int cursorMode)
@@ -92,6 +115,14 @@ namespace
 		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(Game::CursorMode::Hidden) || cursorMode == static_cast<int
 		>(Game::CursorMode::Disabled))
 			Game::Application::Get().GetWindow().SetCursorMode(static_cast<Game::CursorMode>(cursorMode));
+		else
+			SCRIPT_LOG_ERROR(
+		                 "Unknown Cursor mode: {}, Expected: {}, {}, {}",
+		                 cursorMode,
+		                 static_cast<int>(Game::CursorMode::Normal),
+		                 static_cast<int>(Game::CursorMode::Hidden),
+		                 static_cast<int>(Game::CursorMode::Disabled)
+		                );
 	}
 
 	int GetCursorMode()
@@ -136,7 +167,7 @@ namespace Game
 				s_ShowImGuiTest = !s_ShowImGuiTest;
 		}
 
-		for(auto shortcut : m_Shortcuts)
+		for(auto& shortcut : m_Shortcuts)
 			shortcut.OnEvent(event);
 
 		for(auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
@@ -258,21 +289,27 @@ namespace Game
 		Log::GetOpenGLLogger()->sinks().push_back(logLayer);
 		Log::GetApplicationLogger()->sinks().push_back(logLayer);
 		Log::GetAssertionLogger()->sinks().push_back(logLayer);
+		Log::GetOpenGLLogger()->set_level(spdlog::level::critical);
 
+		m_Properties = MakeScope<PropertyManager>();
+		
 		InitializeLua();
 
+		m_Properties->Register("", *m_Lua);
+		m_Properties->Add("UpdateRate", m_UpdateRate);
+		
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
 		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
+		LOG_CRITICAL("CRITICAL");
 
 		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());
 		PushOverlay(logLayer);
 		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(MakePointer<ConsoleLayer>());
-
 		PushOverlay(MakePointer<ConfigLayer>());
 
 		auto OpenGL = m_Window->GetFunctions();
@@ -284,7 +321,7 @@ namespace Game
 		OpenGL.Enable(Capability::DebugOutputSynchronous);
 
 		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
-
+		
 		int count;
 		GLFWmonitor **monitors = glfwGetMonitors(&count);
 
