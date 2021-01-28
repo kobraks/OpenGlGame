@@ -40,6 +40,12 @@
     <Filter Include="Source Files\Input">
       <UniqueIdentifier>{db96a8f1-a27a-4f4b-8afa-886b9a8e7a1f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Properties">
+      <UniqueIdentifier>{f2cec825-a28e-40b9-82d4-7299af3aaab4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Property">
+      <UniqueIdentifier>{e18c8481-b19b-49b5-a584-920898973354}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -169,6 +175,15 @@
       <Filter>Source Files\Layer</Filter>
     </ClCompile>
     <ClCompile Include="Cursor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Property.cpp">
+      <Filter>Source Files\Property</Filter>
+    </ClCompile>
+    <ClCompile Include="PropertyManager.cpp">
+      <Filter>Source Files\Property</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiGuard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -351,6 +366,15 @@
       <Filter>Header Files\Layer</Filter>
     </ClInclude>
     <ClInclude Include="Cursor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Property.h">
+      <Filter>Header Files\Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="PropertyManager.h">
+      <Filter>Header Files\Properties</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiGuard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
