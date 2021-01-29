@@ -70,4 +70,14 @@ namespace Game
 			return Value[index];
 		}
 	};
+
+	constexpr bool operator == (const Color& left, const Color& right)
+	{
+		return left.R == right.R && left.G == right.G && left.B == right.B && left.A == right.A;
+	}
+	
+	constexpr bool operator != (const Color& left, const Color& right)
+	{
+		return !(left == right);
+	}
 }
