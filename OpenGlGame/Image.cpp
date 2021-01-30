@@ -97,9 +97,11 @@ namespace Game
 		m_Width  = width;
 		m_Height = height;
 
-		m_Pixels = new Color[width * height];
+		const size_t size = static_cast<size_t>(width) * height;
 
-		std::fill_n(m_Pixels, width * height, background);
+		m_Pixels = new Color[size];
+
+		std::fill_n(m_Pixels, size, background);
 	}
 
 	void Image::Clear()
@@ -114,13 +116,13 @@ namespace Game
 	{
 		Clear();
 
-		const auto format = FreeImage_GetFileTypeFromMemory(reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
+		const auto format = FreeImage_GetFileTypeFromMemory(reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), static_cast<int>(size));
 		if(format == FIF_UNKNOWN)
 		{
 			throw std::runtime_error("Unknown image format");
 		}
 
-		const auto image = FreeImage_LoadFromMemory(format, reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
+		const auto image = FreeImage_LoadFromMemory(format, reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), static_cast<int>(size));
 		if(!image)
 		{
 			throw std::runtime_error("Unable to open memory file");
