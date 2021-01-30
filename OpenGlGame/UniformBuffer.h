@@ -176,8 +176,9 @@ namespace Game
 					T, bool>) return sizeof(float);
 			if constexpr(std::is_same_v<T, glm::vec2> || std::is_same_v<T, Vector2f>) return sizeof(float) * 2;
 			if constexpr(std::is_same_v<T, glm::vec3>) return sizeof(float) * 4;
-			if constexpr(std::is_same_v<T, glm::vec4> || std::is_same_v<T, Color>) return sizeof(float) * 4;
-
+			if constexpr(std::is_same_v<T, glm::vec4>) return sizeof(float) * 4;
+			if constexpr(std::is_same_v<T, Color>) return sizeof(int) * 4;
+			
 			if constexpr(std::is_same_v<T, glm::mat2>) return sizeof(float) * 4;
 			if constexpr(std::is_same_v<T, glm::mat2x3>) return sizeof(float) * 8;
 			if constexpr(std::is_same_v<T, glm::mat2x4>) return sizeof(float) * 8;
