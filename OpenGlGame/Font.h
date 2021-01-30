@@ -52,7 +52,7 @@ namespace Game
 		Info m_Info;
 
 		mutable PageTable m_Pages;
-		mutable std::vector<float> m_PixelBuffer;
+		mutable std::vector<uint8_t> m_PixelBuffer;
 		
 		Font();
 	public:

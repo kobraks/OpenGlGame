@@ -86,12 +86,12 @@ namespace Game
 		uint8_t *pixels = new uint8_t[m_Image.Width() * m_Image.Height() * 4];
 
 		size_t index = 0;
-		for(glm::vec4 &pixel : m_Image)
+		for(Color &pixel : m_Image)
 		{
-			pixels[index + 0] = pixel.r * 255;
-			pixels[index + 1] = pixel.g * 255;
-			pixels[index + 2] = pixel.b * 255;
-			pixels[index + 3] = pixel.a * 255;
+			pixels[index + 0] = pixel.R;
+			pixels[index + 1] = pixel.G;
+			pixels[index + 2] = pixel.B;
+			pixels[index + 3] = pixel.A;
 
 			index += 4;
 		}

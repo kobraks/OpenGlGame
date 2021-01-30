@@ -32,7 +32,7 @@ namespace Game
 
 	void OpenGlFunctions::SetClearColor(const Color &color)
 	{
-		GL_CHECK(glClearColor(color.Red, color.Green, color.Blue, color.Alpha));
+		GL_CHECK(glClearColor(color.R / 255.f, color.G / 255.f, color.B / 255.f, color.A / 255.f));
 	}
 	
 	void OpenGlFunctions::SetViewPort(uint32_t x, uint32_t y, uint32_t width, uint32_t height)

@@ -2,7 +2,6 @@
 
 #include <glad/glad.h>
 
-
 #include "Color.h"
 #include "Types.h"
 #include "Image.h"
@@ -90,10 +89,22 @@ namespace Game
 	enum class Format
 	{
 		Red = GL_RED,
-		RGB = GL_RGB,
-		BGR = GL_BGR,
-		RGBA = GL_RGBA,
-		BGRA = GL_BGRA
+		Rg = GL_RG,
+		Rgb = GL_RGB,
+		Bgr = GL_BGR,
+		Rgba = GL_RGBA,
+		Bgra = GL_BGRA,
+		
+		RedInteger = GL_RED_INTEGER,
+		RgInteger = GL_RG_INTEGER,
+		RgbInteger = GL_RGB_INTEGER,
+		BgrInteger = GL_BGR_INTEGER,
+		RgbaInteger = GL_RGBA_INTEGER,
+		BgraInteger = GL_BGRA_INTEGER,
+
+		StencilIndex = GL_STENCIL_INDEX,
+		DepthComponent = GL_DEPTH_COMPONENT,
+		DepthStencil = GL_DEPTH_STENCIL
 	};
 
 	enum class DataType
@@ -138,8 +149,11 @@ namespace Game
 		LinearMipmapLinear = GL_LINEAR_MIPMAP_LINEAR
 	};
 
+	class FrameBufferObject;
+	
 	class Texture
 	{
+		friend FrameBufferObject;
 	public:
 		using IdType = uint32_t;
 
@@ -165,15 +179,6 @@ namespace Game
 
 		operator IdType() const { return *m_Texture; }
 		IdType ID() const { return *m_Texture; }
-
-		void Image2D(
-			const void *data,
-			DataType type,
-			Format format,
-			uint32_t width,
-			uint32_t height,
-			InternalFormat internalFormat
-			);
 
 		void SetWrapping(Wrapping s);
 		void SetWrapping(Wrapping s, Wrapping t);
@@ -213,11 +218,11 @@ namespace Game
 
 		Image ToImage() const;
 
-		void Update(const float *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
-		void Update(const float *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
+		void Update(const uint8_t *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
+		void Update(const uint8_t *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
 
-		void Update(const glm::vec4 *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
-		void Update(const glm::vec4 *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
+		void Update(const Color *pixels) { Update(pixels, m_Size.Width, m_Size.Height, 0, 0); }
+		void Update(const Color *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y);
 
 		void Update(const Texture &texture) { Update(texture, 0, 0); }
 		void Update(const Texture &texture, const uint32_t x, const uint32_t y) { Update(texture.ToImage(), x, y); };
@@ -238,5 +243,12 @@ namespace Game
 		{
 			return *m_Texture == *texture.m_Texture;
 		}
+
+	private:
+		void Image2D(const void *data, DataType type, Format format, uint32_t width, uint32_t height, InternalFormat internalFormat);
+		void SubImage2D(const void* data, DataType type, Format format, int level, uint32_t x, uint32_t y, uint32_t width, uint32_t height);
+
+		void SetParameter(uint32_t name, int parameter);
+		void SetParameter(uint32_t name, Color color);
 	};
 }

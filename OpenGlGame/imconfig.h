@@ -133,7 +133,7 @@ namespace ImGui
 
 #define IM_VEC4_CLASS_EXTRA                                             \
     ImVec4(const Game::Color & c)                                         \
-        : x(c.R), y(c.G), z(c.B), w(c.A)\
+        : x(c.R / 255.f), y(c.G / 255.f), z(c.B / 255.f), w(c.A / 255.f)\
     {}                                                                  \
     operator Game::Color() const {                                      \
         return Game::Color(x, y, z, w);                                 \

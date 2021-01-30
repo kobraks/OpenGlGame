@@ -2,7 +2,6 @@
 #include "Image.h"
 
 #include <algorithm>
-
 #include <FreeImage/FreeImage.h>
 
 #include "Assert.h"
@@ -13,86 +12,68 @@ namespace Game
 	{
 		switch(type)
 		{
-			case ImageType::BMP:
-				return FIF_BMP;
-
-			case ImageType::EXR:
-				return FIF_EXR;
-
-			case ImageType::J2K:
-				return FIF_J2K;
-
-			case ImageType::JP2:
-				return FIF_JP2;
-
-			case ImageType::JPEG:
-				return FIF_JPEG;
-
-			case ImageType::JXR:
-				return FIF_JXR;
-
-			case ImageType::PBM:
-				return FIF_PBM;
-
-			case ImageType::PGM:
-				return FIF_PGM;
-
-			case ImageType::PNG:
-				return FIF_PNG;
-
-			case ImageType::PPM:
-				return FIF_PPM;
-
-			case ImageType::TIFF:
-				return FIF_TIFF;
-
-			default:
-				return FIF_UNKNOWN;
+			case ImageType::BMP: return FIF_BMP;
+			case ImageType::EXR: return FIF_EXR;
+			case ImageType::J2K: return FIF_J2K;
+			case ImageType::JP2: return FIF_JP2;
+			case ImageType::JPEG: return FIF_JPEG;
+			case ImageType::JXR: return FIF_JXR;
+			case ImageType::PBM: return FIF_PBM;
+			case ImageType::PGM: return FIF_PGM;
+			case ImageType::PNG: return FIF_PNG;
+			case ImageType::PPM: return FIF_PPM;
+			case ImageType::TIFF: return FIF_TIFF;
+			default: return FIF_UNKNOWN;
 		}
 	}
 
-	Image::Image(const uint32_t width, const uint32_t height, const glm::vec4 &background)
+	Image::Image(uint32_t width, uint32_t height, const Color &background)
 	{
 		Create(width, height, background);
 	}
 
-	Image::Image(const uint32_t width, const uint32_t height, const uint8_t *pixels)
+	Image::Image(uint32_t width, uint32_t height, const Color *pixels) : m_Width(width), m_Height(height)
 	{
-		m_Pixels = new glm::vec4[width * height];
+		m_Pixels = new Color[static_cast<size_t>(width) * height];
+		std::memcpy(m_Pixels, pixels, static_cast<size_t>(width) * height * sizeof(Color));
+	}
+
+	Image::Image(uint32_t width, uint32_t height, const uint8_t *pixels) : m_Width(width), m_Height(height)
+	{
+		m_Pixels = new Color[static_cast<size_t>(width) * height];
+
+		std::memcpy(m_Pixels, pixels, static_cast<size_t>(width) * height * sizeof(Color));
+	}
+
+	Image::Image(uint32_t width, uint32_t height, const glm::vec4 *pixels) : m_Width(width), m_Height(height)
+	{
+		m_Pixels = new Color[static_cast<size_t>(width) * height];
+
 		for(uint32_t i = 0; i < width; ++i)
 			for(uint32_t j = 0; j < height; ++j)
 			{
-				size_t colorIndex = (i + j * width) * sizeof(glm::vec4);
-
-				m_Pixels[i + j * width] = TranslateColor(
-				                                         pixels[colorIndex + 0],
-				                                         pixels[colorIndex + 1],
-				                                         pixels[colorIndex + 2],
-				                                         pixels[colorIndex + 3]
-				                                        );
+				const auto &pixel       = pixels[i + j * width];
+				m_Pixels[i + j * width] = Color(pixel);
 			}
 	}
 
-	Image::Image(const uint32_t width, const uint32_t height, const glm::vec4 *pixels) : m_Width(width),
-		m_Height(height)
+	Image::Image(uint32_t width, uint32_t height, const float *pixels) : m_Width(width), m_Height(height)
 	{
-		m_Pixels = new glm::vec4[width * height];
-		std::memcpy(m_Pixels, pixels, width * height * sizeof(glm::vec4));
+		m_Pixels = new Color[static_cast<size_t>(width) * height];
+
+		for(uint32_t i = 0; i < width; ++i)
+			for(uint32_t j = 0; j < height; ++j)
+			{
+				const size_t colorIndex = (i + j * width) * 4;
+				m_Pixels[i + j * width] = Color(pixels[colorIndex + 0], pixels[colorIndex + 1], pixels[colorIndex + 2], pixels[colorIndex + 3]);
+			}
 	}
 
-	Image::Image(const Vector2u &size, const glm::vec4 &background) : Image(size.X, size.Y, background) {}
-	Image::Image(const Vector2u &size, const uint8_t *pixels) : Image(size.X, size.Y, pixels) {}
-	Image::Image(const Vector2u &size, const glm::vec4 *pixels) : Image(size.X, size.Y, pixels) {}
-
-	Image::Image(const uint8_t *pixels, const uint32_t size)
-	{
-		Load(pixels, size);
-	}
-
-	Image::Image(const std::string &fileName)
-	{
-		Load(fileName);
-	}
+	Image::Image(const Vector2u &size, const Color &background) : Image(size.Width, size.Height, background) {}
+	Image::Image(const Vector2u &size, const Color *pixels) : Image(size.Width, size.Height, pixels) {}
+	Image::Image(const Vector2u &size, const uint8_t *pixels) : Image(size.Width, size.Height, pixels) {}
+	Image::Image(const Vector2u &size, const glm::vec4 *pixels) : Image(size.Width, size.Height, pixels) {}
+	Image::Image(const Vector2u &size, const float *pixels) : Image(size.Width, size.Height, pixels) {}
 
 	Image::Image(const Image &image)
 	{
@@ -106,36 +87,40 @@ namespace Game
 
 	Image::~Image()
 	{
-		delete[] m_Pixels;
+		Clear();
 	}
 
-	void Image::Create(uint32_t width, uint32_t height, const glm::vec4 &background)
+	void Image::Create(uint32_t width, uint32_t height, const Color &background)
 	{
-		delete[] m_Pixels;
+		Clear();
 
 		m_Width  = width;
 		m_Height = height;
 
-		m_Pixels = new glm::vec4(width * height);
+		m_Pixels = new Color[width * height];
 
 		std::fill_n(m_Pixels, width * height, background);
 	}
 
-	void Image::Load(const uint8_t *pixels, uint32_t size)
+	void Image::Clear()
 	{
 		delete[] m_Pixels;
 
 		m_Pixels = nullptr;
 		m_Width  = m_Height = 0;
+	}
 
-		auto format = FreeImage_GetFileTypeFromMemory(reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
+	void Image::Load(const uint8_t *pixels, size_t size)
+	{
+		Clear();
+
+		const auto format = FreeImage_GetFileTypeFromMemory(reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
 		if(format == FIF_UNKNOWN)
 		{
 			throw std::runtime_error("Unknown image format");
 		}
 
-		auto image = FreeImage_LoadFromMemory(format, reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
-
+		const auto image = FreeImage_LoadFromMemory(format, reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), size);
 		if(!image)
 		{
 			throw std::runtime_error("Unable to open memory file");
@@ -147,8 +132,7 @@ namespace Game
 
 	void Image::Load(const std::string &fileName)
 	{
-		delete[] m_Pixels;
-		m_Width = m_Height = 0;
+		Clear();
 
 		std::ifstream file;
 		file.exceptions(std::ios::failbit | std::ios::badbit);
@@ -173,14 +157,7 @@ namespace Game
 
 	void Image::Save(const std::string &fileName, ImageType type)
 	{
-		auto handler = FreeImage_Allocate(
-		                                  m_Width,
-		                                  m_Height,
-		                                  32,
-		                                  FI_RGBA_RED_MASK,
-		                                  FI_RGBA_GREEN_MASK,
-		                                  FI_RGBA_BLUE_MASK
-		                                 );
+		auto handler = FreeImage_Allocate(m_Width, m_Height, 32, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
 
 		for(size_t i = 0; i < m_Width; ++i)
 			for(size_t j = 0; j < m_Height; ++j)
@@ -188,50 +165,47 @@ namespace Game
 				RGBQUAD color;
 
 				const auto pixel  = m_Pixels[i + j * m_Width];
-				color.rgbRed      = static_cast<BYTE>(pixel.r * 255);
-				color.rgbGreen    = static_cast<BYTE>(pixel.g * 255);
-				color.rgbBlue     = static_cast<BYTE>(pixel.b * 255);
-				color.rgbReserved = static_cast<BYTE>(pixel.a * 255);
+				color.rgbRed      = static_cast<BYTE>(pixel.R);
+				color.rgbGreen    = static_cast<BYTE>(pixel.G);
+				color.rgbBlue     = static_cast<BYTE>(pixel.B);
+				color.rgbReserved = static_cast<BYTE>(pixel.A);
 
 				FreeImage_SetPixelColor(handler, i, j, &color);
 			}
 
 		FreeImage_Save(ConvertType(type), handler, fileName.c_str(), 0);
+		FreeImage_Unload(handler);
 	}
 
-	glm::vec4& Image::GetPixel(uint32_t x, uint32_t y)
+	Color& Image::GetPixel(uint32_t x, uint32_t y)
 	{
-		ASSERT(x > m_Width || y > m_Height, "Out of range");
-		if(x > m_Width || y > m_Height)
+		ASSERT(x < m_Width && y < m_Height, "Out of range");
+		if(x >= m_Width || y >= m_Height)
 			throw std::out_of_range("Out of range");
 
 		return m_Pixels[x + y * m_Width];
 	}
 
-	glm::vec4 Image::GetPixel(uint32_t x, uint32_t y) const
+	const Color& Image::GetPixel(uint32_t x, uint32_t y) const
 	{
-		ASSERT(x > m_Width || y > m_Height, "Out of range");
-		if(x > m_Width || y > m_Height)
+		ASSERT(x < m_Width && y < m_Height, "Out of range");
+		if(x >= m_Width || y >= m_Height)
 			throw std::out_of_range("Out of range");
 
 		return m_Pixels[x + y * m_Width];
 	}
 
-	void Image::SetPixel(uint32_t x, uint32_t y, const glm::vec4 &color)
+	void Image::SetPixel(uint32_t x, uint32_t y, const Color &color)
 	{
-		ASSERT(x > m_Width || y > m_Height, "Out of range");
-		if(x > m_Width || y > m_Height)
-			throw std::out_of_range("Out of range");
-
-		m_Pixels[x + y * m_Width] = color;
+		GetPixel(x, y) = color;
 	}
 
 	Image& Image::operator=(Image &&image) noexcept
 	{
+		Clear();
 		m_Width  = image.m_Width;
 		m_Height = image.m_Height;
 
-		delete[] m_Pixels;
 		m_Pixels       = image.m_Pixels;
 		image.m_Pixels = nullptr;
 
@@ -240,38 +214,37 @@ namespace Game
 
 	Image& Image::operator=(const Image &image)
 	{
-		delete[] m_Pixels;
-
+		Clear();
 		m_Width  = image.m_Width;
 		m_Height = image.m_Height;
 
-		const size_t size = m_Width * m_Height;
+		const size_t size = static_cast<size_t>(m_Width) * m_Height;
 
-		m_Pixels = new glm::vec4[size];
-		std::memcpy(m_Pixels, image.m_Pixels, size * sizeof(glm::vec4));
+		m_Pixels = new Color[size];
+
+		std::memcpy(m_Pixels, image.m_Pixels, size * sizeof(Color));
 
 		return *this;
 	}
 
 	void Image::LoadToMemory(void *imageFile)
 	{
-		auto image = reinterpret_cast<FIBITMAP*>(imageFile);
+		auto image = static_cast<FIBITMAP*>(imageFile);
 		image      = FreeImage_ConvertTo32Bits(image);
 
 		m_Width  = FreeImage_GetWidth(image);
 		m_Height = FreeImage_GetHeight(image);
 
-		auto pixels = reinterpret_cast<uint8_t*>(FreeImage_GetBits(image));
+		const size_t size = static_cast<size_t>(m_Width) * m_Height;
 
-		m_Pixels = new glm::vec4[m_Width * m_Height];
+		auto pixels = FreeImage_GetBits(image);
 
-		for(size_t i    = 0; i < m_Width * m_Height; ++i)
-			m_Pixels[i] = TranslateColor(
-			                             pixels[i * 4 + FI_RGBA_RED],
-			                             pixels[i * 4 + FI_RGBA_GREEN],
-			                             pixels[i * 4 + FI_RGBA_BLUE],
-			                             pixels[i * 4 + FI_RGBA_ALPHA]
-			                            );
+		m_Pixels = new Color[size];
+
+		for(size_t i = 0; i < size; ++i)
+		{
+			m_Pixels[i] = Color(pixels[i * 4 + FI_RGBA_RED], pixels[i * 4 + FI_RGBA_GREEN], pixels[i * 4 + FI_RGBA_BLUE], pixels[i * 4 + FI_RGBA_ALPHA]);
+		}
 
 		FreeImage_Unload(image);
 	}

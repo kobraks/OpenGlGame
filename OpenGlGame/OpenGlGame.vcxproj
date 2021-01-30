@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="BufferObject.cpp" />
     <ClCompile Include="Clock.cpp" />
+    <ClCompile Include="Color.cpp" />
     <ClCompile Include="ConfigLayer.cpp" />
     <ClCompile Include="ConsoleLayer.cpp" />
     <ClCompile Include="Context.cpp" />

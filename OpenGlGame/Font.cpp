@@ -228,7 +228,7 @@ namespace Game
 		m_StreamRec = nullptr;
 		m_RefCount  = nullptr;
 		m_Pages.clear();
-		std::vector<float>().swap(m_PixelBuffer);
+		std::vector<uint8_t>().swap(m_PixelBuffer);
 	}
 
 	Glyph Font::LoadGlyph(uint32_t codePoint, uint32_t characterSize, bool bold, float outlineThickness) const
@@ -314,15 +314,15 @@ namespace Game
 
 			m_PixelBuffer.resize(width * height * 4);
 
-			float* current = &m_PixelBuffer[0];
-			float* end = current + width * height * 4;
+			uint8_t* current = &m_PixelBuffer[0];
+			uint8_t* end = current + width * height * 4;
 
 			while(current != end)
 			{
-				(*current++) = 1.f;
-				(*current++) = 1.f;
-				(*current++) = 1.f;
-				(*current++) = 0.f;
+				(*current++) = 255;
+				(*current++) = 255;
+				(*current++) = 255;
+				(*current++) = 0;
 			}
 
 			const uint8_t* pixels = bitmap.buffer;
@@ -333,7 +333,7 @@ namespace Game
 					for (uint32_t x = padding; x < width - padding; ++x)
 					{
 						std::size_t index = x + y * width;
-						m_PixelBuffer[index * 4 + 3] = ((pixels[(x - padding) / 8]) & (1 << (7-((x - padding) % 8)))) ? 1.f : 0.f;
+						m_PixelBuffer[index * 4 + 3] = ((pixels[(x - padding) / 8]) & (1 << (7-((x - padding) % 8)))) ? 255 : 0;
 					}
 					pixels += bitmap.pitch;
 				}
@@ -345,7 +345,7 @@ namespace Game
 					for (uint32_t x = padding; x < width - padding; ++x)
 					{
 						std::size_t index = x + y * width;
-						m_PixelBuffer[index * 4 + 3] = static_cast<float>(pixels[x - padding]) / 255.f;
+						m_PixelBuffer[index * 4 + 3] = pixels[x - padding];
 					}
 					pixels += bitmap.pitch;
 				}
