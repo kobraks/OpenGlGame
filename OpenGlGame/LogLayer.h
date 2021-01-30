@@ -15,11 +15,7 @@ namespace Game
 {
 	class LogLayer: public Layer, public LuaRegister, public spdlog::sinks::base_sink<std::mutex>
 	{
-		struct Message
-		{
-			std::string Text;
-			Color Color;
-		};
+		struct Message;
 		
 		bool m_Show           = true;
 		bool m_ScrollToBottom = true;

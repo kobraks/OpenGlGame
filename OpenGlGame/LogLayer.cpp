@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "LogLayer.h"
 
+#include <chrono>
+
 #include "Log.h"
 
 #include "Application.h"
@@ -13,25 +15,37 @@
 
 namespace
 {
-	constexpr Game::Color SelectColor(spdlog::level::level_enum level)
+	constexpr Game::Color SelectTextColor(spdlog::level::level_enum level)
 	{
 		switch(level)
 		{
-			case spdlog::level::trace: return Game::Color(255, 255, 255);
+			case spdlog::level::trace: return Game::Color(204, 204, 204);
 			case spdlog::level::debug: return Game::Color(58, 150, 221);
 			case spdlog::level::info: return Game::Color(19, 161, 14);
-			case spdlog::level::warn: return Game::Color(255, 255, 0);
+			case spdlog::level::warn: return Game::Color(249, 241, 165);
 			case spdlog::level::err: ;
 			case spdlog::level::critical: return Game::Color(255, 0, 0);
 			case spdlog::level::off:
 			case spdlog::level::n_levels: default: return Game::Color(0, 0, 0, 0);
 		}
 	}
-}
 
-namespace Game
-{
-	static void Print(int severity, const sol::variadic_args &args)
+	constexpr Game::Color SelectBackgroundColor(spdlog::level::level_enum level)
+	{
+		switch(level)
+		{
+			case spdlog::level::trace: return Game::Color(204, 204, 204);
+			case spdlog::level::debug: return Game::Color(58, 150, 221);
+			case spdlog::level::info: return Game::Color(19, 161, 14);
+			case spdlog::level::warn: return Game::Color(249, 241, 165);
+			case spdlog::level::err: ;
+			case spdlog::level::critical: return Game::Color(255, 0, 0);
+			case spdlog::level::off:
+			case spdlog::level::n_levels: default: return Game::Color(0, 0, 0, 0);
+		}
+	}
+
+	void Print(int severity, const sol::variadic_args &args)
 	{
 		if(severity < spdlog::level::trace)
 		{
@@ -46,12 +60,12 @@ namespace Game
 		}
 
 		const auto level   = static_cast<spdlog::level::level_enum>(severity);
-		const auto message = ToString(args.lua_state(), args);
+		const auto message = Game::ToString(args.lua_state(), args);
 
-		Log::GetScriptLogger()->log(level, message);
+		Game::Log::GetScriptLogger()->log(level, message);
 	}
 
-	static void SetLogLevel(int severity)
+	void SetLogLevel(int severity)
 	{
 		if(severity < spdlog::level::trace)
 		{
@@ -65,8 +79,40 @@ namespace Game
 			severity = spdlog::level::critical;
 		}
 
-		Log::GetScriptLogger()->set_level(static_cast<spdlog::level::level_enum>(severity));
+		Game::Log::GetScriptLogger()->set_level(static_cast<spdlog::level::level_enum>(severity));
 	}
+
+	std::string GetFirst(const std::string &string, size_t size)
+	{
+		return std::string(string.begin(), string.size() > size ? string.begin() + size : string.end());
+	}
+}
+
+namespace Game
+{
+	struct Source
+	{
+		const char *FileName{nullptr};
+		const char *FunctionName{nullptr};
+		int Line{0};
+	};
+
+	struct LogLayer::Message
+	{
+		std::string Name;
+		std::string Desc;
+		std::string Text;
+
+		Color Color;
+
+		spdlog::level::level_enum Level;
+
+		size_t ThreadId{0};
+		Source Source;
+
+		std::string Time;
+		bool Selected = false;
+	};
 
 	LogLayer::LogLayer() : Layer("LogLayer") {}
 
@@ -140,23 +186,27 @@ namespace Game
 
 		spdlog::memory_buf_t formatted;
 		formatter_->format(msg, formatted);
-		// std::string desc = msg.payload.data();
-		// std::string sDesc(desc.begin(), desc.size() < 15 ? desc.end() : desc.begin() + 15);
-		// std::string time(text.begin() + 1, text.begin() + text.find("]"));
-		// std::string severity = fmt::format("{}", to_string_view(msg.level).data());
 
-		// sDesc = Trim(sDesc);
+		time_t time = std::chrono::system_clock::to_time_t(msg.time);
+		std::tm tm;
+		localtime_s(&tm, &time);
 
-		// Message message{
-		// msg.logger_name.data(),
-		// std::move(desc),
-		// std::move(sDesc),
-		// std::move(time),
-		// std::move(severity),
-		// std::move(text),
-		// SelectColor(msg.level)
-		// };
-		m_Messages.emplace_back(Message{fmt::to_string(formatted), SelectColor(msg.level)});
+		fmt::memory_buffer timeString;
+
+		format_to(timeString, "{}:{}:{}", tm.tm_hour, tm.tm_min, tm.tm_sec);
+
+		Message message{
+			msg.logger_name.data(),
+			msg.payload.data(),
+			fmt::to_string(formatted),
+			SelectTextColor(msg.level),
+			msg.level,
+			msg.thread_id,
+			{msg.source.filename, msg.source.funcname, msg.source.line},
+			fmt::to_string(timeString)
+		};
+
+		m_Messages.emplace_back(std::move(message));
 	}
 
 	void LogLayer::flush_() {}
@@ -231,15 +281,30 @@ namespace Game
 		const ImGuiChildWindowProps childProps{"Scrolling", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar};
 		ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
 		// if(copyButton) ImGui::LogToClipboard();
-		size_t i = 0;
-		for(size_t i = 0; i < m_Messages.size(); ++i)
+
+		constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV;
+
 		{
-			auto &message = m_Messages[i];
+			ImGuiUniqueGuard<ImGuiTable> guard(ImGuiTableProps{"", 5, flags});
 
-			if(!m_Filter.PassFilter(message.Text.c_str()))
-				continue;
+			ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 0.1, 0);
+			ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthAutoResize, -1, 1);
+			ImGui::TableSetupColumn("Severity", ImGuiTableColumnFlags_WidthAutoResize, -1, 2);
+			ImGui::TableSetupColumn("Logger", ImGuiTableColumnFlags_WidthAutoResize, -1, 3);
+			ImGui::TableSetupColumn("ShortDescription", ImGuiTableColumnFlags_WidthAutoResize, -1, 4);
 
-			PrintMessage(i, message);
+			ImGui::TableHeadersRow();
+
+			size_t i = 0;
+			for(size_t i = 0; i < m_Messages.size(); ++i)
+			{
+				auto &message = m_Messages[i];
+
+				if(!m_Filter.PassFilter(message.Text.c_str()))
+					continue;
+
+				PrintMessage(i, message);
+			}
 		}
 
 		if(m_AllowScrolling && m_ScrollToBottom)
@@ -251,6 +316,50 @@ namespace Game
 
 	void LogLayer::PrintMessage(size_t i, Message &message)
 	{
-		TextColored(message.Color, message.Text);
+		// TextColored(message.Color, message.Text);
+
+		ImGui::TableNextRow();
+		{
+			ImGuiUniqueGuard<ImGuiGroup> guard{};
+			ImGui::TableNextColumn();
+			ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, message.Color.ToInteger());
+			ImGui::Selectable(fmt::format("{}", i).c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
+			if(ImGui::IsItemHovered())
+				ImGui::SetTooltip(message.Text.c_str());
+			if(ImGui::IsItemClicked())
+				message.Selected = !message.Selected;
+			ImGui::TableNextColumn();
+
+			ImGui::Text(message.Time.c_str());
+			ImGui::TableNextColumn();
+			ImGui::Text(to_string_view(message.Level).data());
+			ImGui::TableNextColumn();
+			ImGui::Text(message.Name.c_str());
+			ImGui::TableNextColumn();
+			ImGui::Text(GetFirst(message.Desc, 15).c_str());
+		}
+
+		if(message.Selected)
+		{
+			ImGui::EndTable();
+
+			ImGui::Text("File: %s", message.Source.FileName);
+			ImGui::Text("Function name: %s", message.Source.FunctionName);
+			ImGui::Text("Line: %s", message.Source.Line);
+
+			ImGui::Separator();
+
+			ImGui::Text("Time: %s", message.Time.c_str());
+			ImGui::Text("Name: %s", message.Name.c_str());
+			ImGui::Text("Level: %s", to_string_view(message.Level).data());
+
+			InputTextMultiline(fmt::format("{}", i), message.Desc, ImVec2(0, 0), ImGuiInputTextFlags_ReadOnly);
+			if(ImGui::Button("Copy"))
+				ImGui::SetClipboardText(message.Text.c_str());
+
+
+			constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV;
+			ImGui::BeginTable("", 5, flags);
+		}
 	}
 }
