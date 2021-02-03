@@ -56,7 +56,7 @@ namespace Game
 
 	void VertexArray::AddVertexBuffer(const BufferObject &buffer, const VertexBufferLayout &layout)
 	{
-		GL_LOG_INFO("Adding buffer {} to vertex array: {}", buffer.ID(), ID());
+		GL_LOG_INFO("Adding buffer {} to vertex array: {}", buffer.Id(), Id());
 		Bind();
 		buffer.Bind();
 		const auto &elements = layout.GetElements();

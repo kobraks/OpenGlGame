@@ -8,23 +8,12 @@
 #include <glm/vec4.hpp>
 
 #include "Assert.h"
+#include "GLEnums.h"
 
 namespace Game
 {
 	class VertexBufferLayout
 	{
-		enum class Type : size_t
-		{
-			Byte = GL_BYTE,
-			UnsignedByte = GL_UNSIGNED_BYTE,
-			Short = GL_SHORT,
-			UnsignedShort = GL_UNSIGNED_SHORT,
-			Int = GL_INT,
-			UnsignedInt = GL_UNSIGNED_INT,
-			Float = GL_FLOAT,
-			Double = GL_DOUBLE
-		};
-
 	public:
 		struct Element
 		{
@@ -57,7 +46,7 @@ namespace Game
 	template<>\
 	inline void Game::VertexBufferLayout::Push<type>(const size_t& count, const bool normalized)\
 	{\
-		m_Elements.emplace_back(Element{static_cast<size_t>(Type::typeT), count, normalized, sizeof(glType), #type});\
+		m_Elements.emplace_back(Element{static_cast<size_t>(DataType::typeT), count, normalized, sizeof(glType), #type});\
 		m_Stride += count * sizeof(glType);\
 	}
 

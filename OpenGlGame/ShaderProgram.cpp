@@ -24,39 +24,52 @@ namespace Game
 		return shader;
 	}
 
-	ShaderProgram::ShaderProgram(const std::string &name) : m_Name(name)
+	ShaderProgram::Internals::Internals(std::string name) : Name(std::move(name))
 	{
-		GL_LOG_INFO("Creating shader program");
-		m_Program = CreateShaderProgram();
-		GL_LOG_INFO("New {} shader program id: {}", m_Name, *m_Program);
+		GL_CHECK(Program = glCreateProgram());
 	}
 
-	ShaderProgram::ShaderProgram(IdType id, const std::string &name) : m_Name(name)
+	ShaderProgram::Internals::Internals(IdType id, std::string name) : Program(id),
+	                                                                   Name(std::move(name)) { }
+
+	ShaderProgram::Internals::~Internals()
+	{
+		GL_CHECK(glDeleteProgram(Program));
+	}
+
+	ShaderProgram::ShaderProgram(const std::string &name)
+	{
+		GL_LOG_INFO("Creating shader program");
+		m_Internals = MakePointer<Internals>(name);
+		GL_LOG_INFO("New {} shader program id: {}", m_Internals->Name, m_Internals->Program);
+	}
+
+	ShaderProgram::ShaderProgram(IdType id, const std::string &name)
 	{
 		bool isProgram = false;
 		GL_CHECK(isProgram = glIsProgram(id) == GL_TRUE ? true : false);
-		
+
 		if(!isProgram)
 		{
 			ASSERT(false, "Provided id {} do not belong to shader program", id);
 			std::runtime_error(fmt::format("Provided id {} do not belong to shader program", id));
 		}
 
-		m_Program = std::shared_ptr<IdType>(new IdType(id), [](IdType *id) { GL_CHECK(glDeleteProgram(*id)); delete id; });
+		m_Internals = MakePointer<Internals>(id, name);
 
 		int val = 0;
 		GL_CHECK(glGetProgramiv(id, GL_LINK_STATUS, &val));
 
-		if(val == GL_TRUE)
-			m_Linked = true;
+		if(GetProgramI(ParametersName::LinkStatus) == GL_TRUE)
+			m_Internals->Linked = true;
 
-		GL_LOG_INFO("Link status of provided shader: {}", m_Linked);
+		GL_LOG_INFO("Link status of provided shader: {}", m_Internals->Linked);
 
-		if(m_Linked)
+		if(m_Internals->Linked)
 			Populate();
 	}
 
-	ShaderProgram::ShaderProgram(const std::string &name, const Shader &shader) : ShaderProgram(name)
+	ShaderProgram::ShaderProgram(const std::string &name, Pointer<Shader> shader) : ShaderProgram(name)
 	{
 		Attach(shader);
 
@@ -65,70 +78,70 @@ namespace Game
 		Detach(shader);
 	}
 
-	void ShaderProgram::Attach(const Shader &shader)
+	void ShaderProgram::Attach(Pointer<Shader> shader)
 	{
-		GL_LOG_INFO(
-		            "Attaching {} shader {} to shader program {} (id: {})",
-		            shader.TypeToString(),
-		            shader.ID(),
-		            m_Name,
-		            *m_Program
-		           );
+		if(m_Internals->Shaders.contains(shader))
+		{
+			GL_LOG_WARN("Trying to attach attached shader");
+			return;
+		}
 
-		GL_CHECK(glAttachShader(*m_Program, shader));
+		GL_LOG_INFO("Attaching {} shader {} to shader program {} (id: {})", shader->TypeToString(), shader->ID(), m_Internals->Name, m_Internals->Program);
+
+		GL_CHECK(glAttachShader(m_Internals->Program, *shader));
+		m_Internals->Shaders.emplace(shader);
 	}
 
-	void ShaderProgram::Detach(const Shader &shader)
+	void ShaderProgram::Detach(Pointer<Shader> shader)
 	{
-		GL_LOG_INFO(
-		            "Detaching {} shader {} to shader program {} (id: {})",
-		            shader.TypeToString(),
-		            shader.ID(),
-		            m_Name,
-		            *m_Program
-		           );
+		auto &shaders = m_Internals->Shaders;
+		auto iter     = shaders.find(shader);
 
-		GL_CHECK(glDetachShader(*m_Program, shader));
+		ASSERT(iter != shaders.end(), "Detaching not attached shader");
+
+		if(iter == shaders.end())
+			throw std::runtime_error("Detaching not attached shader");
+
+		GL_LOG_INFO("Detaching {} shader {} to shader program {} (id: {})", shader->TypeToString(), shader->ID(), m_Internals->Name, m_Internals->Program);
+
+		GL_CHECK(glDetachShader(m_Internals->Program, *shader));
+		shaders.erase(iter);
 	}
 
 	bool ShaderProgram::Link()
 	{
-		int status = GL_FALSE;
-		GL_LOG_INFO("Linking {} (id: {}) shader program", m_Name, *m_Program);
+		GL_LOG_INFO("Linking {} (id: {}) shader program", m_Internals->Name, m_Internals->Program);
 
-		GL_CHECK(glLinkProgram(*m_Program));
-		GL_CHECK(glGetProgramiv(*m_Program, GL_LINK_STATUS, &status));
+		GL_CHECK(glLinkProgram(m_Internals->Program));
 
-		if(status == GL_FALSE)
+		if(GetProgramI(ParametersName::LinkStatus) == GL_FALSE)
 		{
-			GL_LOG_ERROR("Unable to link {} (id: {}) shader program", m_Name, *m_Program);
-			return m_Linked = false;
+			GL_LOG_ERROR("Unable to link {} (id: {}) shader program", m_Internals->Name, m_Internals->Program);
+			return m_Internals->Linked = false;
 		}
 
-		GL_LOG_INFO("Sucessful linked {} (id: {}) shader program", m_Name, *m_Program);
+		GL_LOG_INFO("Sucessful linked {} (id: {}) shader program", m_Internals->Name, m_Internals->Program);
 
 		Populate();
-		return m_Linked = true;
+		return m_Internals->Linked = true;
 	}
 
 	void ShaderProgram::Use() const
 	{
-		if(!m_Linked)
+		if(!m_Internals->Linked)
 			return;
 
-		GL_CHECK(glUseProgram(*m_Program));
+		GL_CHECK(glUseProgram(m_Internals->Program));
 	}
 
 	std::string ShaderProgram::GetLog() const
 	{
-		int length = 0;
-
-		GL_CHECK(glGetProgramiv(*m_Program, GL_INFO_LOG_LENGTH, &length));
+		int length = GetProgramI(ParametersName::InfoLogLength);
 
 		if(length > 0)
 		{
 			std::string log(static_cast<IdType>(length), 0);
-			GL_CHECK(glGetProgramInfoLog(*m_Program, length, &length, &log[0]));
+			GL_CHECK(glGetProgramInfoLog(m_Internals->Program, length, &length, &log[0]));
 			return log;
 		}
 
@@ -137,39 +150,36 @@ namespace Game
 
 	ShaderProgram::AttributeLocationType ShaderProgram::GetAttributeLocation(const std::string &name) const
 	{
-		auto iter     = m_Attributes.find(name);
-		auto location = INVALID_ATTRIBUTE_LOCATION;
+		auto &attributes = m_Internals->Attributes;
+		auto iter        = attributes.find(name);
+		auto location    = INVALID_ATTRIBUTE_LOCATION;
 
-		if(iter != m_Attributes.end())
+		if(iter != attributes.end())
 			location = iter->second;
 		else
 		{
-			GL_CHECK(location = glGetAttribLocation(*m_Program, name.c_str()));
-			m_Attributes.emplace(std::make_pair(name, location));
+			GL_CHECK(location = glGetAttribLocation(m_Internals->Program, name.c_str()));
+			attributes.emplace(std::make_pair(name, location));
 		}
 
 		if(location == -1)
-			GL_LOG_WARN(
-		            "Shader program {} (id: {}) do not posses an attribute named: {}",
-		            m_Name,
-		            *m_Program,
-		            name.c_str()
-		           );
+			GL_LOG_WARN("Shader program {} (id: {}) do not posses an attribute named: {}", m_Internals->Name, m_Internals->Program, name.c_str());
 
 		return location;
 	}
 
 	ShaderProgram::UniformLocationType ShaderProgram::GetUniformLocation(const std::string &name) const
 	{
-		const auto iter = m_UniformsLocation.find(name);
-		auto location   = INVALID_UNIFORM_LOCATION;
-		if(iter != m_UniformsLocation.end())
+		auto &uniformsLocation = m_Internals->UniformsLocation;
+		const auto iter        = uniformsLocation.find(name);
+		auto location          = INVALID_UNIFORM_LOCATION;
+		if(iter != uniformsLocation.end())
 			location = iter->second;
 		else
-			GL_CHECK(location = m_UniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second);
+			GL_CHECK(location = uniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second);
 
 		if(location == -1)
-			GL_LOG_WARN("Uniform \"{}\" not found in shader \"{}\" (id: {})", name, m_Name, *m_Program);
+			GL_LOG_WARN("Uniform \"{}\" not found in shader \"{}\" (id: {})", name, m_Internals->Name, m_Internals->Program);
 
 		return location;
 	}
@@ -366,9 +376,8 @@ namespace Game
 
 	void ShaderProgram::Populate()
 	{
-		int count = 0;
-		GL_CHECK(glGetProgramiv(*m_Program, GL_ACTIVE_UNIFORMS, &count));
-		GL_LOG_INFO("Shader program {} (id: {}) has {} active uniforms", m_Name, *m_Program, count);
+		int count = GetProgramI(ParametersName::ActiveUniforms);
+		GL_LOG_INFO("Shader program {} (id: {}) has {} active uniforms", m_Internals->Name, m_Internals->Program, count);
 
 		static constexpr uint32_t BUFFER_SIZE = 524;
 		std::array<char, BUFFER_SIZE> buffer{};
@@ -376,16 +385,32 @@ namespace Game
 		int length    = 0;
 		uint32_t type = 0;
 
+		auto &program          = m_Internals->Program;
+		auto &uniformsLocation = m_Internals->UniformsLocation;
+
 		for(auto i = 0; i < count; ++i)
 		{
-			GL_CHECK(glGetActiveUniform(*m_Program, i, BUFFER_SIZE, &length, &size, &type, buffer.data()));
+			GL_CHECK(glGetActiveUniform(program, i, BUFFER_SIZE, &length, &size, &type, buffer.data()));
 			std::string uniformName(buffer.data());
 			GLint location = INVALID_UNIFORM_LOCATION;
 			GL_CHECK(location = glGetUniformLocation(*this, uniformName.c_str()));
 
-			m_UniformsLocation.emplace(uniformName, location);
+			uniformsLocation.emplace(uniformName, location);
 
 			GL_LOG_DEBUG("Uniform {}, Name: {} Size: {} Type: {}", i, uniformName, size, type);
 		}
+	}
+
+	int ShaderProgram::GetProgramI(ParametersName name) const
+	{
+		int result = 0;
+		GetProgramIV(name, &result);
+
+		return result;
+	}
+
+	void ShaderProgram::GetProgramIV(ParametersName name, int *params) const
+	{
+		GL_CHECK(glGetProgramiv(m_Internals->Program, static_cast<GLenum>(name), params));
 	}
 }

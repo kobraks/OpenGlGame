@@ -24,7 +24,7 @@ namespace Game
 		VertexArray();
 
 		operator IdType() const { return *m_Array; }
-		IdType ID() const { return *m_Array; }
+		IdType Id() const { return *m_Array; }
 
 		void Bind() const;
 		void UnBind() const;

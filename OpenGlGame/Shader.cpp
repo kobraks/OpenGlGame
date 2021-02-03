@@ -23,29 +23,24 @@ namespace Game
 		return {};
 	}
 
-	static void DestroyShader(Shader::IdType *id)
+	Shader::Internals::Internals(const Shader::Type &type) : Type(type)
 	{
-		GL_CHECK(glDeleteShader(*id));
-		delete id;
+		GL_CHECK(Shader = glCreateShader(static_cast<GLenum>(type)));
 	}
 
-	static Pointer<Shader::IdType> CreateShader(uint32_t shaderType)
+	Shader::Internals::~Internals()
 	{
-		auto shader = Pointer<Shader::IdType>(new Shader::IdType{}, DestroyShader);
-
-		GL_CHECK(*shader = glCreateShader(shaderType));
-		
-		return shader;
+		GL_CHECK(glDeleteShader(Shader));
 	}
 
-	Shader::Shader(const Type &type) : m_Type(type)
+	Shader::Shader(const Type &type)
 	{
 		ASSERT(type != Type::Unknown, "Unknown ShaderType");
 
-		m_Shader = CreateShader(static_cast<uint32_t>(type));
+		m_Internals = MakePointer<Internals>(type);
 		
 		GL_LOG_INFO("Creating {} shader", ShaderTypeToString(type));
-		GL_LOG_INFO("{} Shader id: {}", ShaderTypeToString(type), *m_Shader);
+		GL_LOG_INFO("{} Shader id: {}", ShaderTypeToString(type), m_Internals->Shader);
 	}
 
 	Shader::Shader(const Type &type, const ShaderSource &source) : Shader(type)
@@ -56,44 +51,46 @@ namespace Game
 
 	bool Shader::Compile()
 	{
-		GL_LOG_INFO("Compiling [id: {}] {} Shader", *m_Shader, TypeToString());
+		const IdType& shader = m_Internals->Shader;
+		
+		GL_LOG_INFO("Compiling [id: {}] {} Shader", shader, TypeToString());
 
 		int status = GL_FALSE;
 
-		GL_CHECK(glCompileShader(*m_Shader));
-		GL_CHECK(glGetShaderiv(*m_Shader, GL_COMPILE_STATUS, &status));
+		GL_CHECK(glCompileShader(shader));
+		GL_CHECK(glGetShaderiv(shader, GL_COMPILE_STATUS, &status));
 
 		if(status == GL_FALSE)
 		{
-			GL_LOG_ERROR("Unable to compile [id: {}] {} Shader", *m_Shader, TypeToString());
-			return m_Complied = false;
+			GL_LOG_ERROR("Unable to compile [id: {}] {} Shader", shader, TypeToString());
+			return m_Internals->Complied = false;
 		}
 
-		GL_LOG_INFO("Sucessful compiled [id: {}] {} Shader", *m_Shader, TypeToString());
-		return m_Complied = true;
+		GL_LOG_INFO("Sucessful compiled [id: {}] {} Shader", shader, TypeToString());
+		return m_Internals->Complied = true;
 	}
 
 	void Shader::SetSource(const ShaderSource &source)
 	{
 		auto cstr = source.GetSource().c_str();
 
-		GL_LOG_INFO("Attaching source code to {} shader {}", *m_Shader, TypeToString());
+		GL_LOG_INFO("Attaching source code to {} shader {}", m_Internals->Shader, TypeToString());
 		GL_LOG_DEBUG("Source code: \n{}\nEND", source.GetSource());
 
-		m_Source = source;
-		GL_CHECK(glShaderSource(*m_Shader, 1, &cstr, nullptr));
+		m_Internals->Source = source;
+		GL_CHECK(glShaderSource(m_Internals->Shader, 1, &cstr, nullptr));
 	}
 
 	std::string Shader::GetLog() const
 	{
 		int length = 0;
 
-		GL_CHECK(glGetShaderiv(*m_Shader, GL_INFO_LOG_LENGTH, &length));
+		GL_CHECK(glGetShaderiv(m_Internals->Shader, GL_INFO_LOG_LENGTH, &length));
 
 		if(length > 0)
 		{
 			std::string log(static_cast<std::string::size_type>(length + 1), 0);
-			GL_CHECK(glGetShaderInfoLog(*m_Shader, length, &length, &log[0]));
+			GL_CHECK(glGetShaderInfoLog(m_Internals->Shader, length, &length, &log[0]));
 
 			return log;
 		}
@@ -103,6 +100,6 @@ namespace Game
 
 	std::string_view Shader::TypeToString() const
 	{
-		return ShaderTypeToString(m_Type);
+		return ShaderTypeToString(m_Internals->Type);
 	}
 }

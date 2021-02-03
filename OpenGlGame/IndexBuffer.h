@@ -13,9 +13,15 @@ namespace Game
 		using ConstIterator = ValueList::const_iterator;
 
 	private:
-		ValueList m_Values;
+		class Internals
+		{
+		public:
+			ValueList Values;
+			std::optional<std::pair<size_t, size_t>> LastChange = std::nullopt;
+		};
 
-		mutable std::optional<std::pair<size_t, size_t>> m_LastChange = std::nullopt;
+		Pointer<Internals> m_Internals;
+
 	public:
 		explicit IndexBuffer(const BufferUsage &usage = BufferUsage::StaticDraw);
 		explicit IndexBuffer(size_t size, const BufferUsage &usage = BufferUsage::StaticDraw);
@@ -23,24 +29,24 @@ namespace Game
 		void Add(uint32_t value);
 
 		Iterator begin();
-		Iterator end() { return m_Values.end(); };
+		Iterator end();;
 
-		ConstIterator begin() const { return m_Values.begin(); }
-		ConstIterator end() const { return m_Values.end(); }
+		ConstIterator begin() const;
+		ConstIterator end() const;
 
 		uint32_t Get(size_t index) const;
 		uint32_t& Get(size_t index);
 
-		size_t Count() const { return m_Values.size(); }
+		size_t Count() const;
 		void Remove(const size_t &index);
 		void Remove(ConstIterator iterator);
 		void Reserve(size_t size);
 		void Resize(size_t size);
 
-		uint32_t operator[](const size_t index) const { return Get(index); }
-		uint32_t& operator[](const size_t index) { return Get(index); }
+		uint32_t operator[](const size_t index) const;
+		uint32_t& operator[](const size_t index);
 
-		const uint32_t* Data() const { return m_Values.data(); }
+		const uint32_t* Data() const;
 
 	protected:
 		void SendValues() const override;
@@ -59,7 +65,7 @@ namespace Game
 		template <class Iterator>
 		void Add(Iterator begin, const Iterator end)
 		{
-			Reserve(m_Values.size() + std::distance(begin, end));
+			Reserve(m_Internals->Values.size() + std::distance(begin, end) * sizeof(uint32_t));
 
 			for(; begin != end; ++begin)
 			{

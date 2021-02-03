@@ -9,114 +9,158 @@ namespace Game
 
 	IndexBuffer::IndexBuffer(const size_t size, const BufferUsage &usage) : IndexBuffer(usage)
 	{
-		Reserve(size);
+		Reserve(size * sizeof(uint32_t));
 	}
 
 	void IndexBuffer::Add(uint32_t value)
 	{
 		MarkAsChanged();
-		
-		if (!m_LastChange)
-			m_LastChange = std::make_pair(m_Values.size(), m_Values.size());
-		else
-			m_LastChange->second = m_Values.size();
 
-		m_Values.emplace_back(value);
+		if(!m_Internals->LastChange)
+			m_Internals->LastChange = std::make_pair(m_Internals->Values.size(), m_Internals->Values.size());
+		else
+			m_Internals->LastChange->second = m_Internals->Values.size();
+
+		m_Internals->Values.emplace_back(value);
 	}
 
 	IndexBuffer::Iterator IndexBuffer::begin()
 	{
-		if(!m_LastChange)
-			m_LastChange = std::make_pair<size_t, size_t>(0, m_Values.size() - 1);
+		if(!m_Internals->LastChange)
+			m_Internals->LastChange = std::make_pair<size_t, size_t>(0, m_Internals->Values.size() - 1);
 		else
-			m_LastChange->first = 0;
+			m_Internals->LastChange->first = 0;
 
 		MarkAsChanged();
 
-		return m_Values.begin();
+		return m_Internals->Values.begin();
+	}
+
+	IndexBuffer::Iterator IndexBuffer::end()
+	{
+		return m_Internals->Values.end();
+	}
+
+	IndexBuffer::ConstIterator IndexBuffer::begin() const
+	{
+		return m_Internals->Values.begin();
+	}
+
+	IndexBuffer::ConstIterator IndexBuffer::end() const
+	{
+		return m_Internals->Values.end();
+	}
+
+	size_t IndexBuffer::Count() const
+	{
+		return m_Internals->Values.size();
+	}
+
+	uint32_t IndexBuffer::operator[](const size_t index) const
+	{
+		return Get(index);
+	}
+
+	uint32_t& IndexBuffer::operator[](const size_t index)
+	{
+		return Get(index);
+	}
+
+	const uint32_t* IndexBuffer::Data() const
+	{
+		return m_Internals->Values.data();
 	}
 
 	uint32_t IndexBuffer::Get(size_t index) const
 	{
-		ASSERT(index > m_Values.size(), "Out of container range");
+		auto& values = m_Internals->Values;
+		
+		ASSERT(index < values.size(), "Out of container range");
 
-		if(index > m_Values.size())
-			std::out_of_range(fmt::format("Out of container range"));
+		if(index > values.size())
+			throw std::out_of_range("Out of container range");
 
-		return m_Values[index];
+		return values[index];
 	}
 
 	uint32_t& IndexBuffer::Get(size_t index)
 	{
-		ASSERT(index > m_Values.size(), "Out of container range");
+		auto& values = m_Internals->Values;
+		ASSERT(index < values.size(), "Out of container range");
 
-		if(index > m_Values.size())
-			std::out_of_range(fmt::format("Out of container range"));
+		if(index > values.size())
+			throw std::out_of_range("Out of container range");
 
+		auto& lastChange = m_Internals->LastChange;
+		
 		MarkAsChanged();
-		if(!m_LastChange)
-			m_LastChange = std::make_pair(index, index);
+		if(!lastChange)
+			lastChange = std::make_pair(index, index);
 		else
 		{
-			if(index < m_LastChange->first)
-				m_LastChange->first = index;
-			if(index > m_LastChange->second)
-				m_LastChange->second = index;
+			if(index < lastChange->first)
+				lastChange->first = index;
+			if(index > lastChange->second)
+				lastChange->second = index;
 		}
 
-		return m_Values[index];
+		return values[index];
 	}
 
 	void IndexBuffer::Remove(const size_t &index)
 	{
-		ASSERT(index > m_Values.size(), "Out of container range");
+		auto& values = m_Internals->Values;
+		ASSERT(index < values.size(), "Out of container range");
 
-		if(index > m_Values.size())
-			std::out_of_range(fmt::format("Out of container range"));
+		if(index > values.size())
+			throw std::out_of_range("Out of container range");
 
-		Remove(m_Values.begin() + index);
+		Remove(values.begin() + index);
 	}
 
 	void IndexBuffer::Remove(ConstIterator iterator)
 	{
 		MarkAsChanged();
 
-		m_LastChange = std::make_pair<size_t, size_t>(0, m_Values.size());
+		m_Internals->LastChange = std::make_pair<size_t, size_t>(0, m_Internals->Values.size());
 
-		m_Values.erase(iterator);
+		m_Internals->Values.erase(iterator);
 	}
 
 	void IndexBuffer::Reserve(const size_t size)
 	{
-		m_Values.reserve(size);
-		Allocate(size);
+		m_Internals->Values.reserve(size);
+		Allocate(size * sizeof(uint32_t));
 	}
 
 	void IndexBuffer::Resize(const size_t size)
 	{
-		m_Values.resize(size);
+		m_Internals->Values.resize(size);
 		SendValues();
 	}
 
 	void IndexBuffer::SendValues() const
 	{
+		auto& lastChange = m_Internals->LastChange;
+		auto& values = m_Internals->Values;
+		
 		constexpr auto calcSize = [](const std::pair<size_t, size_t> &pair)
 		{
 			return (pair.second - pair.first) * sizeof(uint32_t);
 		};
 
-		if(m_LastChange)
+		if(lastChange)
 		{
-			const auto size = calcSize(*m_LastChange);
+			const auto size = calcSize(*lastChange);
 
 			if(size < Size())
-				SendSubData(m_Values.data() + m_LastChange->first, size, m_LastChange->first);
+				SendSubData(values.data() + lastChange->first, size, lastChange->first);
 			else
-				SendData(m_Values.data(), m_Values.size() * sizeof(uint32_t));
+				SendData(values.data(), values.size() * sizeof(uint32_t));
 		}
 		else
-			SendData(m_Values.data(), m_Values.size() * sizeof(uint32_t));
+			SendData(values.data(), values.size() * sizeof(uint32_t));
 
-		m_LastChange = std::nullopt;
+		lastChange = std::nullopt;
 	}
 }

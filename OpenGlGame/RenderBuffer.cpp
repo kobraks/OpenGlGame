@@ -5,28 +5,31 @@
 
 namespace Game
 {
-	static void DestroyRenderBuffer(RenderBuffer::IdType *id)
+	RenderBuffer::Internals::Internals()
 	{
-		GL_CHECK(glDeleteRenderbuffers(1, id));
-		delete id;
+		glGenRenderbuffers(1, &Id);
 	}
 
-	static auto CreateRenderBuffer()
+	RenderBuffer::Internals::Internals(IdType id)
 	{
-		auto renderBuffer = Pointer<RenderBuffer::IdType>(new RenderBuffer::IdType{}, DestroyRenderBuffer);
-		GL_CHECK(glGenRenderbuffers(1, &*renderBuffer));
+		m_IdProvided = true;
+		Id           = id;
+	}
 
-		return renderBuffer;
+	RenderBuffer::Internals::~Internals()
+	{
+		if(!m_IdProvided)
+			glDeleteRenderbuffers(1, &Id);
 	}
 
 	RenderBuffer::RenderBuffer(IdType id)
 	{
-		m_RenderBuffer = MakePointer<IdType>(id);
+		m_Internals = MakePointer<Internals>(id);
 	}
 
 	RenderBuffer::RenderBuffer()
 	{
-		m_RenderBuffer = CreateRenderBuffer();
+		m_Internals = MakePointer<Internals>();
 	}
 
 	RenderBuffer::RenderBuffer(uint32_t width, uint32_t height, InternalFormat format) : RenderBuffer()
@@ -46,22 +49,30 @@ namespace Game
 
 	void RenderBuffer::Storage(uint32_t width, uint32_t height, InternalFormat format)
 	{
-		m_Width = width;
-		m_Height = height;
-		m_Format = format;
-		m_Samples = 1;
-		
-		GL_CHECK(glNamedRenderbufferStorage(*m_RenderBuffer, static_cast<GLenum>(format), width, height));
+		Storage(width, height, format, 1);
 	}
 
 	void RenderBuffer::Storage(uint32_t width, uint32_t height, InternalFormat format, uint32_t samples)
 	{
-		m_Width = width;
-		m_Height = height;
-		m_Format = format;
-		m_Samples = samples;
-		
-		GL_CHECK(glNamedRenderbufferStorageMultisample(*m_RenderBuffer, samples, static_cast<GLenum>(format), width, height));
+		m_Internals->Size    = {width, height};
+		m_Internals->Format  = format;
+		m_Internals->Samples = samples;
+
+		GL_CHECK(glNamedRenderbufferStorageMultisample(m_Internals->Id, samples, static_cast<GLenum>(format), width, height));
+	}
+
+	void RenderBuffer::Storage(const Vector2u &size, InternalFormat format)
+	{
+		Storage(size, format, 1);
+	}
+
+	void RenderBuffer::Storage(const Vector2u &size, InternalFormat format, uint32_t samples)
+	{
+		m_Internals->Size    = size;
+		m_Internals->Format  = format;
+		m_Internals->Samples = samples;
+
+		glNamedRenderbufferStorage(m_Internals->Id, static_cast<GLenum>(format), size.Width, size.Height);
 	}
 
 	RenderBuffer* RenderBuffer::GetDefault()
@@ -72,10 +83,10 @@ namespace Game
 
 	uint32_t RenderBuffer::MaxSamples()
 	{
-		static int samples = 0;
+		static int samples  = 0;
 		static bool checked = false;
 
-		if (!checked)
+		if(!checked)
 		{
 			checked = true;
 

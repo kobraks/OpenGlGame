@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "BufferObject.h"
 
+#include <stdexcept>
 
 #include "Assert.h"
 #include "Log.h"
@@ -8,110 +9,137 @@
 
 namespace Game
 {
-	static void DeleteBuffer(BufferObject::IdType *id)
+	BufferObject::Internals::Internals()
 	{
-		GL_CHECK(glDeleteBuffers(1, id));
-
-		delete id;
+		glGenBuffers(1, &Id);
 	}
 
-	static Pointer<BufferObject::IdType> CreateBuffer()
+	BufferObject::Internals::Internals(IdType id)
 	{
-		auto buffer = Pointer<BufferObject::IdType>(new BufferObject::IdType(), DeleteBuffer);
-		GL_CHECK(glGenBuffers(1, &*buffer));
-
-		return buffer;
+		m_ProvidedId = true;
+		Id = id;
 	}
 
-	BufferObject::BufferObject(BufferType type, bool def) : m_Usage(BufferUsage::StaticDraw),
-	                                                        m_Type(type)
+	BufferObject::Internals::~Internals()
 	{
-		m_Buffer = MakePointer<IdType>(0);
+		if (!m_ProvidedId)
+			glDeleteBuffers(1, &Id);
 	}
 
-	BufferObject::BufferObject(const BufferType type, const BufferUsage usage) : m_Usage(usage),
-		m_Type(type)
+	BufferObject::BufferObject(BufferType type, bool def)
 	{
-		m_Buffer = CreateBuffer();
+		m_Internals       = MakePointer<Internals>(0);
+		m_Internals->Type = type;
+	}
 
-		GL_LOG_INFO(
-		            "Generating {} buffer {}, usage: {}",
-		            GetBufferTypeAsString(type),
-		            *m_Buffer,
-		            GetBufferUsageAsString(usage)
-		           );
+	BufferObject::BufferObject(const BufferType type, const BufferUsage usage)
+	{
+		m_Internals        = MakePointer<Internals>();
+		m_Internals->Type  = type;
+		m_Internals->Usage = usage;
+
+		GL_LOG_INFO("Generating {} buffer {}, usage: {}", GetBufferTypeAsString(type), m_Internals->Id, GetBufferUsageAsString(usage));
 	}
 
 	void BufferObject::SendData(const void *data, const size_t size) const
 	{
-		if(size > m_Size)
+		if(size > m_Internals->Size)
 		{
-			m_Size = size;
-			GL_CHECK(glBufferData(static_cast<uint32_t>(m_Type), size, data, static_cast<uint32_t>(m_Usage)));
+			m_Internals->Size = size;
+			GL_CHECK(glNamedBufferData(m_Internals->Id, size, data, static_cast<GLenum>(m_Internals->Usage)));
+			// GL_CHECK(glBufferData(static_cast<uint32_t>(m_Type), size, data, static_cast<uint32_t>(m_Usage)));
 		}
-		else SendSubData(data, size, 0);
+		else
+			SendSubData(data, size, 0);
 	}
 
 	void BufferObject::SendSubData(const void *data, const size_t size, const size_t offset) const
 	{
-		ASSERT(
-		       (m_Size < size + offset),
-		       "Updating chunk of data is to big, buffer size: {}, requested space: {}",
-		       size,
-		       offset
-		      );
+		ASSERT((size + offset) < m_Internals->Size, "Updating chunk of data is to big, buffer size: {}, requested space: {}", size, offset);
 
-		if(m_Size < size + offset)
-			throw std::runtime_error(
-			                         fmt::format(
-			                                     "Updating chunk of data is to big, buffer size: {}, requested space: {}",
-			                                     size,
-			                                     offset
-			                                    )
-			                        );
+		if(m_Internals->Size < size + offset)
+			throw std::runtime_error(fmt::format("Updating chunk of data is to big, buffer size: {}, requested space: {}", size, offset));
 
-		GL_CHECK(glBufferSubData(static_cast<uint32_t>(m_Type), offset, size, data));
+		GL_CHECK(glNamedBufferSubData(m_Internals->Id, offset, size, data));
+		// GL_CHECK(glBufferSubData(static_cast<uint32_t>(m_Type), offset, size, data));
 	}
 
 	void BufferObject::Allocate(const size_t size)
 	{
-		GL_CHECK(glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer));
+		if(size > m_Internals->Size)
+			SendData(nullptr, size);
+	}
 
-		if(size > m_Size) SendData(nullptr, size);
+	void BufferObject::ReAlloc(size_t size)
+	{
+		SendData(nullptr, size);
+	}
+
+	BufferObject::operator unsigned() const
+	{
+		return m_Internals->Id;
+	}
+	BufferObject::IdType BufferObject::Id() const
+	{
+		return m_Internals->Id;
+	}
+	
+	BufferUsage BufferObject::Usage() const
+	{
+		return m_Internals->Usage;
+	}
+	BufferType BufferObject::Type() const
+	{
+		return m_Internals->Type;
+	}
+
+	size_t BufferObject::Size() const
+	{
+		return m_Internals->Size;
 	}
 
 	void BufferObject::Bind() const
 	{
-		GL_CHECK(glBindBuffer(static_cast<uint32_t>(m_Type), *m_Buffer));
+		GL_CHECK(glBindBuffer(static_cast<GLenum>(m_Internals->Type), m_Internals->Id));
 
-		if(m_Changed)
+		if(m_Internals->Changed)
 		{
-			m_Changed = false;
+			m_Internals->Changed = false;
 			SendValues();
 		}
 	}
 
 	void BufferObject::UnBind() const
 	{
-		GetDefault(m_Type)->Bind();
+		GetDefault(m_Internals->Type)->Bind();
+	}
+
+	bool BufferObject::IsChanged() const
+	{
+		return m_Internals->Changed;
+	}
+
+	void BufferObject::MarkAsChanged() const
+	{
+		m_Internals->Changed = true;
 	}
 
 	BufferObject* BufferObject::GetDefault(BufferType type)
 	{
-		if(!m_Initialized) Init();
+		if(!m_Initialized)
+			Init();
 
 		return &m_Buffers.at(type);
 	}
 
 	void BufferObject::Flush() const
 	{
-		Bind();
+		SendValues();
 	}
 
 	void BufferObject::GetData(void *data, const size_t offset, const size_t length) const
 	{
-		Bind();
-		GL_CHECK(glGetBufferSubData(static_cast<GLenum>(Type()), offset, length, data));
+		GL_CHECK(glGetNamedBufferSubData(m_Internals->Id, offset, length, data));
 	}
 
 	Pointer<BufferObject> BufferObject::Clone() const
@@ -123,9 +151,9 @@ namespace Game
 		GL_LOG_INFO(
 		            "Coping contents of {} buffer (id: {}) to {} buffer (id: {})",
 		            GetBufferTypeAsString(Type()),
-		            ID(),
+		            Id(),
 		            GetBufferTypeAsString(object->Type()),
-		            object->ID()
+		            object->Id()
 		           );
 
 		return object;
@@ -133,7 +161,7 @@ namespace Game
 
 	Pointer<BufferContent> BufferObject::GetContent(const BufferAccess access) const
 	{
-		return MakePointer<BufferContent>(access, *this);
+		return Pointer<BufferContent>(new BufferContent(access, *this));
 	}
 
 	void BufferObject::Init()
@@ -146,23 +174,26 @@ namespace Game
 	}
 
 	BufferContent::BufferContent(const BufferAccess access, const BufferObject &buffer) : m_Buffer(buffer),
-		m_Access(access)
+	                                                                                      m_Access(access)
 	{
-		buffer.Bind();
-		GL_CHECK(m_Data = glMapBuffer(static_cast<GLenum>(buffer.Type()), static_cast<GLenum>(m_Access)));
+		ASSERT(buffer.Size() != 0, "Attempting to get access to uninitialized memory");
+		if(buffer.Size() == 0)
+			throw std::runtime_error("Attempting to get access to uninitialized memory");
+
+		GL_CHECK(m_Data = glMapNamedBuffer(buffer.Id(), static_cast<GLenum>(m_Access)));
 	}
 
 	BufferContent::~BufferContent()
 	{
-		m_Buffer.Bind();
-		GL_CHECK(glUnmapBuffer(static_cast<GLenum>(m_Buffer.Type())));
+		GL_CHECK(glUnmapNamedBuffer(m_Buffer.Id()));
 	}
 
 	const void* BufferContent::Get() const
 	{
 		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
 
-		if(m_Access == BufferAccess::WriteOnly) throw std::runtime_error("No read access");
+		if(m_Access == BufferAccess::WriteOnly)
+			throw std::runtime_error("No read access");
 
 		return m_Data;
 	}
@@ -171,20 +202,22 @@ namespace Game
 	{
 		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
 
-		if(m_Access == BufferAccess::WriteOnly) throw std::runtime_error("No read access");
+		if(m_Access == BufferAccess::WriteOnly)
+			throw std::runtime_error("No read access");
 
 		return m_Data;
 	}
-
 
 	void BufferContent::Set(const void *data, const size_t size, const size_t offset)
 	{
 		ASSERT(m_Access == BufferAccess::WriteOnly, "No write access");
 		ASSERT(size < m_Buffer.Size(), "Data provided is too big");
 
-		if(m_Access == BufferAccess::ReadOnly) throw std::runtime_error("No write access");
+		if(m_Access == BufferAccess::ReadOnly)
+			throw std::runtime_error("No write access");
 
-		if(size >= m_Buffer.Size()) throw std::out_of_range("Data size provided is too big");
+		if(size >= m_Buffer.Size())
+			throw std::out_of_range("Data size provided is too big");
 
 		std::memcpy(static_cast<char*>(m_Data) + offset, data, size);
 	}

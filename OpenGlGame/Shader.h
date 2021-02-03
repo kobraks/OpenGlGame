@@ -11,7 +11,7 @@ namespace Game
 		ShaderSource() = default;
 		static ShaderSource Load(const std::string &fileName);
 
-		ShaderSource(const std::string &source) { m_Source = source; }
+		ShaderSource(std::string source) : m_Source(std::move(source)) {}
 
 		const std::string& GetSource() const { return m_Source; }
 		void SetSource(const std::string &source) { m_Source = source; }
@@ -30,11 +30,19 @@ namespace Game
 
 		using IdType = uint32_t;
 	private:
-		ShaderSource m_Source;
+		class Internals
+		{
+		public:
+			ShaderSource Source;
+			Type Type     = Type::Unknown;
+			bool Complied = false;
+			IdType Shader;
 
-		Type m_Type     = Type::Unknown;
-		bool m_Complied = false;
-		Pointer<IdType> m_Shader;
+			explicit Internals(const Shader::Type& type);
+			~Internals();
+		};
+
+		Pointer<Internals> m_Internals;
 	public:
 		explicit Shader(const Type &type);
 		Shader(const Type &type, const ShaderSource &source);
@@ -42,13 +50,13 @@ namespace Game
 		bool Compile();
 
 		void SetSource(const ShaderSource &source);
-		const ShaderSource& GetSource() const { return m_Source; }
+		const ShaderSource& GetSource() const { return m_Internals->Source; }
 
 		std::string GetLog() const;
 
-		operator IdType() const { return *m_Shader; }
-		IdType ID() const { return *m_Shader; }
-		Type GetType() const { return m_Type; }
+		operator IdType() const { return m_Internals->Shader; }
+		IdType ID() const { return m_Internals->Shader; }
+		Type GetType() const { return m_Internals->Type; }
 
 		std::string_view TypeToString() const;
 	};
@@ -64,6 +72,8 @@ namespace Game
 	}
 
 	SHADER_IMPLEMENTATION_TYPE(Vertex);
+
 	SHADER_IMPLEMENTATION_TYPE(Fragment);
+
 	SHADER_IMPLEMENTATION_TYPE(Geometry);
 }

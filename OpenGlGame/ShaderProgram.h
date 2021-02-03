@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 #include <unordered_map>
-#include <optional>
+#include <unordered_set>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -36,22 +36,58 @@ namespace Game
 		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION = -1;
 
 	private:
-		mutable std::unordered_map<std::string, int32_t> m_UniformsLocation;
-		mutable std::unordered_map<std::string, int> m_Attributes;
+		enum class ParametersName : uint32_t
+		{
+			DeleteStatus =  GL_DELETE_STATUS,
+			LinkStatus = GL_LINK_STATUS,
+			ValidateStatus = GL_VALIDATE_STATUS,
+			InfoLogLength = GL_INFO_LOG_LENGTH,
+			AttachedShaders = GL_ATTACHED_SHADERS,
+			ActiveAtomicCounterBuffers = GL_ACTIVE_ATOMIC_COUNTER_BUFFERS,
+			ActiveAttributes = GL_ACTIVE_ATTRIBUTES,
+			ActiveAttributesMaxLength = GL_ACTIVE_ATTRIBUTE_MAX_LENGTH,
+			ActiveUniforms = GL_ACTIVE_UNIFORMS,
+			ActiveUniformBlocks = GL_ACTIVE_UNIFORM_BLOCKS,
+			ActiveUniformBlockMaxNameLength = GL_ACTIVE_UNIFORM_BLOCK_MAX_NAME_LENGTH,
+			ActiveUniformMaxLength = GL_ACTIVE_UNIFORM_MAX_LENGTH,
+			ComputeWorkGroupSize = GL_COMPUTE_WORK_GROUP_SIZE,
+			BinaryLength = GL_PROGRAM_BINARY_LENGTH,
+			TransformFeedbackBufferMode = GL_TRANSFORM_FEEDBACK_BUFFER_MODE,
+			TransformFeedbackVaryings = GL_TRANSFORM_FEEDBACK_VARYINGS,
+			TransformFeedbackVaryingMaxLength = GL_TRANSFORM_FEEDBACK_VARYING_MAX_LENGTH,
+			GeometryVerticesOut = GL_GEOMETRY_VERTICES_OUT,
+			GeometryInputType = GL_GEOMETRY_INPUT_TYPE,
+			GeomteryOutputType = GL_GEOMETRY_OUTPUT_TYPE
+		};
+		
+		class Internals
+		{
+		public:
+			IdType Program = 0;
+			
+			std::unordered_map<std::string, UniformLocationType> UniformsLocation;
+			std::unordered_map<std::string, AttributeLocationType> Attributes;
 
-		Pointer<IdType> m_Program = nullptr;
+			std::unordered_set<Pointer<Shader>> Shaders;
 
-		bool m_Linked          = false;
-		mutable bool m_Changed = true;
-		std::string m_Name;
+			bool Linked = false;
+			bool Changed = true;
 
+			std::string Name;
+
+			Internals(std::string name);
+			Internals(IdType id, std::string name);
+			~Internals();
+		};
+		
+		Pointer<Internals> m_Internals = nullptr;
 	public:
 		explicit ShaderProgram(const std::string &name);
 		ShaderProgram(IdType id, const std::string &name);
-		ShaderProgram(const std::string &name, const Shader &shader);
+		ShaderProgram(const std::string &name, Pointer<Shader> shader);
 
 		template <class ...Args>
-		ShaderProgram(const std::string &name, const Shader &shader, Args &&... args) : ShaderProgram(name)
+		ShaderProgram(const std::string &name, Pointer<Shader> shader, Args &&... args) : ShaderProgram(name)
 		{
 			Attach(shader, std::forward<Args>(args)...);
 
@@ -60,15 +96,15 @@ namespace Game
 			Detach(shader, std::forward<Args>(args)...);
 		}
 
-		operator IdType() const { return *m_Program; }
-		IdType ID() const { return *m_Program; }
+		operator IdType() const { return m_Internals->Program; }
+		IdType ID() const { return m_Internals->Program; }
 
-		bool IsLinked() const { return m_Linked; }
+		bool IsLinked() const { return m_Internals->Linked; }
 
-		const std::string Name() const { return m_Name; };
+		const std::string Name() const { return m_Internals->Name; };
 
-		void Attach(const Shader &shader);
-		void Detach(const Shader &shader);
+		void Attach(Pointer<Shader> shader);
+		void Detach(Pointer<Shader> shader);
 
 		bool Link();
 
@@ -223,16 +259,18 @@ namespace Game
 	private:
 		void Populate();
 
+		int GetProgramI(ParametersName name) const;
+		void GetProgramIV(ParametersName name, int* params) const;
 	public:
 		template <class ...Args>
-		void Attach(const Shader &shader, Args &&... args)
+		void Attach(Pointer<Shader> shader, Args &&... args)
 		{
 			Attach(shader);
 			Attach(std::forward<Args>(args)...);
 		}
 
 		template <class ...Args>
-		void Detach(const Shader &shader, Args &&... args)
+		void Detach(Pointer<Shader> shader, Args &&... args)
 		{
 			Detach(shader);
 			Detach(std::forward<Args>(args)...);

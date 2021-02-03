@@ -21,8 +21,7 @@ namespace Game
 		{
 			std::string m_Name;
 		public:
-			Type(const std::string &name) : m_Name(name) {}
-			Type(std::string &&name) : m_Name(std::move(name)) {}
+			Type(std::string name) : m_Name(std::move(name)) {}
 			std::string_view Name() const { return m_Name; }
 		};
 
@@ -31,10 +30,7 @@ namespace Game
 		Type m_Type;
 
 	public:
-		BaseProperty(const std::string &typeName, const PropertyIdType &id);
-		BaseProperty(const std::string &typeName, PropertyIdType &&id);
-		BaseProperty(std::string &&typeName, PropertyIdType &&id);
-		BaseProperty(std::string &typeName, const PropertyIdType &id);
+		BaseProperty(std::string typeName, PropertyIdType id);
 
 		const Type& Type() const { return m_Type; }
 		const PropertyIdType& Id() const { return m_Id; }
@@ -58,10 +54,9 @@ namespace Game
 		std::optional<ValueType> m_Value = std::nullopt;
 
 	public:
-		explicit Property(const PropertyIdType &id) : BaseProperty(GET_TYPE_NAME(T), id) {}
-		explicit Property(PropertyIdType &&id) : BaseProperty(GET_TYPE_NAME(T), std::move(id)) {}
+		explicit Property(PropertyIdType id) : BaseProperty(GET_TYPE_NAME(T), std::move(id)) {}
 
-		Property(const PropertyIdType &id, const ValueType &value) : Property(id)
+		Property(PropertyIdType id, const ValueType &value) : Property(std::move(id))
 		{
 			m_Value = value;
 		}

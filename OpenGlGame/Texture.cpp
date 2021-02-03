@@ -6,77 +6,94 @@
 
 #include "Assert.h"
 #include "GLCheck.h"
+#include "CubeMap.h"
+
+#include "OpenGlFunctions.h"
 
 namespace Game
 {
-	void DeleteTexture(Texture::IdType *id)
+	Texture::Internals::Internals()
 	{
-		GL_CHECK(glDeleteTextures(1, id));
-
-		delete id;
+		GL_CHECK(glGenTextures(1, &Id));
 	}
 
-	Pointer<Texture::IdType> CreateTexture()
+	Texture::Internals::~Internals()
 	{
-		auto texture = Pointer<Texture::IdType>(new Texture::IdType(), DeleteTexture);
-		GL_CHECK(glGenTextures(1, &*texture));
-
-		return texture;
+		GL_CHECK(glDeleteTextures(1, &Id));
 	}
 
 	Texture::Texture()
 	{
-		m_Texture = CreateTexture();
+		m_Internals = MakePointer<Internals>();
+	}
+
+	Texture::Texture(uint32_t width, uint32_t height) : Texture()
+	{
+		Create(width, height);
+	}
+
+	Texture::Texture(const Vector2u &size) : Texture()
+	{
+		Create(size);
+	}
+
+	Texture::Texture(const Image &image) : Texture()
+	{
+		Create(image);
 	}
 
 	void Texture::SetWrapping(const Wrapping s)
 	{
-		m_S = s;
+		m_Internals->Wrapping.S = s;
 
 		SetParameter(GL_TEXTURE_WRAP_S, static_cast<int>(s));
 	}
 
 	void Texture::SetWrapping(const Wrapping s, const Wrapping t)
 	{
-		m_T = t;
+		m_Internals->Wrapping.S = s;
+		m_Internals->Wrapping.T = t;
 
-		SetWrapping(s);
+		SetParameter(GL_TEXTURE_WRAP_S, static_cast<int>(s));
 		SetParameter(GL_TEXTURE_WRAP_T, static_cast<int>(t));
 	}
 
 	void Texture::SetWrapping(const Wrapping s, const Wrapping t, const Wrapping r)
 	{
-		m_R = r;
+		m_Internals->Wrapping.S = s;
+		m_Internals->Wrapping.T = t;
+		m_Internals->Wrapping.R = r;
 
-		SetWrapping(s, t);
+		SetParameter(GL_TEXTURE_WRAP_S, static_cast<int>(s));
+		SetParameter(GL_TEXTURE_WRAP_T, static_cast<int>(t));
 		SetParameter(GL_TEXTURE_WRAP_R, static_cast<int>(r));
 	}
 
 	void Texture::SetWrappingS(Wrapping wrapping)
 	{
-		m_S = wrapping;
+		m_Internals->Wrapping.S = wrapping;
 
 		SetParameter(GL_TEXTURE_WRAP_S, static_cast<int>(wrapping));
 	}
 
 	void Texture::SetWrappingT(Wrapping wrapping)
 	{
-		m_T = wrapping;
-		
+		m_Internals->Wrapping.T = wrapping;
+
 		SetParameter(GL_TEXTURE_WRAP_T, static_cast<int>(wrapping));
 	}
 
 	void Texture::SetWrappingR(Wrapping wrapping)
 	{
-		m_R = wrapping;
-		
+		m_Internals->Wrapping.R = wrapping;
+
 		SetParameter(GL_TEXTURE_WRAP_R, static_cast<int>(wrapping));
 	}
 
 	void Texture::SetFilters(Filter min, Filter mag)
 	{
-		m_Min = min;
-		m_Mag = mag;
+		m_Internals->Filter.Min = min;
+		m_Internals->Filter.Mag = mag;
 
 		SetParameter(GL_TEXTURE_MIN_FILTER, static_cast<int>(min));
 		SetParameter(GL_TEXTURE_MAG_FILTER, static_cast<int>(mag));
@@ -84,23 +101,16 @@ namespace Game
 
 	void Texture::SetMinFilter(Filter min)
 	{
-		m_Min = min;
-		
+		m_Internals->Filter.Min = min;
+
 		SetParameter(GL_TEXTURE_MIN_FILTER, static_cast<int>(min));
 	}
 
 	void Texture::SetMagFilter(Filter mag)
 	{
-		m_Mag = mag;
-		
+		m_Internals->Filter.Mag = mag;
+
 		SetParameter(GL_TEXTURE_MAG_FILTER, static_cast<int>(mag));
-	}
-
-	void Texture::SetBorderColor(const Color &color)
-	{
-		m_BorderColor = color;
-
-		SetParameter(GL_TEXTURE_BORDER_COLOR, color);
 	}
 
 	void Texture::Bind() const
@@ -110,9 +120,9 @@ namespace Game
 
 	void Texture::GenerateMipMaps() const
 	{
-		m_MipmapGenerated = true;
+		m_Internals->MipmapGenerated = true;
 
-		GL_CHECK(glGenerateTextureMipmap(*m_Texture));
+		GL_CHECK(glGenerateTextureMipmap(m_Internals->Id));
 	}
 
 	void Texture::Create(const uint32_t width, const uint32_t height)
@@ -120,82 +130,136 @@ namespace Game
 		if(width == 0 || height == 0)
 			return;
 
-		Vector2u actualSize(width, height);
-		uint32_t maxSize = GetMaxSize();
+		const uint32_t maxSize = GetMaxSize();
 
-		if(actualSize.X > maxSize || actualSize.Y > maxSize)
+		if(width > maxSize || height > maxSize)
 		{
-			GL_LOG_ERROR("Unable to create texture of size {}x{}, texture to big max texture size is {}x{}", actualSize.X, actualSize.Y, maxSize, maxSize);
+			GL_LOG_ERROR("Unable to create texture of size {}x{}, texture to big max texture size is {}x{}", width, height, maxSize, maxSize);
 			return;
 		}
 
-		m_Size.Width  = width;
-		m_Size.Height = height;
 
-		Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, actualSize.Width, actualSize.Height, InternalFormat::RGBA);
+		Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, width, height, InternalFormat::RGBA8);
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
 	}
 
+	void Texture::Create(const Vector2u &size)
+	{
+		Create(size.Width, size.Height);
+	}
+
 	void Texture::Create(const Image &image)
 	{
-		Image2D(image.GetPixels(), DataType::UnsignedByte, Format::Rgba, image.Width(), image.Height(), InternalFormat::RGBA);
+		const uint32_t width  = image.Width();
+		const uint32_t height = image.Height();
+
+		if(width == 0 || height == 0)
+			return;
+
+		const uint32_t maxSize = GetMaxSize();
+
+		if(width > maxSize || height > maxSize)
+		{
+			GL_LOG_ERROR("Unable to create texture of size {}x{}, texture to big max texture size is {}x{}", width, height, maxSize, maxSize);
+			return;
+		}
+
+		Image2D(image.GetPixels(), DataType::UnsignedByte, Format::Rgba, image.Width(), image.Height(), InternalFormat::RGBA8);
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
 	}
 
 	Image Texture::ToImage() const
 	{
-		const size_t size = static_cast<size_t>(m_Size.Width) * m_Size.Height;
-		
+		const size_t size = static_cast<size_t>(m_Internals->Size.Width) * m_Internals->Size.Height;
+
 		std::vector<Color> pixels;
 		pixels.resize(size);
 
-		GL_CHECK(glGetTextureImage(*m_Texture, 0, GL_RGBA, GL_UNSIGNED_BYTE, size, &pixels[0]));
+		GL_CHECK(glGetTextureImage(m_Internals->Id, 0, GL_RGBA, GL_UNSIGNED_BYTE, size, &pixels[0]));
 
-		return Image(m_Size, pixels.data());
+		return Image(m_Internals->Size, pixels.data());
 	}
 
-	void Texture::Update(const uint8_t *pixels, uint32_t width, uint32_t height, uint32_t x, uint32_t y)
+	void Texture::Update(const uint8_t *pixels)
 	{
-		ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
-		if(!(x + width >= m_Size.X && y + height >= m_Size.Y))
+		Update(pixels, m_Internals->Size.Width, m_Internals->Size.Height, 0, 0);
+	}
+
+	void Texture::Update(const uint8_t *pixels, const Vector2u &size, const Vector2i &offset)
+	{
+		Update(pixels, size.Width, size.Height, offset.X, offset.Y);
+	}
+
+	void Texture::Update(const Color *pixels)
+	{
+		Update(pixels, m_Internals->Size.Width, m_Internals->Size.Height, 0, 0);
+	}
+
+	void Texture::Update(const Color *pixels, const Vector2u &size, const Vector2i &offset)
+	{
+		Update(pixels, size.Width, size.Height, offset.X, offset.Y);
+	}
+
+	void Texture::Update(const Texture &texture)
+	{
+		Update(texture, 0, 0);
+	}
+
+	void Texture::Update(const Texture &texture, int32_t x, int32_t y)
+	{
+		Update(texture.ToImage(), x, y);
+	}
+
+	void Texture::Update(const Texture &texture, const Vector2i &offset)
+	{
+		return Update(texture.ToImage(), offset.X, offset.Y);
+	}
+
+	void Texture::Update(const uint8_t *pixels, uint32_t width, uint32_t height, int32_t x, int32_t y)
+	{
+		ASSERT(x + width < m_Internals->Size.X && y + height < m_Internals->Size.Y, "Out of range");
+		if(!(x + width >= m_Internals->Size.X && y + height >= m_Internals->Size.Y))
 			throw std::out_of_range("Out of range");
 
 		if(pixels)
 		{
-			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, 0, x, y, width, height);
+			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, x, y, width, height);
 		}
 	}
 
-	void Texture::Update(const Color *pixels, const uint32_t width, const uint32_t height, const uint32_t x, const uint32_t y)
+	void Texture::Update(const Color *pixels, uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
-		if(!(x + width >= m_Size.X && y + height >= m_Size.Y))
+		ASSERT(x + width < m_Internals->Size.X && y + height < m_Internals->Size.Y, "Out of range");
+		if(!(x + width >= m_Internals->Size.X && y + height >= m_Internals->Size.Y))
 			throw std::out_of_range("Out of range");
 
 		if(pixels)
 		{
-			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, 0, x, y, width, height);
+			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, x, y, width, height);
 		}
+	}
+
+
+	void Texture::Update(const CubeTexture &texture)
+	{
+		return Update(texture, 0, 0);
+	}
+
+	void Texture::Update(const CubeTexture &texture, int32_t x, int32_t y)
+	{
+		return Update(texture.ToImage(), x, y);
+	}
+
+	void Texture::Update(const CubeTexture &texture, const Vector2i &offset)
+	{
+		return Update(texture.ToImage(), offset.X, offset.Y);
 	}
 
 	void Texture::Swap(Texture &right) noexcept
 	{
-		std::swap(m_Size, right.m_Size);
-		std::swap(m_Texture, right.m_Texture);
-
-		std::swap(m_InternalFormat, right.m_InternalFormat);
-
-		std::swap(m_S, right.m_S);
-		std::swap(m_T, right.m_T);
-		std::swap(m_R, right.m_R);
-
-		std::swap(m_Mag, right.m_Mag);
-		std::swap(m_Min, right.m_Min);
-
-		std::swap(m_BorderColor, right.m_BorderColor);
-		std::swap(m_MipmapGenerated, right.m_MipmapGenerated);
+		std::swap(m_Internals, right.m_Internals);
 	}
 
 	uint32_t Texture::GetMaxSize()
@@ -213,36 +277,66 @@ namespace Game
 		return static_cast<uint32_t>(size);
 	}
 
-	void Texture::Image2D(const void *data, DataType type, Format format, uint32_t width, uint32_t height, InternalFormat internalFormat)
+	void Texture::Image2D(const void *pixels, DataType type, Format format, const Vector2<uint32_t> &size, InternalFormat internalFormat)
 	{
-		m_Size           = Vector2u(width, height);
-		m_InternalFormat = internalFormat;
+		m_Internals->Size   = size;
+		m_Internals->Format = internalFormat;
+
+		Bind();
+		GL_CHECK(glTexImage2D(
+		             GL_TEXTURE_2D,
+		             0,
+		             static_cast<GLint>(internalFormat),
+		             size.Width,
+		             size.Height,
+		             0,
+		             static_cast<GLenum>(format),
+		             static_cast<GLenum>(type),
+		             pixels
+		            ));
+	}
+
+	void Texture::SubImage2D(const void *pixels, DataType type, Format format, const Vector2i &offset, const Vector2u &size)
+	{
+		if(!pixels)
+			return;
+
+		ASSERT(offset.X + size.Width < m_Internals->Size.Width && offset.Y + size.Height < m_Internals->Size.Height, "Texture size out of range");
+		if(offset.X + size.Width > m_Internals->Size.Width || offset.Y + size.Height > m_Internals->Size.Height)
+			throw std::out_of_range("Texture size out of range");
+
+		Bind();
+		GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, offset.X, offset.Y, size.Width, size.Height, static_cast<GLenum>(format), static_cast<GLenum>(type), pixels));
+	}
+
+	void Texture::Image2D(const void *pixels, DataType type, Format format, uint32_t width, uint32_t height, InternalFormat internalFormat)
+	{
+		m_Internals->Size   = Vector2u(width, height);
+		m_Internals->Format = internalFormat;
 
 		Bind();
 		GL_CHECK(
-		         glTexImage2D( GL_TEXTURE_2D, 0, static_cast<GLint>(internalFormat), m_Size.Width, m_Size.Height, 0, static_cast<GLenum>(format), static_cast<
-			         GLenum>(type), data )
+		         glTexImage2D( GL_TEXTURE_2D, 0, static_cast<GLint>(internalFormat), width, height, 0, static_cast<GLenum>(format), static_cast< GLenum>(type),
+			         pixels )
 		        );
-		GL_CHECK(glFlush());
 	}
 
-	void Texture::SubImage2D(const void *data, DataType type, Format format, int level, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+	void Texture::SubImage2D(const void *pixels, DataType type, Format format, uint32_t x, uint32_t y, uint32_t width, uint32_t height)
 	{
+		if(!pixels)
+			return;
+
+		ASSERT(x + width < m_Internals->Size.Width && y + height < m_Internals->Size.Height, "Texture size out of range");
+		if(x + width > m_Internals->Size.Width || y + height > m_Internals->Size.Height)
+			throw std::out_of_range("Texture size out of range");
+
 		Bind();
 
-		GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, level, x, y, width, height, static_cast<GLenum>(format), static_cast<GLenum>(type), data));
-		GL_CHECK(glFlush());
+		GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, static_cast<GLenum>(format), static_cast<GLenum>(type), pixels));
 	}
 
 	void Texture::SetParameter(uint32_t name, int parameter)
 	{
-		GL_CHECK(glTextureParameteri(*m_Texture, name, parameter));
-		GL_CHECK(glFlush());
-	}
-
-	void Texture::SetParameter(uint32_t name, Color color)
-	{
-		int table[4] = {color.R, color.G, color.B, color.A};
-		GL_CHECK(glTextureParameteriv(*m_Texture, name, table));
+		GL_CHECK(glTextureParameteri(m_Internals->Id, name, parameter));
 	}
 }

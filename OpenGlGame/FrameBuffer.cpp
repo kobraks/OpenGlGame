@@ -40,9 +40,9 @@ namespace Game
 	static InternalFormat GetColorFormat(int8_t depth)
 	{
 		if(depth == 24)
-			return InternalFormat::RGB;
+			return InternalFormat::RGB8;
 		if(depth == 32)
-			return InternalFormat::RGBA;
+			return InternalFormat::RGBA8;
 
 		GL_LOG_WARN("Unknown color depth {}, selected: {}", depth, depth < 24 ? "24 bit" : "32 bit");
 
@@ -181,7 +181,7 @@ namespace Game
 
 	void FrameBufferObject::Attach(uint32_t attachment, Pointer<RenderBuffer> renderBuffer)
 	{
-		GL_CHECK(glNamedFramebufferRenderbuffer(*m_FrameBuffer, attachment, GL_RENDERBUFFER, renderBuffer->ID()));
+		GL_CHECK(glNamedFramebufferRenderbuffer(*m_FrameBuffer, attachment, GL_RENDERBUFFER, renderBuffer->Id()));
 	}
 
 	void FrameBufferObject::DeleteFrameBuffer(IdType *id)

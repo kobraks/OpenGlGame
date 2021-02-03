@@ -25,6 +25,7 @@
     <ClCompile Include="ConfigLayer.cpp" />
     <ClCompile Include="ConsoleLayer.cpp" />
     <ClCompile Include="Context.cpp" />
+    <ClCompile Include="CubeMap.cpp" />
     <ClCompile Include="Cursor.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
@@ -69,6 +70,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
+    <ClInclude Include="Attachment.h" />
     <ClInclude Include="BufferObject.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="Color.h" />
@@ -76,6 +78,7 @@
     <ClInclude Include="ConsoleLayer.h" />
     <ClInclude Include="Context.h" />
     <ClInclude Include="Core.h" />
+    <ClInclude Include="CubeMap.h" />
     <ClInclude Include="Cursor.h" />
     <ClInclude Include="Defines.h" />
     <ClInclude Include="Event.h" />
@@ -84,6 +87,7 @@
     <ClInclude Include="ApplicationEvent.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="GLCheck.h" />
+    <ClInclude Include="GLEnums.h" />
     <ClInclude Include="Glyph.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="imconfig.h" />

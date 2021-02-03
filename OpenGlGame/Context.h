@@ -10,7 +10,7 @@ namespace Game
 
 	class Context
 	{
-		const std::thread::id m_ThreadId;
+		std::thread::id m_ThreadId;
 		void *m_WindowHandler = nullptr;
 		OpenGlFunctions m_Functions;
 	
@@ -30,6 +30,7 @@ namespace Game
 		OpenGlFunctions GetFunctions() const { return m_Functions; }
 		void MakeCurrent();
 
+		bool IsContextCurrent() const;
 	private:
 		Context(void *windowHandler);
 		Context(void *windowHandler, void *mainWindow);

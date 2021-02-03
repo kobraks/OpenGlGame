@@ -189,6 +189,9 @@
     <ClCompile Include="Color.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CubeMap.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -379,6 +382,15 @@
     </ClInclude>
     <ClInclude Include="ImGuiGuard.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GLEnums.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="CubeMap.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Attachment.h">
+      <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

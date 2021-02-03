@@ -304,6 +304,11 @@ namespace Game
 		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
+		LOG_TRACE("CRITICAL");
+		LOG_DEBUG("CRITICAL");
+		LOG_INFO("CRITICAL");
+		LOG_WARN("CRITICAL");
+		LOG_ERROR("CRITICAL");
 		LOG_CRITICAL("CRITICAL");
 
 		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());

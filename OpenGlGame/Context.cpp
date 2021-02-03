@@ -34,9 +34,16 @@ namespace Game
 	void Context::MakeCurrent()
 	{
 		glfwMakeContextCurrent(static_cast<GLFWwindow*>(m_WindowHandler));
+		m_ThreadId = std::this_thread::get_id();
+		m_Functions.MakeCurrent();
 	}
 
-	Context::Context(void *windowHandler) : m_ThreadId(std::this_thread::get_id()), m_WindowHandler(windowHandler)
+	bool Context::IsContextCurrent() const
+	{
+		return std::this_thread::get_id() == m_ThreadId;
+	}
+
+	Context::Context(void *windowHandler) : m_ThreadId(std::this_thread::get_id()), m_WindowHandler(windowHandler), m_Functions(*this)
 	{
 		MakeCurrent();
 		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);

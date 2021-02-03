@@ -1,38 +1,12 @@
 #pragma once
 #include <unordered_map>
 
-#include <glad/glad.h>
+#include "GLEnums.h"
+
 #include "Types.h"
 
 namespace Game
 {
-	enum class BufferUsage : uint32_t
-	{
-		StreamDraw = GL_STREAM_DRAW,
-		StreamRead = GL_STREAM_READ,
-		StreamCopy = GL_STREAM_COPY,
-		StaticDraw = GL_STATIC_DRAW,
-		StaticRead = GL_STATIC_READ,
-		StaticCopy = GL_STATIC_COPY,
-		DynamicDraw = GL_DYNAMIC_DRAW,
-		DynamicRead = GL_DYNAMIC_READ,
-		DynamicCopy = GL_DYNAMIC_COPY
-	};
-
-	enum class BufferType : uint32_t
-	{
-		Index = GL_ELEMENT_ARRAY_BUFFER,
-		Vertex = GL_ARRAY_BUFFER,
-		Uniform = GL_UNIFORM_BUFFER
-	};
-
-	enum class BufferAccess: uint32_t
-	{
-		ReadOnly = GL_READ_ONLY,
-		WriteOnly = GL_WRITE_ONLY,
-		ReadWrite = GL_READ_WRITE
-	};
-
 	constexpr std::string_view GetBufferUsageAsString(const BufferUsage &usage)
 	{
 		switch(usage)
@@ -73,14 +47,24 @@ namespace Game
 		using IdType = uint32_t;
 
 	private:
-		Pointer<IdType> m_Buffer;
+		class Internals
+		{
+			bool m_ProvidedId = false;
+		public:
+			IdType Id = 0;
+			
+			size_t Size = 0;
+			bool Changed = true;
+			
+			BufferUsage Usage;
+			BufferType Type;
 
-		BufferUsage m_Usage;
-		BufferType m_Type;
+			Internals();
+			explicit Internals(IdType id);
+			~Internals();
+		};
 
-		mutable size_t m_Size = 0;
-
-		mutable bool m_Changed = true;
+		Pointer<Internals> m_Internals = nullptr;
 
 		inline static std::unordered_map<BufferType, BufferObject> m_Buffers = std::unordered_map<
 			BufferType, BufferObject>();
@@ -104,20 +88,21 @@ namespace Game
 		virtual ~BufferObject() = default;
 
 		void Allocate(size_t size);
+		void ReAlloc(size_t size);
 
-		operator IdType() const { return *m_Buffer; }
-		IdType ID() const { return *m_Buffer; }
+		operator IdType() const;
+		IdType Id() const;
 
-		BufferUsage Usage() const { return m_Usage; }
-		BufferType Type() const { return m_Type; }
+		BufferUsage Usage() const;
+		BufferType Type() const;
 
-		size_t Size() const { return m_Size; }
+		size_t Size() const;
 
 		virtual void Bind() const;
 		virtual void UnBind() const;
 
-		bool IsChanged() const { return m_Changed; }
-		void MarkAsChanged() const { m_Changed = true; }
+		bool IsChanged() const;
+		void MarkAsChanged() const;
 
 		static BufferObject* GetDefault(BufferType type);
 
@@ -127,20 +112,24 @@ namespace Game
 
 		virtual Pointer<BufferObject> Clone() const;
 
-		Pointer<BufferContent> GetContent(const BufferAccess access) const;
+		[[nodiscard]] Pointer<BufferContent> GetContent(const BufferAccess access) const;
 	private:
 		static void Init();
 	};
 
 	class BufferContent
 	{
+		friend class BufferObject;
+
 		const BufferObject& m_Buffer;
 		const BufferAccess m_Access;
 		
 		void* m_Data = nullptr;
+	
+	protected:
+		BufferContent(const BufferAccess access, const BufferObject &buffer);
 
 	public:
-		BufferContent(const BufferAccess access, const BufferObject &buffer);
 		~BufferContent();
 
 		const void* Get() const;
