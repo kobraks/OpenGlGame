@@ -38,7 +38,7 @@
 #include <sol/sol.hpp>
 #include <fmt/format.h>
 
-// #include "imgui.h"
+#include "imgui.h"
 // #include "imgui-SFML.h"
 
 #include <glm/glm.hpp>

@@ -1,13 +1,12 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <vector>
 
 #include "Types.h"
 #include "Log.h"
 
-#include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
-#include "IndexBuffer.h"
+#include "Buffer.h"
 
 namespace Game
 {
@@ -17,33 +16,45 @@ namespace Game
 		using IdType = uint32_t;
 
 	private:
-		Pointer<IdType> m_Array;
+		struct Internals
+		{
+			IdType Id = 0;
+			
+			Pointer<IndexBuffer> IndexBuffer = nullptr;
+			std::vector<Pointer<VertexBuffer>> VertexBuffers;
+			
+			uint32_t VertexBufferIndex = 0;
+
+			void SetIndexBuffer(const Pointer<Game::IndexBuffer> &indexBuffer);
+			void AddVertexBuffer(const Pointer<VertexBuffer> &vertexBuffer);
+
+			void Bind() const;
+			void Unbind() const;
+
+			Internals(IdType id);
+			Internals();
+
+			~Internals();
+		};
+
+		Pointer<Internals> m_Internals;
 
 		VertexArray(IdType id);
 	public:
 		VertexArray();
 
-		operator IdType() const { return *m_Array; }
-		IdType Id() const { return *m_Array; }
+		operator IdType() const { return m_Internals->Id; }
+		IdType Id() const { return m_Internals->Id; }
 
-		void Bind() const;
-		void UnBind() const;
+		void Bind() const { m_Internals->Bind(); }
+		void Unbind() const { m_Internals->Unbind(); }
 
 		static VertexArray* GetDefault();
 
-		void AddElementBuffer(const IndexBuffer &buffer) { return AddIndexBuffer(buffer); }
-		void AddIndexBuffer(const IndexBuffer &buffer);
+		void SetIndexBuffer(const Pointer<IndexBuffer> &indexBuffer) { m_Internals->SetIndexBuffer(indexBuffer); }
+		void AddVertexBuffer(const Pointer<VertexBuffer> &vertexBuffer) { m_Internals->AddVertexBuffer(vertexBuffer); }
 
-		template <typename Type>
-		void AddBuffer(const VertexBuffer<Type> &buffer, const VertexBufferLayout &layout);
-
-	private:
-		void AddVertexBuffer(const BufferObject& buffer, const VertexBufferLayout& layout);
+		const Pointer<IndexBuffer>& GetIndexBuffer() const { return m_Internals->IndexBuffer; }
+		const std::vector<Pointer<VertexBuffer>>& GetVertexBuffers() const { return m_Internals->VertexBuffers; }
 	};
-
-	template <typename Type>
-	void VertexArray::AddBuffer(const VertexBuffer<Type> &buffer, const VertexBufferLayout &layout)
-	{
-		AddVertexBuffer(buffer, layout);
-	}
 }

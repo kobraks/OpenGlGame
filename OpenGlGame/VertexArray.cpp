@@ -1,44 +1,135 @@
 #include "pch.h"
 #include "VertexArray.h"
 
-#include <glad/glad.h>
-
 #include "GLCheck.h"
 
 namespace Game
 {
-	static void DeleteArray(VertexArray::IdType *id)
+	static constexpr GLenum ShaderDataTypeToOpenGLBaseType(ShaderDataType type)
 	{
-		GL_CHECK(glDeleteVertexArrays(1, id));
-		delete id;
+		switch(type)
+		{
+			case ShaderDataType::Float:
+			case ShaderDataType::Float2:
+			case ShaderDataType::Float3:
+			case ShaderDataType::Float4:
+			case ShaderDataType::Mat3:
+			case ShaderDataType::Mat4: return GL_FLOAT;
+			case ShaderDataType::Int:
+			case ShaderDataType::Int2:
+			case ShaderDataType::Int3:
+			case ShaderDataType::Int4: return GL_INT;
+			case ShaderDataType::Bool: return GL_BOOL;
+		}
 	}
 
-	static Pointer<VertexArray::IdType> CreateArray()
+	void VertexArray::Internals::SetIndexBuffer(const Pointer<Game::IndexBuffer> &indexBuffer)
 	{
-		auto array = Pointer<VertexArray::IdType>(new VertexArray::IdType{}, DeleteArray);
-		GL_CHECK(glGenVertexArrays(1, &*array));
+		GL_CHECK(glBindVertexArray(Id));
+		indexBuffer->Bind();
 
-		return array;
+		IndexBuffer = indexBuffer;
+	}
+
+	void VertexArray::Internals::AddVertexBuffer(const Pointer<VertexBuffer> &vertexBuffer)
+	{
+		ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex Buffer has no layout");
+
+		if(vertexBuffer->GetLayout().GetElements().size() == 0)
+			throw std::exception("Vertex Buffer has no layout");
+
+		GL_CHECK(glBindVertexArray(Id));
+		vertexBuffer->Bind();
+
+		const auto &layout = vertexBuffer->GetLayout();
+		for(const auto &element : layout)
+		{
+			switch(element.Type)
+			{
+				case ShaderDataType::Float:
+				case ShaderDataType::Float2:
+				case ShaderDataType::Float3:
+				case ShaderDataType::Float4:
+				{
+					GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
+					GL_CHECK(
+					         glVertexAttribPointer(VertexBufferIndex, element.GetComponentCount(), ShaderDataTypeToOpenGLBaseType(element.Type), element.
+						         Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)(element.Offset) )
+					        );
+					VertexBufferIndex++;
+					break;
+				}
+				case ShaderDataType::Int:
+				case ShaderDataType::Int2:
+				case ShaderDataType::Int3:
+				case ShaderDataType::Int4:
+				case ShaderDataType::Bool:
+				{
+					GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
+					GL_CHECK(
+					         glVertexAttribIPointer(VertexBufferIndex, element.GetComponentCount(), ShaderDataTypeToOpenGLBaseType(element.Type), layout.
+						         GetStride(), (const void*)(element.Offset) )
+					        );
+					VertexBufferIndex++;
+					break;
+				}
+				case ShaderDataType::Mat3:
+				case ShaderDataType::Mat4:
+				{
+					uint8_t count = element.GetComponentCount();
+					for(uint8_t i = 0; i < count; ++i)
+					{
+						GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
+						GL_CHECK(
+						         glVertexAttribPointer(VertexBufferIndex, count, ShaderDataTypeToOpenGLBaseType(element.Type), element.Normalized ? GL_TRUE :
+							         GL_FALSE, layout.GetStride(), (const void*)(element.Offset + sizeof(float)* count * i) )
+						        );
+						GL_CHECK(glVertexAttribDivisor(VertexBufferIndex, 1));
+						VertexBufferIndex++;
+					}
+				}
+				default: ASSERT(false, "Unknown ShaderDataType");
+					throw std::exception("Unknown shaderDataType");
+			}
+		}
+
+		VertexBuffers.push_back(vertexBuffer);
+	}
+
+	void VertexArray::Internals::Bind() const
+	{
+		GL_CHECK(glBindVertexArray(Id));
+	}
+
+	void VertexArray::Internals::Unbind() const
+	{
+		GL_CHECK(glBindVertexArray(0));
+	}
+
+	VertexArray::Internals::Internals(IdType id)
+	{
+		Id = id;
+	}
+
+	VertexArray::Internals::Internals()
+	{
+		glCreateVertexArrays(1, &Id);
+	}
+
+	VertexArray::Internals::~Internals()
+	{
+		if(Id != 0)
+			glDeleteVertexArrays(1, &Id);
 	}
 
 	VertexArray::VertexArray(IdType id)
 	{
-		m_Array = MakePointer<IdType>(0);
+		m_Internals = MakePointer<Internals>(id);
 	}
 
 	VertexArray::VertexArray()
 	{
-		m_Array = CreateArray();
-	}
-
-	void VertexArray::Bind() const
-	{
-		GL_CHECK(glBindVertexArray(*m_Array));
-	}
-
-	void VertexArray::UnBind() const
-	{
-		GetDefault()->Bind();
+		m_Internals = MakePointer<Internals>();
 	}
 
 	VertexArray* VertexArray::GetDefault()
@@ -46,47 +137,5 @@ namespace Game
 		static VertexArray array(0);
 
 		return &array;
-	}
-
-	void VertexArray::AddIndexBuffer(const IndexBuffer &buffer)
-	{
-		Bind();
-		buffer.Bind();
-	}
-
-	void VertexArray::AddVertexBuffer(const BufferObject &buffer, const VertexBufferLayout &layout)
-	{
-		GL_LOG_INFO("Adding buffer {} to vertex array: {}", buffer.Id(), Id());
-		Bind();
-		buffer.Bind();
-		const auto &elements = layout.GetElements();
-		uint32_t offset      = 0;
-
-		for(uint32_t i = 0; i < elements.size(); ++i)
-		{
-			const auto &element = elements[i];
-			GL_CHECK(glEnableVertexAttribArray(i));
-
-			GL_LOG_DEBUG("Enabling atribute array {}", i);
-			GL_CHECK(glVertexAttribPointer(
-			                      i,
-			                      static_cast<GLint>(element.Count),
-			                      static_cast<GLenum>(element.Type),
-			                      element.Normalized ? GL_TRUE : GL_FALSE,
-			                      static_cast<GLsizei>(layout.GetStride()),
-			                      reinterpret_cast<const void*>(offset)
-			                     ));
-
-			GL_LOG_DEBUG(
-			             "Element: (Count: {}, Type: {}, Normalized: {}, Offset: {}, Stride: {})",
-			             element.Count,
-			             element.Type,
-			             element.Normalized,
-			             offset,
-			             layout.GetStride()
-			            );
-
-			offset += element.Count * element.Size;
-		}
 	}
 }

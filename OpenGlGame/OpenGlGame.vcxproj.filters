@@ -46,6 +46,18 @@
     <Filter Include="Source Files\Property">
       <UniqueIdentifier>{e18c8481-b19b-49b5-a584-920898973354}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Entity">
+      <UniqueIdentifier>{9bb5e6fb-2cc6-4d73-94b7-c6867ca09baa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Entity\Components">
+      <UniqueIdentifier>{516e3d36-cd93-4d01-b447-432698ec98bf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Entity">
+      <UniqueIdentifier>{d4df9746-6d25-4853-9fd6-b524a6f7809c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Entity\Component">
+      <UniqueIdentifier>{6020872b-f2c4-44e6-9ae2-aa50e9f13f4b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -60,23 +72,11 @@
     <ClCompile Include="ShaderProgram.cpp">
       <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
-    <ClCompile Include="VertexBufferLayout.cpp">
-      <Filter>Source Files\OpenGl</Filter>
-    </ClCompile>
-    <ClCompile Include="BufferObject.cpp">
-      <Filter>Source Files\OpenGl</Filter>
-    </ClCompile>
     <ClCompile Include="Log.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="IndexBuffer.cpp">
-      <Filter>Source Files\OpenGl</Filter>
-    </ClCompile>
-    <ClCompile Include="VertexArray.cpp">
-      <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
     <ClCompile Include="Texture.cpp">
       <Filter>Source Files\OpenGl</Filter>
@@ -156,9 +156,6 @@
     <ClCompile Include="ConsoleLayer.cpp">
       <Filter>Source Files\Layer</Filter>
     </ClCompile>
-    <ClCompile Include="UniformBuffer.cpp">
-      <Filter>Source Files\OpenGl</Filter>
-    </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -192,6 +189,36 @@
     <ClCompile Include="CubeMap.cpp">
       <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
+    <ClCompile Include="GameLayer.cpp">
+      <Filter>Source Files\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="Buffer.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
+    <ClCompile Include="VertexArray.cpp">
+      <Filter>Source Files\OpenGl</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Model.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Vertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureLoader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Entity.cpp">
+      <Filter>Source Files\Entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -200,9 +227,6 @@
     <ClInclude Include="Types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexBufferLayout.h">
-      <Filter>Header Files\OpenGl</Filter>
-    </ClInclude>
     <ClInclude Include="OpenGlFunctions.h">
       <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
@@ -210,12 +234,6 @@
       <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
     <ClInclude Include="ShaderProgram.h">
-      <Filter>Header Files\OpenGl</Filter>
-    </ClInclude>
-    <ClInclude Include="VertexBuffer.h">
-      <Filter>Header Files\OpenGl</Filter>
-    </ClInclude>
-    <ClInclude Include="BufferObject.h">
       <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
     <ClInclude Include="Assert.h">
@@ -229,9 +247,6 @@
     </ClInclude>
     <ClInclude Include="Utils.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IndexBuffer.h">
-      <Filter>Header Files\OpenGl</Filter>
     </ClInclude>
     <ClInclude Include="VertexArray.h">
       <Filter>Header Files\OpenGl</Filter>
@@ -347,9 +362,6 @@
     <ClInclude Include="ConsoleLayer.h">
       <Filter>Header Files\Layer</Filter>
     </ClInclude>
-    <ClInclude Include="UniformBuffer.h">
-      <Filter>Header Files\OpenGl</Filter>
-    </ClInclude>
     <ClInclude Include="Rect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -391,6 +403,36 @@
     </ClInclude>
     <ClInclude Include="Attachment.h">
       <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="GameLayer.h">
+      <Filter>Header Files\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Header Files\OpenGl</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureLoader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Component.h">
+      <Filter>Header Files\Entity\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

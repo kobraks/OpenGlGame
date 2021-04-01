@@ -11,6 +11,7 @@
 #include "Renderer.h"
 #include "GLFW/glfw3.h"
 #include "ConfigLayer.h"
+#include "GameLayer.h"
 
 #include "ImGui.h"
 #include "Keyboard.h"
@@ -304,28 +305,27 @@ namespace Game
 		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
-		LOG_TRACE("CRITICAL");
-		LOG_DEBUG("CRITICAL");
-		LOG_INFO("CRITICAL");
-		LOG_WARN("CRITICAL");
-		LOG_ERROR("CRITICAL");
-		LOG_CRITICAL("CRITICAL");
 
 		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());
 		PushOverlay(logLayer);
 		PushOverlay(MakePointer<StatisticLayer>());
 		PushOverlay(MakePointer<ConsoleLayer>());
-		PushOverlay(MakePointer<ConfigLayer>());
+		// PushOverlay(MakePointer<ConfigLayer>());
 
+		PushLayer(MakePointer<GameLayer>());
+		
 		auto OpenGL = m_Window->GetFunctions();
 
 		OpenGL.Enable(Capability::Blend);
 		OpenGL.Enable(Capability::CullFace);
 		OpenGL.Enable(Capability::DepthTest);
+
+#ifdef _DEBUG
 		OpenGL.Enable(Capability::DebugOutput);
 		OpenGL.Enable(Capability::DebugOutputSynchronous);
 
 		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
+#endif
 		
 		int count;
 		GLFWmonitor **monitors = glfwGetMonitors(&count);
