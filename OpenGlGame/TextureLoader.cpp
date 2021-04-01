@@ -16,6 +16,7 @@ namespace Game
 
 		try
 		{
+			LOG_INFO("Loading texture from \"{}\"", name);
 			Image image;
 			image.Load(name);
 			

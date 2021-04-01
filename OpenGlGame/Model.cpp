@@ -33,7 +33,7 @@ namespace Game
 		LOG_INFO("Opening \"{}\"", name);
 		auto importer = MakePointer<Assimp::Importer>();
 
-		const auto scene = importer->ReadFile(name, ASSIMP_FLAGS);
+		auto *const scene = importer->ReadFile(name, ASSIMP_FLAGS);
 
 		if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -49,7 +49,7 @@ namespace Game
 		for(uint32_t i = 0; i < meshes; ++i)
 		{
 			LOG_INFO("Processing mesh number: {}", i);
-			const auto mesh = scene->mMeshes[i];
+			auto *const mesh = scene->mMeshes[i];
 			modelMeshes[i]  = ProcessMesh(mesh, scene);
 		}
 
@@ -87,10 +87,11 @@ namespace Game
 
 	Pointer<Material> Model::ProcessMaterial(const void *aiMesh, const void *aiScene)
 	{
-		const auto mesh  = static_cast<const ::aiMesh*>(aiMesh);
-		const auto scene = static_cast<const ::aiScene*>(aiScene);
+		auto *const mesh  = static_cast<const ::aiMesh*>(aiMesh);
+		auto *const scene = static_cast<const ::aiScene*>(aiScene);
 
-		const auto material = scene->mMaterials[mesh->mMaterialIndex];
+		auto *const material = scene->mMaterials[mesh->mMaterialIndex];
+		LOG_INFO("Processing material {}", mesh->mMaterialIndex);
 
 		return Material::ProcessMaterial(material);
 	}
