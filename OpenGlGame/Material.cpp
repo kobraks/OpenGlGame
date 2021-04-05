@@ -12,6 +12,13 @@ namespace Game
 	{
 		auto material = MakePointer<Material>();
 
+		const auto mat = static_cast<const ::aiMaterial*>(aiMaterial);
+		for (size_t i = 0; i < mat->mNumProperties; ++i)
+		{
+			const auto prop = mat->mProperties[i] ;
+			LOG_DEBUG("Property: {}, {}", prop->mKey.C_Str(), prop->mType);
+		}
+
 		material->Diffuse = ProcessTexture(aiMaterial, aiTextureType_DIFFUSE);
 		material->Ambient = ProcessTexture(aiMaterial, aiTextureType_AMBIENT);
 		material->Height = ProcessTexture(aiMaterial, aiTextureType_HEIGHT);
@@ -33,7 +40,7 @@ namespace Game
 			aiString str;
 			mat->GetTexture(static_cast<aiTextureType>(textureType), i, &str);
 			
-			textures.push_back(TextureLoader::Load(str.C_Str(), "Textures"));
+			textures.push_back(TextureLoader::Load(str.C_Str(), "../Data/Textures"));
 		}
 
 		return textures;

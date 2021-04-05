@@ -55,6 +55,7 @@
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="OpenGlFunctions.cpp" />
+    <ClCompile Include="PerspectiveCamera.cpp" />
     <ClCompile Include="Property.cpp" />
     <ClCompile Include="PropertyManager.cpp" />
     <ClCompile Include="RenderBuffer.cpp" />
@@ -125,6 +126,7 @@
     <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="OpenGlFunctions.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="Property.h" />
     <ClInclude Include="PropertyManager.h" />
     <ClInclude Include="Rect.h" />

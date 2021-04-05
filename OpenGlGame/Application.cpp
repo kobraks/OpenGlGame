@@ -15,6 +15,7 @@
 
 #include "ImGui.h"
 #include "Keyboard.h"
+#include "Model.h"
 
 namespace
 {
@@ -149,7 +150,10 @@ namespace Game
 		s_Instance = this;
 	}
 
-	Application::~Application() { }
+	Application::~Application()
+	{
+		Model::ClearCashed();
+	}
 
 	void Application::OnEvent(Event &event)
 	{
@@ -168,7 +172,7 @@ namespace Game
 				s_ShowImGuiTest = !s_ShowImGuiTest;
 		}
 
-		for(auto& shortcut : m_Shortcuts)
+		for(auto &shortcut : m_Shortcuts)
 			shortcut.OnEvent(event);
 
 		for(auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
@@ -216,6 +220,8 @@ namespace Game
 		Clock updateClock;
 		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
 
+
+		PushLayer(MakePointer<GameLayer>());
 		while(m_Running)
 		{
 			m_Window->GetFunctions().Clear(BufferBit::Color | BufferBit::Depth);
@@ -290,15 +296,15 @@ namespace Game
 		Log::GetOpenGLLogger()->sinks().push_back(logLayer);
 		Log::GetApplicationLogger()->sinks().push_back(logLayer);
 		Log::GetAssertionLogger()->sinks().push_back(logLayer);
-		Log::GetOpenGLLogger()->set_level(spdlog::level::critical);
+		Log::GetOpenGLLogger()->set_level(spdlog::level::debug);
 
 		m_Properties = MakeScope<PropertyManager>();
-		
+
 		InitializeLua();
 
 		m_Properties->Register("", *m_Lua);
 		m_Properties->Add("UpdateRate", m_UpdateRate);
-		
+
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
@@ -312,12 +318,10 @@ namespace Game
 		PushOverlay(MakePointer<ConsoleLayer>());
 		// PushOverlay(MakePointer<ConfigLayer>());
 
-		PushLayer(MakePointer<GameLayer>());
-		
 		auto OpenGL = m_Window->GetFunctions();
 
-		OpenGL.Enable(Capability::Blend);
-		OpenGL.Enable(Capability::CullFace);
+		// OpenGL.Enable(Capability::Blend);
+		// OpenGL.Enable(Capability::CullFace);
 		OpenGL.Enable(Capability::DepthTest);
 
 #ifdef _DEBUG
@@ -326,7 +330,7 @@ namespace Game
 
 		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
 #endif
-		
+
 		int count;
 		GLFWmonitor **monitors = glfwGetMonitors(&count);
 

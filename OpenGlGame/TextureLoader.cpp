@@ -11,7 +11,7 @@ namespace Game
 	{
 		const auto name = dir + "/" + fileName;
 
-		if(const auto iter = s_Textures.find(name); iter != s_Textures.end())
+		if(const auto iter = s_Textures.find(fileName); iter != s_Textures.end())
 			return iter->second;
 
 		try
@@ -20,7 +20,7 @@ namespace Game
 			Image image;
 			image.Load(name);
 			
-			return s_Textures[name] = MakePointer<Texture>(image);
+			return s_Textures[fileName] = MakePointer<Texture>(image);
 		}
 		catch(std::exception &ex)
 		{

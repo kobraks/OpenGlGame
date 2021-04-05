@@ -176,7 +176,7 @@ namespace Game
 		if(iter != uniformsLocation.end())
 			location = iter->second;
 		else
-			GL_CHECK(location = uniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).second);
+			GL_CHECK(location = uniformsLocation.emplace(name, glGetUniformLocation(*this, name.c_str())).first->second);
 
 		if(location == -1)
 			GL_LOG_WARN("Uniform \"{}\" not found in shader \"{}\" (id: {})", name, m_Internals->Name, m_Internals->Program);

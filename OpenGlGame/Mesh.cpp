@@ -60,11 +60,11 @@ namespace Game
 		LOG_INFO("Faces count: {}", mesh->mNumFaces);
 
 		auto &vertices = m_Vertices;
-		std::vector<uint32_t> indices;
+		auto &indices  = m_Indices;
 
 		vertices.reserve(mesh->mNumVertices);
 
-		if(mesh->HasNormals())
+		if(!mesh->HasNormals())
 			LOG_WARN("Mesh has no normal vectors");
 
 		for(size_t i = 0; i < mesh->mNumVertices; ++i)
@@ -86,14 +86,15 @@ namespace Game
 			vertices.push_back(Vertex(position, texCoords, color, normal));
 		}
 
-		indices.resize(mesh->mNumFaces * 3);
-		if(mesh->HasNormals())
+		indices.reserve(mesh->mNumFaces * 3u);
+		if(mesh->HasFaces())
 		{
 			for(size_t i = 0; i < mesh->mNumFaces; ++i)
 			{
 				auto &face = mesh->mFaces[i];
-				for(size_t j           = 0; j < face.mNumIndices; ++j)
-					indices[i * 3 + j] = face.mIndices[j];
+
+				for(size_t j = 0; j < face.mNumIndices; ++j)
+					indices.push_back(face.mIndices[j]);
 			}
 		}
 
@@ -105,6 +106,7 @@ namespace Game
 		m_Transform = transform;
 
 		m_Vertices = vertices;
+		m_Indices  = indices;
 
 		CreateVertexArray(vertices, indices);
 	}
@@ -113,10 +115,12 @@ namespace Game
 	{
 		m_VertexArray = MakePointer<VertexArray>();
 
-		auto vertexBuffer = MakePointer<VertexBuffer>(m_Vertices.data(), m_Vertices.size());
+		auto vertexBuffer = MakePointer<VertexBuffer>(vertices.data(), vertices.size() * sizeof(Vertex));
 		vertexBuffer->SetLayout(Vertex::GetLayout());
 
 		m_VertexArray->AddVertexBuffer(vertexBuffer);
 		m_VertexArray->SetIndexBuffer(MakePointer<IndexBuffer>(indices.data(), indices.size()));
+
+		glFlush();
 	}
 }

@@ -8,16 +8,21 @@
 namespace Game
 {
 	class BufferLayout;
-	
+
 	class Vertex
 	{
 	public:
 		Vertex() = default;
 
-		Vertex(glm::vec3 position, glm::vec2 texCoords = glm::vec2(0), glm::vec4 color = glm::vec4(0), glm::vec3 normal = glm::vec3(0)) : Position(position),
-			TexCoords(texCoords),
-			Color(color),
-			Normal(normal) {}
+		Vertex(
+			glm::vec3 position,
+			glm::vec2 texCoords = glm::vec2(0.f, 0.f),
+			glm::vec4 color     = glm::vec4(1.f, 1.f, 1.f, 1.f),
+			glm::vec3 normal    = glm::vec3(0.f, 1.f, 0.f)
+			) : Position(position),
+			    TexCoords(texCoords),
+			    Color(color),
+			    Normal(normal) {}
 
 
 		glm::vec3 Position;

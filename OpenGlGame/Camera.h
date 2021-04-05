@@ -10,7 +10,7 @@ namespace Game
 		glm::mat4 m_View = glm::mat4(1.f);
 
 		mutable bool m_ViewProjectionNeedUpdate = true;
-		mutable glm::mat4 m_ViewProjection;
+		mutable glm::mat4 m_ViewProjection = glm::mat4(1.f);
 	public:
 		Camera() = default;
 		Camera(const glm::mat4 &projection) : m_Projection(projection) {}
@@ -18,16 +18,7 @@ namespace Game
 		virtual ~Camera() = default;
 
 		const glm::mat4& GetProjection() const { return m_Projection; }
-		const glm::mat4& GetViewProjection() const
-		{
-			if (m_ViewProjectionNeedUpdate)
-			{
-				m_ViewProjectionNeedUpdate = false;
-				m_ViewProjection = m_View * m_Projection;
-			}
-
-			return m_ViewProjection;
-		}
+		const glm::mat4& GetViewProjection() const;
 		const glm::mat4& GetView() const { return m_View; }
 
 	protected:

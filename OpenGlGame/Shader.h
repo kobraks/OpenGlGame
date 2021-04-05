@@ -9,7 +9,7 @@ namespace Game
 		std::string m_Source;
 	public:
 		ShaderSource() = default;
-		static ShaderSource Load(const std::string &fileName);
+		static ShaderSource Load(const std::string &fileName, const std::string &directory);
 
 		ShaderSource(std::string source) : m_Source(std::move(source)) {}
 

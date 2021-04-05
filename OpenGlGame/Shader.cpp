@@ -1,6 +1,9 @@
 #include "pch.h"
 #include "Shader.h"
 
+#include <fstream>
+#include <sstream>
+
 #include "Assert.h"
 #include "GLCheck.h"
 #include "Log.h"
@@ -21,6 +24,28 @@ namespace Game
 				return "Unknown";
 		}
 		return {};
+	}
+
+	ShaderSource ShaderSource::Load(const std::string &fileName, const std::string &directory)
+	{
+		const auto name = directory + "/" + fileName;
+		LOG_DEBUG("Loading shader source from: \"{}\"", name);
+
+		std::ifstream file(name, std::ios::in);
+
+		if (!file.good())
+		{
+			LOG_ERROR("Unable to open and load \"{}\"", name);
+			file.close();
+			return ShaderSource("");
+		}
+
+		std::stringstream stream;
+		stream << file.rdbuf();
+
+		file.close();
+
+		return ShaderSource(stream.str());
 	}
 
 	Shader::Internals::Internals(const Shader::Type &type) : Type(type)

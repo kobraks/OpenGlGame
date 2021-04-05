@@ -11,6 +11,8 @@ namespace Game
 	{
 		GL_CHECK(glNamedBufferData(Id, size, data, GL_DYNAMIC_DRAW));
 		Size = size;
+
+		OPENGL_LOG_DEBUG("Vertex buffer (id: {}) -> Data: Size: {}", Id, size);
 	}
 
 	void VertexBuffer::Internals::SubData(uint32_t size, uint32_t offset, const void *data)
@@ -21,6 +23,8 @@ namespace Game
 			std::out_of_range("Out of buffer range");
 		
 		GL_CHECK(glNamedBufferSubData(Id, offset, size, data));
+
+		OPENGL_LOG_DEBUG("Vertex buffer (id: {}) -> SubData: Size: {}, Offset: {}", Id, size, offset);
 	}
 
 	void VertexBuffer::Internals::Bind() const
@@ -36,24 +40,26 @@ namespace Game
 	VertexBuffer::Internals::Internals()
 	{
 		GL_CHECK(glCreateBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Creating vertexbuffer: {}", Id);
 	}
 
 	VertexBuffer::Internals::~Internals()
 	{
 		GL_CHECK(glDeleteBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Removing vertexBuffer: {}", Id);
 		Id = 0;
 	}
 
 	VertexBuffer::VertexBuffer(uint32_t size)
 	{
 		m_Internals = MakePointer<Internals>();
-
-		Bind();
+		m_Internals->Data(size, nullptr);
 	}
 
 	VertexBuffer::VertexBuffer(const void *vertices, uint32_t size)
 	{
 		m_Internals = MakePointer<Internals>();
+		m_Internals->Data(size, vertices);
 	}
 
 	void VertexBuffer::Bind() const
@@ -73,8 +79,9 @@ namespace Game
 
 	void IndexBuffer::Internals::Data(uint32_t count, const void *data)
 	{
-		GL_CHECK(glNamedBufferData(GL_ARRAY_BUFFER, count * sizeof(uint32_t), data, GL_STATIC_DRAW));
+		GL_CHECK(glNamedBufferData(Id, count * sizeof(uint32_t), data, GL_STATIC_DRAW));
 		Count = count;
+		OPENGL_LOG_DEBUG("Index buffer (id: {}) -> Data: Count: {}, Size: {}, uint32_t size: {}", Id, count, sizeof(uint32_t) * count, sizeof(uint32_t));
 	}
 	
 	void IndexBuffer::Internals::Bind() const
@@ -90,11 +97,13 @@ namespace Game
 	IndexBuffer::Internals::Internals()
 	{
 		GL_CHECK(glCreateBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Creating index buffer: {}", Id);
 	}
 	
 	IndexBuffer::Internals::~Internals()
 	{
 		GL_CHECK(glDeleteBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Removing index buffer: {}", Id);
 	}
 	
 	IndexBuffer::IndexBuffer(const uint32_t *indices, uint32_t count)

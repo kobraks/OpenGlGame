@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "Model.h"
 
-
 #include <unordered_map>
 #include <memory>
 #include <assimp/scene.h>
@@ -19,14 +18,17 @@
 
 namespace Game
 {
-	Pointer<Model> Model::LoadModel(const std::string &name)
-	{
-		static std::unordered_map<std::string, Pointer<Model>> models;
-		auto iter = models.find(name);
+	static std::unordered_map<std::string, Pointer<Model>> s_Models;
 
-		if(iter != models.end())
+	Pointer<Model> Model::Load(const std::string &fileName, const std::string &directory)
+	{
+		const auto iter = s_Models.find(fileName);
+
+		const std::string name = directory + "/" + fileName;
+
+		if(iter != s_Models.end())
 		{
-			LOG_INFO("\"{}\" model already loaded", name);
+			LOG_INFO("\"{}\" model already loaded", fileName);
 			return iter->second;
 		}
 
@@ -37,7 +39,7 @@ namespace Game
 
 		if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
-			LOG_ERROR("Unable to import scene model {}", importer->GetErrorString());
+			LOG_ERROR("Unable to import \"{}\", {}", name, importer->GetErrorString());
 			return nullptr;
 		}
 
@@ -50,10 +52,15 @@ namespace Game
 		{
 			LOG_INFO("Processing mesh number: {}", i);
 			auto *const mesh = scene->mMeshes[i];
-			modelMeshes[i]  = ProcessMesh(mesh, scene);
+			modelMeshes[i]   = ProcessMesh(mesh, scene);
 		}
 
-		return nullptr;
+		Pointer<Model> model = MakePointer<Model>();
+		model->m_Meshes      = modelMeshes;
+
+		s_Models[fileName] = model;
+
+		return model;
 	}
 
 	const Pointer<Mesh>& Model::GetMesh(SizeType index) const
@@ -83,6 +90,11 @@ namespace Game
 	void Model::Clear()
 	{
 		m_Meshes.clear();
+	}
+
+	void Model::ClearCashed()
+	{
+		s_Models.clear();
 	}
 
 	Pointer<Material> Model::ProcessMaterial(const void *aiMesh, const void *aiScene)

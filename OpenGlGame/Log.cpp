@@ -47,11 +47,12 @@ namespace Game
 		if(consoleOutput)
 			sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>())->set_pattern("%^- %D %T [%l] %n: %v%$");
 
+		m_OpenGlLogger = SetUpLogger(GL_LOGGER_NAME, std::begin(sinks), std::end(sinks));
+
 		if(fileOutput)
 			sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("Logs/Log.log", true))->set_pattern("- %D %T [%l] %n: %v");
 
 		m_ApplicationLogger = SetUpLogger(APPLICATION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
-		m_OpenGlLogger = SetUpLogger(GL_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 		m_AssertionLogger = SetUpLogger(ASSERTION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 
 		if (fileOutput)
