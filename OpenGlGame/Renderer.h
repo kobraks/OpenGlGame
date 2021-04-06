@@ -38,10 +38,10 @@ namespace Game
 
 		void Draw(const Pointer<VertexArray> &vertexArray, const glm::mat4 &transform = glm::mat4(1.f));
 		void Draw(const Pointer<VertexArray> &vertexArray, const std::vector<uint32_t> &indices, const glm::mat4 &transform = glm::mat4(1.f));
-		
+
 		void Draw(const Pointer<Model> &model, const glm::mat4 &transform = glm::mat4(1.f));
 		void Draw(const Pointer<Mesh> &mesh, const glm::mat4 &transform = glm::mat4(1.f));
-		
+
 		void BindMaterial(const Pointer<Material> &material);
 
 	private:

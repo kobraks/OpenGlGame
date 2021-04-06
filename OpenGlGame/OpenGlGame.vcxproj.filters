@@ -228,6 +228,12 @@
     <ClCompile Include="PerspectiveCamera.cpp">
       <Filter>Source Files\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="TransformComponent.cpp">
+      <Filter>Source Files\Entity\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="EntityLuaHandle.cpp">
+      <Filter>Source Files\Entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -437,14 +443,20 @@
     <ClInclude Include="Component.h">
       <Filter>Header Files\Entity\Components</Filter>
     </ClInclude>
-    <ClInclude Include="Entity.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>Header Files\Camera</Filter>
     </ClInclude>
     <ClInclude Include="PerspectiveCamera.h">
       <Filter>Header Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Entity.h">
+      <Filter>Header Files\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="TransformComponent.h">
+      <Filter>Header Files\Entity\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="EntityLuaHandle.h">
+      <Filter>Header Files\Entity</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

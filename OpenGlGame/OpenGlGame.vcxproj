@@ -29,6 +29,7 @@
     <ClCompile Include="CubeMap.cpp" />
     <ClCompile Include="Cursor.cpp" />
     <ClCompile Include="Entity.cpp" />
+    <ClCompile Include="EntityLuaHandle.cpp" />
     <ClCompile Include="Font.cpp" />
     <ClCompile Include="FrameBuffer.cpp" />
     <ClCompile Include="Application.cpp" />
@@ -69,6 +70,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="TransformComponent.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="VertexArray.cpp" />
@@ -89,6 +91,7 @@
     <ClInclude Include="CubeMap.h" />
     <ClInclude Include="Cursor.h" />
     <ClInclude Include="Defines.h" />
+    <ClInclude Include="EntityLuaHandle.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Event.h" />
     <ClInclude Include="Font.h" />
@@ -141,6 +144,7 @@
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
+    <ClInclude Include="TransformComponent.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Vector2.h" />

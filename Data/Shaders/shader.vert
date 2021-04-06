@@ -6,21 +6,23 @@ layout (location = 3) in vec3 in_Normal;
 
 uniform mat4 u_ProjectionViewMatrix;
 uniform mat4 u_Transform;
+uniform mat4 u_InvertedTransform;
 
 uniform mat4 u_Projection;
 uniform mat4 u_View;
-uniform mat4 u_Model;
 
 out vec4 Color;
 out vec3 Normal;
 out vec2 TexCoords;
+out vec3 FragPosition;
 
 void main()
 {
-    //gl_Position = u_Projection * u_View * u_Model * vec4(aPos, 1.0f);
-	//gl_Position = u_Projection * u_View * u_Model * vec4(in_Position, 1.f);
-	gl_Position = u_ProjectionViewMatrix * u_Transform * vec4(in_Position, 1.f);
+	FragPosition = vec3(u_Transform * vec4(in_Position, 1.f));
+	Normal = mat3(transpose(u_InvertedTransform)) * in_Normal;
+
 	Color = in_Color;
-	Normal = in_Normal;
 	TexCoords = in_TexCoords;
+
+	gl_Position = u_ProjectionViewMatrix * vec4(FragPosition, 1.f);
 }

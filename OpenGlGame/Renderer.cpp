@@ -36,12 +36,11 @@ namespace Game
 		ASSERT(array, "Uninitialized Vertex Array");
 
 		array->Bind();
-		
+
 		GL_CHECK(
 		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? array->GetIndexBuffer()->Count() : count, static_cast<GLenum>(DataType::UnsignedInt)
 			       , nullptr)
 		        );
-
 	}
 
 	void Renderer::Draw(const Pointer<VertexArray> &array, const std::vector<uint32_t> &indices, Primitive primitive, int64_t count)
@@ -49,9 +48,10 @@ namespace Game
 		ASSERT(array, "Uninitialized Vertex Array");
 
 		array->Bind();
-		
+
 		GL_CHECK(
-		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : count, static_cast<GLenum>(DataType::UnsignedInt), indices.data())
+		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : count, static_cast<GLenum>(DataType::
+			         UnsignedInt), indices.data())
 		        );
 
 		// glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
@@ -107,10 +107,32 @@ namespace Game
 		}
 
 		int32_t textureUnit = 0;
-		BindMaterialTexture(s_SceneData->Shader, material->Diffuse, "u_DiffuseTex", textureUnit);
-		BindMaterialTexture(s_SceneData->Shader, material->Specular, "u_SpecularTex", textureUnit);
-		BindMaterialTexture(s_SceneData->Shader, material->Ambient, "u_AmbientTex", textureUnit);
-		BindMaterialTexture(s_SceneData->Shader, material->Height, "u_HeightTex", textureUnit);
+		// BindMaterialTexture(s_SceneData->Shader, material->Diffuse, "u_DiffuseTex", textureUnit);
+		// BindMaterialTexture(s_SceneData->Shader, material->Specular, "u_SpecularTex", textureUnit);
+		// BindMaterialTexture(s_SceneData->Shader, material->Ambient, "u_AmbientTex", textureUnit);
+		// BindMaterialTexture(s_SceneData->Shader, material->Height, "u_HeightTex", textureUnit);
+
+		auto &shader = s_SceneData->Shader;
+
+		if(material->SpecularTexture)
+		{
+			shader->UniformValue("u_Material.SpecularTex", *material->SpecularTexture, textureUnit++);
+			shader->UniformValue("u_Material.HasSpecularTex", true);
+		}
+		else
+			shader->UniformValue("u_Material.HasSpecularTex", false);
+
+		if(material->DiffuseTexture)
+		{
+			shader->UniformValue("u_Material.DiffuseTex", *material->DiffuseTexture, textureUnit++);
+			shader->UniformValue("u_Material.HasDiffuseTex", true);
+		}
+		else
+			shader->UniformValue("u_Material.HasDiffuseTex", false);
+
+		shader->UniformValue("u_Material.Diffuse", material->DiffuseColor);
+		shader->UniformValue("u_Material.Specular", material->SpecularColor);
+		shader->UniformValue("u_Material.Shininess", material->Shininess);
 	}
 
 	void Renderer::BindMaterialTexture(

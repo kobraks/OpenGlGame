@@ -24,7 +24,8 @@
 namespace Game
 {
 #define DEFAULT_PROGRAM_SHADER_NAME "Default"
-
+#define PROGRAM_SHADER_NAME "Shader Program"
+	
 	class ShaderProgram
 	{
 	public:
@@ -38,7 +39,7 @@ namespace Game
 	private:
 		enum class ParametersName : uint32_t
 		{
-			DeleteStatus =  GL_DELETE_STATUS,
+			DeleteStatus = GL_DELETE_STATUS,
 			LinkStatus = GL_LINK_STATUS,
 			ValidateStatus = GL_VALIDATE_STATUS,
 			InfoLogLength = GL_INFO_LOG_LENGTH,
@@ -59,18 +60,18 @@ namespace Game
 			GeometryInputType = GL_GEOMETRY_INPUT_TYPE,
 			GeomteryOutputType = GL_GEOMETRY_OUTPUT_TYPE
 		};
-		
+
 		class Internals
 		{
 		public:
 			IdType Program = 0;
-			
-			std::unordered_map<std::string, UniformLocationType> UniformsLocation;
-			std::unordered_map<std::string, AttributeLocationType> Attributes;
+
+			mutable std::unordered_map<std::string, UniformLocationType> UniformsLocation;
+			mutable std::unordered_map<std::string, AttributeLocationType> Attributes;
 
 			std::unordered_set<Pointer<Shader>> Shaders;
 
-			bool Linked = false;
+			bool Linked  = false;
 			bool Changed = true;
 
 			std::string Name;
@@ -78,12 +79,31 @@ namespace Game
 			Internals(std::string name);
 			Internals(IdType id, std::string name);
 			~Internals();
+
+			void Attach(Pointer<Shader> shader);
+			void Detach(Pointer<Shader> shader);
+
+			bool Link();
+
+			void Use();
+
+			std::string GetLog() const;
+
+			bool HasUniform(const std::string &name) const;
+
+			AttributeLocationType GetAttributeLocation(const std::string &name) const;
+			UniformLocationType GetUniformLocation(const std::string &name) const;
+
+			int Get(ParametersName name) const;
+			void Get(ParametersName name, int *params) const;
+
+			void Populate();
 		};
-		
+
 		Pointer<Internals> m_Internals = nullptr;
 	public:
-		explicit ShaderProgram(const std::string &name);
-		ShaderProgram(IdType id, const std::string &name);
+		explicit ShaderProgram(const std::string &name = PROGRAM_SHADER_NAME);
+		ShaderProgram(IdType id, const std::string &name = PROGRAM_SHADER_NAME);
 		ShaderProgram(const std::string &name, Pointer<Shader> shader);
 
 		template <class ...Args>
@@ -103,16 +123,62 @@ namespace Game
 
 		const std::string Name() const { return m_Internals->Name; };
 
-		void Attach(Pointer<Shader> shader);
-		void Detach(Pointer<Shader> shader);
+		void Attach(Pointer<Shader> shader) { return m_Internals->Attach(shader); }
+		void Detach(Pointer<Shader> shader) { return m_Internals->Detach(shader); }
 
-		bool Link();
+		Pointer<Shader> GetShader(Shader::Type type);
 
-		void Use() const;
+		bool Link() { return m_Internals->Link(); }
 
-		std::string GetLog() const;
-		AttributeLocationType GetAttributeLocation(const std::string &name) const;
-		UniformLocationType GetUniformLocation(const std::string &name) const;
+		void Use() const { m_Internals->Use(); }
+
+		std::string GetLog() const { return m_Internals->GetLog(); }
+
+		AttributeLocationType GetAttributeLocation(const std::string &name) const { return m_Internals->GetAttributeLocation(name); }
+		UniformLocationType GetUniformLocation(const std::string &name) const { return m_Internals->GetUniformLocation(name); }
+
+		bool HasUniform(const std::string &name) const { return m_Internals->HasUniform(name); }
+
+		static ShaderProgram* GetDefault();
+
+		int Get(ParametersName name) const { return m_Internals->Get(name); }
+		void Get(ParametersName name, int *params) const { return m_Internals->Get(name, params); }
+
+		std::unordered_set<Pointer<Shader>>::iterator begin() { return m_Internals->Shaders.begin(); }
+		std::unordered_set<Pointer<Shader>>::iterator end() { return m_Internals->Shaders.end(); }
+
+		std::unordered_set<Pointer<Shader>>::const_iterator begin() const { return m_Internals->Shaders.begin(); }
+		std::unordered_set<Pointer<Shader>>::const_iterator end() const { return m_Internals->Shaders.end(); }
+	
+	public:
+		template <class ...Args>
+		void Attach(Pointer<Shader> shader, Args &&... args)
+		{
+			Attach(shader);
+			Attach(std::forward<Args>(args)...);
+		}
+
+		template <class ...Args>
+		void Detach(Pointer<Shader> shader, Args &&... args)
+		{
+			Detach(shader);
+			Detach(std::forward<Args>(args)...);
+		}
+
+		void UniformValue(const std::string &name, bool value)
+		{
+			return UniformValue(GetUniformLocation(name), static_cast<int32_t>(value));
+		}
+
+		void UniformValue(const std::string &name, bool value1, bool value2)
+		{
+			return UniformValue(GetUniformLocation(name), static_cast<int32_t>(value1), static_cast<int32_t>(value2));
+		}
+
+		void UniformValue(const std::string &name, bool value1, bool value2, bool value3)
+		{
+			return UniformValue(GetUniformLocation(name), static_cast<int32_t>(value1), static_cast<int32_t>(value2), static_cast<int32_t>(value3));
+		}
 
 		void UniformValue(const std::string &name, int32_t value)
 		{
@@ -159,64 +225,64 @@ namespace Game
 			return UniformValue(GetUniformLocation(name), value, value3);
 		}
 
-		void UniformValue(const std::string &name, glm::vec2 value)
+		void UniformValue(const std::string &name, const glm::vec2 &value)
 		{
 			return UniformValue(GetUniformLocation(name), value);
 		}
 
-		void UniformValue(const std::string &name, glm::vec3 value)
+		void UniformValue(const std::string &name, const glm::vec3 &value)
 		{
 			return UniformValue(GetUniformLocation(name), value);
 		}
 
-		void UniformValue(const std::string &name, glm::vec4 value)
+		void UniformValue(const std::string &name, const glm::vec4 &value)
 		{
 			return UniformValue(GetUniformLocation(name), value);
 		}
 
-		void UniformValue(const std::string &name, glm::mat2x2 value)
+		void UniformValue(const std::string &name, const glm::mat2x2 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat2x3 value)
+		void UniformValue(const std::string &name, const glm::mat2x3 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat2x4 value)
+		void UniformValue(const std::string &name, const glm::mat2x4 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat3x2 value)
+		void UniformValue(const std::string &name, const glm::mat3x2 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat3x3 value)
+		void UniformValue(const std::string &name, const glm::mat3x3 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat3x4 value)
+		void UniformValue(const std::string &name, const glm::mat3x4 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat4x2 value)
+		void UniformValue(const std::string &name, const glm::mat4x2 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat4x3 value)
+		void UniformValue(const std::string &name, const glm::mat4x3 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
-		void UniformValue(const std::string &name, glm::mat4x4 value)
+		void UniformValue(const std::string &name, const glm::mat4x4 &value, bool transpose = false)
 		{
-			return UniformValue(GetUniformLocation(name), value);
+			return UniformValue(GetUniformLocation(name), value, transpose);
 		}
 
 		void UniformValue(const std::string &name, const Texture &texture, int32_t sampleUnit = 0)
@@ -224,56 +290,47 @@ namespace Game
 			return UniformValue(GetUniformLocation(name), texture, sampleUnit);
 		}
 
+		void UniformValue(UniformLocationType location, bool value)
+		{
+			return UniformValue(location, static_cast<int32_t>(value));
+		}
+
+		void UniformValue(UniformLocationType location, bool value1, bool value2)
+		{
+			UniformValue(location, static_cast<int32_t>(value1), static_cast<int32_t>(value2));
+		}
+
+		void UniformValue(UniformLocationType location, bool value1, bool value2, bool value3)
+		{
+			UniformValue(location, static_cast<int32_t>(value1), static_cast<int32_t>(value2), static_cast<int32_t>(value3));
+		}
+
 		void UniformValue(UniformLocationType location, int32_t value);
-		void UniformValue(UniformLocationType location, int32_t value, int32_t value2);
-		void UniformValue(UniformLocationType location, int32_t value, int32_t value2, int32_t value3);
+		void UniformValue(UniformLocationType location, int32_t value1, int32_t value2);
+		void UniformValue(UniformLocationType location, int32_t value1, int32_t value2, int32_t value3);
 
 		void UniformValue(UniformLocationType location, uint32_t value);
-		void UniformValue(UniformLocationType location, uint32_t value, uint32_t value2);
-		void UniformValue(UniformLocationType location, uint32_t value, uint32_t value2, uint32_t value3);
+		void UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2);
+		void UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2, uint32_t value3);
 
 		void UniformValue(UniformLocationType location, float value);
-		void UniformValue(UniformLocationType location, float value, float value2);
-		void UniformValue(UniformLocationType location, float value, float value2, float value3);
+		void UniformValue(UniformLocationType location, float value1, float value2);
+		void UniformValue(UniformLocationType location, float value1, float value2, float value3);
 
-		void UniformValue(UniformLocationType location, glm::vec2 value);
-		void UniformValue(UniformLocationType location, glm::vec3 value);
-		void UniformValue(UniformLocationType location, glm::vec4 value);
+		void UniformValue(UniformLocationType location, const glm::vec2 &value);
+		void UniformValue(UniformLocationType location, const glm::vec3 &value);
+		void UniformValue(UniformLocationType location, const glm::vec4 &value);
 
-		void UniformValue(UniformLocationType location, glm::mat2x2 value);
-		void UniformValue(UniformLocationType location, glm::mat2x3 value);
-		void UniformValue(UniformLocationType location, glm::mat2x4 value);
-		void UniformValue(UniformLocationType location, glm::mat3x2 value);
-		void UniformValue(UniformLocationType location, glm::mat3x3 value);
-		void UniformValue(UniformLocationType location, glm::mat3x4 value);
-		void UniformValue(UniformLocationType location, glm::mat4x2 value);
-		void UniformValue(UniformLocationType location, glm::mat4x3 value);
-		void UniformValue(UniformLocationType location, glm::mat4x4 value);
+		void UniformValue(UniformLocationType location, const glm::mat2x2 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat2x3 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat2x4 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat3x2 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat3x3 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat3x4 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat4x2 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat4x3 &value, bool transpose = false);
+		void UniformValue(UniformLocationType location, const glm::mat4x4 &value, bool transpose = false);
 
 		void UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit = 0);
-
-		bool HasUniform(const std::string &name) const;
-
-		static ShaderProgram* GetDefault();
-
-	private:
-		void Populate();
-
-		int GetProgramI(ParametersName name) const;
-		void GetProgramIV(ParametersName name, int* params) const;
-	public:
-		template <class ...Args>
-		void Attach(Pointer<Shader> shader, Args &&... args)
-		{
-			Attach(shader);
-			Attach(std::forward<Args>(args)...);
-		}
-
-		template <class ...Args>
-		void Detach(Pointer<Shader> shader, Args &&... args)
-		{
-			Detach(shader);
-			Detach(std::forward<Args>(args)...);
-		}
 	};
 }
