@@ -12,10 +12,13 @@ namespace Game
 		float m_FarPlane = 0.f;
 
 		glm::vec3 m_Position = glm::vec3(0.f);
-		glm::vec3 m_Target = glm::vec3(0.f);
 		
 		glm::vec3 m_Up = glm::vec3(0.f, 1.f, 0.f);
-		
+		glm::vec3 m_Front = glm::vec3(0.f, 0.f, -1.f);
+		glm::vec3 m_Right = glm::vec3(0.f);
+		glm::vec3 m_WordUp = glm::vec3(0.f, 1.f, 0.f);
+
+		glm::vec3 m_Rotation = {0.f, -90.f, 0.f};
 	public:
 		PerspectiveCamera(
 			float fov,
@@ -23,7 +26,7 @@ namespace Game
 			float nearPlane,
 			float farPlane,
 			glm::vec3 position,
-			glm::vec3 target,
+			glm::vec3 front,
 			glm::vec3 up = glm::vec3(0.f, 1.f, 0.f)
 			);
 
@@ -32,8 +35,12 @@ namespace Game
 		void SetNearPlane(float nearPlane);
 		void SetFarPlane(float farPlane);
 
+		void SetRotation(glm::vec3 rotation);
+		void Rotate(glm::vec3 rotate);
+
+		void Move(glm::vec3 vector);
+		
 		void SetPosition(const glm::vec3 &position);
-		void SetTarget(const glm::vec3 &target);
 		void SetUp(const glm::vec3 &up);
 
 		float GetFov() const { return m_Fov; }
@@ -41,11 +48,15 @@ namespace Game
 		float GetNearPlane() const { return m_NearPlane; }
 		float GetFarPlane() const { return m_FarPlane; }
 
-		glm::vec3 GetPosition() const {return m_Position; }
-		glm::vec3 GetTarget() const { return m_Target; }
+		glm::vec3 GetRight() const { return m_Right; }
+		glm::vec3 GetFront() const { return m_Front; }
 		glm::vec3 GetUp() const { return m_Up; }
 
+		glm::vec3 GetPosition() const {return m_Position; }
+		glm::vec3 GetWordUp() const { return m_WordUp; }
+
 	private:
+		void UpdateCameraVectors();
 		void UpdateProjection();
 		void UpdateView();
 	};
