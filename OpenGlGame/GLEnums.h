@@ -4,6 +4,50 @@
 
 namespace Game
 {
+	enum class UniformType : GLenum
+	{
+		Float = GL_FLOAT,
+		Vec2 = GL_FLOAT_VEC2,
+		Vec3 = GL_FLOAT_VEC3,
+		Vec4 = GL_FLOAT_VEC4,
+		
+		Double = GL_DOUBLE,
+		DVec2 = GL_DOUBLE_VEC2,
+		DVec3 = GL_DOUBLE_VEC3,
+		DVec4 = GL_DOUBLE_VEC4,
+		
+		Int = GL_INT,
+		IVec2 = GL_INT_VEC2,
+		IVec3 = GL_INT_VEC3,
+		IVec4 = GL_INT_VEC4,
+
+		UInt = GL_UNSIGNED_INT,
+		UVec2 = GL_UNSIGNED_INT_VEC2,
+		UVec3 = GL_UNSIGNED_INT_VEC3,
+		UVec4 = GL_UNSIGNED_INT_VEC4,
+
+		Bool = GL_BOOL,
+		BVec2 = GL_BOOL_VEC2,
+		BVec3 = GL_BOOL_VEC3,
+		BVec4 = GL_BOOL_VEC4,
+
+		Mat2 = GL_FLOAT_MAT2,	
+		Mat2x3 = GL_FLOAT_MAT2x3,	
+		Mat2x4 = GL_FLOAT_MAT2x4,
+		
+		Mat3 = GL_FLOAT_MAT3,	
+		Mat3x2 = GL_FLOAT_MAT3x2,	
+		Mat3x4 = GL_FLOAT_MAT3x4,
+		
+		Mat4 = GL_FLOAT_MAT4,	
+		Mat4x2 = GL_FLOAT_MAT4x2,	
+		Mat4x3 = GL_FLOAT_MAT4x3,
+
+		Sampler1D = GL_SAMPLER_1D,
+		Sampler2D = GL_SAMPLER_2D,
+		Sampler3D = GL_SAMPLER_3D
+	};
+	
 	enum class InternalFormat : int32_t
 	{
 		CompressedRed = GL_COMPRESSED_RED,
