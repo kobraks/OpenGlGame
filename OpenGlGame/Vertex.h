@@ -9,7 +9,7 @@ namespace Game
 {
 	class BufferLayout;
 
-	class Vertex
+	struct Vertex
 	{
 	public:
 		Vertex() = default;
@@ -25,10 +25,10 @@ namespace Game
 			    Normal(normal) {}
 
 
-		glm::vec3 Position;
-		glm::vec2 TexCoords;
-		glm::vec4 Color;
-		glm::vec3 Normal;
+		glm::vec3 Position = glm::vec3(0.f);
+		glm::vec2 TexCoords = glm::vec2(0.f, 0.f);
+		glm::vec4 Color = glm::vec4(1.f);
+		glm::vec3 Normal = glm::vec3(0.f, 1.f, 0.f);
 
 		static BufferLayout GetLayout();
 	};
