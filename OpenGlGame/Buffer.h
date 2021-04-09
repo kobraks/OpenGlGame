@@ -5,6 +5,7 @@
 
 #include "Types.h"
 #include "Assert.h"
+#include "GLEnums.h"
 
 namespace Game
 {
@@ -90,11 +91,11 @@ namespace Game
 	public:
 		BufferLayout() = default;
 
-		BufferLayout(const std::vector<BufferElement>& elements) : m_Elements(elements)
+		BufferLayout(const std::vector<BufferElement> &elements) : m_Elements(elements)
 		{
 			CalculateOffsetAndStride();
 		}
-		
+
 		BufferLayout(std::initializer_list<BufferElement> elements) : m_Elements(elements)
 		{
 			CalculateOffsetAndStride();
@@ -124,22 +125,97 @@ namespace Game
 		}
 	};
 
-	class VertexBuffer
+	class BufferObject;
+	
+	class BufferContent
+	{
+		friend class BufferObject;
+
+		const BufferObject& m_Buffer;
+		const BufferAccess m_Access;
+
+		void *m_Data = nullptr;
+
+	protected:
+		BufferContent(const BufferAccess access, const BufferObject &buffer);
+
+	public:
+		~BufferContent();
+
+		const void* Get() const;
+		void* Get();
+
+		void Set(const void* data, const size_t size, const size_t offset = 0);
+
+		template<typename Type>
+		void Set(const Type& value, const size_t offset = 0)
+		{
+			return Set(&value, sizeof(Type), offset);
+		}
+
+		template<typename Type>
+		Type Get(const size_t offset = 0) const
+		{
+			Type value;
+			std::memcpy(&value, static_cast<const char*>(Get()), sizeof(Type));
+
+			return value;
+		}
+
+		BufferAccess Access() const { return m_Access; }
+	};
+	
+	class BufferObject
 	{
 		struct Internals
 		{
 			uint32_t Id   = 0;
 			uint32_t Size = 0;
-			BufferLayout Layout;
 
-			void Data(uint32_t size, const void *data = nullptr);
+			BufferUsage Usage = BufferUsage::StaticDraw;
+			BufferType Type   = BufferType::Index;
+
+			Internals(BufferType type);
+			~Internals();
+
+			void Data(BufferUsage usage, uint32_t size, const void *data = nullptr);
 			void SubData(uint32_t size, uint32_t offset, const void *data = nullptr);
 
 			void Bind() const;
 			void Unbind() const;
+		};
 
-			Internals();
-			~Internals();
+		Pointer<Internals> m_Internals = nullptr;
+	protected:
+		BufferObject(BufferType type);
+
+		void Data(BufferUsage usage, uint32_t size, const void *data = nullptr)
+		{
+			m_Internals->Data(usage, size, data);
+		}
+
+		void SubData(uint32_t size, uint32_t offset, const void *data = nullptr)
+		{
+			m_Internals->SubData(size, offset, data);
+		}
+
+	public:
+		uint32_t Size() const { return m_Internals->Size; }
+
+		void Bind() const { m_Internals->Bind(); }
+		void Unbind() const { m_Internals->Unbind(); }
+
+		uint32_t Id() const { return m_Internals->Id; }
+		operator uint32_t() const { return Id(); }
+
+		Pointer<BufferContent> GetContent(BufferAccess access = BufferAccess::ReadOnly) const;
+	};
+
+	class VertexBuffer : public BufferObject
+	{
+		struct Internals
+		{
+			BufferLayout Layout;
 		};
 
 		std::shared_ptr<Internals> m_Internals;
@@ -147,35 +223,17 @@ namespace Game
 		VertexBuffer(uint32_t size);
 		VertexBuffer(const void *vertices, uint32_t size);
 
-		void Bind() const;
-		void Unbind() const;
-
 		void SetData(const void *data, uint32_t size, uint32_t offset = 0);
 
 		const BufferLayout& GetLayout() const { return m_Internals->Layout; }
 		void SetLayout(const BufferLayout &layout) { m_Internals->Layout = layout; }
-
-		uint32_t Size() const { return m_Internals->Size; }
-
-		uint32_t Id() const { return m_Internals->Id; }
-
-		operator uint32_t() const { return Id(); }
 	};
 
-	class IndexBuffer
+	class IndexBuffer : public BufferObject
 	{
 		struct Internals
 		{
-			uint32_t Id    = 0;
 			uint32_t Count = 0;
-
-			void Data(uint32_t count, const void *data = nullptr);
-
-			void Bind() const;
-			void Unbind() const;
-
-			Internals();
-			~Internals();
 		};
 
 		Pointer<Internals> m_Internals;
@@ -183,13 +241,6 @@ namespace Game
 	public:
 		IndexBuffer(const uint32_t *indices, uint32_t count);
 
-		void Bind() const { m_Internals->Bind(); }
-		void Unbind() const { m_Internals->Bind(); };
-
 		uint32_t Count() const { return m_Internals->Count; }
-
-		uint32_t Id() const { return m_Internals->Id; }
-
-		operator uint32_t() const { return Id(); }
 	};
 }

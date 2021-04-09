@@ -7,108 +7,139 @@
 
 namespace Game
 {
-	void VertexBuffer::Internals::Data(uint32_t size, const void *data)
+	constexpr static std::string_view ToString(BufferType type)
 	{
-		GL_CHECK(glNamedBufferData(Id, size, data, GL_DYNAMIC_DRAW));
-		Size = size;
-
-		OPENGL_LOG_DEBUG("Vertex buffer (id: {}) -> Data: Size: {}", Id, size);
+		switch(type)
+		{
+			case BufferType::Index: return "Index buffer";
+			case BufferType::Vertex: return "Vertex buffer";
+			case BufferType::Uniform: return "Uniform buffer";
+			default: return "Unknown";
+		}
 	}
 
-	void VertexBuffer::Internals::SubData(uint32_t size, uint32_t offset, const void *data)
+	BufferContent::BufferContent(const BufferAccess access, const BufferObject &buffer) : m_Buffer(buffer),
+	                                                                                      m_Access(access)
+	{
+		ASSERT(buffer.Size() != 0, "Attempting to get access to uninitialized memory");
+
+		if(buffer.Size() == 0)
+			throw std::runtime_error("Attempting to get access to uninitialized memory");
+
+		GL_CHECK(m_Data = glMapNamedBuffer(buffer.Id(), static_cast<GLenum>(m_Access)));
+	}
+
+	BufferContent::~BufferContent()
+	{
+		GL_CHECK(glUnmapNamedBuffer(m_Buffer.Id()));
+	}
+
+	const void* BufferContent::Get() const
+	{
+		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
+
+		if(m_Access == BufferAccess::WriteOnly)
+			throw std::runtime_error("No read access");
+
+		return m_Data;
+	}
+
+	void* BufferContent::Get()
+	{
+		ASSERT(m_Access == BufferAccess::ReadOnly, "No read access");
+
+		if(m_Access == BufferAccess::WriteOnly)
+			throw std::runtime_error("No read access");
+
+		return m_Data;
+	}
+
+	void BufferContent::Set(const void *data, const size_t size, const size_t offset)
+	{
+		ASSERT(m_Access == BufferAccess::WriteOnly, "No write access");
+		ASSERT(size + offset < m_Buffer.Size(), "Data provided is too big");
+
+		if(m_Access == BufferAccess::ReadOnly)
+			throw std::runtime_error("No write access");
+
+		if(size + offset >= m_Buffer.Size())
+			throw std::out_of_range("Data size provided is too big");
+
+		std::memcpy(static_cast<char*>(m_Data) + offset, data, size);
+	}
+
+	BufferObject::Internals::Internals(BufferType type) : Type(type)
+	{
+		GL_CHECK(glCreateBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Creating {}: {}", ToString(type), Id);
+	}
+
+	BufferObject::Internals::~Internals()
+	{
+		GL_CHECK(glDeleteBuffers(1, &Id));
+		OPENGL_LOG_DEBUG("Deleting {}: {}", ToString(Type), Id);
+	}
+
+	void BufferObject::Internals::Data(BufferUsage usage, uint32_t size, const void *data)
+	{
+		Usage = usage;
+		OPENGL_LOG_DEBUG("{} (id: {}) -> Data: Size: {}", ToString(Type), Id, size);
+
+		GL_CHECK(glNamedBufferData(Id, size, data, static_cast<GLenum>(usage)));
+	}
+
+	void BufferObject::Internals::SubData(uint32_t size, uint32_t offset, const void *data)
 	{
 		ASSERT(offset + size < Size, "Out of range");
 
-		if (offset + size > Size)
-			std::out_of_range("Out of buffer range");
-		
-		GL_CHECK(glNamedBufferSubData(Id, offset, size, data));
+		if(offset + size >= Size)
+			throw std::out_of_range("Out of range");
 
-		OPENGL_LOG_DEBUG("Vertex buffer (id: {}) -> SubData: Size: {}, Offset: {}", Id, size, offset);
+		glNamedBufferSubData(Id, offset, size, data);
+
+		OPENGL_LOG_DEBUG("{} (id: {}) -> SubData: Size: {}, Offset: {}", ToString(Type), Id, size, offset);
 	}
 
-	void VertexBuffer::Internals::Bind() const
+	void BufferObject::Internals::Bind() const
 	{
-		GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, Id));
+		GL_CHECK(glBindBuffer(static_cast<GLenum>(Type), Id));
 	}
 
-	void VertexBuffer::Internals::Unbind() const
+	void BufferObject::Internals::Unbind() const
 	{
-		GL_CHECK(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		GL_CHECK(glBindBuffer(static_cast<GLenum>(Type), 0));
 	}
 
-	VertexBuffer::Internals::Internals()
+	BufferObject::BufferObject(BufferType type) : m_Internals(MakePointer<Internals>(type)) {}
+
+	Pointer<BufferContent> BufferObject::GetContent(BufferAccess access) const
 	{
-		GL_CHECK(glCreateBuffers(1, &Id));
-		OPENGL_LOG_DEBUG("Creating vertexbuffer: {}", Id);
+		BufferContent* content = new BufferContent(access, *this);
+
+		return Pointer<BufferContent>(content);
 	}
 
-	VertexBuffer::Internals::~Internals()
-	{
-		GL_CHECK(glDeleteBuffers(1, &Id));
-		OPENGL_LOG_DEBUG("Removing vertexBuffer: {}", Id);
-		Id = 0;
-	}
-
-	VertexBuffer::VertexBuffer(uint32_t size)
+	VertexBuffer::VertexBuffer(uint32_t size) : BufferObject(BufferType::Vertex)
 	{
 		m_Internals = MakePointer<Internals>();
-		m_Internals->Data(size, nullptr);
+		Data(BufferUsage::DynamicDraw, size);
 	}
 
-	VertexBuffer::VertexBuffer(const void *vertices, uint32_t size)
+	VertexBuffer::VertexBuffer(const void *vertices, uint32_t size) : BufferObject(BufferType::Vertex)
 	{
 		m_Internals = MakePointer<Internals>();
-		m_Internals->Data(size, vertices);
+		Data(BufferUsage::StaticDraw, size, vertices);
 	}
 
-	void VertexBuffer::Bind() const
-	{
-		m_Internals->Bind();
-	}
-
-	void VertexBuffer::Unbind() const
-	{
-		m_Internals->Unbind();
-	}
-	
 	void VertexBuffer::SetData(const void *data, uint32_t size, uint32_t offset)
 	{
-		m_Internals->SubData(size, offset, data);
+		SubData(size, offset, data);
 	}
 
-	void IndexBuffer::Internals::Data(uint32_t count, const void *data)
-	{
-		GL_CHECK(glNamedBufferData(Id, count * sizeof(uint32_t), data, GL_STATIC_DRAW));
-		Count = count;
-		OPENGL_LOG_DEBUG("Index buffer (id: {}) -> Data: Count: {}, Size: {}, uint32_t size: {}", Id, count, sizeof(uint32_t) * count, sizeof(uint32_t));
-	}
-	
-	void IndexBuffer::Internals::Bind() const
-	{
-		GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, Id));
-	}
-	
-	void IndexBuffer::Internals::Unbind() const
-	{
-		GL_CHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-	}
-
-	IndexBuffer::Internals::Internals()
-	{
-		GL_CHECK(glCreateBuffers(1, &Id));
-		OPENGL_LOG_DEBUG("Creating index buffer: {}", Id);
-	}
-	
-	IndexBuffer::Internals::~Internals()
-	{
-		GL_CHECK(glDeleteBuffers(1, &Id));
-		OPENGL_LOG_DEBUG("Removing index buffer: {}", Id);
-	}
-	
-	IndexBuffer::IndexBuffer(const uint32_t *indices, uint32_t count)
+	IndexBuffer::IndexBuffer(const uint32_t *indices, uint32_t count) : BufferObject(BufferType::Index)
 	{
 		m_Internals = MakePointer<Internals>();
-		m_Internals->Data(count, indices);
+		m_Internals->Count = count;
+		Data(BufferUsage::StaticDraw, count * sizeof(uint32_t), indices);
 	}
 }
