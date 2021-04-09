@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 
 #define SPOT_LIGHT 1
 #define POINT_LIGHT 2
@@ -33,8 +33,8 @@ struct Light
 	vec3 Diffuse;
 	vec3 Specular;
 
-	float AngleInnerCone;
-	float AngleOuterCone;
+	float CutOff;
+	float OuterCutOff;
 
 	float Constant;
 	float Linear;
@@ -46,43 +46,65 @@ uniform Light[MAX_LIGHTS] u_Light;
 
 uniform bool u_CalcLights;
 uniform vec3 u_CameraPos;
+uniform bool u_WhiteColor;
+uniform bool u_OnlyDiffuseTexture;
 
-in vec4 Color;
-in vec3 Normal;
-in vec2 TexCoords;
-in vec3 FragPosition;
+in vec4 o_Color;
+in vec3 o_Normal;
+in vec2 o_TexCoords;
+in vec3 o_FragPosition;
 
 out vec4 FragColor;
+
+vec3 GetAmbient(Material material, Light light)
+{
+	vec3 ambient = vec3(0.f);
+
+	if (material.HasDiffuseTex)
+		ambient = light.Ambient * vec3(texture(material.DiffuseTex, o_TexCoords)) * material.Diffuse;
+	else
+		ambient = light.Ambient * material.Diffuse;
+
+	return ambient;
+}
+
+vec3 GetDiffuse(Material material, Light light, float diff)
+{
+	vec3 diffuse = vec3(0.f);
+
+	if (material.HasDiffuseTex)
+		diffuse = light.Diffuse * diff * vec3(texture(material.DiffuseTex, o_TexCoords)) * material.Diffuse;
+	else
+		diffuse = light.Diffuse * diff * material.Diffuse;
+
+	return diffuse;
+}
+
+vec3 GetSpecular(Material material, Light light, float spec)
+{
+	vec3 specular = vec3(0.f);
+
+	if (material.HasSpecularTex)
+		specular = light.Specular * spec * vec3(texture(material.SpecularTex, o_TexCoords)) * material.Diffuse;
+	else
+		specular = light.Specular * spec * material.Specular;
+
+	return specular;
+}
 
 vec4 CalcDirectionalLight(Light light, Material material, vec3 normal, vec3 viewDir)
 {
 	vec3 lightDir = normalize(-light.Direction);
 	float diff = max(dot(normal, lightDir), 0.f);
 
-	vec3 reflectDir = reflect(-light.Direction, normal);
+	vec3 reflectDir = reflect(-lightDir, normal);
 
 	float spec = pow(max(dot(viewDir, reflectDir), 0.f), material.Shininess);
 
-	vec3 ambient = vec3(0.f);
-	vec3 diffuse = vec3(0.f);
-	vec3 specular = vec3(0.f);
+	vec3 ambient = GetAmbient(material, light);
+	vec3 diffuse = GetDiffuse(material, light, diff);
+	vec3 specular = GetSpecular(material, light, spec);
 	
-	if (material.HasDiffuseTex)
-	{
-		ambient = light.Ambient * vec3(texture(material.DiffuseTex, TexCoords));
-		diffuse = light.Diffuse * diff * vec3(texture(material.DiffuseTex, TexCoords));
-	}
-	else
-	{
-		ambient = light.Ambient * material.Diffuse;
-		diffuse = light.Diffuse * diff * material.Diffuse;
-	}
-
-	if (material.HasSpecularTex)
-		specular = light.Specular * spec * vec3(texture(material.SpecularTex, TexCoords));
-	else
-		specular = light.Specular * spec * material.Specular;
-
 	return vec4((ambient + diffuse + specular), 1.f);
 }
 
@@ -97,25 +119,9 @@ vec4 CalcPointLight(Light light, Material material, vec3 normal, vec3 fragPos, v
 	float dist = length(light.Position - fragPos);
 	float attenuation = 1.f / (light.Constant + light.Linear * dist + light.Quadratic * (dist * dist));
 
-	vec3 ambient = vec3(0.f);
-	vec3 diffuse = vec3(0.f);
-	vec3 specular = vec3(0.f);
-	
-	if (material.HasDiffuseTex)
-	{
-		ambient = light.Ambient * vec3(texture(material.DiffuseTex, TexCoords));
-		diffuse = light.Diffuse * diff * vec3(texture(material.DiffuseTex, TexCoords));
-	}
-	else
-	{
-		ambient = light.Ambient * material.Diffuse;
-		diffuse = light.Diffuse * diff * material.Diffuse;
-	}
-
-	if (material.HasSpecularTex)
-		specular = light.Specular * spec * vec3(texture(material.SpecularTex, TexCoords));
-	else
-		specular = light.Specular * spec * material.Specular;
+	vec3 ambient = GetAmbient(material, light);
+	vec3 diffuse = GetDiffuse(material, light, diff);
+	vec3 specular = GetSpecular(material, light, spec);
 
 	ambient *= attenuation;
 	diffuse *= attenuation;
@@ -124,32 +130,68 @@ vec4 CalcPointLight(Light light, Material material, vec3 normal, vec3 fragPos, v
 	return vec4((ambient + diffuse + specular), 1.f);
 }
 
-vec4 CalcSpotLight(Light light, Material material)
+vec4 CalcSpotLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
-	return vec4(1.f, 1.f, 1.f, 1.f);
+	vec3 lightDir = normalize(light.Position - fragPos);
+
+	float diff = max(dot(normal, lightDir), 0.f);
+
+	vec3 reflectDir = reflect(-lightDir, normal);
+	float spec = pow(max(dot(viewDir, reflectDir), 0.f), material.Shininess);
+
+	float dist = length(light.Position - fragPos);
+	float attenuation = 1.f / (light.Constant + light.Linear * dist + light.Quadratic * (dist * dist));
+
+	float theta = dot(lightDir, normalize(-light.Direction));
+	float epsilon = light.CutOff - light.OuterCutOff;
+	float intensity = clamp((theta - light.OuterCutOff) / epsilon, 0.f, 1.f);
+
+	vec3 ambient = GetAmbient(material, light);
+	vec3 diffuse = GetDiffuse(material, light, diff);
+	vec3 specular = GetSpecular(material, light, spec);
+
+	ambient *= attenuation;
+	diffuse *= attenuation;
+	specular *= attenuation;
+
+	return vec4((ambient + diffuse + specular), 1.f);
 }
 
 void main()
 {
-	vec4 output = vec4(0.f);
+	vec4 result = vec4(0.f);
 
 	if (u_CalcLights)
 	{
-		vec3 viewDir = normalize(u_CameraPos - FragPos);
+		vec3 viewDir = normalize(u_CameraPos - o_FragPosition);
 
 		for (uint i = 0u; i < MAX_LIGHTS; ++i)
 		{
 			if (u_Light[i].Active)
 			{
 				if (u_Light[i].Type == DIRECTIONAL_LIGHT)
-					output += CalcDirectionalLight(u_Light[i], u_Material, Normal, viewDir);
+					result += CalcDirectionalLight(u_Light[i], u_Material, o_Normal, viewDir);
 				else if (u_Light[i].Type == POINT_LIGHT)
-					output += CalcPointLight(u_Light[i], u_Material, Normal, FragPosition, viewDir);
+					result += CalcPointLight(u_Light[i], u_Material, o_Normal, o_FragPosition, viewDir);
 				else if (u_Light[i].Type == SPOT_LIGHT)
-					output += CalcSpotLight(u_Light[i], u_Material);
+					result += CalcSpotLight(u_Light[i], u_Material, o_Normal, o_FragPosition, viewDir);
 			}
 		}
 	}
+	else
+	{
+		if (u_Material.HasDiffuseTex)
+			result = texture(u_Material.DiffuseTex, o_TexCoords) * o_Color;
+		else
+			result = vec4(u_Material.Diffuse, 1.f) * o_Color;
+	}
 
-	FragColor = output;
+	if (u_OnlyDiffuseTexture)
+		FragColor = vec4(texture(u_Material.DiffuseTex, o_TexCoords).rgb, 1.f);
+	else if (!u_WhiteColor)
+		FragColor = result;
+
+	if (u_WhiteColor)
+		FragColor = vec4(1.f);
+	//FragColor = texture(u_Material.DiffuseTex, o_TexCoords) * vec4(u_Material.Diffuse, 1.f) * Color;
 } 

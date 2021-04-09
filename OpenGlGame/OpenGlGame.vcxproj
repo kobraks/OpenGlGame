@@ -54,6 +54,7 @@
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="OpenGlFunctions.cpp" />
     <ClCompile Include="PerspectiveCamera.cpp" />
@@ -70,6 +71,7 @@
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="ThreadPool.cpp" />
     <ClCompile Include="Time.cpp" />
+    <ClCompile Include="Transformable.cpp" />
     <ClCompile Include="TransformComponent.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Vertex.cpp" />
@@ -119,12 +121,14 @@
     <ClInclude Include="KeyEvent.h" />
     <ClInclude Include="Layer.h" />
     <ClInclude Include="LayerStack.h" />
+    <ClInclude Include="Light.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogLayer.h" />
     <ClInclude Include="LuaRegister.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="MouseEvent.h" />
     <ClInclude Include="OpenGlFunctions.h" />
@@ -132,6 +136,7 @@
     <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="Property.h" />
     <ClInclude Include="PropertyManager.h" />
+    <ClInclude Include="Ray.h" />
     <ClInclude Include="Rect.h" />
     <ClInclude Include="RenderBuffer.h" />
     <ClInclude Include="Renderer.h" />
@@ -144,6 +149,7 @@
     <ClInclude Include="Thread.h" />
     <ClInclude Include="ThreadPool.h" />
     <ClInclude Include="Time.h" />
+    <ClInclude Include="Transformable.h" />
     <ClInclude Include="TransformComponent.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
