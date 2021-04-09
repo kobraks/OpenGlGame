@@ -29,4 +29,9 @@ namespace Game
 
 		return nullptr;
 	}
+
+	void TextureLoader::ClearCashed()
+	{
+		s_Textures.clear();
+	}
 }

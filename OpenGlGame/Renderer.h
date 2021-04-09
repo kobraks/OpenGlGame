@@ -3,13 +3,18 @@
 #include "Types.h"
 #include "GLEnums.h"
 
+#include <array>
+
+#include "Transformable.h"
+#include "Light.h"
+
 namespace Game
 {
 	class ShaderProgram;
 	class VertexArray;
 	class Model;
 	class Camera;
-	class Material;
+	struct Material;
 	class Texture;
 	class Mesh;
 
@@ -18,6 +23,8 @@ namespace Game
 	private:
 		struct SceneData
 		{
+			std::array<LightInfo, MAX_LIGHTS> Lights;
+			
 			glm::mat4 ViewProjectionMatrix;
 			Pointer<ShaderProgram> Shader;
 		};
@@ -42,9 +49,15 @@ namespace Game
 		void Draw(const Pointer<Model> &model, const glm::mat4 &transform = glm::mat4(1.f));
 		void Draw(const Pointer<Mesh> &mesh, const glm::mat4 &transform = glm::mat4(1.f));
 
+		void SetLight(const Light& light);
+		void BindLight(const LightInfo& light);
+		void BindLights();
+		
 		void BindMaterial(const Pointer<Material> &material);
 
 	private:
+		static void BindLight(Pointer<ShaderProgram> &shader, const LightInfo& light);
+		
 		static void BindMaterialTexture(
 			Pointer<ShaderProgram> shader,
 			const std::vector<Pointer<Texture>> &textures,

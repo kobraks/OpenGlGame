@@ -15,7 +15,7 @@
 
 #include "ImGui.h"
 #include "Keyboard.h"
-#include "Model.h"
+#include "TextureLoader.h"
 
 namespace
 {
@@ -152,7 +152,7 @@ namespace Game
 
 	Application::~Application()
 	{
-		Model::ClearCashed();
+		TextureLoader::ClearCashed();
 	}
 
 	void Application::OnEvent(Event &event)

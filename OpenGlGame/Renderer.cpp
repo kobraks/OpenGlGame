@@ -38,7 +38,7 @@ namespace Game
 		array->Bind();
 
 		GL_CHECK(
-		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? array->GetIndexBuffer()->Count() : count, static_cast<GLenum>(DataType::UnsignedInt)
+		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? array->GetIndexBuffer()->Count() : static_cast<GLsizei>(count), static_cast<GLenum>(DataType::UnsignedInt)
 			       , nullptr)
 		        );
 	}
@@ -50,7 +50,7 @@ namespace Game
 		array->Bind();
 
 		GL_CHECK(
-		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : count, static_cast<GLenum>(DataType::
+		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : static_cast<GLsizei>(count), static_cast<GLenum>(DataType::
 			         UnsignedInt), indices.data())
 		        );
 
@@ -62,6 +62,7 @@ namespace Game
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
+			s_SceneData->Shader->UniformValue("u_InvertedTransform", glm::inverse(transform));
 		}
 		else
 		{
@@ -76,6 +77,7 @@ namespace Game
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
+			s_SceneData->Shader->UniformValue("u_InvertedTransform", glm::inverse(transform));
 		}
 		else
 		{
@@ -87,7 +89,7 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<Model> &model, const glm::mat4 &transform)
 	{
-		const auto matrix = transform * model->GetTransform();
+		const auto matrix = transform * model->GetTransform() ;
 
 		for(const auto &mesh : *model)
 			Draw(mesh, matrix);
@@ -97,6 +99,23 @@ namespace Game
 	{
 		BindMaterial(mesh->GetMaterial());
 		Draw(mesh->GetVertexArray(), transform * mesh->GetTransform());
+	}
+
+	void Renderer::SetLight(const Light &light)
+	{
+		const auto lightInfo = light.GetInfo();
+
+		if (lightInfo.Type == LightType::Unknown)
+			return;
+		
+		ASSERT(lightInfo.Index < MAX_LIGHTS, "You want to bing too many lights");
+		BindLight(lightInfo);
+	}
+
+	void Renderer::BindLights()
+	{
+		for(const auto &light : s_SceneData->Lights)
+			BindLight(light);
 	}
 
 	void Renderer::BindMaterial(const Pointer<Material> &material)
@@ -133,6 +152,40 @@ namespace Game
 		shader->UniformValue("u_Material.Diffuse", material->DiffuseColor);
 		shader->UniformValue("u_Material.Specular", material->SpecularColor);
 		shader->UniformValue("u_Material.Shininess", material->Shininess);
+	}
+
+	void Renderer::BindLight(const LightInfo &light)
+	{
+		if(light.Index >= MAX_LIGHTS || light.Type == LightType::Unknown)
+			return;
+
+		s_SceneData->Lights[light.Index] = light;
+		BindLight(s_SceneData->Shader, light);
+	}
+
+	void Renderer::BindLight(Pointer<ShaderProgram> &shader, const LightInfo &light)
+	{
+		if(shader)
+		{
+			const std::string name = fmt::format("u_Light[{}].", light.Index);
+
+			shader->UniformValue(fmt::format("{}{}", name, "Active"), light.Active);
+			shader->UniformValue(fmt::format("{}{}", name, "Position"), light.Position);
+			shader->UniformValue(fmt::format("{}{}", name, "Direction"), light.Direction);
+			shader->UniformValue(fmt::format("{}{}", name, "Ambient"), glm::vec3(light.AmbientColor));
+			shader->UniformValue(fmt::format("{}{}", name, "Diffuse"), glm::vec3(light.DiffuseColor));
+			shader->UniformValue(fmt::format("{}{}", name, "Specular"), glm::vec3(light.SpecularColor));
+			shader->UniformValue(fmt::format("{}{}", name, "CutOff"), light.CutOff);
+			shader->UniformValue(fmt::format("{}{}", name, "OuterCutOff"), light.OuterCutOff);
+			shader->UniformValue(fmt::format("{}{}", name, "Constant"), light.Constant);
+			shader->UniformValue(fmt::format("{}{}", name, "Linear"), light.Linear);
+			shader->UniformValue(fmt::format("{}{}", name, "Quadratic"), light.Quadratic);
+			shader->UniformValue(fmt::format("{}{}", name, "Type"), static_cast<int32_t>(light.Type));
+		}
+		else
+		{
+			ASSERT(false, "You have not set any shader program");
+		}
 	}
 
 	void Renderer::BindMaterialTexture(

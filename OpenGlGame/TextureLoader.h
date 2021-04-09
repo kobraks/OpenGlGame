@@ -10,5 +10,7 @@ namespace Game
 		static std::unordered_map<std::string, Pointer<Texture>> s_Textures;
 	public:
 		static Pointer<Texture> Load(const std::string& fileName, const std::string& dir);
+
+		static void ClearCashed();
 	};
 }
