@@ -39,11 +39,11 @@ namespace Game
 		BlendMode() = default;
 
 		BlendMode(Factor sourceFactor, Factor destinationFactor, Equation blendEquation = Equation::Add) : ColorSrcFactor(sourceFactor),
-		                                                                                                   ColorDstFactor(destinationFactor),
-		                                                                                                   ColorEquation(blendEquation),
-		                                                                                                   AlphaSrcFactor(sourceFactor),
-		                                                                                                   AlphaDstFactor(destinationFactor),
-		                                                                                                   AlphaEquation(blendEquation) {}
+			ColorDstFactor(destinationFactor),
+			ColorEquation(blendEquation),
+			AlphaSrcFactor(sourceFactor),
+			AlphaDstFactor(destinationFactor),
+			AlphaEquation(blendEquation) {}
 
 		BlendMode(
 			Factor colorSourceFactor,
@@ -70,12 +70,21 @@ namespace Game
 	class OpenGlFunctions
 	{
 		friend Context;
-		
+
 		Context &m_Context;
 
-		std::unordered_map<Capability, bool> m_Capabilities;
+		struct Internals
+		{
+			std::unordered_map<Capability, bool> Capabilities;
 
-		static OpenGlFunctions *s_Instance;
+			FrontFace FrontFace = FrontFace::CounterClockWise;
+
+			PolygonFacing PolygonFacing = PolygonFacing::Back;
+		};
+
+		Pointer<Internals> m_Internals;
+		
+		static OpenGlFunctions*s_Instance;
 
 		OpenGlFunctions(Context &context);
 		void MakeCurrent();
@@ -86,10 +95,16 @@ namespace Game
 		void Enable(Capability capability);
 		void Disable(Capability capability);
 
-		bool IsEnabled(Capability capability);
+		bool IsEnabled(Capability capability) const;
 
 		void SetClearColor(const Color &color);
 		void SetViewPort(int32_t x, int32_t y, uint32_t width, uint32_t height);
+
+		void SetFrontFace(FrontFace face);
+		FrontFace GetFrontFace() const;
+
+		void SetPolygonFacing(PolygonFacing facing);
+		PolygonFacing GetPolygonFacing() const;
 
 		void SetViewPort(const UIntRect &viewPort)
 		{

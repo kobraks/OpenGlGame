@@ -13,9 +13,9 @@
 
 namespace Game
 {
-	OpenGlFunctions* OpenGlFunctions::s_Instance = nullptr;
-	
-	OpenGlFunctions::OpenGlFunctions(Context &context) : m_Context(context)
+	OpenGlFunctions *OpenGlFunctions::s_Instance = nullptr;
+
+	OpenGlFunctions::OpenGlFunctions(Context &context) : m_Context(context), m_Internals(MakePointer<Internals>())
 	{
 		s_Instance = this;
 	}
@@ -25,7 +25,7 @@ namespace Game
 		s_Instance = this;
 	}
 
-	OpenGlFunctions & OpenGlFunctions::GetFunctions()
+	OpenGlFunctions& OpenGlFunctions::GetFunctions()
 	{
 		return *s_Instance;
 	}
@@ -41,7 +41,7 @@ namespace Game
 	{
 		CHECK_IF_VALID_CONTEXT();
 
-		m_Capabilities[capability] = true;
+		m_Internals->Capabilities[capability] = true;
 		GL_CHECK(glEnable(static_cast<GLenum>(capability)));
 	}
 
@@ -49,22 +49,22 @@ namespace Game
 	{
 		CHECK_IF_VALID_CONTEXT();
 
-		m_Capabilities[capability] = false;
+		m_Internals->Capabilities[capability] = false;
 		GL_CHECK(glDisable(static_cast<GLenum>(capability)));
 	}
 
-	bool OpenGlFunctions::IsEnabled(const Capability capability)
+	bool OpenGlFunctions::IsEnabled(const Capability capability) const
 	{
 		CHECK_IF_VALID_CONTEXT();
 
-		const auto iter = m_Capabilities.find(capability);
+		const auto iter = m_Internals->Capabilities.find(capability);
 
-		if(iter != m_Capabilities.end())
+		if(iter != m_Internals->Capabilities.end())
 			return iter->second;
 
-		GL_CHECK(m_Capabilities[capability] = glIsEnabled(static_cast<GLenum>(capability)));
+		GL_CHECK(m_Internals->Capabilities[capability] = glIsEnabled(static_cast<GLenum>(capability)));
 
-		return m_Capabilities[capability];
+		return m_Internals->Capabilities[capability];
 	}
 
 	void OpenGlFunctions::SetClearColor(const Color &color)
@@ -79,6 +79,36 @@ namespace Game
 		CHECK_IF_VALID_CONTEXT();
 
 		GL_CHECK(glViewport(x, y, width, height));
+	}
+
+	void OpenGlFunctions::SetFrontFace(FrontFace face)
+	{
+		CHECK_IF_VALID_CONTEXT();
+		
+		m_Internals->FrontFace = face;
+		GL_CHECK(glFrontFace(static_cast<GLenum>(face)));
+	}
+
+	FrontFace OpenGlFunctions::GetFrontFace() const
+	{
+		CHECK_IF_VALID_CONTEXT();
+		
+		return m_Internals->FrontFace;
+	}
+
+	void OpenGlFunctions::SetPolygonFacing(PolygonFacing facing)
+	{
+		CHECK_IF_VALID_CONTEXT();
+		
+		m_Internals->PolygonFacing = facing;
+		GL_CHECK(glCullFace(static_cast<GLenum>(facing)));
+	}
+
+	PolygonFacing OpenGlFunctions::GetPolygonFacing() const
+	{
+		CHECK_IF_VALID_CONTEXT();
+		
+		return m_Internals->PolygonFacing;
 	}
 
 	void OpenGlFunctions::SetBlendMode(const BlendMode &mode)
