@@ -6,9 +6,8 @@ namespace Game
 	class Model;
 	class Texture;
 
-	class Material
+	struct Material
 	{
-	public:
 		enum class ColorType
 		{
 			Diffuse,
@@ -26,19 +25,5 @@ namespace Game
 		Pointer<Texture> SpecularTexture = nullptr;
 
 		std::string Name;
-
-		Material() = default;
-	private:
-		static Pointer<Material> ProcessMaterial(const void *aiMaterial);
-		static void ProcessTextures(Pointer<Material>& material, const void *aiMaterial);
-		static void ProcessColors(Pointer<Material>&material, const void *aiMaterial);
-
-		static std::vector<Pointer<Texture>> ProcessTexture(const void *aiMaterial, int textureType);
-
-		static glm::vec3 ProcessColor(const void *aiMaterial, ColorType colorType);
-		static float ProcessShininess(const void *aiMaterial);
-		
-		friend Mesh;
-		friend Model;
 	};
 }

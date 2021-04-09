@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 #include "Mesh.h"
 
 namespace Game
@@ -15,8 +17,7 @@ namespace Game
 
 	public:
 		Model() = default;
-
-		static Pointer<Model> Load(const std::string &fileName, const std::string &directory);
+		explicit Model(const MeshContainerType &meshes, const glm::mat4 &transform = glm::mat4(1.f));
 
 		SizeType Count() const { return m_Meshes.size(); }
 
@@ -27,6 +28,7 @@ namespace Game
 		Pointer<Mesh>& operator[](SizeType index) { return GetMesh(index); }
 
 		void AddMesh(Pointer<Mesh> mesh);
+		void RemoveMesh(size_t index);
 
 		void Clear();
 
@@ -38,11 +40,5 @@ namespace Game
 
 		MeshContainerType::const_iterator begin() const { return m_Meshes.begin(); }
 		MeshContainerType::const_iterator end() const { return m_Meshes.end(); }
-
-		static void ClearCashed();
-	private:
-		static Pointer<Material> ProcessMaterial(const void *aiMesh, const void *aiScene);
-
-		static Pointer<Mesh> ProcessMesh(const void *aiMesh, const void *aiScene);
 	};
 }
