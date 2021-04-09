@@ -28,6 +28,15 @@ namespace Game
 			Geometry = GL_GEOMETRY_SHADER
 		};
 
+		enum class ParameterName : GLenum
+		{
+			ShaderType = GL_SHADER_TYPE,
+			DeleteStatus = GL_DELETE_STATUS,
+			CompileStatus = GL_COMPILE_STATUS,
+			LogLength = GL_INFO_LOG_LENGTH,
+			SourceLength = GL_SHADER_SOURCE_LENGTH
+		};
+
 		using IdType = uint32_t;
 	private:
 		class Internals
@@ -40,6 +49,13 @@ namespace Game
 
 			explicit Internals(const Shader::Type& type);
 			~Internals();
+
+			void SetSource(const ShaderSource& source);
+			bool Compile();
+			std::string GetLog() const;
+
+			int Get(ParameterName name) const;
+			void Get(ParameterName name, int *value) const;
 		};
 
 		Pointer<Internals> m_Internals;
@@ -47,12 +63,14 @@ namespace Game
 		explicit Shader(const Type &type);
 		Shader(const Type &type, const ShaderSource &source);
 
-		bool Compile();
+		bool Compile() { return m_Internals->Compile(); }
 
-		void SetSource(const ShaderSource &source);
+		bool IsCompiled() const { return m_Internals->Complied; }
+
+		void SetSource(const ShaderSource &source) { m_Internals->SetSource(source); }
 		const ShaderSource& GetSource() const { return m_Internals->Source; }
 
-		std::string GetLog() const;
+		std::string GetLog() const { return m_Internals->GetLog(); }
 
 		operator IdType() const { return m_Internals->Shader; }
 		IdType ID() const { return m_Internals->Shader; }
