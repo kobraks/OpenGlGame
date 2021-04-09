@@ -4,39 +4,15 @@
 
 #include "Component.h"
 
+#include "Transformable.h"
 
 namespace Game
 {
-	class TransformComponent: public Component
+	class TransformComponent: public Component, public Transformable
 	{
-		glm::vec3 m_Position = glm::vec3(0.f);
-		glm::vec3 m_Rotation = glm::vec3(0.f);
-		glm::vec3 m_Scale    = glm::vec3(1.f);
-
-		mutable glm::mat4 m_Transform        = glm::mat4(1.f);
-		mutable glm::mat4 m_InverseTransform = glm::mat4(1.f);
-
-		mutable bool m_TransformNeedUpdate        = true;
-		mutable bool m_InverseTransformNeedUpdate = true;
 	public:
 		explicit TransformComponent();
 		explicit TransformComponent(Entity* entity);
-
-		glm::vec3 GetPosition() const { return m_Position; }
-		glm::vec3 GetRotation() const { return m_Rotation; }
-		glm::vec3 GetScale() const { return m_Scale; }
-
-		void SetPosition(const glm::vec3 &position);
-		void Move(const glm::vec3 &vector);
-
-		void SetRotation(const glm::vec3 &rotation);
-		void Rotate(const glm::vec3 &vector);
-
-		void SetScale(const glm::vec3 &scale);
-		void Scale(const glm::vec3 &vector);
-
-		const glm::mat4& GetTransform() const;
-		const glm::mat4& GetInverseTransform() const;
 		
 		virtual Pointer<Component> Clone() const override;
 	};
