@@ -86,6 +86,11 @@ namespace Game
 		shaders.erase(iter);
 	}
 
+	bool ShaderProgram::Internals::IsAttached(const Pointer<Shader> shader) const
+	{
+		return Shaders.contains(shader);
+	}
+
 	bool ShaderProgram::Internals::Link()
 	{
 		GL_LOG_INFO("Linking {} (id: {}) shader program", Name, Program);
@@ -191,6 +196,7 @@ namespace Game
 			GL_CHECK(location = glGetUniformLocation(Program, uniformName.c_str()));
 
 			UniformsLocation.emplace(uniformName, location);
+			ActiveUniforms.emplace_back(uniformName, size, static_cast<UniformType>(type));
 
 			GL_LOG_DEBUG("Uniform {}, Name: {} Size: {} Type: {}", i, uniformName, size, type);
 		}
@@ -399,8 +405,8 @@ namespace Game
 			return;
 
 		GL_CHECK(glActiveTexture(GL_TEXTURE0 + sampleUnit));
-		texture.Bind();
 		GL_CHECK(glUniform1i(location, sampleUnit));
+		texture.Bind();
 	}
 
 	ShaderProgram* ShaderProgram::GetDefault()
@@ -408,5 +414,10 @@ namespace Game
 		static ShaderProgram shader(0, DEFAULT_PROGRAM_SHADER_NAME);
 
 		return &shader;
+	}
+
+	const std::vector<ShaderProgram::UniformInfo> & ShaderProgram::GetActiveUniforms() const
+	{
+		return m_Internals->ActiveUniforms;
 	}
 }

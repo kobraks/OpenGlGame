@@ -2,6 +2,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -37,6 +38,13 @@ namespace Game
 		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION = -1;
 
 	private:
+		struct UniformInfo
+		{
+			std::string Name;
+			int Size;
+			UniformType Type;
+		};
+		
 		enum class ParametersName : uint32_t
 		{
 			DeleteStatus = GL_DELETE_STATUS,
@@ -68,7 +76,8 @@ namespace Game
 
 			mutable std::unordered_map<std::string, UniformLocationType> UniformsLocation;
 			mutable std::unordered_map<std::string, AttributeLocationType> Attributes;
-
+			std::vector<UniformInfo> ActiveUniforms;
+			
 			std::unordered_set<Pointer<Shader>> Shaders;
 
 			bool Linked  = false;
@@ -83,6 +92,8 @@ namespace Game
 			void Attach(Pointer<Shader> shader);
 			void Detach(Pointer<Shader> shader);
 
+			bool IsAttached(const Pointer<Shader> shader) const;
+
 			bool Link();
 
 			void Use();
@@ -94,6 +105,8 @@ namespace Game
 			AttributeLocationType GetAttributeLocation(const std::string &name) const;
 			UniformLocationType GetUniformLocation(const std::string &name) const;
 
+			const std::vector<UniformInfo> &GetActiveUniforms() const { return ActiveUniforms; }
+			
 			int Get(ParametersName name) const;
 			void Get(ParametersName name, int *params) const;
 
@@ -126,6 +139,8 @@ namespace Game
 		void Attach(Pointer<Shader> shader) { return m_Internals->Attach(shader); }
 		void Detach(Pointer<Shader> shader) { return m_Internals->Detach(shader); }
 
+		bool IsAttached(const Pointer<Shader> &shader) const { return m_Internals->IsAttached(shader); }
+
 		Pointer<Shader> GetShader(Shader::Type type);
 
 		bool Link() { return m_Internals->Link(); }
@@ -149,6 +164,8 @@ namespace Game
 
 		std::unordered_set<Pointer<Shader>>::const_iterator begin() const { return m_Internals->Shaders.begin(); }
 		std::unordered_set<Pointer<Shader>>::const_iterator end() const { return m_Internals->Shaders.end(); }
+
+		const std::vector<UniformInfo>& GetActiveUniforms() const;
 	
 	public:
 		template <class ...Args>
