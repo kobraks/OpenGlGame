@@ -125,51 +125,17 @@ namespace Game
 		}
 	};
 
-	class BufferObject;
-	
-	class BufferContent
-	{
-		friend class BufferObject;
+	class BufferContent;
 
-		const BufferObject& m_Buffer;
-		const BufferAccess m_Access;
-
-		void *m_Data = nullptr;
-
-	protected:
-		BufferContent(const BufferAccess access, const BufferObject &buffer);
-
-	public:
-		~BufferContent();
-
-		const void* Get() const;
-		void* Get();
-
-		void Set(const void* data, const size_t size, const size_t offset = 0);
-
-		template<typename Type>
-		void Set(const Type& value, const size_t offset = 0)
-		{
-			return Set(&value, sizeof(Type), offset);
-		}
-
-		template<typename Type>
-		Type Get(const size_t offset = 0) const
-		{
-			Type value;
-			std::memcpy(&value, static_cast<const char*>(Get()), sizeof(Type));
-
-			return value;
-		}
-
-		BufferAccess Access() const { return m_Access; }
-	};
-	
 	class BufferObject
 	{
+	public:
+		using IdType = uint32_t;
+
+	private:
 		struct Internals
 		{
-			uint32_t Id   = 0;
+			IdType Id   = 0;
 			uint32_t Size = 0;
 
 			BufferUsage Usage = BufferUsage::StaticDraw;
@@ -205,13 +171,63 @@ namespace Game
 		void Bind() const { m_Internals->Bind(); }
 		void Unbind() const { m_Internals->Unbind(); }
 
-		uint32_t Id() const { return m_Internals->Id; }
-		operator uint32_t() const { return Id(); }
+		BufferType Type() const { return m_Internals->Type; }
+
+		IdType Id() const { return m_Internals->Id; }
+		operator IdType() const { return Id(); }
 
 		Pointer<BufferContent> GetContent(BufferAccess access = BufferAccess::ReadOnly) const;
 	};
 
-	class VertexBuffer : public BufferObject
+	class BufferContent
+	{
+		friend class BufferObject;
+
+		const BufferObject &m_Buffer;
+		const BufferAccess m_Access;
+
+		void *m_Data = nullptr;
+
+	protected:
+		BufferContent(BufferAccess access, const BufferObject &buffer);
+		BufferContent(const BufferContent &) = delete;
+		BufferContent(BufferContent &&)      = delete;
+
+		BufferContent& operator=(const BufferContent &) = delete;
+		BufferContent& operator=(BufferContent &&)      = delete;
+	public:
+		~BufferContent();
+
+		const void* Get() const;
+		void* Get();
+
+		void Set(const void *data, size_t size, size_t offset = 0);
+
+		template <typename Type>
+		void Set(const Type &value, const size_t offset = 0)
+		{
+			return Set(&value, sizeof(Type), offset);
+		}
+
+		template <typename Type>
+		Type Get(const size_t offset = 0) const
+		{
+			const void *data = Get();
+			ASSERT(offset + sizeof(Type) <= m_Buffer.Size(), "Out of range");
+
+			if(offset + sizeof(Type) > m_Buffer.Size())
+				throw std::out_of_range("Out of range");
+
+			Type value;
+			std::memcpy(&value, static_cast<const char*>(data) + offset, sizeof(Type));
+
+			return value;
+		}
+
+		BufferAccess Access() const { return m_Access; }
+	};
+
+	class VertexBuffer: public BufferObject
 	{
 		struct Internals
 		{
@@ -229,7 +245,7 @@ namespace Game
 		void SetLayout(const BufferLayout &layout) { m_Internals->Layout = layout; }
 	};
 
-	class IndexBuffer : public BufferObject
+	class IndexBuffer: public BufferObject
 	{
 		struct Internals
 		{
@@ -242,5 +258,52 @@ namespace Game
 		IndexBuffer(const uint32_t *indices, uint32_t count);
 
 		uint32_t Count() const { return m_Internals->Count; }
+	};
+
+
+	class UniformBuffer: public BufferObject
+	{
+		struct Internals
+		{
+			char *Data;
+			BufferUsage Usage;
+
+			Internals(uint32_t size, BufferUsage usage);
+			~Internals();
+		};
+
+		Pointer<Internals> m_Internals;
+	public:
+		UniformBuffer(uint32_t size, BufferUsage usage);
+		UniformBuffer(const void *data, uint32_t size, BufferUsage usage);
+
+		BufferUsage Usage() const { return m_Internals->Usage; }
+		void Usage(BufferUsage usage);
+
+		void* Get() { return m_Internals->Data; }
+		const void* Get() const { return m_Internals->Data; }
+
+		void Set(const void *data, size_t size, size_t offset = 0);
+
+		template <typename Type>
+		Type Get(size_t offset = 0) const
+		{
+			ASSERT(offset + sizeof(Type) <= Size(), "Out of range");
+			if(offset + sizeof(Type) > Size())
+				throw std::out_of_range("Out of Range");
+
+			Type value;
+			std::memcpy(&value, m_Internals->Data + offset, sizeof(Type));
+			return value;
+		}
+
+		template <typename Type>
+		void Set(const Type &value, size_t offset = 0)
+		{
+			Set(&value, sizeof(Type), offset);
+		}
+
+		void Set(const glm::mat3 &value, size_t offset = 0);
+		void Set(const glm::vec3 &value, size_t offset = 0);
 	};
 }

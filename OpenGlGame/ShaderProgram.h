@@ -20,22 +20,27 @@
 
 #include "Types.h"
 #include "Shader.h"
-#include "Texture.h"
+#include "GLEnums.h"
 
 namespace Game
 {
 #define DEFAULT_PROGRAM_SHADER_NAME "Default"
 #define PROGRAM_SHADER_NAME "Shader Program"
-	
+
+	class UniformBuffer;
+	class Texture;
+
 	class ShaderProgram
 	{
 	public:
 		using IdType = uint32_t;
 		using UniformLocationType = int32_t;
 		using AttributeLocationType = int32_t;
+		using UniformBlockIndexType = uint32_t;
 
-		constexpr static UniformLocationType INVALID_UNIFORM_LOCATION     = -1;
-		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION = -1;
+		constexpr static UniformLocationType INVALID_UNIFORM_LOCATION      = -1;
+		constexpr static AttributeLocationType INVALID_ATTRIBUTE_LOCATION  = -1;
+		constexpr static UniformBlockIndexType INVALID_UNIFORM_BLOCK_INDEX = GL_INVALID_INDEX;
 
 	private:
 		struct UniformInfo
@@ -43,8 +48,17 @@ namespace Game
 			std::string Name;
 			int Size;
 			UniformType Type;
+			UniformLocationType Location;
 		};
-		
+
+		struct UniformBlockInfo
+		{
+			std::string Name;
+			uint32_t Size;
+			Shader::Type ShaderType;
+			UniformBlockIndexType Index;
+		};
+
 		enum class ParametersName : uint32_t
 		{
 			DeleteStatus = GL_DELETE_STATUS,
@@ -76,8 +90,10 @@ namespace Game
 
 			mutable std::unordered_map<std::string, UniformLocationType> UniformsLocation;
 			mutable std::unordered_map<std::string, AttributeLocationType> Attributes;
+			mutable std::unordered_map<std::string, UniformBlockIndexType> UniformBlocksIndex;
 			std::vector<UniformInfo> ActiveUniforms;
-			
+			std::vector<UniformBlockInfo> ActiveUniformBlocks;
+
 			std::unordered_set<Pointer<Shader>> Shaders;
 
 			bool Linked  = false;
@@ -92,7 +108,8 @@ namespace Game
 			void Attach(Pointer<Shader> shader);
 			void Detach(Pointer<Shader> shader);
 
-			bool IsAttached(const Pointer<Shader> shader) const;
+			bool IsAttached(const Pointer<Shader> &shader) const;
+			bool IsAttached(Shader::Type type);
 
 			bool Link();
 
@@ -104,13 +121,23 @@ namespace Game
 
 			AttributeLocationType GetAttributeLocation(const std::string &name) const;
 			UniformLocationType GetUniformLocation(const std::string &name) const;
+			UniformBlockIndexType GetUniformBlockIndex(const std::string &name) const;
 
-			const std::vector<UniformInfo> &GetActiveUniforms() const { return ActiveUniforms; }
-			
+			const std::vector<UniformInfo>& GetActiveUniforms() const { return ActiveUniforms; }
+
 			int Get(ParametersName name) const;
 			void Get(ParametersName name, int *params) const;
 
 			void Populate();
+			void PopulateUniformBlocks();
+			void PopulateUniforms();
+
+			int GetActiveUniformI(uint32_t index, GLenum pName) const;
+			int GetActiveUniformBlockI(uint32_t index, GLenum pName) const;
+			std::string GetActiveUniformBlockName(uint32_t index) const;
+
+			UniformBlockInfo QueryUniformBlock(uint32_t index) const;
+			UniformInfo QueryUniform(uint32_t index) const;
 		};
 
 		Pointer<Internals> m_Internals = nullptr;
@@ -140,6 +167,7 @@ namespace Game
 		void Detach(Pointer<Shader> shader) { return m_Internals->Detach(shader); }
 
 		bool IsAttached(const Pointer<Shader> &shader) const { return m_Internals->IsAttached(shader); }
+		bool IsAttached(Shader::Type type) const { return m_Internals->IsAttached(type); }
 
 		Pointer<Shader> GetShader(Shader::Type type);
 
@@ -149,8 +177,11 @@ namespace Game
 
 		std::string GetLog() const { return m_Internals->GetLog(); }
 
+		size_t GetAttachedShaderCount() const { return m_Internals->Shaders.size(); }
+
 		AttributeLocationType GetAttributeLocation(const std::string &name) const { return m_Internals->GetAttributeLocation(name); }
 		UniformLocationType GetUniformLocation(const std::string &name) const { return m_Internals->GetUniformLocation(name); }
+		UniformBlockIndexType GetUniformBlockIndex(const std::string &name) const { return m_Internals->GetUniformBlockIndex(name); }
 
 		bool HasUniform(const std::string &name) const { return m_Internals->HasUniform(name); }
 
@@ -166,7 +197,11 @@ namespace Game
 		std::unordered_set<Pointer<Shader>>::const_iterator end() const { return m_Internals->Shaders.end(); }
 
 		const std::vector<UniformInfo>& GetActiveUniforms() const;
-	
+		const std::vector<UniformBlockInfo>& GetActiveUniformBlocks() const { return m_Internals->ActiveUniformBlocks; }
+
+		size_t GetActiveUniformCount() const { return m_Internals->ActiveUniforms.size(); }
+		size_t GetActiveUniformBlockCount() const { return m_Internals->ActiveUniformBlocks.size(); }
+
 	public:
 		template <class ...Args>
 		void Attach(Pointer<Shader> shader, Args &&... args)
@@ -307,6 +342,14 @@ namespace Game
 			return UniformValue(GetUniformLocation(name), texture, sampleUnit);
 		}
 
+		void BindUniformBuffer(const std::string &name, const UniformBuffer &buffer)
+		{
+			return BindUniformBuffer(GetUniformBlockIndex(name), buffer);
+		}
+		void BindUniformBuffer(const std::string &name, const UniformBuffer &buffer, size_t size, size_t offset)
+		{
+			return BindUniformBuffer(GetUniformBlockIndex(name), buffer, size, offset);
+		}
 		void UniformValue(UniformLocationType location, bool value)
 		{
 			return UniformValue(location, static_cast<int32_t>(value));
@@ -349,5 +392,8 @@ namespace Game
 		void UniformValue(UniformLocationType location, const glm::mat4x4 &value, bool transpose = false);
 
 		void UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit = 0);
+
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer &buffer);
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer &buffer, size_t size, size_t offset);
 	};
 }

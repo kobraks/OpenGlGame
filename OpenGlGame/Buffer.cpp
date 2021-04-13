@@ -1,7 +1,6 @@
 #include "pch.h"
 #include "Buffer.h"
 
-
 #include "GLCheck.h"
 #include "glad/glad.h"
 
@@ -26,11 +25,13 @@ namespace Game
 		if(buffer.Size() == 0)
 			throw std::runtime_error("Attempting to get access to uninitialized memory");
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(m_Data = glMapNamedBuffer(buffer.Id(), static_cast<GLenum>(m_Access)));
 	}
 
 	BufferContent::~BufferContent()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glUnmapNamedBuffer(m_Buffer.Id()));
 	}
 
@@ -70,12 +71,14 @@ namespace Game
 
 	BufferObject::Internals::Internals(BufferType type) : Type(type)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glCreateBuffers(1, &Id));
 		OPENGL_LOG_DEBUG("Creating {}: {}", ToString(type), Id);
 	}
 
 	BufferObject::Internals::~Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteBuffers(1, &Id));
 		OPENGL_LOG_DEBUG("Deleting {}: {}", ToString(Type), Id);
 	}
@@ -85,28 +88,33 @@ namespace Game
 		Usage = usage;
 		OPENGL_LOG_DEBUG("{} (id: {}) -> Data: Size: {}", ToString(Type), Id, size);
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glNamedBufferData(Id, size, data, static_cast<GLenum>(usage)));
+		Size = size;
 	}
 
 	void BufferObject::Internals::SubData(uint32_t size, uint32_t offset, const void *data)
 	{
-		ASSERT(offset + size < Size, "Out of range");
+		ASSERT(offset + size <= Size, "Out of range");
 
-		if(offset + size >= Size)
+		if(offset + size > Size)
 			throw std::out_of_range("Out of range");
 
-		glNamedBufferSubData(Id, offset, size, data);
+		CHECK_IF_VALID_CONTEXT;
+		GL_CHECK(glNamedBufferSubData(Id, offset, size, data));
 
 		OPENGL_LOG_DEBUG("{} (id: {}) -> SubData: Size: {}, Offset: {}", ToString(Type), Id, size, offset);
 	}
 
 	void BufferObject::Internals::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindBuffer(static_cast<GLenum>(Type), Id));
 	}
 
 	void BufferObject::Internals::Unbind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindBuffer(static_cast<GLenum>(Type), 0));
 	}
 
@@ -114,7 +122,7 @@ namespace Game
 
 	Pointer<BufferContent> BufferObject::GetContent(BufferAccess access) const
 	{
-		BufferContent* content = new BufferContent(access, *this);
+		BufferContent *content = new BufferContent(access, *this);
 
 		return Pointer<BufferContent>(content);
 	}
@@ -138,8 +146,60 @@ namespace Game
 
 	IndexBuffer::IndexBuffer(const uint32_t *indices, uint32_t count) : BufferObject(BufferType::Index)
 	{
-		m_Internals = MakePointer<Internals>();
+		m_Internals        = MakePointer<Internals>();
 		m_Internals->Count = count;
 		Data(BufferUsage::StaticDraw, count * sizeof(uint32_t), indices);
+	}
+
+	UniformBuffer::Internals::Internals(uint32_t size, BufferUsage usage)
+	{
+		Data  = new char[size];
+		Usage = usage;
+	}
+
+	UniformBuffer::Internals::~Internals()
+	{
+		delete[] Data;
+	}
+
+	UniformBuffer::UniformBuffer(uint32_t size, BufferUsage usage) : BufferObject(BufferType::Uniform)
+	{
+		m_Internals = MakePointer<Internals>(size, usage);
+		Data(usage, size, nullptr);
+	}
+
+	UniformBuffer::UniformBuffer(const void *data, uint32_t size, BufferUsage usage) : BufferObject(BufferType::Uniform)
+	{
+		m_Internals = MakePointer<Internals>(size, usage);
+
+		Data(usage, size, data);
+		std::memcpy(m_Internals->Data, data, size);
+	}
+
+	void UniformBuffer::Usage(BufferUsage usage)
+	{
+		Data(usage, Size(), m_Internals->Data);
+		m_Internals->Usage = usage;
+	}
+
+	void UniformBuffer::Set(const void *data, size_t size, size_t offset)
+	{
+		ASSERT(offset + size <= Size(), "Out of range");
+		if(offset + size > Size())
+			throw std::out_of_range("Out of Range");
+
+		std::memcpy(m_Internals->Data + offset, data, size);
+		SubData(size, offset, data);
+	}
+
+	void UniformBuffer::Set(const glm::mat3 &value, size_t offset)
+	{
+		for(uint32_t i = 0; i < 3; ++i)
+			Set(value[i], offset + i * sizeof(glm::vec4));
+	}
+
+	void UniformBuffer::Set(const glm::vec3 &value, size_t offset)
+	{
+		Set(&value, sizeof(glm::vec3), offset);
 	}
 }
