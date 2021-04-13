@@ -1,100 +1,73 @@
 #pragma once
-
-#include <string>
-#include <unordered_map>
-#include <typeindex>
+#include <entt/entt.hpp>
 
 #include "Types.h"
+#include "PropertyManager.h"
+
+#include "Scene.h"
 
 namespace Game
 {
 	class Component;
 	class EntityLuaHandle;
+	class Scene;
 	
 	class Entity
 	{
-	public:
-		using ComponentStorageType = std::unordered_map<std::type_index, Pointer<Component>>;
-
-	
 	private:
-		size_t m_Id = 0;
-		std::string m_Name;
-
-		ComponentStorageType m_Components;
+		entt::entity m_EntityHandle {entt::null};
+		Scene* m_Scene = nullptr;
 		
-		Pointer<EntityLuaHandle> m_LuaHandle;
+		Pointer<EntityLuaHandle> m_LuaHandle = nullptr;
 	public:
-		Entity(const size_t &id, const std::string &name);
-
-		size_t Id() const { return m_Id; };
-		const std::string& Name() const { return m_Name; };
-
-		void SetName(const std::string &name) { m_Name = name; }
-
-		Pointer<EntityLuaHandle> GetLuaHandle() const { return m_LuaHandle; }
-		void SetLuaHandle(Pointer<EntityLuaHandle> handle);
+		Entity() = default;
+		Entity(const Entity& other) = default;
+		Entity(const entt::entity& handle, Scene* scene);
 		
-		void AddComponent(std::type_index index, Pointer<Component> component);
+		EntityLuaHandle& GetLuaHandle() const { return *m_LuaHandle; }
+		
+		PropertyManager Properties;
 
-		Pointer<Entity> Clone() const;
+		constexpr bool operator==(const Entity& entity) const noexcept
+		{
+			return m_Scene == entity.m_Scene && m_EntityHandle == entity.m_EntityHandle;
+		}
 
-		ComponentStorageType::iterator begin() { return m_Components.begin(); }
-		ComponentStorageType::iterator end() { return m_Components.end(); }
+		constexpr bool operator!=(const Entity& entity) const noexcept
+		{
+			return !(*this == entity);
+		}
 
-		ComponentStorageType::const_iterator begin() const { return m_Components.begin(); }
-		ComponentStorageType::const_iterator end() const { return m_Components.end(); }
+		constexpr operator bool() const noexcept { return m_EntityHandle != entt::null; }
+		constexpr operator entt::entity() const noexcept { return m_EntityHandle; }
+		constexpr operator uint32_t() const noexcept { return static_cast<uint32_t>(m_EntityHandle);}
 	
 	public:
-		template <typename Type>
-		void AddComponent(Pointer<Component> component);
+		template <typename Component, typename ...Args>
+		Component& AddComponent(Args&& ...args)
+		{
+			ASSERT(!HasComponent<Component>(), "Entity already has component");
+			Component& component = m_Scene->m_Registry.emplace<Component>(m_EntityHandle, this, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded(*this, component);
+			return component;
+		}
+		
+		template <typename Component>
+		Component& GetComponent() const
+		{
+			ASSERT(HasComponent<Component>(), "Entity does not have component");
+			return m_Scene->m_Registry.get<Component>(m_EntityHandle);
+		}
 
-		template <typename Type>
-		void AddComponent();
+		template <typename Component>
+		void RemoveComponent()
+		{
+			ASSERT(HasComponent<Component>(), "Entity does not have component");
+			m_Scene->m_Registry.remove<Component>(m_EntityHandle);
+		}
 
-		template <typename Type>
-		Pointer<Type> GetComponent();
-
-		template <typename Type>
-		void RemoveComponent();
-
-		template <typename Type>
-		bool HasComponent();
+		template <typename Component>
+		bool HasComponent() const;
 	};
 
-	template <typename Type>
-	void Entity::AddComponent(Pointer<Component> component)
-	{
-		AddComponent(typeid(Type), component);
-	}
-
-	template <typename Type>
-	void Entity::AddComponent()
-	{
-		AddComponent<Type>(MakePointer<Type>(this));
-	}
-
-	template <typename Type>
-	Pointer<Type> Entity::GetComponent()
-	{
-		const auto component = m_Components.find(std::type_index(typeid(Type)));
-		if(component != m_Components.end())
-			return std::dynamic_pointer_cast<Type>(component->second);
-
-		return nullptr;
-	}
-
-	template <typename Type>
-	void Entity::RemoveComponent()
-	{
-		const auto component = m_Components.find(typeid(Type));
-		if(component != m_Components.end())
-			m_Components.erase(component);
-	}
-
-	template <typename Type>
-	bool Entity::HasComponent()
-	{
-		return GetComponent<Type>();
-	}
 }

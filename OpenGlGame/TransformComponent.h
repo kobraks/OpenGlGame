@@ -11,9 +11,6 @@ namespace Game
 	class TransformComponent: public Component, public Transformable
 	{
 	public:
-		explicit TransformComponent();
-		explicit TransformComponent(Entity* entity);
-		
-		virtual Pointer<Component> Clone() const override;
+		explicit TransformComponent(Entity* entity = nullptr);
 	};
 }
