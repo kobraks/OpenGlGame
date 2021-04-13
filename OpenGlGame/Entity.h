@@ -67,7 +67,10 @@ namespace Game
 		}
 
 		template <typename Component>
-		bool HasComponent() const;
+		bool HasComponent() const
+		{
+			return m_Scene->m_Registry.has<Component>(m_EntityHandle);
+		}
 	};
 
 }
