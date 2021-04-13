@@ -13,6 +13,65 @@ namespace Game
 {
 	class Context;
 
+	struct StencilTest
+	{
+		enum class Operation : uint32_t
+		{
+			Keep = GL_KEEP,
+			Zero = GL_ZERO,
+			Replace = GL_REPLACE,
+			Incr = GL_INCR,
+			Decr = GL_DECR,
+			Invert = GL_INVERT,
+			IncrWrap = GL_INCR_WRAP,
+			DecrWarp = GL_DECR_WRAP
+		};
+
+		enum class Function : uint32_t
+		{
+			Never = GL_NEVER,
+			// <
+			Less = GL_LESS,
+			//>
+			Greater = GL_GREATER,
+			// ==
+			Equal = GL_EQUAL,
+			Always = GL_ALWAYS,
+			//<=
+			LessEqual = GL_LEQUAL,
+			//>=
+			GreaterEqual = GL_GEQUAL,
+			//!=
+			NotEqual = GL_NOTEQUAL
+		};
+
+		PolygonFacing Face    = PolygonFacing::FrontBack;
+		Operation StencilFail = Operation::Keep;
+		Operation DepthFails  = Operation::Keep;
+		Operation Pass        = Operation::Keep;
+
+		uint32_t Mask         = 0xFF;
+		Function TestFunction = Function::Always;
+		int Ref               = 1;
+
+		StencilTest() = default;
+		
+		StencilTest(uint32_t mask, int ref, Function function, Operation stencilFail, Operation depthFails, Operation pass) : StencilFail(stencilFail),
+			DepthFails(depthFails),
+			Pass(pass),
+			Mask(mask),
+			TestFunction(function),
+			Ref(ref) {}
+
+		StencilTest(PolygonFacing face, uint32_t mask, int ref, Function function, Operation stencilFail, Operation depthFails, Operation pass) : Face(face),
+			StencilFail(stencilFail),
+			DepthFails(depthFails),
+			Pass(pass),
+			Mask(mask),
+			TestFunction(function),
+			Ref(ref) {}
+	};
+
 	struct BlendMode
 	{
 		enum class Factor : uint32_t
@@ -80,11 +139,13 @@ namespace Game
 			FrontFace FrontFace = FrontFace::CounterClockWise;
 
 			PolygonFacing PolygonFacing = PolygonFacing::Back;
+
+			glm::vec4 ClearColor = glm::vec4(0.f, 0.f, 0.f, 0.f);
 		};
 
 		Pointer<Internals> m_Internals;
-		
-		static OpenGlFunctions*s_Instance;
+
+		static OpenGlFunctions *s_Instance;
 
 		OpenGlFunctions(Context &context);
 		void MakeCurrent();
@@ -99,6 +160,11 @@ namespace Game
 
 		void SetClearColor(const Color &color);
 		void SetViewPort(int32_t x, int32_t y, uint32_t width, uint32_t height);
+
+		void SetClearColor(const glm::vec4 &color);
+		void SetClearColor(float red, float green, float blue, float alpha);
+
+		glm::vec4 GetClearColor() const;
 
 		void SetFrontFace(FrontFace face);
 		FrontFace GetFrontFace() const;
@@ -117,8 +183,10 @@ namespace Game
 		}
 
 		void SetBlendMode(const BlendMode &mode);
+		void SetStencilTest(const StencilTest &test);
 
 		void Flush();
+		void Finish();
 
 		void SetDebugMessageCallback(GLDEBUGPROC callback, const void *userParam);
 

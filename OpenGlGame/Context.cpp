@@ -11,6 +11,12 @@
 
 namespace Game
 {
+	Context::~Context()
+	{
+		s_Context = nullptr;
+		s_Contests[std::this_thread::get_id()] = nullptr;
+	}
+
 	Scope<Context> Context::Create(const Window& window)
 	{
 		return Scope<Context>(new Context(window.GetNativeWindow()));
@@ -36,11 +42,27 @@ namespace Game
 		glfwMakeContextCurrent(static_cast<GLFWwindow*>(m_WindowHandler));
 		m_ThreadId = std::this_thread::get_id();
 		m_Functions.MakeCurrent();
+		s_Context = this;
+		s_Contests[std::this_thread::get_id()] = this;
 	}
 
 	bool Context::IsContextCurrent() const
 	{
 		return std::this_thread::get_id() == m_ThreadId;
+	}
+
+	Context * Context::GetCurrentContext()
+	{
+		const auto context = s_Contests.find(std::this_thread::get_id());
+		if (context != s_Contests.end())
+			return context->second;
+		
+		return nullptr;
+	}
+
+	Context * Context::GetContext()
+	{
+		return s_Context;
 	}
 
 	Context::Context(void *windowHandler) : m_ThreadId(std::this_thread::get_id()), m_WindowHandler(windowHandler), m_Functions(*this)

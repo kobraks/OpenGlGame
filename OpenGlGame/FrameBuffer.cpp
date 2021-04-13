@@ -73,18 +73,21 @@ namespace Game
 
 	void FrameBufferObject::Bind(int32_t x, int32_t y, int32_t width, int32_t height) const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		Bind();
 		GL_CHECK(glViewport(x, y, width, height));
 	}
 
 	void FrameBufferObject::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, 0));
 		GL_CHECK(glBindFramebuffer(GL_DRAW_FRAMEBUFFER, *this));
 	}
 
 	FrameBufferObject::Status FrameBufferObject::GetStatus() const
 	{
+		CHECK_IF_VALID_CONTEXT Status::IncompleteAttachment;
 		GLenum status = GL_FRAMEBUFFER_COMPLETE;
 		GL_CHECK(status = glCheckNamedFramebufferStatus(*m_FrameBuffer, GL_DRAW_FRAMEBUFFER));
 
@@ -101,8 +104,9 @@ namespace Game
 	{
 		static Vector2i value;
 
+		CHECK_IF_VALID_CONTEXT {};
 		if(value == Vector2i())
-			glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &value.X);
+			GL_CHECK(glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &value.X));
 
 		return value;
 	}
@@ -159,6 +163,7 @@ namespace Game
 
 	void FrameBufferObject::CheckCompletion() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GLenum status = GL_FRAMEBUFFER_COMPLETE;
 		GL_CHECK(status = glCheckNamedFramebufferStatus(*m_FrameBuffer, GL_DRAW_FRAMEBUFFER));
 
@@ -176,16 +181,19 @@ namespace Game
 
 	void FrameBufferObject::Attach(uint32_t attachment, Pointer<Texture> texture)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glNamedFramebufferTexture(*m_FrameBuffer, attachment, *texture, 0));
 	}
 
 	void FrameBufferObject::Attach(uint32_t attachment, Pointer<RenderBuffer> renderBuffer)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glNamedFramebufferRenderbuffer(*m_FrameBuffer, attachment, GL_RENDERBUFFER, renderBuffer->Id()));
 	}
 
 	void FrameBufferObject::DeleteFrameBuffer(IdType *id)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteFramebuffers(1, id));
 		delete id;
 	}
@@ -193,6 +201,7 @@ namespace Game
 	Pointer<FrameBufferObject::IdType> FrameBufferObject::CreateFrameBuffer()
 	{
 		auto frameBuffer = Pointer<IdType>(new IdType(), DeleteFrameBuffer);
+		CHECK_IF_VALID_CONTEXT nullptr;
 		GL_CHECK(glGenFramebuffers(1, &*frameBuffer));
 
 		return frameBuffer;

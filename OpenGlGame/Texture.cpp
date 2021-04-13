@@ -14,11 +14,13 @@ namespace Game
 {
 	Texture::Internals::Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glGenTextures(1, &Id));
 	}
 
 	Texture::Internals::~Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteTextures(1, &Id));
 	}
 
@@ -115,6 +117,7 @@ namespace Game
 
 	void Texture::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindTexture(GL_TEXTURE_2D, *this));
 	}
 
@@ -122,6 +125,7 @@ namespace Game
 	{
 		m_Internals->MipmapGenerated = true;
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glGenerateTextureMipmap(m_Internals->Id));
 	}
 
@@ -177,6 +181,7 @@ namespace Game
 		std::vector<Color> pixels;
 		pixels.resize(size);
 
+		CHECK_IF_VALID_CONTEXT Image(0, 0);
 		GL_CHECK(glGetTextureImage(m_Internals->Id, 0, GL_RGBA, GL_UNSIGNED_BYTE, size, &pixels[0]));
 
 		return Image(m_Internals->Size, pixels.data());
@@ -271,6 +276,7 @@ namespace Game
 		{
 			checked = true;
 
+			CHECK_IF_VALID_CONTEXT size;
 			GL_CHECK(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size));
 		}
 
@@ -283,17 +289,11 @@ namespace Game
 		m_Internals->Format = internalFormat;
 
 		Bind();
-		GL_CHECK(glTexImage2D(
-		             GL_TEXTURE_2D,
-		             0,
-		             static_cast<GLint>(internalFormat),
-		             size.Width,
-		             size.Height,
-		             0,
-		             static_cast<GLenum>(format),
-		             static_cast<GLenum>(type),
-		             pixels
-		            ));
+		CHECK_IF_VALID_CONTEXT;
+		GL_CHECK(
+		         glTexImage2D( GL_TEXTURE_2D, 0, static_cast<GLint>(internalFormat), size.Width, size.Height, 0, static_cast<GLenum>(format), static_cast<GLenum
+			         >(type), pixels )
+		        );
 	}
 
 	void Texture::SubImage2D(const void *pixels, DataType type, Format format, const Vector2i &offset, const Vector2u &size)
@@ -306,7 +306,9 @@ namespace Game
 			throw std::out_of_range("Texture size out of range");
 
 		Bind();
-		GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, offset.X, offset.Y, size.Width, size.Height, static_cast<GLenum>(format), static_cast<GLenum>(type), pixels));
+		GL_CHECK(
+		         glTexSubImage2D(GL_TEXTURE_2D, 0, offset.X, offset.Y, size.Width, size.Height, static_cast<GLenum>(format), static_cast<GLenum>(type), pixels)
+		        );
 	}
 
 	void Texture::Image2D(const void *pixels, DataType type, Format format, uint32_t width, uint32_t height, InternalFormat internalFormat)
@@ -315,6 +317,7 @@ namespace Game
 		m_Internals->Format = internalFormat;
 
 		Bind();
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(
 		         glTexImage2D( GL_TEXTURE_2D, 0, static_cast<GLint>(internalFormat), width, height, 0, static_cast<GLenum>(format), static_cast< GLenum>(type),
 			         pixels )
@@ -332,11 +335,13 @@ namespace Game
 
 		Bind();
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, width, height, static_cast<GLenum>(format), static_cast<GLenum>(type), pixels));
 	}
 
 	void Texture::SetParameter(uint32_t name, int parameter)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glTextureParameteri(m_Internals->Id, name, parameter));
 	}
 }

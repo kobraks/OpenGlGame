@@ -22,6 +22,7 @@ namespace Game
 
 	CubeMap::Internals::Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glGenTextures(1, &Id));
 	}
 
@@ -30,6 +31,7 @@ namespace Game
 		for(auto &texture : Textures)
 			delete texture;
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteTextures(1, &Id));
 	}
 
@@ -146,6 +148,7 @@ namespace Game
 
 	void CubeMap::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindTexture(GL_TEXTURE_CUBE_MAP, m_Internals->Id));
 	}
 
@@ -156,6 +159,7 @@ namespace Game
 
 	void CubeMap::SetParameter(uint32_t name, int parameter)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glTextureParameteri(m_Internals->Id, name, parameter));
 	}
 
@@ -165,6 +169,7 @@ namespace Game
 	void CubeTexture::Image2D(const void *data, DataType type, Format format, const Vector2u &size, InternalFormat internalFormat)
 	{
 		m_Owner->Bind();
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(
 		         glTexImage2D(GetTarget(m_Face), 0, static_cast<GLint>(internalFormat), size.Width, size.Height, 0, static_cast<GLenum>(format), static_cast<
 			         GLenum>(type), data)
@@ -181,6 +186,7 @@ namespace Game
 			throw std::runtime_error("Texture size out of range");
 
 		m_Owner->Bind();
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(
 		         glTexSubImage2D(GetTarget(m_Face), 0, offset.X, offset.Y, size.Width, size.Height, static_cast<GLenum>(format), static_cast<GLenum>(type), data
 		         )
@@ -198,7 +204,8 @@ namespace Game
 
 		std::vector<Color> pixels;
 		pixels.resize(size);
-
+		
+		CHECK_IF_VALID_CONTEXT Image(0, 0);
 		GL_CHECK(glGetTextureImage(*m_Owner, static_cast<GLint>(m_Face), GL_RGBA, GL_UNSIGNED_BYTE, size, &pixels[0]));
 
 		return Image(m_Size, pixels.data());

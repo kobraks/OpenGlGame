@@ -7,6 +7,7 @@ namespace Game
 {
 	RenderBuffer::Internals::Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		glGenRenderbuffers(1, &Id);
 	}
 
@@ -18,6 +19,7 @@ namespace Game
 
 	RenderBuffer::Internals::~Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		if(!m_IdProvided)
 			glDeleteRenderbuffers(1, &Id);
 	}
@@ -44,6 +46,7 @@ namespace Game
 
 	void RenderBuffer::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, *this));
 	}
 
@@ -58,6 +61,7 @@ namespace Game
 		m_Internals->Format  = format;
 		m_Internals->Samples = samples;
 
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glNamedRenderbufferStorageMultisample(m_Internals->Id, samples, static_cast<GLenum>(format), width, height));
 	}
 
@@ -72,7 +76,8 @@ namespace Game
 		m_Internals->Format  = format;
 		m_Internals->Samples = samples;
 
-		glNamedRenderbufferStorage(m_Internals->Id, static_cast<GLenum>(format), size.Width, size.Height);
+		CHECK_IF_VALID_CONTEXT;
+		GL_CHECK(glNamedRenderbufferStorage(m_Internals->Id, static_cast<GLenum>(format), size.Width, size.Height));
 	}
 
 	RenderBuffer* RenderBuffer::GetDefault()
@@ -90,6 +95,7 @@ namespace Game
 		{
 			checked = true;
 
+			CHECK_IF_VALID_CONTEXT samples;
 			glGetIntegerv(GL_MAX_SAMPLES, &samples);
 		}
 

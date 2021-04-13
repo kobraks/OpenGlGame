@@ -10,13 +10,16 @@ namespace Game
 
 	class Context
 	{
+		static inline std::unordered_map<std::thread::id, Context*> s_Contests; 
+		static inline thread_local Context* s_Context = nullptr;
+		
 		std::thread::id m_ThreadId;
 		void *m_WindowHandler = nullptr;
 		OpenGlFunctions m_Functions;
-	
 	public:
 		Context(const Context &) = delete;
 		Context(Context &&)      = delete;
+		~Context();
 
 		Context& operator=(const Context &) = delete;
 		Context& operator=(Context &&)      = delete;
@@ -31,6 +34,9 @@ namespace Game
 		void MakeCurrent();
 
 		bool IsContextCurrent() const;
+
+		static Context* GetCurrentContext();
+		static Context* GetContext();
 	private:
 		Context(void *windowHandler);
 		Context(void *windowHandler, void *mainWindow);

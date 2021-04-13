@@ -25,6 +25,7 @@ namespace Game
 
 	void VertexArray::Internals::SetIndexBuffer(const Pointer<Game::IndexBuffer> &indexBuffer)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindVertexArray(Id));
 		indexBuffer->Bind();
 
@@ -35,6 +36,7 @@ namespace Game
 
 	void VertexArray::Internals::AddVertexBuffer(const Pointer<VertexBuffer> &vertexBuffer)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex Buffer has no layout");
 
 		if(vertexBuffer->GetLayout().GetElements().size() == 0)
@@ -137,11 +139,13 @@ namespace Game
 
 	void VertexArray::Internals::Bind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindVertexArray(Id));
 	}
 
 	void VertexArray::Internals::Unbind() const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindVertexArray(0));
 	}
 
@@ -152,12 +156,14 @@ namespace Game
 
 	VertexArray::Internals::Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		glCreateVertexArrays(1, &Id);
 		OPENGL_LOG_DEBUG("Creating vertex array: {}", Id);
 	}
 
 	VertexArray::Internals::~Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		if(Id != 0)
 			glDeleteVertexArrays(1, &Id);
 		OPENGL_LOG_DEBUG("Removing vertex array: {}", Id);

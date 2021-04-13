@@ -81,6 +81,34 @@ namespace Game
 		GL_CHECK(glViewport(x, y, width, height));
 	}
 
+	void OpenGlFunctions::SetClearColor(const glm::vec4&color)
+	{
+		CHECK_IF_VALID_CONTEXT();
+
+		auto& clearColor = m_Internals->ClearColor;
+		
+		clearColor = color;
+
+		clearColor.r = std::clamp(color.r, 0.f, 1.f);
+		clearColor.g = std::clamp(color.g, 0.f, 1.f);
+		clearColor.b = std::clamp(color.b, 0.f, 1.f);
+		clearColor.a = std::clamp(color.a, 0.f, 1.f);
+
+		glClearColor(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+	}
+	
+	void OpenGlFunctions::SetClearColor(float red, float green, float blue, float alpha)
+	{
+		SetClearColor(glm::vec4(red, green, blue, alpha));
+	}
+	
+	glm::vec4 OpenGlFunctions::GetClearColor() const
+	{
+		CHECK_IF_VALID_CONTEXT();
+		
+		return m_Internals->ClearColor;
+	}
+
 	void OpenGlFunctions::SetFrontFace(FrontFace face)
 	{
 		CHECK_IF_VALID_CONTEXT();
@@ -122,11 +150,26 @@ namespace Game
 		GL_CHECK(glBlendEquationSeparate(static_cast<GLenum>(mode.ColorEquation), static_cast<GLenum>(mode.AlphaEquation)));
 	}
 
+	void OpenGlFunctions::SetStencilTest(const StencilTest &test)
+	{
+		CHECK_IF_VALID_CONTEXT();
+
+		GL_CHECK(glStencilFuncSeparate(static_cast<GLenum>(test.Face), static_cast<GLenum>(test.TestFunction), test.Ref, test.Mask));
+		GL_CHECK(glStencilOpSeparate(static_cast<GLenum>(test.Face), static_cast<GLenum>(test.StencilFail), static_cast<GLenum>(test.DepthFails), static_cast<GLenum>(test.Pass)));
+	}
+
 	void OpenGlFunctions::Flush()
 	{
 		CHECK_IF_VALID_CONTEXT();
 
 		GL_CHECK(glFlush());
+	}
+
+	void OpenGlFunctions::Finish()
+	{
+		CHECK_IF_VALID_CONTEXT();
+
+		GL_CHECK(glFinish());
 	}
 
 	void OpenGlFunctions::SetDebugMessageCallback(GLDEBUGPROC callback, const void *userParam)

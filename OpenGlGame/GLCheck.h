@@ -1,5 +1,8 @@
 #pragma once
 #include <string_view>
+#include "Context.h"
+
+#define CHECK_IF_VALID_CONTEXT if (!Context::GetContext() || !Context::GetContext()->IsContextCurrent()) return
 
 namespace Game::Priv
 {
