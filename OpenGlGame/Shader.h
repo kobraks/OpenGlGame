@@ -13,8 +13,8 @@ namespace Game
 
 		ShaderSource(std::string source) : m_Source(std::move(source)) {}
 
-		const std::string& GetSource() const { return m_Source; }
-		void SetSource(const std::string &source) { m_Source = source; }
+		const std::string& Source() const { return m_Source; }
+		void Source(const std::string &source) { m_Source = source; }
 	};
 
 	class Shader
@@ -25,7 +25,10 @@ namespace Game
 			Unknown = 0,
 			Vertex = GL_VERTEX_SHADER,
 			Fragment = GL_FRAGMENT_SHADER,
-			Geometry = GL_GEOMETRY_SHADER
+			Geometry = GL_GEOMETRY_SHADER,
+			Compute = GL_COMPUTE_SHADER,
+			Control = GL_TESS_CONTROL_SHADER,
+			Evaluation = GL_TESS_EVALUATION_SHADER
 		};
 
 		enum class ParameterName : GLenum
@@ -77,6 +80,8 @@ namespace Game
 		Type GetType() const { return m_Internals->Type; }
 
 		std::string_view TypeToString() const;
+
+		static std::string_view TypeToString(Type type);
 	};
 
 #define SHADER_IMPLEMENTATION_TYPE(type)\
@@ -94,4 +99,11 @@ namespace Game
 	SHADER_IMPLEMENTATION_TYPE(Fragment);
 
 	SHADER_IMPLEMENTATION_TYPE(Geometry);
+
+	SHADER_IMPLEMENTATION_TYPE(Compute);
+
+	SHADER_IMPLEMENTATION_TYPE(Control);
+	
+	SHADER_IMPLEMENTATION_TYPE(Evaluation);
+	
 }

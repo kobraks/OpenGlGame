@@ -17,6 +17,9 @@ namespace Game
 			case Shader::Type::Vertex: return "Vertex";
 			case Shader::Type::Fragment: return "Fragment";
 			case Shader::Type::Geometry: return "Geometry";
+			case Shader::Type::Compute: return "Compute";
+			case Shader::Type::Control: return "Tessellation Control";
+			case Shader::Type::Evaluation: return "Tessellation Evaluation";
 			case Shader::Type::Unknown: return "Unknown";
 		}
 		return {};
@@ -46,22 +49,25 @@ namespace Game
 
 	Shader::Internals::Internals(const Shader::Type &type) : Type(type)
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(Shader = glCreateShader(static_cast<GLenum>(type)));
 	}
 
 	Shader::Internals::~Internals()
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteShader(Shader));
 	}
 
 	void Shader::Internals::SetSource(const ShaderSource &source)
 	{
-		auto cstr = source.GetSource().c_str();
+		auto cstr = source.Source().c_str();
 
 		GL_LOG_INFO("Attaching source code to {} shader {}", Shader, ShaderTypeToString(Type));
-		GL_LOG_DEBUG("Source code: \n{}\nEND", source.GetSource());
+		GL_LOG_DEBUG("Source code: \n{}\nEND", source.Source());
 
 		Source = source;
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glShaderSource(Shader, 1, &cstr, nullptr));
 	}
 
@@ -69,6 +75,7 @@ namespace Game
 	{
 		GL_LOG_INFO("Compiling [id: {}] {} Shader", Shader, ShaderTypeToString(Type));
 
+		CHECK_IF_VALID_CONTEXT false;
 		GL_CHECK(glCompileShader(Shader));
 		int status = Get(ParameterName::CompileStatus);
 
@@ -89,6 +96,7 @@ namespace Game
 		if(length > 0)
 		{
 			std::string log(static_cast<std::string::size_type>(length + 1), 0);
+		CHECK_IF_VALID_CONTEXT {};
 			GL_CHECK(glGetShaderInfoLog(Shader, length, &length, &log[0]));
 
 			return log;
@@ -104,9 +112,10 @@ namespace Game
 
 		return value;
 	}
-	
+
 	void Shader::Internals::Get(ParameterName name, int *value) const
 	{
+		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glGetShaderiv(Shader, static_cast<GLenum>(name), value));
 	}
 
@@ -129,5 +138,10 @@ namespace Game
 	std::string_view Shader::TypeToString() const
 	{
 		return ShaderTypeToString(m_Internals->Type);
+	}
+
+	std::string_view Shader::TypeToString(Type type)
+	{
+		return ShaderTypeToString(type);
 	}
 }
