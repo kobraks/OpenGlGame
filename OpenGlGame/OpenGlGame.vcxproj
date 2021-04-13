@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Buffer.cpp" />
-    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="CameraComponent.cpp" />
     <ClCompile Include="Clock.cpp" />
     <ClCompile Include="Color.cpp" />
     <ClCompile Include="ConfigLayer.cpp" />
@@ -54,15 +54,18 @@
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Model.cpp" />
+    <ClCompile Include="ModelComponent.cpp" />
     <ClCompile Include="ModelLoader.cpp" />
     <ClCompile Include="Mouse.cpp" />
     <ClCompile Include="OpenGlFunctions.cpp" />
-    <ClCompile Include="PerspectiveCamera.cpp" />
     <ClCompile Include="Property.cpp" />
     <ClCompile Include="PropertyManager.cpp" />
     <ClCompile Include="RenderBuffer.cpp" />
     <ClCompile Include="Renderer.cpp" />
+    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="SceneCamera.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderLoader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Shortcut.cpp" />
     <ClCompile Include="StatisticLayer.cpp" />
@@ -83,6 +86,7 @@
     <ClInclude Include="Attachment.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="CameraComponent.h" />
     <ClInclude Include="Clock.h" />
     <ClInclude Include="Color.h" />
     <ClInclude Include="Component.h" />
@@ -122,28 +126,36 @@
     <ClInclude Include="Layer.h" />
     <ClInclude Include="LayerStack.h" />
     <ClInclude Include="Light.h" />
+    <ClInclude Include="LightComponent.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogLayer.h" />
     <ClInclude Include="LuaRegister.h" />
+    <ClInclude Include="LuaScriptComponent.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Model.h" />
+    <ClInclude Include="ModelComponent.h" />
     <ClInclude Include="ModelLoader.h" />
     <ClInclude Include="Mouse.h" />
     <ClInclude Include="MouseEvent.h" />
+    <ClInclude Include="NativeScirptComponent.h" />
     <ClInclude Include="OpenGlFunctions.h" />
     <ClInclude Include="pch.h" />
-    <ClInclude Include="PerspectiveCamera.h" />
     <ClInclude Include="Property.h" />
     <ClInclude Include="PropertyManager.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Rect.h" />
     <ClInclude Include="RenderBuffer.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="SceneCamera.h" />
+    <ClInclude Include="ScriptableEntity.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Shortcut.h" />
     <ClInclude Include="StatisticLayer.h" />
+    <ClInclude Include="TagComponent.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="Thread.h" />
@@ -157,6 +169,9 @@
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VertexArray.h" />
     <ClInclude Include="Window.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

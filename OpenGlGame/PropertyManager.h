@@ -33,14 +33,14 @@ namespace Game
 				Add(Property<Type>(id, value));
 		}
 
-		template <typename Type>
+		/*template <typename Type>
 		void Set(const PropertyIdType &id, Type &&value)
 		{
 			if(auto property = Find<Type>(id); property)
 				property->SetValue(std::forward<Type>(value));
 			else
 				Add(Property<Type>(id, std::forward<Type>(value)));
-		}
+		}*/
 
 		template <typename Type>
 		bool Add(const PropertyIdType &id, const Type &value)
@@ -68,7 +68,7 @@ namespace Game
 		}
 
 		template <typename Type>
-		const Property<Type>& Get(const PropertyIdType &id) const
+		const Property<Type>& GetProperty(const PropertyIdType &id) const
 		{
 			auto property = Find<Type>(id);
 
@@ -81,7 +81,7 @@ namespace Game
 		}
 
 		template <typename Type>
-		Property<Type>& Get(const PropertyIdType &id)
+		Property<Type>& GetProperty(const PropertyIdType &id)
 		{
 			auto property = Find<Type>(id);
 
@@ -93,6 +93,18 @@ namespace Game
 			return *property;
 		}
 
+		template <typename Type>
+		Type Get(const PropertyIdType &id)
+		{
+			return GetProperty<Type>(id).Value();
+		}
+
+		template <typename Type>
+		Type Get(const PropertyIdType &id) const
+		{
+			return GetProperty<Type>(id).Value();
+		}
+		
 		void Register(const std::string& name, sol::state& state);
 		
 		PropertyList::iterator begin() { return m_Properties.begin(); }

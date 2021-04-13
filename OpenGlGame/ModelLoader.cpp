@@ -15,13 +15,9 @@
 #include "Material.h"
 #include "TextureLoader.h"
 
-#define ASSIMP_FLAGS\
-	aiProcess_JoinIdenticalVertices |\
-	aiProcess_Triangulate |\
-	aiProcess_GenNormals |\
-	aiProcess_GenUVCoords |\
-	aiProcess_OptimizeMeshes |\
-	aiProcess_FixInfacingNormals
+constexpr uint32_t ASSIMP_FLAGS = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_FixInfacingNormals |
+	aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure | aiProcess_ImproveCacheLocality | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes |
+	aiProcess_FindInstances | aiProcess_TransformUVCoords | aiProcess_RemoveRedundantMaterials | aiProcess_FindDegenerates | aiProcess_GenSmoothNormals;
 
 constexpr int COLOR_DIFFUSE  = 0;
 constexpr int COLOR_SPECULAR = 1;
@@ -60,7 +56,7 @@ namespace Game
 		mat[1] = glm::vec4(m.a2, m.b2, m.c2, m.d2);
 		mat[2] = glm::vec4(m.a3, m.b3, m.c3, m.d3);
 		mat[3] = glm::vec4(m.a4, m.b4, m.c4, m.d4);
-		
+
 		return mat;
 	}
 
@@ -91,7 +87,7 @@ namespace Game
 		LOG_INFO("Opening \"{}\"", name);
 
 		auto importer     = MakePointer<Assimp::Importer>();
-		const auto *scene = importer->ReadFile(name, !aiProcess_JoinIdenticalVertices & aiProcessPreset_TargetRealtime_MaxQuality | aiProcess_PreTransformVertices | aiProcess_GenNormals);
+		const auto *scene = importer->ReadFile(name, ASSIMP_FLAGS);
 
 		if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 		{
@@ -117,19 +113,19 @@ namespace Game
 		const auto node  = static_cast<const ::aiNode*>(aiNode);
 		const auto scene = static_cast<const ::aiScene*>(aiScene);
 
+		const glm::mat4 nodeTransform = transform * Convert(node->mTransformation);
+
+		for(uint32_t i = 0; i < node->mNumChildren; ++i)
+			ProcessNode(meshes, nodeTransform, node->mChildren[i], scene);
+
 		for(uint32_t i = 0; i < node->mNumMeshes; ++i)
 		{
 			const auto mesh = scene->mMeshes[node->mMeshes[i]];
 			auto m          = ProcessMesh(mesh, scene);
 			m->SetMaterial(ProcessMaterial(scene->mMaterials[mesh->mMaterialIndex]));
-			m->SetTransform(transform);
+			m->SetTransform(nodeTransform);
 			meshes.push_back(m);
 		}
-
-		const glm::mat4 nodeTransform = Convert(node->mTransformation);
-
-		for(uint32_t i = 0; i < node->mNumChildren; ++i)
-			ProcessNode(meshes, transform * nodeTransform, node->mChildren[i], scene);
 	}
 
 	Pointer<Mesh> ModelLoader::ProcessMesh(const void *aiMesh, const void *aiScene)
@@ -211,6 +207,9 @@ namespace Game
 
 		material->Get(AI_MATKEY_SHININESS, result->Shininess);
 		LOG_DEBUG("Shininess level: {}", result->Shininess);
+		
+		material->Get(AI_MATKEY_SHININESS_STRENGTH, result->ShininessStrength);
+		LOG_DEBUG("Shininess level: {}", result->ShininessStrength);
 
 		return result;
 	}

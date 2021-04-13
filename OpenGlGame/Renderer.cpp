@@ -7,13 +7,22 @@
 #include "ShaderProgram.h"
 #include "Model.h"
 
+#include "Buffer.h"
+
 namespace Game
 {
 	Scope<Renderer::SceneData> Renderer::s_SceneData = MakeScope<SceneData>();
 
-	void Renderer::BeginScene(const Camera &camera)
+	void Renderer::BeginScene()
 	{
-		s_SceneData->ViewProjectionMatrix = camera.GetViewProjection();
+		Init();
+	}
+
+	void Renderer::BeginScene(const Camera &camera, const glm::mat4 &transform)
+	{
+		BeginScene();
+
+		glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
 	}
 
 	void Renderer::EndScene() {}
@@ -26,7 +35,16 @@ namespace Game
 			return;
 
 		shader->Use();
+
 		shader->UniformValue("u_ProjectionViewMatrix", s_SceneData->ViewProjectionMatrix);
+		shader->UniformValue("u_ViewMatrix", s_SceneData->ViewMatrix);
+		shader->UniformValue("u_Projection", s_SceneData->ProjectionMatrix);
+		const auto index = s_SceneData->Shader->GetUniformBlockIndex("u_Lights");
+		if(index != ShaderProgram::INVALID_UNIFORM_BLOCK_INDEX)
+		{
+			s_SceneData->LightsBuffer->Bind();
+			GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, index, s_SceneData->LightsBuffer->Id()));
+		}
 	}
 
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height) { }
@@ -38,8 +56,8 @@ namespace Game
 		array->Bind();
 
 		GL_CHECK(
-		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? array->GetIndexBuffer()->Count() : static_cast<GLsizei>(count), static_cast<GLenum>(DataType::UnsignedInt)
-			       , nullptr)
+		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? array->GetIndexBuffer()->Count() : static_cast<GLsizei>(count), static_cast<GLenum>(
+			         DataType::UnsignedInt) , nullptr)
 		        );
 	}
 
@@ -50,8 +68,8 @@ namespace Game
 		array->Bind();
 
 		GL_CHECK(
-		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : static_cast<GLsizei>(count), static_cast<GLenum>(DataType::
-			         UnsignedInt), indices.data())
+		         glDrawElements(static_cast<GLenum>(primitive), count < 0 ? static_cast<int32_t>(indices.size()) : static_cast<GLsizei>(count), static_cast<
+			         GLenum>(DataType:: UnsignedInt), indices.data())
 		        );
 
 		// glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, indices.data());
@@ -62,7 +80,7 @@ namespace Game
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
-			s_SceneData->Shader->UniformValue("u_InvertedTransform", glm::inverse(transform));
+			s_SceneData->Shader->UniformValue("u_InvertedTransform", inverse(transform));
 		}
 		else
 		{
@@ -77,7 +95,7 @@ namespace Game
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
-			s_SceneData->Shader->UniformValue("u_InvertedTransform", glm::inverse(transform));
+			s_SceneData->Shader->UniformValue("u_InvertedTransform", inverse(transform));
 		}
 		else
 		{
@@ -89,7 +107,7 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<Model> &model, const glm::mat4 &transform)
 	{
-		const auto matrix = transform * model->GetTransform() ;
+		const auto matrix = transform * model->GetTransform();
 
 		for(const auto &mesh : *model)
 			Draw(mesh, matrix);
@@ -105,9 +123,9 @@ namespace Game
 	{
 		const auto lightInfo = light.GetInfo();
 
-		if (lightInfo.Type == LightType::Unknown)
+		if(lightInfo.Type == LightType::Unknown)
 			return;
-		
+
 		ASSERT(lightInfo.Index < MAX_LIGHTS, "You want to bing too many lights");
 		BindLight(lightInfo);
 	}
@@ -152,6 +170,84 @@ namespace Game
 		shader->UniformValue("u_Material.Diffuse", material->DiffuseColor);
 		shader->UniformValue("u_Material.Specular", material->SpecularColor);
 		shader->UniformValue("u_Material.Shininess", material->Shininess);
+		shader->UniformValue("u_Material.ShininessStrength", material->ShininessStrength);
+	}
+
+	constexpr size_t SizeOfStruct(size_t baseSize)
+	{
+		size_t sum = 0;
+		while(sum < baseSize)
+			sum += sizeof(float) * 4;
+
+		return sum;
+	}
+
+	void Renderer::Init()
+	{
+		static bool init = false;
+
+		if(!init)
+		{
+			constexpr size_t size = SizeOfStruct(sizeof(float) * (7 + 5 * 4)) * MAX_LIGHTS;
+
+			s_SceneData->LightsBuffer = MakePointer<UniformBuffer>(size, BufferUsage::DynamicDraw);
+
+			for(auto &light : s_SceneData->Lights)
+				light.Active = false;
+		}
+	}
+
+	template <typename T>
+	constexpr size_t SizeOfType()
+	{
+		size_t i    = 0;
+		size_t size = 0;
+		while(size < sizeof(T))
+		{
+			size += sizeof(float);
+			i ++;
+		}
+
+		if (i > 1 && i % 2 != 0)
+			size += sizeof(float);
+		
+		return size;
+	}
+
+	template <typename T>
+	void Set(char *buff, const T &value, size_t &offset)
+	{
+		std::memcpy(buff + offset, &value, sizeof(T));
+
+		offset += SizeOfType<T>();
+	}
+
+	void Renderer::BindLight(Pointer<UniformBuffer> buffer, const LightInfo &light)
+	{
+		constexpr size_t size = SizeOfStruct(sizeof(float) * (7 + 5 * 4)); //Size of one struct of LightInfo in shader
+		char buff[size];
+
+		size_t offset = 0;
+		Set(buff, light.Active, offset);
+		Set(buff, light.Type, offset);
+		offset = 16;
+
+		Set(buff, light.Position, offset);
+		Set(buff, light.Direction, offset);
+
+		Set(buff, light.DiffuseColor, offset);
+		Set(buff, light.AmbientColor, offset);
+		Set(buff, light.SpecularColor, offset);
+
+		offset -= 4;
+		Set(buff, light.CutOff, offset);
+		Set(buff, light.OuterCutOff, offset);
+		
+		Set(buff, light.Constant, offset);
+		Set(buff, light.Linear, offset);
+		Set(buff, light.Quadratic, offset);
+
+		buffer->Set(buff, size, size * light.Index);
 	}
 
 	void Renderer::BindLight(const LightInfo &light)
@@ -160,10 +256,10 @@ namespace Game
 			return;
 
 		s_SceneData->Lights[light.Index] = light;
-		BindLight(s_SceneData->Shader, light);
+		BindLight(s_SceneData->LightsBuffer, light);
 	}
 
-	void Renderer::BindLight(Pointer<ShaderProgram> &shader, const LightInfo &light)
+	/*void Renderer::BindLight(Pointer<ShaderProgram> &shader, const LightInfo &light)
 	{
 		if(shader)
 		{
@@ -186,7 +282,7 @@ namespace Game
 		{
 			ASSERT(false, "You have not set any shader program");
 		}
-	}
+	}*/
 
 	void Renderer::BindMaterialTexture(
 		Pointer<ShaderProgram> shader,

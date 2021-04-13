@@ -37,6 +37,9 @@ namespace Game
 			const glm::mat4 &transform = glm::mat4(1.f)
 			);
 
+		size_t GetVerticesCount() const { return m_Vertices.size(); }
+		size_t GetIndicesCount() const { return m_Indices.size(); }
+
 		const glm::mat4& GetTransform() const { return m_Transform; }
 		void SetTransform(const glm::mat4 &transform) { m_Transform = transform; }
 		const Pointer<VertexArray>& GetVertexArray() const { return m_VertexArray; }

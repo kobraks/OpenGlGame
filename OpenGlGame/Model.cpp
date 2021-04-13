@@ -1,25 +1,8 @@
 #include "pch.h"
 #include "Model.h"
 
-#include <unordered_map>
-#include <memory>
-#include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <assimp/Importer.hpp>
-
-#define ASSIMP_FLAGS\
-	aiProcess_JoinIdenticalVertices |\
-	aiProcess_Triangulate |\
-	aiProcess_PreTransformVertices |\
-	aiProcess_GenNormals |\
-	aiProcess_GenUVCoords |\
-	aiProcess_OptimizeMeshes |\
-	aiProcess_FixInfacingNormals
-
 namespace Game
 {
-	static std::unordered_map<std::string, Pointer<Model>> s_Models;
-
 	Model::Model(const MeshContainerType &meshes, const glm::mat4 &transform)
 	{
 		m_Meshes = meshes;

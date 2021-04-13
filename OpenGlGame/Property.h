@@ -97,7 +97,7 @@ namespace Game
 
 		void SetValue(const ValueType& value)
 		{
-			m_Value = value;
+			m_Value.emplace(value);
 		}
 
 		Property<ValueType>& operator= (const ValueType& value)

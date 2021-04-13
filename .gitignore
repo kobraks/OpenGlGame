@@ -8,9 +8,14 @@
 **/*.bat
 **/*.vcxproj.*
 **/Obj
-**/*.obj
 **/*.exe
 **/*.pdb
+**/*.cd
+
+#removing blendfiles
+**/*.blend*
+OrginalModels/*
+OrginalModels
 
 #removing templorary files
 **/*.dat

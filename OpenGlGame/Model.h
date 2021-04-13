@@ -35,6 +35,8 @@ namespace Game
 		const glm::mat4& GetTransform() const { return m_Transform; }
 		void SetTransform(const glm::mat4 &transform) { m_Transform = transform; }
 
+		size_t GetMeshesCount() const { return m_Meshes.size(); }
+
 		MeshContainerType::iterator begin() { return m_Meshes.begin(); }
 		MeshContainerType::iterator end() { return m_Meshes.end(); }
 

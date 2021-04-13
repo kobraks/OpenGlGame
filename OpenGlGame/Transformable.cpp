@@ -2,6 +2,7 @@
 #include "Transformable.h"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 Game::Transformable::Transformable(const glm::vec3 &pos, const glm::vec3 &scale, const glm::vec3 &rotate) : m_Position(pos),
                                                                                                     m_Rotation(rotate),
@@ -65,11 +66,12 @@ const glm::mat4& Game::Transformable::GetTransform() const
 		m_Transform = glm::mat4(1.f);
 
 		m_Transform = translate(m_Transform, m_Position);
-		m_Transform = scale(m_Transform, m_Scale);
-
-		m_Transform = rotate(m_Transform, glm::radians(m_Rotation.x), glm::vec3(1.f, 0.f, 0.f));
-		m_Transform = rotate(m_Transform, glm::radians(m_Rotation.y), glm::vec3(0.f, 1.f, 0.f));
-		m_Transform = rotate(m_Transform, glm::radians(m_Rotation.z), glm::vec3(0.f, 0.f, 1.f));
+		m_Transform = m_Transform * glm::toMat4(glm::quat(m_Rotation));
+		m_Transform = glm::scale(m_Transform, m_Scale);
+		
+		// m_Transform = rotate(m_Transform, glm::radians(m_Rotation.x), glm::vec3(1.f, 0.f, 0.f));
+		// m_Transform = rotate(m_Transform, glm::radians(m_Rotation.y), glm::vec3(0.f, 1.f, 0.f));
+		// m_Transform = rotate(m_Transform, glm::radians(m_Rotation.z), glm::vec3(0.f, 0.f, 1.f));
 	}
 
 	return m_Transform;
