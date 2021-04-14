@@ -240,9 +240,6 @@
     <ClCompile Include="ModelComponent.cpp">
       <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Source Files\Model</Filter>
-    </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files\Model</Filter>
     </ClCompile>

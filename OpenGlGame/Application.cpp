@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Application.h"
 
+#include <GLFW/glfw3.h>
+
 #include "Log.h"
 #include "LuaRegister.h"
 
@@ -8,14 +10,16 @@
 #include "StatisticLayer.h"
 #include "ConsoleLayer.h"
 #include "LogLayer.h"
+
 #include "Renderer.h"
-#include "GLFW/glfw3.h"
 #include "ConfigLayer.h"
 #include "GameLayer.h"
 
 #include "ImGui.h"
 #include "Keyboard.h"
 #include "TextureLoader.h"
+
+#include "ApplicationEvent.h"
 
 namespace
 {
@@ -267,7 +271,7 @@ namespace Game
 			m_Arguments.emplace_back(argv[i]);
 	}
 
-	void Application::SetUpdateRate(uint32_t rate)
+	void Application::SetUpdateRate(float rate)
 	{
 		if(200 >= rate && 1 <= rate)
 		{
@@ -301,9 +305,17 @@ namespace Game
 		m_Properties = MakeScope<PropertyManager>();
 
 		InitializeLua();
+		InitializeSettings();
 
-		m_Properties->Register("", *m_Lua);
-		m_Properties->Add("UpdateRate", m_UpdateRate);
+		m_Properties->Register("Settings", *m_Lua);
+
+		m_Lua->set("test", sol::property(
+		                                 []()
+		                                 {
+			                                 LOG_CRITICAL("{}", 10);
+			                                 return 10u;
+		                                 }
+		                                , [](uint32_t v) { LOG_CRITICAL("{}", v); }));
 
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
@@ -411,6 +423,28 @@ namespace Game
 
 		lua["Exit"] = lua["Application"]["Exit"];
 		lua["Quit"] = lua["Application"]["Quit"];
+	}
+
+	void Application::InitializeSettings()
+	{
+		m_Properties->Add<float>("UpdateRate", [this]()->float{return this->GetUpdateRate(); }, [this](float value) { this->SetUpdateRate(value); });
+		m_Properties->Add<uint64_t>("MaxUpdates", [this]()->uint64_t{return this->GetMaxUpdates(); }, [this](uint64_t value) { this->SetMaxUpdates(value); });
+		m_Properties->Add<uint32_t>(
+		                            "WindowWidth",
+		                            [this]() { return this->GetWindow().GetSize().Width; },
+		                            [this](uint32_t value)
+		                            {
+			                            this->GetWindow().SetSize(value, this->GetWindow().GetHeight());
+		                            }
+		                           );
+		m_Properties->Add<uint32_t>(
+		                            "WindowHeight",
+		                            [this]() { return this->GetWindow().GetWidth(); },
+		                            [this](uint32_t value)
+		                            {
+			                            this->GetWindow().SetSize(this->GetWindow().GetWidth(), value);
+		                            }
+		                           );
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)

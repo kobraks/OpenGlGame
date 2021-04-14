@@ -1,22 +1,20 @@
 #pragma once
 
 #include <vector>
-
 #include "Types.h"
+
 #include "PropertyManager.h"
 
+#include "Clock.h"
 #include "Window.h"
 #include "LayerStack.h"
-#include "Event.h"
-#include "ApplicationEvent.h"
-
-#include "Time.h"
-#include "Clock.h"
 
 #include "Shortcut.h"
 
 namespace Game
 {
+	class WindowResizeEvent;
+	class WindowCloseEvent;
 	class LuaRegister;
 
 	class ImGuiLayer;
@@ -68,7 +66,7 @@ namespace Game
 
 		void ProcessArgs(int argc, char **argv);
 
-		void SetUpdateRate(uint32_t rate);
+		void SetUpdateRate(float rate);
 		float GetUpdateRate() const { return 1000.f / static_cast<float>(m_UpdateRate); }
 
 		void SetMaxUpdates(uint64_t maxUpdates);
@@ -85,6 +83,8 @@ namespace Game
 	private:
 		void Initialize();
 		void InitializeLua();
+
+		void InitializeSettings();
 		
 		bool OnWindowClose(WindowCloseEvent &event);
 		bool OnWindowResize(WindowResizeEvent &event);
