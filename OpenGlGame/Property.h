@@ -1,10 +1,14 @@
 #pragma once
 #include "Types.h"
+
 #include <string>
 #include <string_view>
 #include <typeinfo>
 #include <functional>
 #include <optional>
+
+#include <sol/state.hpp>
+#include <sol/object.hpp>
 
 #include "Assert.h"
 
@@ -14,6 +18,8 @@ namespace Game
 {
 	using PropertyIdType = std::string;
 
+	class PropertyManager;
+	
 	class BaseProperty
 	{
 	public:
@@ -36,7 +42,17 @@ namespace Game
 		const PropertyIdType& Id() const { return m_Id; }
 
 		virtual Pointer<BaseProperty> Clone() const = 0;
-		virtual void Register(sol::object& object) const = 0;
+
+
+	protected:
+		virtual sol::object LuaGet(sol::state& state)
+		{
+			return sol::nil;
+		}
+		
+		virtual void LuaSet(sol::object) {}
+
+		friend class PropertyManager;
 	};
 
 	template <typename T>
@@ -44,12 +60,12 @@ namespace Game
 	{
 	public:
 		using ValueType = T;
-		using SetterFunction = std::function<void(const ValueType &)>;
-		// using GetterFunction = std::function<ValueType()>;
+		using SetterFunction = std::function<void(ValueType)>;
+		using GetterFunction = std::function<ValueType()>;
 
 	private:
 		SetterFunction m_Setter = nullptr;
-		// GetterFunction m_Getter = nullptr;
+		GetterFunction m_Getter = nullptr;
 
 		std::optional<ValueType> m_Value = std::nullopt;
 
@@ -61,25 +77,34 @@ namespace Game
 			m_Value = value;
 		}
 
+		Property(PropertyIdType id, SetterFunction onSet, GetterFunction onGet) : Property(std::move(id))
+		{
+			m_Getter = onGet;
+			m_Setter = onSet;
+		}
+
+		Property(PropertyIdType id, const ValueType &value, SetterFunction onSet) : Property(std::move(id), value)
+		{
+			m_Setter = onSet;
+		}
+
 		[[nodiscard]] Pointer<BaseProperty> Clone() const override
 		{
 			auto pointer = MakePointer<Property<T>>(Id());
 
 			Property<T> &property = *pointer;
-			// property.m_Getter     = m_Getter;
+			property.m_Getter     = m_Getter;
 			property.m_Setter     = m_Setter;
 			property.m_Value      = m_Value;
 
 			return pointer;
 		}
 
-		void Register(sol::object& object) const override
+		ValueType Value() const
 		{
-			// object[Id()] = sol::property(&Property<T>::Value, &Property<T>::SetValue);
-		}
+			if(m_Getter)
+				return m_Getter();
 
-		const ValueType& Value() const
-		{
 			if(m_Value)
 				return m_Value.value();
 
@@ -87,26 +112,37 @@ namespace Game
 			throw std::runtime_error("Property value not set");
 		}
 
-		ValueType& Value()
+		void Value(const ValueType &value)
 		{
-			if(m_Value)
-				return m_Value.value();
-			ASSERT(false, "Property value not set");
-			throw std::runtime_error("Property value not set");
-		}
+			if (m_Setter)
+				return m_Setter(value);
 
-		void SetValue(const ValueType& value)
-		{
 			m_Value.emplace(value);
 		}
 
-		Property<ValueType>& operator= (const ValueType& value)
+		Property<ValueType>& operator=(const ValueType &value)
 		{
-			SetValue(value);
+			Value(value);
 			return *this;
 		}
 
 		const ValueType& operator*() const { return Value(); }
 		ValueType& operator*() { return Value(); }
+
+	private:
+		sol::object LuaGet(sol::state &state) override
+		{
+			return sol::make_object<ValueType>(state, Value());
+		}
+
+		void LuaSet(sol::object object)
+		{
+			if (object == sol::nil || !object.is<ValueType>())
+				return;
+
+			Value(object.as<ValueType>());
+		}
+		
+		friend class PropertyManager;
 	};
 }
