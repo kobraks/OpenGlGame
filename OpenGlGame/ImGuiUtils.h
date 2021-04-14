@@ -61,4 +61,6 @@ namespace Game
 	{
 		return ImGui::TreeNodeEx(fmt::format(label, std::forward<Args>(args)...).c_str(), flags);
 	}
+
+	bool ToggleButton(const std::string_view &name, bool *v);
 }
