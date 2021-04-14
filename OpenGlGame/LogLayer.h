@@ -64,6 +64,8 @@ namespace Game
 
 	private:
 		void LoggerCombo(Pointer<spdlog::logger> logger);
+
+		static void SetUpTable();
 		
 		void PrintMessagesTable();
 		void PrintMessage(size_t i, Message& message);
