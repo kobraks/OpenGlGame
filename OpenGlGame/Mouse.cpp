@@ -2,10 +2,11 @@
 #include "Mouse.h"
 
 #include <Windows.h>
+#include <GLFW/glfw3.h>
 
 #include "Window.h"
 #include "Application.h"
-#include "GLFW/glfw3.h"
+#include "LuaUtils.h"
 
 namespace
 {
@@ -121,47 +122,35 @@ namespace Game
 		SetCursorPos(x, y);
 	}
 
+#define ENUM_TO_STRING_ENUM(e, v) #v,  static_cast<int>(e::##v)
+
 	void Mouse::RegisterLua(sol::state &lua)
 	{
-		auto buttonTable = lua.create_table_with(
-		                                         "Button0",
-		                                         Button0,
-		                                         "Button1",
-		                                         Button1,
-		                                         "Button2",
-		                                         Button2,
-		                                         "Button3",
-		                                         Button3,
-		                                         "Button4",
-		                                         Button4,
-		                                         "Button5",
-		                                         Button5,
-		                                         "Button6",
-		                                         Button6,
-		                                         "Button7",
-		                                         Button7,
-		                                         "Left",
-		                                         ButtonLeft,
-		                                         "Middle",
-		                                         ButtonMiddle,
-		                                         "Right",
-		                                         ButtonRight
-		                                        );
+		auto buttonEnum = lua.create_table_with();
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button0));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button1));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button2));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button3));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button4));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button5));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button6));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button7));
+		buttonEnum.set("Left", static_cast<int>(ButtonLeft));
+		buttonEnum.set("Middle", static_cast<int>(ButtonMiddle));
+		buttonEnum.set("Right", static_cast<int>(ButtonRight));
 
-		lua.create_named_table(
-		                       "Mouse",
-		                       "Buttons",
-		                       buttonTable,
-		                       "IsButtonPressed",
-		                       IsMouseButtonPressed,
-		                       "GetPosition",
-		                       GetMousePosition,
-		                       "SetPosition",
-		                       SetMousePosition,
-		                       "GetScreenPosition",
-		                       GetMouseScreenPosition,
-		                       "SetMouseScreenPosition",
-		                       SetMouseScreenPosition
-		                      );
+		auto mouseMetaTable                      = lua.create_table_with();
+		mouseMetaTable["IsButtonPressed"]        = IsMouseButtonPressed;
+		mouseMetaTable["GetPosition"]            = GetMousePosition;
+		mouseMetaTable["SetPosition"]            = SetMousePosition;
+		mouseMetaTable["GetScreenPosition"]      = GetMouseScreenPosition;
+		mouseMetaTable["SetMouseScreenPosition"] = SetMouseScreenPosition;
+		mouseMetaTable["Buttons"]                = buttonEnum;
+
+		SetAsReadOnlyTable(mouseMetaTable["Buttons"], buttonEnum, Deny);
+
+		auto mouseTable = lua.create_named_table("Mouse");
+
+		SetAsReadOnlyTable(mouseTable, mouseMetaTable, Deny);
 	}
 }

@@ -2,6 +2,7 @@
 #include "Application.h"
 
 #include <GLFW/glfw3.h>
+#include <Lua/lua.hpp>
 
 #include "Log.h"
 #include "LuaRegister.h"
@@ -18,6 +19,7 @@
 #include "ImGui.h"
 #include "Keyboard.h"
 #include "TextureLoader.h"
+#include "LuaUtils.h"
 
 #include "ApplicationEvent.h"
 
@@ -118,8 +120,8 @@ namespace
 
 	void SetCursorMode(int cursorMode)
 	{
-		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(Game::CursorMode::Hidden) || cursorMode == static_cast<int
-		>(Game::CursorMode::Disabled))
+		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(Game::CursorMode::Hidden) || cursorMode == static_cast<
+			int>(Game::CursorMode::Disabled))
 			Game::Application::Get().GetWindow().SetCursorMode(static_cast<Game::CursorMode>(cursorMode));
 		else
 			SCRIPT_LOG_ERROR(
@@ -307,16 +309,6 @@ namespace Game
 		InitializeLua();
 		InitializeSettings();
 
-		m_Properties->Register("Settings", *m_Lua);
-
-		m_Lua->set("test", sol::property(
-		                                 []()
-		                                 {
-			                                 LOG_CRITICAL("{}", 10);
-			                                 return 10u;
-		                                 }
-		                                , [](uint32_t v) { LOG_CRITICAL("{}", v); }));
-
 		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
@@ -352,83 +344,94 @@ namespace Game
 		}
 	}
 
+#define ENUM_TO_STRING_ENUM(e, v) #v,  static_cast<int>(e::##v)
+#define BIND_FUNCTION(f) #f, f
+
 	void Application::InitializeLua()
 	{
 		LOG_INFO("Starting Lua machine");
 		m_Lua     = MakeScope<sol::state>();
 		auto &lua = *m_Lua;
 
+		LOG_DEBUG("Opening Lua libraries");
 		lua.open_libraries(sol::lib::base);
 
+		LOG_TRACE("Registering Application arguments");
 		lua["ArgumentCount"] = m_Arguments.size();
 		lua.create_named_table("Arguments");
 
 		for(size_t i                = 0; i < m_Arguments.size(); ++i)
 			lua["Arguments"][i + 1] = m_Arguments[0];
 
+		LOG_TRACE("Registering Mouse and Keyboard");
 		Mouse::RegisterLua(lua);
 		Keyboard::RegisterLua(lua);
+		LOG_TRACE("Registering Input modes");
 
-		auto InputModeTable = lua.create_table_with(
-		                                            "LockKeyModes",
-		                                            static_cast<int>(InputMode::LockKeyModes),
-		                                            "RawMouseMotion",
-		                                            static_cast<int>(InputMode::RawMouseMotion),
-		                                            "StickyKeys",
-		                                            static_cast<int>(InputMode::StickyKeys),
-		                                            "StickyMouseButtons",
-		                                            static_cast<int>(InputMode::StickyMouseButtons)
-		                                           );
-		auto CursorModeTable = lua.create_table_with(
-		                                             "Normal",
-		                                             static_cast<int>(CursorMode::Normal),
-		                                             "Hidden",
-		                                             static_cast<int>(CursorMode::Hidden),
-		                                             "Disabled",
-		                                             static_cast<int>(CursorMode::Disabled)
-		                                            );
+		auto inputModeTable = lua.create_table_with();
+		inputModeTable.set(ENUM_TO_STRING_ENUM(InputMode, LockKeyModes));
+		inputModeTable.set(ENUM_TO_STRING_ENUM(InputMode, RawMouseMotion));
+		inputModeTable.set(ENUM_TO_STRING_ENUM(InputMode, StickyKeys));
+		inputModeTable.set(ENUM_TO_STRING_ENUM(InputMode, StickyMouseButtons));
 
-		lua.create_named_table(
-		                       "Input",
-		                       "CursorMode",
-		                       CursorModeTable,
-		                       "SetCursorMode",
-		                       SetCursorMode,
-		                       "GetCursorMode",
-		                       GetCursorMode,
-		                       "EnableMode",
-		                       EnableInputMode,
-		                       "Mode",
-		                       InputModeTable,
-		                       "DisableMode",
-		                       DisableInputMode,
-		                       "GetMode",
-		                       GetInputMode,
-		                       "IsRawMouseMotionSupported",
-		                       [this]() { return m_Window->IsRawMouseInputSupported(); }
-		                      );
+		auto cursorModeTable = lua.create_table_with();
+		cursorModeTable.set(ENUM_TO_STRING_ENUM(CursorMode, Normal));
+		cursorModeTable.set(ENUM_TO_STRING_ENUM(CursorMode, Hidden));
+		cursorModeTable.set(ENUM_TO_STRING_ENUM(CursorMode, Disabled));
 
-		lua["Input"]["Keyboard"] = lua["Keyboard"];
-		lua["Input"]["Mouse"]    = lua["Mouse"];
 
-		lua.create_named_table(
-		                       "Application",
-		                       "Exit",
-		                       [this]() { Exit(0); },
-		                       "Quit",
-		                       [this](int exitCode) { Exit(exitCode); },
-		                       "GetTime",
-		                       [this]() { return m_Clock.GetElapsedTime().AsSeconds(); }
-		                      );
+		auto inputMetaTable = lua.create_table_with();
+		inputMetaTable.set_function(BIND_FUNCTION(SetCursorMode));
+		inputMetaTable.set_function(BIND_FUNCTION(GetCursorMode));
+		inputMetaTable.set_function("EnableMode", EnableInputMode);
+		inputMetaTable.set_function("DisableMode", DisableInputMode);
+		inputMetaTable.set_function("GetInputMode", GetInputMode);
+		inputMetaTable.set_function("GetInputMode", GetInputMode);
+		inputMetaTable.set_function("IsRawMouseMotionSupported", [this]() { return m_Window->IsRawMouseInputSupported(); });
+		inputMetaTable.set("Keyboard", lua["Keyboard"]);
+		inputMetaTable.set("Keyboard", lua["Mouse"]);
+		inputMetaTable.set("Mode", inputModeTable);
+		inputMetaTable.set("CursorMode", cursorModeTable);
+		
+		SetAsReadOnlyTable(inputMetaTable["Mode"], inputModeTable, Deny);
+		SetAsReadOnlyTable(inputMetaTable["CursorMode"], cursorModeTable, Deny);
 
+		auto inputTable = lua.create_named_table("Input");
+
+		SetAsReadOnlyTable(inputTable, inputMetaTable, Deny);
+
+		LOG_TRACE("Registering Application");
+		m_Properties->Register("Properties", lua);
+
+		auto applicationMetaTable = lua.create_table_with();
+		applicationMetaTable["GetTime"] = [this]() { return m_Clock.GetElapsedTime().AsSeconds(); };
+		applicationMetaTable["Properties"] = lua["Properties"];
+		applicationMetaTable["Exit"] = [this](sol::variadic_args args)
+		                       {
+			                       if(args.size() == 1)
+			                       {
+				                       if(args[0].is<int>())
+					                       Exit(args[0].as<int>());
+				                       else
+					                       SCRIPT_LOG_ERROR("Unknown parameter type");
+			                       }
+			                       else if(args.size() == 0)
+				                       Exit(0);
+			                       else
+				                       SCRIPT_LOG_ERROR("Called with too big amount of arguments");
+		                       };
+
+		auto applicationTable = lua.create_named_table("Application");
+		SetAsReadOnlyTable(applicationTable, applicationMetaTable, Deny);
+		
+		lua["Properties"] = sol::nil;
 		lua["Exit"] = lua["Application"]["Exit"];
-		lua["Quit"] = lua["Application"]["Quit"];
 	}
 
 	void Application::InitializeSettings()
 	{
-		m_Properties->Add<float>("UpdateRate", [this]()->float{return this->GetUpdateRate(); }, [this](float value) { this->SetUpdateRate(value); });
-		m_Properties->Add<uint64_t>("MaxUpdates", [this]()->uint64_t{return this->GetMaxUpdates(); }, [this](uint64_t value) { this->SetMaxUpdates(value); });
+		m_Properties->Add<float>("UpdateRate", [this]()->float { return this->GetUpdateRate(); }, [this](float value) { this->SetUpdateRate(value); });
+		m_Properties->Add<uint64_t>("MaxUpdates", [this]()->uint64_t { return this->GetMaxUpdates(); }, [this](uint64_t value) { this->SetMaxUpdates(value); });
 		m_Properties->Add<uint32_t>(
 		                            "WindowWidth",
 		                            [this]() { return this->GetWindow().GetSize().Width; },

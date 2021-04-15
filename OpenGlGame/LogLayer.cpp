@@ -9,7 +9,7 @@
 #include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
 #include "Keyboard.h"
-#include "Utils.h"
+#include "LuaUtils.h"
 
 #include "KeyEvent.h"
 
@@ -147,6 +147,8 @@ namespace Game
 				{
 					Combo("Min severity to popup", m_MinLogLevelToPopUp, LogPopUpLevels);
 				}
+
+				ImGui::Separator();
 			}
 
 			// bool copyButton = ImGui::Button("Copy");
@@ -185,7 +187,7 @@ namespace Game
 			{
 				if(!m_Show)
 					m_ScrollToBottom = true;
-				
+
 				m_Show = true;
 			}
 		}
@@ -294,8 +296,9 @@ namespace Game
 		}
 	}
 
-	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings;
-	constexpr int TABLE_COLUMN_COUNT      = 4;
+	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_BordersInnerV |
+		ImGuiTableFlags_NoSavedSettings;
+	constexpr int TABLE_COLUMN_COUNT = 4;
 
 	void LogLayer::SetUpTable()
 	{

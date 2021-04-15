@@ -76,6 +76,12 @@
     <Filter Include="Source Files\Scene">
       <UniqueIdentifier>{5aa59b7c-88e1-474a-95a6-7964ba020b56}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Utils">
+      <UniqueIdentifier>{242198c5-4563-4bf3-a0b6-dcb53ff7198a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utils">
+      <UniqueIdentifier>{7b5b6020-0bf3-4142-8027-4d20e74e8921}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -91,9 +97,6 @@
       <Filter>Source Files\OpenGl</Filter>
     </ClCompile>
     <ClCompile Include="Log.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Texture.cpp">
@@ -162,9 +165,6 @@
     <ClCompile Include="Thread.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ImGuiUtils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Mouse.cpp">
       <Filter>Source Files\Input</Filter>
     </ClCompile>
@@ -197,9 +197,6 @@
     </ClCompile>
     <ClCompile Include="PropertyManager.cpp">
       <Filter>Source Files\Property</Filter>
-    </ClCompile>
-    <ClCompile Include="ImGuiGuard.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Color.cpp">
       <Filter>Source Files</Filter>
@@ -258,6 +255,18 @@
     <ClCompile Include="SceneCamera.cpp">
       <Filter>Source Files\Scene</Filter>
     </ClCompile>
+    <ClCompile Include="LuaUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiUtils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGuiGuard.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Source Files\Utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -282,9 +291,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="pch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="VertexArray.h">
@@ -386,9 +392,6 @@
     <ClInclude Include="Thread.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ImGuiUtils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="KeyCodes.h">
       <Filter>Header Files\Input</Filter>
     </ClInclude>
@@ -430,9 +433,6 @@
     </ClInclude>
     <ClInclude Include="PropertyManager.h">
       <Filter>Header Files\Properties</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGuiGuard.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GLEnums.h">
       <Filter>Header Files\OpenGl</Filter>
@@ -521,8 +521,17 @@
     <ClInclude Include="LuaScriptComponent.h">
       <Filter>Header Files\Entity\Components</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
+    <ClInclude Include="LuaUtils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiGuard.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGuiUtils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Utils.h">
+      <Filter>Header Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

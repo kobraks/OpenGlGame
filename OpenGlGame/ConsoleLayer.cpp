@@ -8,21 +8,22 @@
 #include "imgui.h"
 #include "ImGuiGuard.h"
 #include "ImGuiUtils.h"
-#include "Utils.h"
 #include "KeyEvent.h"
+#include "LuaUtils.h"
 
 namespace Game
 {
-	static constexpr uint32_t InputTextFlags = ImGuiInputTextFlags_CallbackHistory |
-		ImGuiInputTextFlags_EnterReturnsTrue;
+	static constexpr uint32_t InputTextFlags = ImGuiInputTextFlags_CallbackHistory | ImGuiInputTextFlags_EnterReturnsTrue;
 
 	ConsoleLayer::ConsoleLayer() : Layer("ConsoleLayer") {}
 
 	void ConsoleLayer::OnAttach()
 	{
-		m_App = &Application::Get();
-		auto& game= *m_App;
-		
+		m_App      = &Application::Get();
+		auto &game = *m_App;
+
+		game.RegisterShortcut(Shortcut([this]() { m_Show = !m_Show; }, Key::Tilde));
+
 		m_Lua = &game.GetLua();
 		m_Messages.reserve(255);
 
@@ -33,7 +34,8 @@ namespace Game
 		if(file.good() && file.is_open())
 		{
 			std::string line;
-			while(std::getline(file, line)) m_History.emplace_back(line);
+			while(std::getline(file, line))
+				m_History.emplace_back(line);
 		}
 
 		file.close();
@@ -41,19 +43,26 @@ namespace Game
 
 	void ConsoleLayer::OnImGuiRender()
 	{
-		if(!m_Show) return;
+		if(!m_Show)
+			return;
 
-		ImGuiMainWindowProps props {"Console", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
-		ImGuiWindowSize size{ {520, 600}, ImGuiCond_Appearing};
+		ImGuiMainWindowProps props{"Console", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
+		ImGuiWindowSize size{{520, 600}, ImGuiCond_Appearing};
 		ImGuiUniqueGuard<ImGuiMainWindow> guard(props, size);
 
 		const float footerHeightToReserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 
 		{
-			ImGuiChildWindowProps childProps {"ConsoleLog", {520 - ImGui::GetStyle().ItemSpacing.x, -footerHeightToReserve}, false, ImGuiWindowFlags_HorizontalScrollbar};
+			ImGuiChildWindowProps childProps{
+				"ConsoleLog",
+				{520 - ImGui::GetStyle().ItemSpacing.x, -footerHeightToReserve},
+				false,
+				ImGuiWindowFlags_HorizontalScrollbar
+			};
 			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
 
-			for(auto &[message, color] : m_Messages) ImGui::TextColored(color, message.c_str());
+			for(auto &[message, color] : m_Messages)
+				ImGui::TextColored(color, message.c_str());
 		}
 
 		ImGui::Separator();
@@ -61,7 +70,7 @@ namespace Game
 		             "",
 		             m_Command,
 		             InputTextFlags,
-		             [](ImGuiInputTextCallbackData *data){return static_cast<ConsoleLayer*>(data->UserData)->TextCallback(data);},
+		             [](ImGuiInputTextCallbackData *data) { return static_cast<ConsoleLayer*>(data->UserData)->TextCallback(data); },
 		             this
 		            ))
 		{
@@ -69,14 +78,26 @@ namespace Game
 			m_History.emplace_back(m_Command);
 			m_ReclaimFocus = true;
 
-			auto executionResult = m_Lua->do_string(m_Command);
-			if(!executionResult.valid())
+			try
 			{
-				sol::error error = executionResult;
-				PRINT_ERROR("{}", error.what());
+				auto executionResult = m_Lua->do_string(m_Command);
+				if(!executionResult.valid())
+				{
+					sol::error error = executionResult;
+					PRINT_ERROR("{}", error.what());
 
-				m_Messages.emplace_back(std::make_pair(error.what(), Color(1.f, 0.f, 0.f, 1.f)));
+					m_Messages.emplace_back(std::make_pair(error.what(), Color(1.f, 0.f, 0.f, 1.f)));
+				}
 			}
+			catch(std::exception &ex)
+			{
+				LOG_CRITICAL("{}", ex.what());
+			}
+			catch(...)
+			{
+				LOG_CRITICAL("Unknown exception");
+			}
+
 
 			m_HistoryPos = -1;
 			m_Command.clear();
@@ -90,25 +111,15 @@ namespace Game
 		}
 	}
 
-	void ConsoleLayer::OnEvent(Event &event)
-	{
-		if (event.GetEventType() == KeyReleasedEvent::GetStaticType())
-		{
-			auto e = dynamic_cast<KeyReleasedEvent*>(&event);
-			if (e)
-				if (e->GetKeyCode() == Key::Tilde)
-					m_Show = !m_Show;
-		}
-	}
+	void ConsoleLayer::OnEvent(Event &event) { }
 
 	void ConsoleLayer::OnDetach()
 	{
 		std::ofstream file("ConsoleHistory.txt", std::ios::trunc);
 
 		if(file.good())
-		{
-			for(const auto historyEntry : m_History) file << historyEntry << "\n";
-		}
+			for(const auto &historyEntry : m_History)
+				file << historyEntry << "\n";
 
 		file.close();
 	}
@@ -140,12 +151,12 @@ namespace Game
 		                         },
 		                         "Clear",
 		                         [&]() { Clear(); },
-								"ClearHistory",
-									 [&](){ClearHistory();}
+		                         "ClearHistory",
+		                         [&]() { ClearHistory(); }
 		                        );
 
-		state["Clear"] = state["Console"]["Clear"];
-		state["Print"] = state["Console"]["Print"];
+		state["Clear"]        = state["Console"]["Clear"];
+		state["Print"]        = state["Console"]["Print"];
 		state["ClearHistory"] = state["Console"]["ClearHistory"];
 	}
 
@@ -159,14 +170,18 @@ namespace Game
 
 			if(myData->EventKey == ImGuiKey_UpArrow)
 			{
-				if(m_HistoryPos == -1) m_HistoryPos = static_cast<int32_t>(m_History.size() - 1ull);
-				else if(m_HistoryPos > 0) m_HistoryPos--;
+				if(m_HistoryPos == -1)
+					m_HistoryPos = static_cast<int32_t>(m_History.size() - 1ull);
+				else
+					if(m_HistoryPos > 0)
+						m_HistoryPos--;
 			}
 			else if(myData->EventKey == ImGuiKey_DownArrow)
 			{
 				if(m_HistoryPos != -1)
 				{
-					if(++m_HistoryPos >= m_History.size()) --m_HistoryPos;
+					if(++m_HistoryPos >= m_History.size())
+						--m_HistoryPos;
 				}
 			}
 
