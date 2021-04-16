@@ -1,16 +1,9 @@
 #include "pch.h"
 #include "Scene.h"
 
-
-#include "CameraComponent.h"
 #include "Entity.h"
-#include "LightComponent.h"
-#include "LuaScriptComponent.h"
-#include "ModelComponent.h"
-#include "NativeScirptComponent.h"
-#include "TransformComponent.h"
 #include "Renderer.h"
-#include "TagComponent.h"
+#include "Component.h"
 
 namespace Game
 {
@@ -56,9 +49,9 @@ namespace Game
 			{
 				auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
 
-				if(camera.IsPrimary())
+				if(camera.Primary)
 				{
-					mainCamera      = &camera.GetCamera();
+					mainCamera      = &camera.Camera;
 					cameraTransform = transform.GetTransform();
 					break;
 				}
@@ -106,8 +99,8 @@ namespace Game
 		for(auto entity : view)
 		{
 			auto &cameraComponent = view.get<CameraComponent>(entity);
-			if(!cameraComponent.HasFixedAspectRatio())
-				cameraComponent.GetCamera().SetViewportSize(width, height);
+			if(!cameraComponent.FixedAspectRatio)
+				cameraComponent.Camera.SetViewportSize(width, height);
 		}
 	}
 
@@ -117,7 +110,7 @@ namespace Game
 		for(auto entity : view)
 		{
 			const auto &camera = view.get<CameraComponent>(entity);
-			if(camera.IsPrimary())
+			if(camera.Primary)
 				return Entity{entity, this};
 		}
 
@@ -132,6 +125,6 @@ namespace Game
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, CameraComponent &component)
 	{
-		component.GetCamera().SetViewportSize(m_ViewportWidth, m_ViewportHeight);
+		component.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 	}
 }

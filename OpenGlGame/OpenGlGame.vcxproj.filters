@@ -222,9 +222,6 @@
     <ClCompile Include="Entity.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="TransformComponent.cpp">
-      <Filter>Source Files\Entity\Component</Filter>
-    </ClCompile>
     <ClCompile Include="EntityLuaHandle.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
@@ -233,9 +230,6 @@
     </ClCompile>
     <ClCompile Include="ShaderLoader.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ModelComponent.cpp">
-      <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files\Model</Filter>
@@ -248,9 +242,6 @@
     </ClCompile>
     <ClCompile Include="Scene.cpp">
       <Filter>Source Files\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="CameraComponent.cpp">
-      <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
     <ClCompile Include="SceneCamera.cpp">
       <Filter>Source Files\Scene</Filter>
@@ -266,6 +257,9 @@
     </ClCompile>
     <ClCompile Include="Utils.cpp">
       <Filter>Source Files\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Component.cpp">
+      <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -464,9 +458,6 @@
     <ClInclude Include="Entity.h">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="TransformComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
-    </ClInclude>
     <ClInclude Include="EntityLuaHandle.h">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
@@ -481,9 +472,6 @@
     </ClInclude>
     <ClInclude Include="ShaderLoader.h">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ModelComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
     </ClInclude>
     <ClInclude Include="Model.h">
       <Filter>Header Files\Model</Filter>
@@ -500,26 +488,11 @@
     <ClInclude Include="Scene.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="CameraComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
-    </ClInclude>
     <ClInclude Include="SceneCamera.h">
       <Filter>Header Files\Scene</Filter>
     </ClInclude>
-    <ClInclude Include="TagComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
-    </ClInclude>
     <ClInclude Include="ScriptableEntity.h">
       <Filter>Header Files\Entity</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeScirptComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="LightComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
-    </ClInclude>
-    <ClInclude Include="LuaScriptComponent.h">
-      <Filter>Header Files\Entity\Components</Filter>
     </ClInclude>
     <ClInclude Include="LuaUtils.h">
       <Filter>Header Files\Utils</Filter>

@@ -2,8 +2,6 @@
 #include "Entity.h"
 
 #include "EntityLuaHandle.h"
-#include "Component.h"
-#include "TransformComponent.h"
 
 namespace Game
 {
