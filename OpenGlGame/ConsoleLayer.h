@@ -15,6 +15,7 @@ namespace Game
 	{
 		bool m_Show = true;
 		bool m_ReclaimFocus = false;
+		bool m_ScrollToBottom = true;
 		
 		sol::state* m_Lua = nullptr;
 

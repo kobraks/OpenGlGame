@@ -63,6 +63,12 @@ namespace Game
 
 			for(auto &[message, color] : m_Messages)
 				ImGui::TextColored(color, message.c_str());
+
+			if (m_ScrollToBottom)
+			{
+				m_ScrollToBottom = false;
+				ImGui::SetScrollHereY(1.f);
+			}
 		}
 
 		ImGui::Separator();
@@ -74,30 +80,20 @@ namespace Game
 		             this
 		            ))
 		{
-			m_Messages.emplace_back(std::make_pair(fmt::format("> {}", m_Command), Color(0.f, 1.f, 0.f, 1.f)));
+			PrintMessage(fmt::format("> {}", m_Command), Color(0.f, 1.f, 0.f, 1.f));
+			// m_Messages.emplace_back(std::make_pair(fmt::format("> {}", m_Command), Color(0.f, 1.f, 0.f, 1.f)));
 			m_History.emplace_back(m_Command);
 			m_ReclaimFocus = true;
 
-			try
+			const auto executionResult = m_Lua->do_string(m_Command);
+			if(!executionResult.valid())
 			{
-				auto executionResult = m_Lua->do_string(m_Command);
-				if(!executionResult.valid())
-				{
-					sol::error error = executionResult;
-					PRINT_ERROR("{}", error.what());
+				sol::error error = executionResult;
+				PRINT_ERROR("{}", error.what());
 
-					m_Messages.emplace_back(std::make_pair(error.what(), Color(1.f, 0.f, 0.f, 1.f)));
-				}
+				PrintMessage(error.what(), Color(1.f, 0.f, 0.f, 1.f));
+				// m_Messages.emplace_back(std::make_pair(error.what(), Color(1.f, 0.f, 0.f, 1.f)));
 			}
-			catch(std::exception &ex)
-			{
-				LOG_CRITICAL("{}", ex.what());
-			}
-			catch(...)
-			{
-				LOG_CRITICAL("Unknown exception");
-			}
-
 
 			m_HistoryPos = -1;
 			m_Command.clear();
@@ -137,27 +133,25 @@ namespace Game
 
 	void ConsoleLayer::PrintMessage(const std::string &message, const Color &color)
 	{
+		m_ScrollToBottom = true;
 		m_Messages.emplace_back(std::make_pair(message, color));
 	}
 
 	void ConsoleLayer::Register(sol::state &state)
 	{
-		state.create_named_table(
-		                         "Console",
-		                         "Print",
-		                         [&](sol::variadic_args args)
-		                         {
-			                         PrintMessage(ToString(args.lua_state(), args));
-		                         },
-		                         "Clear",
-		                         [&]() { Clear(); },
-		                         "ClearHistory",
-		                         [&]() { ClearHistory(); }
-		                        );
+		auto consoleMetaTable = state.create_table_with();
 
-		state["Clear"]        = state["Console"]["Clear"];
-		state["Print"]        = state["Console"]["Print"];
-		state["ClearHistory"] = state["Console"]["ClearHistory"];
+		consoleMetaTable.set_function("Print", [&](sol::variadic_args args) { PrintMessage(ToString(args.lua_state(), args)); });
+		consoleMetaTable.set_function("Clear", [&]() { Clear(); });
+		consoleMetaTable.set_function("ClearHistory", [&]() { ClearHistory(); });
+
+		auto consoleTable = state.create_named_table("Console");
+
+		SetAsReadOnlyTable(consoleTable, consoleMetaTable, Deny);
+
+		state["Clear"]        = consoleTable["Clear"];
+		state["Print"]        = consoleTable["Print"];
+		state["ClearHistory"] = consoleTable["ClearHistory"];
 	}
 
 	int ConsoleLayer::TextCallback(void *data)
@@ -172,9 +166,8 @@ namespace Game
 			{
 				if(m_HistoryPos == -1)
 					m_HistoryPos = static_cast<int32_t>(m_History.size() - 1ull);
-				else
-					if(m_HistoryPos > 0)
-						m_HistoryPos--;
+				else if(m_HistoryPos > 0)
+					m_HistoryPos--;
 			}
 			else if(myData->EventKey == ImGuiKey_DownArrow)
 			{

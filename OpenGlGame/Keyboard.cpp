@@ -8,132 +8,135 @@
 
 #include "Window.h"
 #include "Application.h"
+#include "LuaUtils.h"
 
 namespace
 {
-	void RegisterLuaKeys(sol::state &lua)
-	{
-		auto keys = lua["Keyboard"]["Key"];
+#define CREATE_ENUM_BIND(e, v) #v, Game::##e##::##v
 	
-		keys["Space"]          = Game::Key::Space;
-		keys["Quote"]          = Game::Key::Quote;
-		keys["Comma"]          = Game::Key::Comma;
-		keys["Hyphen"]         = Game::Key::Hyphen;
-		keys["Period"]         = Game::Key::Period;
-		keys["Slash"]          = Game::Key::Slash;
-		keys["Num0"]           = Game::Key::Num0;
-		keys["Num1"]           = Game::Key::Num1;
-		keys["Num2"]           = Game::Key::Num2;
-		keys["Num3"]           = Game::Key::Num3;
-		keys["Num4"]           = Game::Key::Num4;
-		keys["Num5"]           = Game::Key::Num5;
-		keys["Num6"]           = Game::Key::Num6;
-		keys["Num7"]           = Game::Key::Num7;
-		keys["Num8"]           = Game::Key::Num8;
-		keys["Num9"]           = Game::Key::Num9;
-		keys["Semicolon"]      = Game::Key::Semicolon;
-		keys["Equal"]          = Game::Key::Equal;
-		keys["A"]              = Game::Key::A;
-		keys["B"]              = Game::Key::B;
-		keys["C"]              = Game::Key::C;
-		keys["D"]              = Game::Key::D;
-		keys["E"]              = Game::Key::E;
-		keys["F"]              = Game::Key::F;
-		keys["G"]              = Game::Key::G;
-		keys["H"]              = Game::Key::H;
-		keys["I"]              = Game::Key::I;
-		keys["J"]              = Game::Key::J;
-		keys["K"]              = Game::Key::K;
-		keys["L"]              = Game::Key::L;
-		keys["M"]              = Game::Key::M;
-		keys["N"]              = Game::Key::N;
-		keys["O"]              = Game::Key::O;
-		keys["P"]              = Game::Key::P;
-		keys["Q"]              = Game::Key::Q;
-		keys["R"]              = Game::Key::R;
-		keys["S"]              = Game::Key::S;
-		keys["T"]              = Game::Key::T;
-		keys["U"]              = Game::Key::U;
-		keys["V"]              = Game::Key::V;
-		keys["W"]              = Game::Key::W;
-		keys["X"]              = Game::Key::X;
-		keys["Y"]              = Game::Key::Y;
-		keys["Z"]              = Game::Key::Z;
-		keys["LeftBracket"]    = Game::Key::LeftBracket;
-		keys["Backslash"]      = Game::Key::Backslash;
-		keys["RightBracket"]   = Game::Key::RightBracket;
-		keys["Tilde"]          = Game::Key::Tilde;
-		keys["World1"]         = Game::Key::World1;
-		keys["World2"]         = Game::Key::World2;
-		keys["Escape"]         = Game::Key::Escape;
-		keys["Enter"]          = Game::Key::Enter;
-		keys["Tab"]            = Game::Key::Tab;
-		keys["Backspace"]      = Game::Key::Backspace;
-		keys["Insert"]         = Game::Key::Insert;
-		keys["Delete"]         = Game::Key::Delete;
-		keys["Right"]          = Game::Key::Right;
-		keys["Left"]           = Game::Key::Left;
-		keys["Down"]           = Game::Key::Down;
-		keys["Up"]             = Game::Key::Up;
-		keys["PageUp"]         = Game::Key::PageUp;
-		keys["PageDown"]       = Game::Key::PageDown;
-		keys["Home"]           = Game::Key::Home;
-		keys["End"]            = Game::Key::End;
-		keys["CapsLock"]       = Game::Key::CapsLock;
-		keys["ScrollLock"]     = Game::Key::ScrollLock;
-		keys["NumLock"]        = Game::Key::NumLock;
-		keys["PrintScreen"]    = Game::Key::PrintScreen;
-		keys["Pause"]          = Game::Key::Pause;
-		keys["F1"]             = Game::Key::F1;
-		keys["F2"]             = Game::Key::F2;
-		keys["F3"]             = Game::Key::F3;
-		keys["F4"]             = Game::Key::F4;
-		keys["F5"]             = Game::Key::F5;
-		keys["F6"]             = Game::Key::F6;
-		keys["F7"]             = Game::Key::F7;
-		keys["F8"]             = Game::Key::F8;
-		keys["F9"]             = Game::Key::F9;
-		keys["F10"]            = Game::Key::F10;
-		keys["F11"]            = Game::Key::F11;
-		keys["F12"]            = Game::Key::F12;
-		keys["F13"]            = Game::Key::F13;
-		keys["F14"]            = Game::Key::F14;
-		keys["F15"]            = Game::Key::F15;
-		keys["F16"]            = Game::Key::F16;
-		keys["F17"]            = Game::Key::F17;
-		keys["F18"]            = Game::Key::F18;
-		keys["F19"]            = Game::Key::F19;
-		keys["F20"]            = Game::Key::F20;
-		keys["F21"]            = Game::Key::F21;
-		keys["F22"]            = Game::Key::F22;
-		keys["F23"]            = Game::Key::F23;
-		keys["F24"]            = Game::Key::F24;
-		keys["Numpad0"]        = Game::Key::Numpad0;
-		keys["Numpad1"]        = Game::Key::Numpad1;
-		keys["Numpad2"]        = Game::Key::Numpad2;
-		keys["Numpad3"]        = Game::Key::Numpad3;
-		keys["Numpad4"]        = Game::Key::Numpad4;
-		keys["Numpad5"]        = Game::Key::Numpad5;
-		keys["Numpad6"]        = Game::Key::Numpad6;
-		keys["Numpad7"]        = Game::Key::Numpad7;
-		keys["Numpad8"]        = Game::Key::Numpad8;
-		keys["Numpad9"]        = Game::Key::Numpad9;
-		keys["NumpadDecimal"]  = Game::Key::NumpadDecimal;
-		keys["NumpadDivide"]   = Game::Key::NumpadDivide;
-		keys["NumpadMultiply"] = Game::Key::NumpadMultiply;
-		keys["NumpadSubtract"] = Game::Key::NumpadSubtract;
-		keys["NumpadAdd"]      = Game::Key::NumpadAdd;
-		keys["NumpadEnter"]    = Game::Key::NumpadEnter;
-		keys["NumpadEqual"]    = Game::Key::NumpadEqual;
-		keys["LeftShift"]      = Game::Key::LeftShift;
-		keys["LeftControl"]    = Game::Key::LeftControl;
-		keys["LeftAlt"]        = Game::Key::LeftAlt;
-		keys["LeftSuper"]      = Game::Key::LeftSuper;
-		keys["RightShift"]     = Game::Key::RightShift;
-		keys["RightControl"]   = Game::Key::RightControl;
-		keys["RightAlt"]       = Game::Key::RightAlt;
-		keys["RightSuper"]     = Game::Key::RightSuper;
-		keys["Menu"]           = Game::Key::Menu;
+	sol::table RegisterLuaKeys(sol::state &lua)
+	{
+		auto keys = lua.create_table_with();
+
+		keys.set(CREATE_ENUM_BIND(Key, Space));
+		keys.set(CREATE_ENUM_BIND(Key, Quote));
+		keys.set(CREATE_ENUM_BIND(Key, Comma));
+		keys.set(CREATE_ENUM_BIND(Key, Hyphen));
+		keys.set(CREATE_ENUM_BIND(Key, Period));
+		keys.set(CREATE_ENUM_BIND(Key, Slash));
+		keys.set(CREATE_ENUM_BIND(Key, Num0));
+		keys.set(CREATE_ENUM_BIND(Key, Num1));
+		keys.set(CREATE_ENUM_BIND(Key, Num2));
+		keys.set(CREATE_ENUM_BIND(Key, Num3));
+		keys.set(CREATE_ENUM_BIND(Key, Num4));
+		keys.set(CREATE_ENUM_BIND(Key, Num5));
+		keys.set(CREATE_ENUM_BIND(Key, Num6));
+		keys.set(CREATE_ENUM_BIND(Key, Num7));
+		keys.set(CREATE_ENUM_BIND(Key, Num8));
+		keys.set(CREATE_ENUM_BIND(Key, Num9));
+		keys.set(CREATE_ENUM_BIND(Key, Semicolon));
+		keys.set(CREATE_ENUM_BIND(Key, Equal));
+		keys.set(CREATE_ENUM_BIND(Key, A));
+		keys.set(CREATE_ENUM_BIND(Key, B));
+		keys.set(CREATE_ENUM_BIND(Key, C));
+		keys.set(CREATE_ENUM_BIND(Key, D));
+		keys.set(CREATE_ENUM_BIND(Key, E));
+		keys.set(CREATE_ENUM_BIND(Key, F));
+		keys.set(CREATE_ENUM_BIND(Key, G));
+		keys.set(CREATE_ENUM_BIND(Key, H));
+		keys.set(CREATE_ENUM_BIND(Key, I));
+		keys.set(CREATE_ENUM_BIND(Key, J));
+		keys.set(CREATE_ENUM_BIND(Key, K));
+		keys.set(CREATE_ENUM_BIND(Key, L));
+		keys.set(CREATE_ENUM_BIND(Key, M));
+		keys.set(CREATE_ENUM_BIND(Key, N));
+		keys.set(CREATE_ENUM_BIND(Key, O));
+		keys.set(CREATE_ENUM_BIND(Key, P));
+		keys.set(CREATE_ENUM_BIND(Key, Q));
+		keys.set(CREATE_ENUM_BIND(Key, R));
+		keys.set(CREATE_ENUM_BIND(Key, S));
+		keys.set(CREATE_ENUM_BIND(Key, T));
+		keys.set(CREATE_ENUM_BIND(Key, U));
+		keys.set(CREATE_ENUM_BIND(Key, V));
+		keys.set(CREATE_ENUM_BIND(Key, W));
+		keys.set(CREATE_ENUM_BIND(Key, X));
+		keys.set(CREATE_ENUM_BIND(Key, Y));
+		keys.set(CREATE_ENUM_BIND(Key, Z));
+		keys.set(CREATE_ENUM_BIND(Key, LeftBracket));
+		keys.set(CREATE_ENUM_BIND(Key, Backslash));
+		keys.set(CREATE_ENUM_BIND(Key, RightBracket));
+		keys.set(CREATE_ENUM_BIND(Key, Tilde));
+		keys.set(CREATE_ENUM_BIND(Key, World1));
+		keys.set(CREATE_ENUM_BIND(Key, World2));
+		keys.set(CREATE_ENUM_BIND(Key, Escape));
+		keys.set(CREATE_ENUM_BIND(Key, Enter));
+		keys.set(CREATE_ENUM_BIND(Key, Tab));
+		keys.set(CREATE_ENUM_BIND(Key, Backspace));
+		keys.set(CREATE_ENUM_BIND(Key, Insert));
+		keys.set(CREATE_ENUM_BIND(Key, Delete));
+		keys.set(CREATE_ENUM_BIND(Key, Right));
+		keys.set(CREATE_ENUM_BIND(Key, Left));
+		keys.set(CREATE_ENUM_BIND(Key, Down));
+		keys.set(CREATE_ENUM_BIND(Key, Up));
+		keys.set(CREATE_ENUM_BIND(Key, PageUp));
+		keys.set(CREATE_ENUM_BIND(Key, PageDown));
+		keys.set(CREATE_ENUM_BIND(Key, Home));
+		keys.set(CREATE_ENUM_BIND(Key, End));
+		keys.set(CREATE_ENUM_BIND(Key, CapsLock));
+		keys.set(CREATE_ENUM_BIND(Key, ScrollLock));
+		keys.set(CREATE_ENUM_BIND(Key, NumLock));
+		keys.set(CREATE_ENUM_BIND(Key, PrintScreen));
+		keys.set(CREATE_ENUM_BIND(Key, Pause));
+		keys.set(CREATE_ENUM_BIND(Key, F1));
+		keys.set(CREATE_ENUM_BIND(Key, F2));
+		keys.set(CREATE_ENUM_BIND(Key, F3));
+		keys.set(CREATE_ENUM_BIND(Key, F4));
+		keys.set(CREATE_ENUM_BIND(Key, F5));
+		keys.set(CREATE_ENUM_BIND(Key, F6));
+		keys.set(CREATE_ENUM_BIND(Key, F7));
+		keys.set(CREATE_ENUM_BIND(Key, F8));
+		keys.set(CREATE_ENUM_BIND(Key, F9));
+		keys.set(CREATE_ENUM_BIND(Key, F10));
+		keys.set(CREATE_ENUM_BIND(Key, F11));
+		keys.set(CREATE_ENUM_BIND(Key, F12));
+		keys.set(CREATE_ENUM_BIND(Key, F13));
+		keys.set(CREATE_ENUM_BIND(Key, F14));
+		keys.set(CREATE_ENUM_BIND(Key, F15));
+		keys.set(CREATE_ENUM_BIND(Key, F16));
+		keys.set(CREATE_ENUM_BIND(Key, F17));
+		keys.set(CREATE_ENUM_BIND(Key, F18));
+		keys.set(CREATE_ENUM_BIND(Key, F19));
+		keys.set(CREATE_ENUM_BIND(Key, F20));
+		keys.set(CREATE_ENUM_BIND(Key, F21));
+		keys.set(CREATE_ENUM_BIND(Key, F22));
+		keys.set(CREATE_ENUM_BIND(Key, F23));
+		keys.set(CREATE_ENUM_BIND(Key, F24));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad0));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad1));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad2));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad3));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad4));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad5));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad6));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad7));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad8));
+		keys.set(CREATE_ENUM_BIND(Key, Numpad9));
+		keys.set(CREATE_ENUM_BIND(Key, NumpadDecimal));
+		keys.set(CREATE_ENUM_BIND(Key, NumpadDivide));
+		keys.set(CREATE_ENUM_BIND(Key, NumpadMultiply));
+		keys.set(CREATE_ENUM_BIND(Key, NumpadSubtract));
+		keys.set(CREATE_ENUM_BIND(Key, NumpadAdd));
+		keys.set(CREATE_ENUM_BIND(Key, LeftShift));
+		keys.set(CREATE_ENUM_BIND(Key, LeftControl));
+		keys.set(CREATE_ENUM_BIND(Key, LeftAlt));
+		keys.set(CREATE_ENUM_BIND(Key, LeftSuper));
+		keys.set(CREATE_ENUM_BIND(Key, RightShift));
+		keys.set(CREATE_ENUM_BIND(Key, RightControl));
+		keys.set(CREATE_ENUM_BIND(Key, RightAlt));
+		keys.set(CREATE_ENUM_BIND(Key, RightSuper));
+		keys.set(CREATE_ENUM_BIND(Key, Menu));
+	
+		return keys;
 	}
 
 	bool IsKeyPressed(int32_t key)
@@ -292,9 +295,18 @@ namespace Game
 
 	void Keyboard::RegisterLua(sol::state &lua)
 	{
-		lua.create_named_table("Keyboard", "IsKeyPressed", ::IsKeyPressed);
-		lua["Keyboard"]["Key"] = lua.create_table_with();
+		auto keyboard = lua.create_named_table("Keyboard");
+		
+		auto keyMetaTable = RegisterLuaKeys(lua);
+		auto keyboardMetaTable = lua.create_table_with();
 
+		keyboardMetaTable["IsKeyPressed"] = ::IsKeyPressed;
+		keyboardMetaTable["Key"] = keyMetaTable;
+
+		SetAsReadOnlyTable(keyboardMetaTable["Key"], keyMetaTable, Deny);
+		SetAsReadOnlyTable(keyboard, keyboardMetaTable, Deny);
+
+		
 		RegisterLuaKeys(lua);
 	}
 }

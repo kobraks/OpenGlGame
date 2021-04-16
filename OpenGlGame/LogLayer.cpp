@@ -236,52 +236,29 @@ namespace Game
 		                                          }
 		                                         );
 
-		state.new_usertype<LogLayer>("LogType");
-		state["LogType"]["Level"]           = state["Level"];
-		state["LogType"]["Print"]           = Print;
-		state["LogType"]["Debug"]           = [](const sol::variadic_args &args) { Print(0, args); };
-		state["LogType"]["Info"]            = [](const sol::variadic_args &args) { Print(1, args); };
-		state["LogType"]["Warn"]            = [](const sol::variadic_args &args) { Print(2, args); };
-		state["LogType"]["Error"]           = [](const sol::variadic_args &args) { Print(3, args); };
-		state["LogType"]["Err"]             = [](const sol::variadic_args &args) { Print(4, args); };
-		state["LogType"]["Critical"]        = [](const sol::variadic_args &args) { Print(5, args); };
-		state["LogType"]["SetLevel"]        = [](const int severity) { SetLogLevel(severity); };
-		state["LogType"]["CurrentLevel"]    = []() { return static_cast<int>(Log::GetScriptLogger()->level()); };
-		state["LogType"]["DumpBacktrace"]   = []() { Log::GetScriptLogger()->dump_backtrace(); };
-		state["LogType"]["EnableBacktrace"] = [](size_t n) { Log::GetScriptLogger()->enable_backtrace(n); };
+		auto loggerMetaTable = state.create_table_with();
+
+
+		loggerMetaTable["Level"] = state["Level"];
+
+		loggerMetaTable["Print"]    = Print;
+		loggerMetaTable["Debug"]    = [](const sol::variadic_args &args) { Print(0, args); };
+		loggerMetaTable["Info"]     = [](const sol::variadic_args &args) { Print(1, args); };
+		loggerMetaTable["Warn"]     = [](const sol::variadic_args &args) { Print(2, args); };
+		loggerMetaTable["Error"]    = [](const sol::variadic_args &args) { Print(3, args); };
+		loggerMetaTable["Err"]      = [](const sol::variadic_args &args) { Print(4, args); };
+		loggerMetaTable["Critical"] = [](const sol::variadic_args &args) { Print(5, args); };
+
+		loggerMetaTable["SetLevel"]        = [](const int severity) { SetLogLevel(severity); };
+		loggerMetaTable["CurrentLevel"]    = []() { return static_cast<int>(Log::GetScriptLogger()->level()); };
+		loggerMetaTable["DumpBacktrace"]   = []() { Log::GetScriptLogger()->dump_backtrace(); };
+		loggerMetaTable["EnableBacktrace"] = [](size_t n) { Log::GetScriptLogger()->enable_backtrace(n); };
+
+		auto logTable = state.create_named_table("Log");
+
+		SetAsReadOnlyTable(logTable, loggerMetaTable, Deny);
 
 		state["Level"] = sol::nil;
-		state.set("Log", this);
-
-		// auto table = state.create_named_table(
-		//                          "Log",
-		//                          "Level",
-		//                          enumt,
-		//                          "Print",
-		//                          Print,
-		//                          "Trace",
-		//                          [](const sol::variadic_args &args) { Print(0, args); },
-		//                          "Debug",
-		//                          [](const sol::variadic_args &args) { Print(1, args); },
-		//                          "Info",
-		//                          [](const sol::variadic_args &args) { Print(2, args); },
-		//                          "Warn",
-		//                          [](const sol::variadic_args &args) { Print(3, args); },
-		//                          "Error",
-		//                          [](const sol::variadic_args &args) { Print(4, args); },
-		//                          "Err",
-		//                          [](const sol::variadic_args &args) { Print(4, args); },
-		//                          "Critical",
-		//                          [](const sol::variadic_args &args) { Print(5, args); },
-		//                          "SetLevel",
-		//                          [](const int severity) { SetLogLevel(severity); },
-		//                          "CurrentLevel",
-		//                          []() { static_cast<int>(Log::GetScriptLogger()->level()); },
-		//                          "DumpBacktrace",
-		//                          []() { Log::GetScriptLogger()->dump_backtrace(); },
-		//                          "EnableBacktrace",
-		//                          [](size_t n) { Log::GetScriptLogger()->enable_backtrace(n); }
-		//                         );
 	}
 
 	void LogLayer::LoggerCombo(Pointer<spdlog::logger> logger)
