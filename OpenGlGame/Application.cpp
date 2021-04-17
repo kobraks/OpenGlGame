@@ -14,7 +14,6 @@
 
 #include "Renderer.h"
 #include "ConfigLayer.h"
-#include "GameLayer.h"
 
 #include "ImGui.h"
 #include "Keyboard.h"
@@ -217,7 +216,6 @@ namespace Game
 
 	int Application::Run()
 	{
-		Initialize();
 		glfwSetTime(0.);
 
 		m_Clock.Restart();
@@ -226,8 +224,6 @@ namespace Game
 		Clock updateClock;
 		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
 
-
-		PushLayer(MakePointer<GameLayer>());
 		while(m_Running)
 		{
 			m_Window->GetFunctions().Clear(BufferBit::Color | BufferBit::Depth);

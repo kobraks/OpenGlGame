@@ -5,6 +5,8 @@
 
 namespace Game
 {
+	class Texture;
+
 	constexpr uint32_t MAX_LIGHTS = 10;
 
 	enum class LightType : int32_t
@@ -35,6 +37,8 @@ namespace Game
 		float Constant  = 0.f;
 		float Linear    = 0.f;
 		float Quadratic = 0.f;
+
+		Pointer<Texture> CookieTexture;
 	};
 
 	class Light
@@ -50,6 +54,24 @@ namespace Game
 		{
 			return m_Info;
 		}
+
+		void SetActive(bool active = true)
+		{
+			m_Info.Active = active;
+		}
+
+		bool IsActive() const
+		{
+			return m_Info.Active;
+		}
+
+		glm::vec3 GetDiffuseColor() const { return m_Info.DiffuseColor; }
+		glm::vec3 GetAmbientColor() const { return m_Info.AmbientColor; }
+		glm::vec3 GetSpecularColor() const { return m_Info.SpecularColor; }
+
+		void SetDiffuseColor(const glm::vec3 &diffuse) { m_Info.DiffuseColor = diffuse; }
+		void SetAmbientColor(const glm::vec3 &ambient) { m_Info.AmbientColor = ambient; }
+		void SetSpecularColor(const glm::vec3 &specular) { m_Info.SpecularColor = specular; }
 	};
 
 	class DirectionalLight: public Light
@@ -62,15 +84,7 @@ namespace Game
 
 		glm::vec3 GetDirection() const { return m_Info.Direction; }
 
-		glm::vec3 GetDiffuseColor() const { return m_Info.DiffuseColor; }
-		glm::vec3 GetAmbientColor() const { return m_Info.AmbientColor; }
-		glm::vec3 GetSpecularColor() const { return m_Info.SpecularColor; }
-
 		void SetDirection(const glm::vec3 &direction) { m_Info.Direction = direction; }
-
-		void SetDiffuseColor(const glm::vec3 &diffuse) { m_Info.DiffuseColor = diffuse; }
-		void SetAmbientColor(const glm::vec3 &ambient) { m_Info.AmbientColor = ambient; }
-		void SetSpecularColor(const glm::vec3 &specular) { m_Info.SpecularColor = specular; }
 	};
 
 	class PointLight: public Light
@@ -83,26 +97,18 @@ namespace Game
 
 		glm::vec3 GetPosition() const { return m_Info.Position; }
 
-		glm::vec3 GetDiffuseColor() const { return m_Info.DiffuseColor; }
-		glm::vec3 GetAmbientColor() const { return m_Info.AmbientColor; }
-		glm::vec3 GetSpecularColor() const { return m_Info.SpecularColor; }
-
 		float GetConstant() const { return m_Info.Constant; }
 		float GetLinear() const { return m_Info.Linear; }
 		float GetQuadratic() const { return m_Info.Quadratic; }
 
 		void SetPosition(const glm::vec3 &position) { m_Info.Position = position; }
 
-		void SetDiffuseColor(const glm::vec3 &diffuse) { m_Info.DiffuseColor = diffuse; }
-		void SetAmbientColor(const glm::vec3 &ambient) { m_Info.AmbientColor = ambient; }
-		void SetSpecularColor(const glm::vec3 &specular) { m_Info.SpecularColor = specular; }
-
 		void SetConstant(float constant) { m_Info.Constant = constant; }
 		void SetLinear(float linear) { m_Info.Linear = linear; }
 		void SetQuadratic(float quadratic) { m_Info.Quadratic = quadratic; }
 	};
 
-	class SpotLight: public Light
+	class SpotLight: public PointLight
 	{
 	public:
 		SpotLight()
@@ -110,24 +116,12 @@ namespace Game
 			m_Info.Type = LightType::Spot;
 		}
 
-		glm::vec3 GetPosition() const { return m_Info.Position; }
+		float GetOuterCutOff() const { return m_Info.OuterCutOff; }
+		float GetCutOff() const { return m_Info.CutOff; }
 
-		glm::vec3 GetDiffuseColor() const { return m_Info.DiffuseColor; }
-		glm::vec3 GetAmbientColor() const { return m_Info.AmbientColor; }
-		glm::vec3 GetSpecularColor() const { return m_Info.SpecularColor; }
+		void SetCutOff(float cutOff) { m_Info.CutOff = cutOff; }
+		void SetOuterCutOff(float outerCutOff) { m_Info.OuterCutOff = outerCutOff; }
 
-		float GetConstant() const { return m_Info.Constant; }
-		float GetLinear() const { return m_Info.Linear; }
-		float GetQuadratic() const { return m_Info.Quadratic; }
-
-		void SetPosition(const glm::vec3 &position) { m_Info.Position = position; }
-
-		void SetDiffuseColor(const glm::vec3 &diffuse) { m_Info.DiffuseColor = diffuse; }
-		void SetAmbientColor(const glm::vec3 &ambient) { m_Info.AmbientColor = ambient; }
-		void SetSpecularColor(const glm::vec3 &specular) { m_Info.SpecularColor = specular; }
-
-		void SetConstant(float constant) { m_Info.Constant = constant; }
-		void SetLinear(float linear) { m_Info.Linear = linear; }
-		void SetQuadratic(float quadratic) { m_Info.Quadratic = quadratic; }
+		void SetTexture(Pointer<Texture> texture) { m_Info.CookieTexture = texture; }
 	};
 }

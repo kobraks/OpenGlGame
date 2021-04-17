@@ -22,7 +22,7 @@ namespace Game
 	{
 		BeginScene();
 
-		glm::mat4 viewProj = camera.GetProjection() * glm::inverse(transform);
+		glm::mat4 viewProj = camera.GetProjection() * inverse(transform);
 	}
 
 	void Renderer::EndScene() {}
@@ -77,6 +77,9 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<VertexArray> &vertexArray, const glm::mat4 &transform)
 	{
+		if(!vertexArray)
+			return;
+		
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
@@ -92,6 +95,9 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<VertexArray> &vertexArray, const std::vector<uint32_t> &indices, const glm::mat4 &transform)
 	{
+		if(!vertexArray)
+			return;
+
 		if(s_SceneData->Shader)
 		{
 			s_SceneData->Shader->UniformValue("u_Transform", transform);
@@ -107,6 +113,9 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<Model> &model, const glm::mat4 &transform)
 	{
+		if(!model)
+			return;
+
 		const auto matrix = transform * model->GetTransform();
 
 		for(const auto &mesh : *model)
@@ -115,6 +124,9 @@ namespace Game
 
 	void Renderer::Draw(const Pointer<Mesh> &mesh, const glm::mat4 &transform)
 	{
+		if(!mesh)
+			return;
+
 		BindMaterial(mesh->GetMaterial());
 		Draw(mesh->GetVertexArray(), transform * mesh->GetTransform());
 	}
@@ -188,6 +200,7 @@ namespace Game
 
 		if(!init)
 		{
+			init = true;
 			constexpr size_t size = SizeOfStruct(sizeof(float) * (7 + 5 * 4)) * MAX_LIGHTS;
 
 			s_SceneData->LightsBuffer = MakePointer<UniformBuffer>(size, BufferUsage::DynamicDraw);
@@ -208,9 +221,9 @@ namespace Game
 			i ++;
 		}
 
-		if (i > 1 && i % 2 != 0)
+		if(i > 1 && i % 2 != 0)
 			size += sizeof(float);
-		
+
 		return size;
 	}
 
@@ -242,7 +255,7 @@ namespace Game
 		offset -= 4;
 		Set(buff, light.CutOff, offset);
 		Set(buff, light.OuterCutOff, offset);
-		
+
 		Set(buff, light.Constant, offset);
 		Set(buff, light.Linear, offset);
 		Set(buff, light.Quadratic, offset);

@@ -13,8 +13,6 @@ namespace Game
 
 		Entity* GetEntity() const { return m_Entity; }
 	private:
-		void SetEntity(Entity *entity);
-
 		friend Entity;
 	};
 }

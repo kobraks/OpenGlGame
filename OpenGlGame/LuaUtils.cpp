@@ -2,6 +2,7 @@
 #include "LuaUtils.h"
 
 #include <vector>
+#include "Utils.h"
 
 namespace Game
 {
@@ -142,23 +143,23 @@ namespace Game
 		{
 			for(const auto &[k, value] : table)
 			{
-				const std::string key = k.as<std::string>();
+				const std::string key = ToUpperCopy(k.is<std::string>() ? TrimCopy(k.as<std::string>()) : std::to_string(k.as<int>()));
 
-				if(key == "Width" || key == "X" || key == "1")
+				if(key == "WIDTH" || key == "X" || key == "1" || key == "R" || key == "RED")
 					result.x = value.as<float>();
 
-				if(key == "Height" || key == "Y" || key == "2")
-					result.x = value.as<float>();
+				if(key == "HEIGHT" || key == "Y" || key == "2" || key == "G" || key == "GREEN")
+					result.y = value.as<float>();
 
 				if constexpr(!std::is_same_v<glm::vec2, Type>)
 				{
-					if(key == "Z" || key == "3")
-						result.y = value.as<float>();
+					if(key == "DEPTH" || key == "Z" || key == "3" || key == "B" || key == "BLUE")
+						result.z = value.as<float>();
 
 					if constexpr(std::is_same_v<glm::vec4, Type>)
 					{
-						if(key == "W" || key == "4")
-							result.y = value.as<float>();
+						if(key == "W" || key == "4" || key == "A" || key == "ALPHA")
+							result.w = value.as<float>();
 					}
 				}
 			}

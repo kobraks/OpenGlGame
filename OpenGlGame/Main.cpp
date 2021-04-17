@@ -1,6 +1,7 @@
 #include "pch.h"
 
 #include "Application.h"
+#include "GameLayer.h"
 
 int main(int argc, char **argv)
 {
@@ -11,6 +12,8 @@ int main(int argc, char **argv)
 
 	try
 	{
+		game.Initialize();
+		game.PushLayer(Game::MakePointer<Game::GameLayer>());
 		exitCode = game.Run();
 	}
 	catch(std::exception &ex)

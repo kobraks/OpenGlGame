@@ -17,17 +17,11 @@ namespace Game
 	private:
 		entt::entity m_EntityHandle {entt::null};
 		Scene* m_Scene = nullptr;
-		
-		Pointer<EntityLuaHandle> m_LuaHandle = nullptr;
 	public:
 		Entity() = default;
 		Entity(const Entity& other) = default;
 		Entity(const entt::entity& handle, Scene* scene);
 		
-		EntityLuaHandle& GetLuaHandle() const { return *m_LuaHandle; }
-		
-		PropertyManager Properties;
-
 		constexpr bool operator==(const Entity& entity) const noexcept
 		{
 			return m_Scene == entity.m_Scene && m_EntityHandle == entity.m_EntityHandle;
@@ -48,7 +42,7 @@ namespace Game
 		{
 			ASSERT(!HasComponent<Component>(), "Entity already has component");
 			Component& component = m_Scene->m_Registry.emplace<Component>(m_EntityHandle, this, std::forward<Args>(args)...);
-			m_Scene->OnComponentAdded(*this, component);
+			m_Scene->OnComponentAdded<Component>(*this, component);
 			return component;
 		}
 		

@@ -31,7 +31,11 @@ namespace Game
 
 	void SceneCamera::SetViewportSize(uint32_t width, uint32_t height)
 	{
-		m_AspectRatio = static_cast<float>(width) / static_cast<float>(height);
+		if (height == 0)
+			m_AspectRatio = 0.f;
+		else
+			m_AspectRatio = static_cast<float>(width) / static_cast<float>(height);
+
 		RecalculateProjection();
 	}
 

@@ -17,7 +17,7 @@ namespace Game
 
 	public:
 		SceneCamera();
-		virtual ~SceneCamera() = default;
+		~SceneCamera() override = default;
 
 		void SetPerspective(float verticalFOV, float nearClip, float farClip);
 		void SetOrthographic(float size, float nearClip, float farClip);
@@ -31,7 +31,7 @@ namespace Game
 			m_PerspectiveFOV = verticalFov;
 			RecalculateProjection();
 		}
-		
+
 		void SetPerspectiveVerticalFOV(float verticalFov)
 		{
 			m_PerspectiveFOV = glm::radians(verticalFov);
@@ -86,6 +86,13 @@ namespace Game
 			RecalculateProjection();
 		}
 
+		float GetAspectRatio() const { return m_AspectRatio; }
+		void SetAspectRatio(float aspectRatio)
+		{
+			m_AspectRatio = aspectRatio;
+			RecalculateProjection();
+		}
+	
 	private:
 		void RecalculateProjection();
 	private:

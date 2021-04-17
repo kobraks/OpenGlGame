@@ -7,15 +7,27 @@
 
 namespace Game
 {
-	Scene::Scene() { }
+	Scene::Scene(const std::string &title) : m_Title(title) { }
 	Scene::~Scene() {}
 
-	Entity Scene::CreateEntity(const std::string &name)
+	Entity Scene::CreateEntity(const std::string &tag)
 	{
-		Entity entity = {m_Registry.create(), this};
+		Entity entity = CreateEntity();
+
 		entity.AddComponent<TransformComponent>();
-		auto &tag = entity.AddComponent<TagComponent>();
-		tag.Tag   = name.empty() ? "Entity" : name;
+		auto &tagc = entity.AddComponent<TagComponent>();
+		tagc.Tag   = tag.empty() ? "Entity" : tag;
+
+		return entity;
+	}
+
+	Entity Scene::CreateEntity(uint32_t hint, const std::string &tag)
+	{
+		Entity entity = CreateEntity(hint);
+
+		entity.AddComponent<TransformComponent>();
+		auto &tagC = entity.AddComponent<TagComponent>();
+		tagC.Tag   = tag.empty() ? "Entity" : tag;
 
 		return entity;
 	}
@@ -73,7 +85,7 @@ namespace Game
 		}
 	}
 
-	void Scene::OnUpdateRuntime(const Time &timeStep)
+	void Scene::OnConstUpdate(const Time &timeStep)
 	{
 		m_Registry.view<NativeScriptComponent>().each(
 		                                              [=](auto entity, auto &nsc)
@@ -117,10 +129,39 @@ namespace Game
 		return {};
 	}
 
+	Entity Scene::CreateEmpty()
+	{
+		return Entity{m_Registry.create(), this};
+	}
+
+	Entity Scene::CreateEmpty(uint32_t hint)
+	{
+		return Entity{m_Registry.create(static_cast<entt::entity>(hint)), this};
+	}
+
 	template <typename Component>
 	void Scene::OnComponentAdded(Entity &entity, Component &component)
 	{
+		static_assert(false);
 	}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, TagComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, TransformComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, LuaScriptComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, ModelComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, NativeScriptComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, LightComponent &component) {}
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, CameraComponent &component)

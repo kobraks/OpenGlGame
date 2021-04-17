@@ -80,8 +80,8 @@ namespace Game
 		void LuaRegister(LuaRegister &luaObject);
 
 		sol::state& GetLua() const { return *m_Lua; }
-	private:
 		void Initialize();
+	private:
 		void InitializeLua();
 
 		void InitializeSettings();

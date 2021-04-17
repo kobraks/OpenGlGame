@@ -20,8 +20,8 @@ namespace Game
 	protected:
 		virtual void OnCreate(){}
 		virtual void OnDestroy(){}
-		virtual void OnConstUpdate(Time timeStep);
-		virtual void OnUpdate();
+		virtual void OnConstUpdate(Time timeStep) {}
+		virtual void OnUpdate() {}
 
 		friend class Scene;
 	};

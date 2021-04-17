@@ -44,10 +44,4 @@ namespace Game
 	{
 		LuaHelper::Register();
 	}
-
-	void EntityLuaHandle::SetEntity(Entity *entity)
-	{
-		if(m_Entity != entity)
-			m_Entity = entity;
-	}
 }

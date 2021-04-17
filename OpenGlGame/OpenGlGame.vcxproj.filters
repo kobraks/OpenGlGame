@@ -261,6 +261,9 @@
     <ClCompile Include="Component.cpp">
       <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
+    <ClCompile Include="SceneSerializer.cpp">
+      <Filter>Source Files\Scene</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Defines.h">
@@ -505,6 +508,9 @@
     </ClInclude>
     <ClInclude Include="Utils.h">
       <Filter>Header Files\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneSerializer.h">
+      <Filter>Header Files\Scene</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

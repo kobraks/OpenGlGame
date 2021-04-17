@@ -23,7 +23,7 @@ namespace Game
 
 		virtual ~Component() {}
 
-		const std::string& Name() const { return m_Name; }
+		std::string Name() const { return m_Name; }
 
 		Entity* GetEntity() const { return m_Entity; }
 	};
@@ -57,19 +57,18 @@ namespace Game
 	public:
 		LightComponent(Entity *entity = nullptr) : Component("LightComponent", entity) {}
 
-		~LightComponent() override
-		{
-			delete Light;
-		}
-
-		Light *Light = nullptr;;
+		Pointer<Light> Light = nullptr;;
+		std::string TexturePath = {};
 	};
 
 	class LuaScriptComponent: public Component
 	{
 	public:
 		LuaScriptComponent(Entity *entity = nullptr) : Component("LuaScriptComponent", entity) {}
+		std::string ScriptPath = {};
 
+		EntityLuaHandle *Handle = nullptr;
+		
 		void OpenFile(const std::string &fileName);
 	};
 
@@ -79,6 +78,8 @@ namespace Game
 		ModelComponent(Entity *entity = nullptr) : Component("ModelComponent", entity) {}
 
 		Pointer<Model> Model;
+		bool Drawable = true;
+		std::string ModelPath = {};
 
 		void LoadModel(const std::string &fileName);
 		void Draw(const glm::mat4 &transform = glm::mat4(1.f)) const;
