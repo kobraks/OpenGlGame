@@ -1,5 +1,7 @@
 #version 450 core
 
+//Sourcee https://learnopengl.com/Lighting/Multiple-lights
+
 #define SPOT_LIGHT 1
 #define POINT_LIGHT 2
 #define DIRECTIONAL_LIGHT 3
@@ -22,7 +24,7 @@ struct Material
 	//sampler2D NormalMap;
 };
 
-struct Light
+struct Light //TODO -Reorder stuff for better memory usage
 {
 	bool Active;
 	int Type;
@@ -40,6 +42,8 @@ struct Light
 	float Constant;
 	float Linear;
 	float Quadratic;
+
+	bool HasLightCookie;
 };
 
 layout(std140) uniform u_Lights
@@ -54,6 +58,9 @@ uniform vec3 u_CameraPos;
 uniform bool u_WhiteColor;
 uniform bool u_OnlyDiffuseTexture;
 uniform float u_GammaCorrection;
+uniform vec2 u_ViewPort;
+
+uniform sampler2D u_LightCookie;
 
 in VS_OUT{
 	vec4 Color;
@@ -66,7 +73,7 @@ out vec4 FragColor;
 
 vec4 CalcDirectionalLight(Light light, Material material, vec3 normal, vec3 viewDir, vec2 texCoords);
 vec4 CalcPointLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords);
-vec4 CalcSpotLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords);
+vec4 CalcSpotLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, vec2 fragCoord);
 
 void main()
 {
@@ -76,6 +83,7 @@ void main()
 	{
 		vec3 viewDir = normalize(u_CameraPos - fs_in.FragPosition);
 		vec3 normal = normalize(fs_in.Normal);
+		vec2 fragCoord = gl_FragCoord.xy /u_ViewPort * vec2(1.f, -1.f);
 
 		for (int i = 0; i < MAX_LIGHTS; ++i)
 		{
@@ -88,7 +96,7 @@ void main()
 				else if (light.Type == POINT_LIGHT)
 					result += CalcPointLight(light, u_Material, normal, fs_in.FragPosition, viewDir, fs_in.TexCoords);
 				else if (light.Type == SPOT_LIGHT)
-					result += CalcSpotLight(light, u_Material, normal, fs_in.FragPosition, viewDir, fs_in.TexCoords);
+					result += CalcSpotLight(light, u_Material, normal, fs_in.FragPosition, viewDir, fs_in.TexCoords, fragCoord);
 			}
 		}
 	}
@@ -193,32 +201,46 @@ vec4 CalcPointLight(Light light, Material material, vec3 normal, vec3 fragPos, v
 	return vec4((ambient + diffuse + specular), 1.f);
 }
 
-vec4 CalcSpotLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords)
+//Calculate Spot light
+vec4 CalcSpotLight(Light light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir, vec2 texCoords, vec2 fragCoord)
 {
 	vec3 lightDir = normalize(light.Position - fragPos);
 
+	//Diffuse shading
 	float diff = max(dot(normal, lightDir), 0.f);
 
 	//vec3 reflectDir = reflect(-lightDir, normal);
 	//float spec = pow(max(dot(viewDir, reflectDir), 0.f), material.Shininess);
 
+	//Specular shading
 	vec3 halfwayDir = normalize(lightDir + viewDir);
 	float spec = pow(max(dot(normal, halfwayDir), 0.f), material.Shininess / material.ShininessStrength);
 
+	//Attenuation
 	float dist = length(light.Position - fragPos);
 	float attenuation = 1.f / (light.Constant + light.Linear * dist + light.Quadratic * (dist * dist));
 
+	//spotLight intensivity
 	float theta = dot(lightDir, normalize(-light.Direction));
 	float epsilon = light.CutOff - light.OuterCutOff;
-	float intensity = clamp((theta - light.OuterCutOff) / epsilon, 0.f, 1.f);
+	//float intensity = clamp((theta - light.OuterCutOff) / epsilon, 0.f, 1.f);
+	float intensity = smoothstep(0.0, 1.0, (theta - light.OuterCutOff) / epsilon);
 
+	//Result
 	vec3 ambient = GetAmbient(material, light, texCoords);
 	vec3 diffuse = GetDiffuse(material, light, diff, texCoords);
 	vec3 specular = GetSpecular(material, light, spec, texCoords);
 
-	ambient *= attenuation;
-	diffuse *= attenuation;
-	specular *= attenuation;
+	ambient *= attenuation * intensity;
+	diffuse *= attenuation * intensity;
+	specular *= attenuation * intensity;
+
+	if (light.HasLightCookie)
+	{
+		vec3 fragColor = ambient + diffuse + specular;
+		fragColor *= texture(u_LightCookie, fragCoord).rgb * intensity;
+		return vec4(fragColor.rgb, 1.f);
+	}
 
 	return vec4((ambient + diffuse + specular), 1.f);
 }
