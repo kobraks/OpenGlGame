@@ -120,6 +120,8 @@ namespace Game
 
 		void Update(const Image &image, Vector2i offset);
 
+		void Resize(uint32_t width, uint32_t height);
+
 		void Swap(Texture &right) noexcept;
 
 		static uint32_t GetMaximumSize() { return GetMaxSize(); }

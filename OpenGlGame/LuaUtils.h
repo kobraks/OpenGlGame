@@ -12,9 +12,19 @@
 namespace Game
 {
 	std::string ToString(const sol::state_view &lua, const sol::object &object);
-	std::string ToString(const sol::state_view &lua, const sol::table &table, int level = 0);
+	std::string ToString(const sol::state_view &lua, const sol::table &table);
 	std::string ToString(const sol::state_view &lua, sol::variadic_args::const_iterator begin, const sol::variadic_args::const_iterator &end);
 	std::string ToString(const sol::state_view &lua, const sol::variadic_args &args);
+
+	bool DoFile(sol::state &state, const std::string &fileName);
+	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &env);
+
+	bool DoString(sol::state &state, const std::string &string);
+	bool DoString(sol::state &state, const std::string &string, sol::environment &env);
+
+
+	//Getting string from stack at given index
+	std::string LuaGetString(lua_State *L, int index);
 
 	glm::vec2 ReadVector2(const sol::table &vector);
 	glm::vec3 ReadVector3(const sol::table &vector);

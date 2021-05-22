@@ -24,6 +24,14 @@ Scene =
                 Drawable = true; --optional in case of true
                 Path = "Cow.obj"
             };
+
+            LuaScriptComponent = 
+            {
+                Path = "script.lua";
+                Properties = { --Not working yet
+                    Speed = 0.5;
+                };
+            };
         };
         {
             TagComponent = {
@@ -71,12 +79,13 @@ Scene =
             {
                 Active = true; --Redundand in case of false
 
-                Type = LightType.Directional;
+                Type = LightType.Directional; --Possible values LightType.Directional, LightType.Spot, LightType.Point
 
                 DiffuseColor = { 255, 255, 255};
                 AmbientColor = { 255, 255, 255};
                 SpecularColor = { 255, 255, 255};
         
+                --Ifnored if not spot light or point light
                 Constant = 0;
                 Linear = 0;
                 Quadratic = 0;
@@ -89,5 +98,30 @@ Scene =
                 LightCookie = "flashlight.png";
             };
         };
+        {
+            TagComponent = {
+                "PointLight0";
+            };
+
+            TransformComponent = {
+                Position = { 5, 5, 5};
+                Rotation = { 0, 0, 0};
+            };
+
+            LightComponent = 
+            {
+                Active = true;
+                
+                Type = LightType.Point;
+
+                DiffuseColor = { 255, 0, 0};
+                AmbientColor = { 255, 0, 0};
+                SpecularColor = { 255, 0, 0};
+
+                Constant = 0;
+                Linear = 0;
+                Quadratic = 0;
+            };
+        }
     };
 };

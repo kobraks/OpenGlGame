@@ -1,6 +1,9 @@
 #pragma once
 #include <string>
 #include <utility>
+#include <string>
+
+#include <sol/environment.hpp>
 
 #include "Types.h"
 #include "SceneCamera.h"
@@ -65,6 +68,10 @@ namespace Game
 	{
 	public:
 		LuaScriptComponent(Entity *entity = nullptr) : Component("LuaScriptComponent", entity) {}
+
+		sol::environment Environment;
+		std::vector<std::string> UserValues;
+		
 		std::string ScriptPath = {};
 
 		EntityLuaHandle *Handle = nullptr;

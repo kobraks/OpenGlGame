@@ -7,7 +7,8 @@
 namespace Game
 {
 	class Entity;
-
+	class Camera;
+	
 	class Scene
 	{
 		entt::registry m_Registry;
@@ -16,6 +17,11 @@ namespace Game
 		uint32_t m_ViewportHeight = 0;
 
 		std::string m_Title = {};
+
+		//Updated on every OnUpdate call
+		Camera *m_MainCamera = nullptr;
+		glm::mat4 m_CameraTransform = glm::mat4(1.f);
+
 	public:
 		Scene(const std::string &title = "Untitled");
 		~Scene();
@@ -25,6 +31,7 @@ namespace Game
 		void DestroyEntity(const Entity &entity);
 
 		void OnUpdate();
+		void OnDraw();
 		void OnConstUpdate(const Time &timeStep);
 		void OnViewportResize(uint32_t width, uint32_t height);
 

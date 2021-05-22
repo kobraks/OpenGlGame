@@ -1,9 +1,9 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 #include "Types.h"
 #include "GLEnums.h"
-
-#include <array>
 
 #include "Transformable.h"
 #include "Light.h"
@@ -12,7 +12,6 @@ namespace Game
 {
 	class ShaderProgram;
 	class VertexArray;
-	class UniformBuffer;
 	
 	class Model;
 	class Camera;
@@ -25,13 +24,10 @@ namespace Game
 	private:
 		struct SceneData
 		{
-			std::array<LightInfo, MAX_LIGHTS> Lights;
-			
 			glm::mat4 ViewProjectionMatrix;
 			glm::mat4 ViewMatrix;
 			glm::mat4 ProjectionMatrix;
 
-			Pointer<UniformBuffer> LightsBuffer;
 			Pointer<ShaderProgram> Shader;
 		};
 
@@ -55,16 +51,10 @@ namespace Game
 		static void Draw(const Pointer<Model> &model, const glm::mat4 &transform = glm::mat4(1.f));
 		static void Draw(const Pointer<Mesh> &mesh, const glm::mat4 &transform = glm::mat4(1.f));
 
-		static void SetLight(const Light& light);
-		static void BindLight(const LightInfo& light);
-		static void BindLights();
-		
 		static void BindMaterial(const Pointer<Material> &material);
 
 	private:
 		static void Init();
-		
-		static void BindLight(Pointer<UniformBuffer> buffer, const LightInfo& light);
 		
 		static void BindMaterialTexture(
 			Pointer<ShaderProgram> shader,

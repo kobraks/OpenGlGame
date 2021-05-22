@@ -51,20 +51,27 @@ namespace Game
 	Pointer<ShaderProgram> ShaderLoader::Load(const std::string &name, const std::string &path, bool detachShaders)
 	{
 		Pointer<ShaderProgram> program = MakePointer<ShaderProgram>(name);
+		std::vector<Pointer<Shader>> shaders;
+		shaders.reserve(6);
 
 		for(uint32_t i = 0; i < 6; ++i)
 		{
 			auto shader = CreateShader(i, LoadFile(i, GetShaderFileName(i, name), path));
 
 			if(shader)
+			{
 				program->Attach(shader);
+				shaders.emplace_back(shader);
+			}
 		}
 
 		program->Link();
 
 		if(detachShaders)
-			for(const auto &shader : *program)
+		{
+			for(const auto &shader : shaders)
 				program->Detach(shader);
+		}
 
 		return program;
 	}
@@ -148,9 +155,9 @@ namespace Game
 
 	Pointer<Shader> ShaderLoader::CreateShader(uint32_t type, const std::string &source)
 	{
-		if (source.empty())
+		if(source.empty())
 			return nullptr;
-		
+
 		Pointer<Shader> shader = nullptr;
 
 		switch(type)

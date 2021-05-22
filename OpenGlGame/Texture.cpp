@@ -262,6 +262,13 @@ namespace Game
 		return Update(texture.ToImage(), offset.X, offset.Y);
 	}
 
+	void Texture::Resize(uint32_t width, uint32_t height)
+	{
+		ASSERT(width> 0 && height > 0, "Texture dimensions cant be 0");
+
+		Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, width, height, InternalFormat::RGBA8);
+	}
+
 	void Texture::Swap(Texture &right) noexcept
 	{
 		std::swap(m_Internals, right.m_Internals);

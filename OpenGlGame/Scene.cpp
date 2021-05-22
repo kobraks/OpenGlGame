@@ -39,6 +39,9 @@ namespace Game
 
 	void Scene::OnUpdate()
 	{
+		m_MainCamera      = nullptr;
+		m_CameraTransform = glm::mat4(1.f);
+
 		m_Registry.view<NativeScriptComponent>().each(
 		                                              [=](auto entity, auto &nsc)
 		                                              {
@@ -53,8 +56,6 @@ namespace Game
 		                                              }
 		                                             );
 
-		Camera *mainCamera = nullptr;
-		glm::mat4 cameraTransform;
 		{
 			auto view = m_Registry.view<TransformComponent, CameraComponent>();
 			for(auto entity : view)
@@ -63,22 +64,26 @@ namespace Game
 
 				if(camera.Primary)
 				{
-					mainCamera      = &camera.Camera;
-					cameraTransform = transform.GetTransform();
+					m_MainCamera      = &camera.Camera;
+					m_CameraTransform = transform.GetTransform();
 					break;
 				}
 			}
 		}
+	}
 
-		if(mainCamera)
+	void Scene::OnDraw()
+	{
+		if(m_MainCamera)
 		{
-			Renderer::BeginScene(*mainCamera, cameraTransform);
+			Renderer::BeginScene(*m_MainCamera, m_CameraTransform);
 
 			auto group = m_Registry.group<TransformComponent>(entt::get<ModelComponent>);
 			for(auto entity : group)
 			{
 				auto [transform, model] = group.get<TransformComponent, ModelComponent>(entity);
-				model.Draw(transform.GetTransform());
+				if(model.Drawable)
+					model.Draw(transform.GetTransform());
 			}
 
 			Renderer::EndScene();

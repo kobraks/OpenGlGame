@@ -20,117 +20,10 @@
 
 #include "LuaUtils.h"
 #include "Utils.h"
+#include "LuaSerializer.h"
 
 namespace Game
 {
-	class LuaSerializer
-	{
-	public:
-		struct Color
-		{
-			std::variant<glm::vec3, glm::vec4> C;
-
-			Color(const glm::vec3 &color)
-			{
-				C = color;
-			}
-
-			Color(const glm::vec4 &color)
-			{
-				C = color;
-			}
-		};
-
-	private:
-		std::ofstream m_File;
-		uint64_t m_Depth    = 0;
-		std::string m_Begin = {};
-
-	public:
-		LuaSerializer(std::string fileName)
-		{
-			m_File.open(fileName, std::fstream::out | std::fstream::trunc);
-		}
-
-		~LuaSerializer()
-		{
-			m_File.close();
-		}
-
-		bool Good() const
-		{
-			return m_File.is_open() && m_File.good();
-		}
-
-		LuaSerializer& BeginTable(std::string name = "")
-		{
-			Trim(name);
-			if(!name.empty())
-				m_File << m_Begin << name << " =\n";
-			m_File << m_Begin << "{";
-			m_Depth++;
-			m_Begin = std::string(m_Depth, '\t');
-
-
-			return *this;
-		}
-
-		LuaSerializer& EndTable()
-		{
-			m_Depth--;
-			m_Begin = std::string(m_Depth, '\t');
-
-			m_File << "\n" << m_Begin << "};";
-			return *this;
-		}
-
-		template <class T>
-		LuaSerializer& Value(std::string name, const T &value)
-		{
-			Trim(name);
-			m_File << m_Begin << name << " = " << value << ";\n";
-			return *this;
-		}
-
-		template <>
-		LuaSerializer& Value(std::string name, const bool &value)
-		{
-			return Value<std::string>(name, value ? "true" : "false");
-		}
-
-		template <>
-		LuaSerializer& Value(std::string name, const glm::vec3 &value)
-		{
-			return BeginTable(name).Value("x", value.x).Value("y", value.y).Value("z", value.z).EndTable();
-		}
-
-		template <>
-		LuaSerializer& Value(std::string name, const glm::vec4 &value)
-		{
-			return BeginTable(name).Value("x", value.x).Value("y", value.y).Value("z", value.z).Value("w", value.w).EndTable();
-		}
-
-		template <>
-		LuaSerializer& Value(std::string name, const Color &value)
-		{
-			const auto color = value.C;
-
-			if(std::holds_alternative<glm::vec3>(color))
-			{
-				const auto v = std::get<glm::vec3>(color);
-				BeginTable(name).Value<int32_t>("Red", v.r * 255).Value<int32_t>("Green", v.g * 255).Value<int32_t>("Blue", v.b * 255).EndTable();
-			}
-			else
-			{
-				const auto v = std::get<glm::vec4>(color);
-				BeginTable(name).Value<int32_t>("Red", v.r * 255).Value<int32_t>("Green", v.g * 255).Value<int32_t>("Blue", v.b * 255).Value<
-					int32_t>("Alpha", v.a * 255).EndTable();
-			}
-
-			return *this;
-		}
-	};
-
 	static void SerializeEntity(LuaSerializer &out, Entity entity)
 	{
 		out.BeginTable();
@@ -190,31 +83,42 @@ namespace Game
 		{
 			const auto &comp = entity.GetComponent<LightComponent>();
 			const auto light = comp.Light;
-			out.BeginTable(comp.Name());
 
-			if(light && light->GetInfo().Type != LightType::Unknown)
+			if(light)
 			{
-				out.Value("Active", light->IsActive());
-				out.Value("DiffuseColor", LuaSerializer::Color(light->GetDiffuseColor()));
-				out.Value("AmbientColor", LuaSerializer::Color(light->GetAmbientColor()));
-				out.Value("SpecularColor", LuaSerializer::Color(light->GetSpecularColor()));
-
-				if(const auto directional = std::dynamic_pointer_cast<DirectionalLight>(light); directional)
+				if(const auto lightInfo = light->GetInfo(); lightInfo.Type != LightType::Unknown)
 				{
-					out.Value("Type", "LightType.Directional");
-				}
-				else
-				{
-					const auto point = std::dynamic_pointer_cast<PointLight>(light);
-					out.Value("Constant", point->GetConstant());
-					out.Value("Linear", point->GetConstant());
-					out.Value("Quadratic", point->GetConstant());
+					out.BeginTable(comp.Name());
+					out.Value("Active", lightInfo.Active);
 
-					if(const auto spot = std::dynamic_pointer_cast<SpotLight>(light))
-						out.Value("LightCookie", fmt::format("\"{}\"", comp.TexturePath));
+					if (lightInfo.Type == LightType::Directional)
+						out.Value("Type", "LightType.Directional");
+					if (lightInfo.Type == LightType::Point)
+						out.Value("Type", "LightType.Point");
+					if (lightInfo.Type == LightType::Spot)
+						out.Value("Type", "LightType.Spot");
+
+					out.Color("DiffuseColor", lightInfo.DiffuseColor);
+					out.Color("AmbientColor", lightInfo.AmbientColor);
+					out.Color("SpecularColor", lightInfo.SpecularColor);
+
+					if (lightInfo.Type == LightType::Point || lightInfo.Type == LightType::Spot)
+					{
+						out.Value("Constant", lightInfo.Constant);
+						out.Value("Linear", lightInfo.Linear);
+						out.Value("Quadratic", lightInfo.Quadratic);
+
+						if (lightInfo.Type == LightType::Spot)
+						{
+							out.Value("CutOff", lightInfo.CutOff);
+							out.Value("OuterCutOff", lightInfo.OuterCutOff);
+							out.String("LightCookie", comp.TexturePath);
+						}
+					}
+					
+					out.EndTable();
 				}
 			}
-			out.EndTable();
 		}
 
 		if(entity.HasComponent<ModelComponent>())
@@ -232,6 +136,7 @@ namespace Game
 			const auto &comp = entity.GetComponent<LuaScriptComponent>();
 			out.BeginTable(comp.Name());
 
+			//TODO Properties
 			out.Value("Path", fmt::format("\"{}\"", comp.ScriptPath));
 
 			out.EndTable();
@@ -463,7 +368,7 @@ namespace Game
 		{
 			if(key.is<std::string>())
 			{
-				if (ToUpperCopy(TrimCopy(key.as<std::string>())) == "ID");
+				if(ToUpperCopy(TrimCopy(key.as<std::string>())) == "ID");
 				else if(value.is<sol::table>())
 					ProcessComponent(entity, TrimCopy(key.as<std::string>()), value.as<sol::table>());
 				else
@@ -712,8 +617,9 @@ namespace Game
 
 			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
 
-			if(GetValue<std::string>(v, "Path", key, comp.ScriptPath) >= 0);
-			else if (key == "PARAMETERS"); //TODO Parameters for scripts
+			if(GetValue<std::string>(v, "Path", key, comp.ScriptPath) >= 0)
+				comp.OpenFile(comp.ScriptPath);
+			else if(key == "PROPERTIES"); //TODO Parameters for scripts
 			else
 				LOG_WARN("Unknown key value: {}", k.as<std::string>());
 		}
@@ -729,8 +635,9 @@ namespace Game
 
 			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
 
-			if(GetValue<std::string>(v, "Path", key, comp.ModelPath));
-			else if(GetValue<bool>(v, "Drawable", key, comp.Drawable));
+			if(GetValue<std::string>(v, "Path", key, comp.ModelPath) >= 0)
+				comp.LoadModel(comp.ModelPath);
+			else if(GetValue<bool>(v, "Drawable", key, comp.Drawable) >= 0);
 			else
 				LOG_WARN("Unknown key value: {}", k.as<std::string>());
 		}

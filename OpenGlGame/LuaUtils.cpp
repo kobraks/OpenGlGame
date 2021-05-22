@@ -8,21 +8,27 @@ namespace Game
 {
 	std::string ToString(const sol::state_view &lua, const sol::table &table, std::vector<sol::object> &visited, int level = 0)
 	{
+		if(table == sol::nil)
+			return ToString(lua, table.as<sol::object>());
+
+		if(!table.valid())
+			return {};
+
 		const auto iter = std::find(visited.begin(), visited.end(), static_cast<sol::object>(table));
 		if(iter != visited.end())
 			return {};
 		visited.push_back(static_cast<sol::object>(table));
 
-		if (table.empty())
+		if(table.is<sol::metatable>())
 		{
-			sol::table metaTable = table[sol::metatable_key];
+			sol::optional<sol::metatable> metaTable = table[sol::metatable_key];
 
-			if (!metaTable.empty())
+			if(metaTable && !metaTable->empty())
 			{
-				return ToString(lua, metaTable, visited, level);
+				return ToString(lua, *metaTable, visited, level);
 			}
 		}
-		
+
 		const std::string beg(level, '\t');
 		auto wasTable = false;
 		std::string result;
@@ -110,6 +116,9 @@ namespace Game
 
 	std::string ToString(const sol::state_view &lua, const sol::object &object)
 	{
+		if(!object.valid() && object != sol::nil)
+			return {};
+
 		return lua["tostring"](object);
 	}
 
@@ -132,6 +141,73 @@ namespace Game
 		std::vector<sol::object> visited;
 
 		return ToString(lua, args, visited);
+	}
+
+	bool DoFile(sol::state &state, const std::string &fileName)
+	{
+		const auto result = state.do_file(fileName);
+		if(!result.valid())
+		{
+			const sol::error error = result;
+			LOG_ERROR("Unable to execute script \"{}\", because: {}", fileName, error.what());
+			return false;
+		}
+
+		LOG_INFO("Sucessfuly executed script \"{}\"", fileName);
+	}
+
+	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &env)
+	{
+		const auto result = state.do_file(fileName, env);
+		if(!result.valid())
+		{
+			const sol::error error = result;
+			LOG_ERROR("Unable to execute script \"{}\", because: {}", fileName, error.what());
+			return false;
+		}
+
+		LOG_INFO("Sucessfuly executed script \"{}\"", fileName);
+	}
+
+	bool DoString(sol::state &state, const std::string &string)
+	{
+		const auto result = state.do_file(string);
+		if(!result.valid())
+		{
+			const sol::error error = result;
+			LOG_ERROR("Unable to execute script \"{}\", because: {}", string, error.what());
+			return false;
+		}
+
+		return true;
+	}
+
+	bool DoString(sol::state &state, const std::string &string, sol::environment &env)
+	{
+		const auto result = state.do_file(string, env);
+		if(!result.valid())
+		{
+			const sol::error error = result;
+			LOG_ERROR("Unable to execute script \"{}\", because: {}", string, error.what());
+			return false;
+		}
+
+		return true;
+	}
+
+	std::string LuaGetString(lua_State *L, int index)
+	{
+		if(lua_isstring(L, index))
+		{
+			std::string string;
+			size_t len;
+
+			const char *str = lua_tolstring(L, 2, &len);
+			string.append(str, len);
+			return string;
+		}
+
+		return {};
 	}
 
 	template <class Type>

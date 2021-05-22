@@ -7,8 +7,6 @@ namespace Game
 {
 	class Texture;
 
-	constexpr uint32_t MAX_LIGHTS = 10;
-
 	enum class LightType : int32_t
 	{
 		Unknown = 0,
@@ -19,7 +17,6 @@ namespace Game
 
 	struct LightInfo
 	{
-		uint32_t Index = 0;
 		LightType Type = LightType::Unknown;
 
 		glm::vec3 Position  = glm::vec3(0.f);

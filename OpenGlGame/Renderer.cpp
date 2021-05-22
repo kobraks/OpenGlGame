@@ -29,6 +29,7 @@ namespace Game
 
 	void Renderer::SetShader(const Pointer<ShaderProgram> &shader)
 	{
+		Init();
 		s_SceneData->Shader = shader;
 
 		if(!shader)
@@ -42,8 +43,8 @@ namespace Game
 		const auto index = s_SceneData->Shader->GetUniformBlockIndex("u_Lights");
 		if(index != ShaderProgram::INVALID_UNIFORM_BLOCK_INDEX)
 		{
-			s_SceneData->LightsBuffer->Bind();
-			GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, index, s_SceneData->LightsBuffer->Id()));
+			// s_SceneData->LightsBuffer->Bind();
+			// GL_CHECK(glBindBufferBase(GL_UNIFORM_BUFFER, index, s_SceneData->LightsBuffer->Id()));
 		}
 	}
 
@@ -131,23 +132,6 @@ namespace Game
 		Draw(mesh->GetVertexArray(), transform * mesh->GetTransform());
 	}
 
-	void Renderer::SetLight(const Light &light)
-	{
-		const auto lightInfo = light.GetInfo();
-
-		if(lightInfo.Type == LightType::Unknown)
-			return;
-
-		ASSERT(lightInfo.Index < MAX_LIGHTS, "You want to bing too many lights");
-		BindLight(lightInfo);
-	}
-
-	void Renderer::BindLights()
-	{
-		for(const auto &light : s_SceneData->Lights)
-			BindLight(light);
-	}
-
 	void Renderer::BindMaterial(const Pointer<Material> &material)
 	{
 		if(!material)
@@ -162,6 +146,8 @@ namespace Game
 		// BindMaterialTexture(s_SceneData->Shader, material->Height, "u_HeightTex", textureUnit);
 
 		auto &shader = s_SceneData->Shader;
+		if (!shader)
+			return;
 
 		if(material->SpecularTexture)
 		{
@@ -185,15 +171,6 @@ namespace Game
 		shader->UniformValue("u_Material.ShininessStrength", material->ShininessStrength);
 	}
 
-	constexpr size_t SizeOfStruct(size_t baseSize)
-	{
-		size_t sum = 0;
-		while(sum < baseSize)
-			sum += sizeof(float) * 4;
-
-		return sum;
-	}
-
 	void Renderer::Init()
 	{
 		static bool init = false;
@@ -201,75 +178,8 @@ namespace Game
 		if(!init)
 		{
 			init = true;
-			constexpr size_t size = SizeOfStruct(sizeof(float) * (7 + 5 * 4)) * MAX_LIGHTS;
 
-			s_SceneData->LightsBuffer = MakePointer<UniformBuffer>(size, BufferUsage::DynamicDraw);
-
-			for(auto &light : s_SceneData->Lights)
-				light.Active = false;
 		}
-	}
-
-	template <typename T>
-	constexpr size_t SizeOfType()
-	{
-		size_t i    = 0;
-		size_t size = 0;
-		while(size < sizeof(T))
-		{
-			size += sizeof(float);
-			i ++;
-		}
-
-		if(i > 1 && i % 2 != 0)
-			size += sizeof(float);
-
-		return size;
-	}
-
-	template <typename T>
-	void Set(char *buff, const T &value, size_t &offset)
-	{
-		std::memcpy(buff + offset, &value, sizeof(T));
-
-		offset += SizeOfType<T>();
-	}
-
-	void Renderer::BindLight(Pointer<UniformBuffer> buffer, const LightInfo &light)
-	{
-		constexpr size_t size = SizeOfStruct(sizeof(float) * (7 + 5 * 4)); //Size of one struct of LightInfo in shader
-		char buff[size];
-
-		size_t offset = 0;
-		Set(buff, light.Active, offset);
-		Set(buff, light.Type, offset);
-		offset = 16;
-
-		Set(buff, light.Position, offset);
-		Set(buff, light.Direction, offset);
-
-		Set(buff, light.DiffuseColor, offset);
-		Set(buff, light.AmbientColor, offset);
-		Set(buff, light.SpecularColor, offset);
-
-		offset -= 4;
-		Set(buff, light.CutOff, offset);
-		Set(buff, light.OuterCutOff, offset);
-
-		Set(buff, light.Constant, offset);
-		Set(buff, light.Linear, offset);
-		Set(buff, light.Quadratic, offset);
-
-		buffer->Set(buff, size, size * light.Index);
-	}
-
-	void Renderer::BindLight(const LightInfo &light)
-	{
-		if(light.Index >= MAX_LIGHTS || light.Type == LightType::Unknown)
-			return;
-
-		s_SceneData->Lights[light.Index] = light;
-		BindLight(s_SceneData->LightsBuffer, light);
 	}
 
 	/*void Renderer::BindLight(Pointer<ShaderProgram> &shader, const LightInfo &light)

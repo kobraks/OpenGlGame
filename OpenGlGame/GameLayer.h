@@ -3,13 +3,16 @@
 
 #include "Scene.h"
 #include "ApplicationEvent.h"
+#include "ShaderLoader.h"
+#include "Shader.h"
 
 namespace Game
 {
 	class GameLayer : public Layer
 	{
-		Pointer<Scene> m_Scene;
-		
+		Pointer<Scene> m_Scene = nullptr;
+		Pointer<ShaderProgram> m_MainShader = nullptr;
+	
 	public:
 		GameLayer();
 

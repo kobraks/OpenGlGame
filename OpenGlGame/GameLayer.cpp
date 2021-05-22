@@ -3,6 +3,7 @@
 
 #include "Defines.h"
 #include "Application.h"
+#include "Renderer.h"
 #include "SceneSerializer.h"
 
 namespace Game
@@ -16,6 +17,13 @@ namespace Game
 
 		if(serializer.Deserialize(SCENE_PATH "/MainScene.lua"))
 			LOG_INFO("Sucessfuly imported scene");
+		else
+			LOG_ERROR("Unable to deserialize scene");
+
+		m_MainShader = ShaderLoader::Load("Shader", SHADERS_PATH);
+
+		Application::Get().GetWindow().SetVSync(false);
+		Log::GetOpenGLLogger()->set_level(spdlog::level::err);
 	}
 
 	void GameLayer::OnDetach() { }
@@ -23,6 +31,9 @@ namespace Game
 	void GameLayer::OnUpdate()
 	{
 		m_Scene->OnUpdate();
+		
+		// Renderer::SetShader(m_MainShader);
+		// m_Scene->OnDraw();
 	}
 
 	void GameLayer::OnConstUpdate(const Time &timeStep)

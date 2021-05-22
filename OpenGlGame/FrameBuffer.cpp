@@ -49,27 +49,55 @@ namespace Game
 		return depth < 24 ? InternalFormat::RGB : InternalFormat::RGBA;
 	}
 
-	static InternalFormat GetDepthFormat(int8_t depth)
+	static InternalFormat GetDepthFormat(int8_t depth, bool stencil)
 	{
-		if(depth == 8)
-			return InternalFormat::DepthComponent;
-		if(depth == 16)
-			return InternalFormat::DepthComponent16;
-		if(depth == 24)
-			return InternalFormat::DepthComponent24;
-		if(depth == 36)
-			return InternalFormat::DepthComponent32F;
+		if(!stencil)
+		{
+			if(depth == 8)
+				return InternalFormat::DepthComponent;
+			if(depth == 16)
+				return InternalFormat::DepthComponent16;
+			if(depth == 24)
+				return InternalFormat::DepthComponent24;
+			if(depth == 32)
+				return InternalFormat::DepthComponent32F;
 
-		GL_LOG_WARN("Unknown depth buffer size: '{}', Setting it to 16 bits", depth);
+			GL_LOG_WARN("Unknown depth buffer size: '{}', Setting it to 16 bits", depth);
+			return InternalFormat::DepthComponent16;
+		}
+		if(depth == 24)
+			return InternalFormat::Depth24Stencil8;
+		if(depth == 32)
+			return InternalFormat::Depth32FStencil8;
+
+
+		GL_LOG_WARN("Unknown depth buffer size: '{}', Setting it to 24 bits and 8 Stencil bits", depth);
 		return InternalFormat::DepthComponent16;
+	}
+
+	FrameBufferObject::Internals::Internals()
+	{
+		CHECK_IF_VALID_CONTEXT;
+		GL_CHECK(glGenFramebuffers(1, &Id));
+	}
+
+	FrameBufferObject::Internals::Internals(IdType id)
+	{
+		Id = id;
+	}
+
+	FrameBufferObject::Internals::~Internals()
+	{
+		CHECK_IF_VALID_CONTEXT;
+		GL_CHECK(glDeleteFramebuffers(1, &Id));
 	}
 
 	FrameBufferObject::FrameBufferObject(IdType id)
 	{
-		m_FrameBuffer = std::make_shared<IdType>(id);
+		m_Internals = MakePointer<Internals>(id);
 	}
 
-	FrameBufferObject::FrameBufferObject() : m_FrameBuffer(CreateFrameBuffer()) {}
+	FrameBufferObject::FrameBufferObject() : m_Internals(MakePointer<Internals>()) {}
 
 	void FrameBufferObject::Bind(int32_t x, int32_t y, int32_t width, int32_t height) const
 	{
@@ -89,7 +117,7 @@ namespace Game
 	{
 		CHECK_IF_VALID_CONTEXT Status::IncompleteAttachment;
 		GLenum status = GL_FRAMEBUFFER_COMPLETE;
-		GL_CHECK(status = glCheckNamedFramebufferStatus(*m_FrameBuffer, GL_DRAW_FRAMEBUFFER));
+		GL_CHECK(status = glCheckNamedFramebufferStatus(m_Internals->Id, GL_DRAW_FRAMEBUFFER));
 
 		return static_cast<Status>(status);
 	}
@@ -111,37 +139,41 @@ namespace Game
 		return value;
 	}
 
-	Pointer<Texture> FrameBufferObject::SetUpColorTextureAttachment(uint32_t width, uint32_t height, uint8_t depth)
+	Pointer<Texture> FrameBufferObject::SetUpColorTextureAttachment(uint32_t width, uint32_t height, uint32_t index, uint8_t depth)
 	{
+		m_Internals->ColorAttachments++;
+		
 		auto attachment = MakePointer<Texture>();
 
 		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, width, height, GetColorFormat(depth));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Linear, Filter::Linear);
 
-		Attach(GL_COLOR_ATTACHMENT0, attachment);
+		Attach(GL_COLOR_ATTACHMENT0 + index, attachment);
 
 		return attachment;
 	}
 
-	Pointer<RenderBuffer> FrameBufferObject::SetUpColorRenderBufferAttachment(uint32_t width, uint32_t height, uint8_t depth)
+	Pointer<RenderBuffer> FrameBufferObject::SetUpColorRenderBufferAttachment(uint32_t width, uint32_t height, uint32_t index, uint8_t depth)
 	{
+		m_Internals->ColorAttachments++;
+		
 		auto attachment = MakePointer<RenderBuffer>();
 
 		attachment->Storage(width, height, GetColorFormat(depth));
 
-		Attach(GL_COLOR_ATTACHMENT0, attachment);
+		Attach(GL_COLOR_ATTACHMENT0 + index, attachment);
 		return attachment;
 	}
 
-	Pointer<Texture> FrameBufferObject::SetUpDepthTextureAttachment(uint32_t width, uint32_t height, uint8_t depth)
+	Pointer<Texture> FrameBufferObject::SetUpDepthTextureAttachment(uint32_t width, uint32_t height, uint8_t depth, bool stencil)
 	{
 		if(depth == 0)
 			return nullptr;
 
 		auto attachment = MakePointer<Texture>();
 
-		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::DepthComponent, width, height, GetDepthFormat(depth));
+		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::DepthComponent, width, height, GetDepthFormat(depth, stencil));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Nearest, Filter::Nearest);
 		Attach(GL_DEPTH_COMPONENT, attachment);
@@ -149,14 +181,14 @@ namespace Game
 		return attachment;
 	}
 
-	Pointer<RenderBuffer> FrameBufferObject::SetUpDepthRenderBufferAttachment(uint32_t width, uint32_t height, uint8_t depth)
+	Pointer<RenderBuffer> FrameBufferObject::SetUpDepthRenderBufferAttachment(uint32_t width, uint32_t height, uint8_t depth, bool stencil)
 	{
 		if(depth == 0)
 			return nullptr;
 
 		auto attachment = MakePointer<RenderBuffer>();
 
-		attachment->Storage(width, height, GetDepthFormat(depth));
+		attachment->Storage(width, height, GetDepthFormat(depth, stencil));
 
 		return attachment;
 	}
@@ -165,7 +197,7 @@ namespace Game
 	{
 		CHECK_IF_VALID_CONTEXT;
 		GLenum status = GL_FRAMEBUFFER_COMPLETE;
-		GL_CHECK(status = glCheckNamedFramebufferStatus(*m_FrameBuffer, GL_DRAW_FRAMEBUFFER));
+		GL_CHECK(status = glCheckNamedFramebufferStatus(m_Internals->Id, GL_DRAW_FRAMEBUFFER));
 
 		if(status != GL_FRAMEBUFFER_COMPLETE)
 		{
@@ -182,28 +214,12 @@ namespace Game
 	void FrameBufferObject::Attach(uint32_t attachment, Pointer<Texture> texture)
 	{
 		CHECK_IF_VALID_CONTEXT;
-		GL_CHECK(glNamedFramebufferTexture(*m_FrameBuffer, attachment, *texture, 0));
+		GL_CHECK(glNamedFramebufferTexture(m_Internals->Id, attachment, *texture, 0));
 	}
 
 	void FrameBufferObject::Attach(uint32_t attachment, Pointer<RenderBuffer> renderBuffer)
 	{
 		CHECK_IF_VALID_CONTEXT;
-		GL_CHECK(glNamedFramebufferRenderbuffer(*m_FrameBuffer, attachment, GL_RENDERBUFFER, renderBuffer->Id()));
-	}
-
-	void FrameBufferObject::DeleteFrameBuffer(IdType *id)
-	{
-		CHECK_IF_VALID_CONTEXT;
-		GL_CHECK(glDeleteFramebuffers(1, id));
-		delete id;
-	}
-
-	Pointer<FrameBufferObject::IdType> FrameBufferObject::CreateFrameBuffer()
-	{
-		auto frameBuffer = Pointer<IdType>(new IdType(), DeleteFrameBuffer);
-		CHECK_IF_VALID_CONTEXT nullptr;
-		GL_CHECK(glGenFramebuffers(1, &*frameBuffer));
-
-		return frameBuffer;
+		GL_CHECK(glNamedFramebufferRenderbuffer(m_Internals->Id, attachment, GL_RENDERBUFFER, renderBuffer->Id()));
 	}
 }
