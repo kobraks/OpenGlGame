@@ -3,6 +3,7 @@
 
 #include "GLCheck.h"
 #include "glad/glad.h"
+#include "ShaderProgram.h"
 
 namespace Game
 {
@@ -162,6 +163,14 @@ namespace Game
 		delete[] Data;
 	}
 
+	UniformBuffer::UniformBuffer(const ShaderProgram &program, const std::string &name, BufferUsage usage) : BufferObject(BufferType::Uniform)
+	{
+		auto info = program.QueryUniformBlock(name);
+
+		m_Internals = MakePointer<Internals>(info.Size, usage);
+		Data(usage, info.Size, nullptr);
+	}
+
 	UniformBuffer::UniformBuffer(uint32_t size, BufferUsage usage) : BufferObject(BufferType::Uniform)
 	{
 		m_Internals = MakePointer<Internals>(size, usage);
@@ -201,5 +210,16 @@ namespace Game
 	void UniformBuffer::Set(const glm::vec3 &value, size_t offset)
 	{
 		Set(&value, sizeof(glm::vec3), offset);
+	}
+
+	void UniformBuffer::Set(const glm::mat4 &value, size_t offset)
+	{
+		for(uint32_t i = 0; i < 4; ++i)
+			Set(value[i], offset + i * sizeof(glm::vec4));
+	}
+	
+	void UniformBuffer::Set(const glm::vec4 &value, size_t offset)
+	{
+		Set(&value, sizeof(glm::vec4), offset);
 	}
 }

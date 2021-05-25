@@ -9,6 +9,8 @@
 
 namespace Game
 {
+	class ShaderProgram;
+	
 	enum class ShaderDataType
 	{
 		None = 0,
@@ -274,6 +276,7 @@ namespace Game
 
 		Pointer<Internals> m_Internals;
 	public:
+		UniformBuffer(const ShaderProgram& program, const std::string &name, BufferUsage usage);
 		UniformBuffer(uint32_t size, BufferUsage usage);
 		UniformBuffer(const void *data, uint32_t size, BufferUsage usage);
 
@@ -305,5 +308,7 @@ namespace Game
 
 		void Set(const glm::mat3 &value, size_t offset = 0);
 		void Set(const glm::vec3 &value, size_t offset = 0);
+		void Set(const glm::mat4 &value, size_t offset = 0);
+		void Set(const glm::vec4 &value, size_t offset = 0);
 	};
 }

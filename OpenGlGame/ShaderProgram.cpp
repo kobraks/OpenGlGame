@@ -123,7 +123,7 @@ namespace Game
 
 		if(length > 0)
 		{
-			std::string log(static_cast<IdType>(length), 0);
+			std::string log((length), 0);
 			CHECK_IF_VALID_CONTEXT {};
 			GL_CHECK(glGetProgramInfoLog(Program, length, &length, &log[0]));
 			return log;
@@ -301,10 +301,10 @@ namespace Game
 		int size        = 0;
 		uint32_t type   = 0;
 
-		std::string name(static_cast<uint32_t>(length), 0);
+		std::string name((length), 0);
 
 		CHECK_IF_VALID_CONTEXT info;
-		(glGetActiveUniform(Program, index, length, nullptr, &size, &type, &name[0]));
+		GL_CHECK(glGetActiveUniform(Program, index, length, nullptr, &size, &type, &name[0]));
 		UniformLocationType location = INVALID_UNIFORM_LOCATION;
 		GL_CHECK(location = glGetUniformLocation(Program, &name[0]));
 
@@ -544,17 +544,17 @@ namespace Game
 
 	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer &buffer)
 	{
-		if (index == INVALID_UNIFORM_BLOCK_INDEX)
+		if(index == INVALID_UNIFORM_BLOCK_INDEX)
 			return;
 
 		CHECK_IF_VALID_CONTEXT;
 		buffer.Bind();
-		GL_CHECK(glBindBufferBase(static_cast<GLenum>(buffer.Type()),  index, buffer));
+		GL_CHECK(glBindBufferBase(static_cast<GLenum>(buffer.Type()), index, buffer));
 	}
 
 	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer &buffer, size_t size, size_t offset)
 	{
-		if (index == INVALID_UNIFORM_BLOCK_INDEX)
+		if(index == INVALID_UNIFORM_BLOCK_INDEX)
 			return;
 
 		CHECK_IF_VALID_CONTEXT;
@@ -572,5 +572,37 @@ namespace Game
 	const std::vector<ShaderProgram::UniformInfo>& ShaderProgram::GetActiveUniforms() const
 	{
 		return m_Internals->ActiveUniforms;
+	}
+
+	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(UniformLocationType location) const
+	{
+		const auto iter = std::ranges::find_if(m_Internals->ActiveUniforms, [location](const UniformInfo &info) { return info.Location == location; });
+
+		if(iter != m_Internals->ActiveUniforms.end())
+			return *iter;
+
+		ASSERT(false, "Shader does not contains uniform at given location, {}", location);
+		throw std::runtime_error("Shader does not contains uniform at given location");
+	}
+
+	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(UniformBlockIndexType index) const
+	{
+		const auto iter = std::ranges::find_if(m_Internals->ActiveUniformBlocks, [index](const UniformBlockInfo &info) { return info.Index == index; });
+
+		if(iter != m_Internals->ActiveUniformBlocks.end())
+			return *iter;
+
+		ASSERT(false, "Shader does not contains uniform at given index, {}", index);
+		throw std::runtime_error("Shader does not contains uniform at given index");
+	}
+
+	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(const std::string &name) const
+	{
+		return QueryUniform(GetUniformLocation(name));
+	}
+
+	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(const std::string &name) const
+	{
+		return QueryUniformBlock(GetUniformBlockIndex(name));
 	}
 }

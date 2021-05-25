@@ -202,6 +202,11 @@ namespace Game
 		size_t GetActiveUniformCount() const { return m_Internals->ActiveUniforms.size(); }
 		size_t GetActiveUniformBlockCount() const { return m_Internals->ActiveUniformBlocks.size(); }
 
+		UniformInfo QueryUniform(UniformLocationType location) const;
+		UniformBlockInfo QueryUniformBlock(UniformBlockIndexType index) const;
+
+		UniformInfo QueryUniform(const std::string &name) const;
+		UniformBlockInfo QueryUniformBlock(const std::string &name) const;
 	public:
 		template <class ...Args>
 		void Attach(Pointer<Shader> shader, Args &&... args)
