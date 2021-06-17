@@ -8,7 +8,6 @@
 	if(!m_Context.IsContextCurrent())\
 	{\
 		ASSERT(false, "Not current OpenGl context");\
-		throw std::runtime_error("Not current OpenGl context");\
 	}
 
 namespace Game

@@ -13,9 +13,10 @@ namespace Game
 		static inline std::unordered_map<std::thread::id, Context*> s_Contests; 
 		static inline thread_local Context* s_Context = nullptr;
 		
-		std::thread::id m_ThreadId;
 		void *m_WindowHandler = nullptr;
 		OpenGlFunctions m_Functions;
+		
+		std::thread::id m_ThreadId;
 	public:
 		Context(const Context &) = delete;
 		Context(Context &&)      = delete;
@@ -33,7 +34,7 @@ namespace Game
 		OpenGlFunctions GetFunctions() const { return m_Functions; }
 		void MakeCurrent();
 
-		bool IsContextCurrent() const;
+		[[nodiscard]] bool IsContextCurrent() const;
 
 		static Context* GetCurrentContext();
 		static Context* GetContext();

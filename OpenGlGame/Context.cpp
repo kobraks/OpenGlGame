@@ -65,10 +65,10 @@ namespace Game
 		return s_Context;
 	}
 
-	Context::Context(void *windowHandler) : m_ThreadId(std::this_thread::get_id()), m_WindowHandler(windowHandler), m_Functions(*this)
+	Context::Context(void *windowHandler) : m_WindowHandler(windowHandler), m_Functions(*this), m_ThreadId(std::this_thread::get_id())
 	{
 		MakeCurrent();
-		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		ASSERT(status, "Failed to initialize Glad!");
 
 		LOG_INFO("OpenGL Info: ");
