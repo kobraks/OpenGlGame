@@ -70,6 +70,23 @@ namespace Game
 			Mask(mask),
 			TestFunction(function),
 			Ref(ref) {}
+
+
+		constexpr bool operator== (const StencilTest& test) const
+		{
+			return Face == test.Face &&
+				StencilFail == test.StencilFail &&
+				DepthFails == test.DepthFails &&
+				Pass == test.Pass &&
+				Mask == test.Mask &&
+				TestFunction == test.TestFunction &&
+				Ref == test.Ref;
+		}
+
+		constexpr bool operator!= (const StencilTest& test) const
+		{
+			return !(*this == test);
+		}
 	};
 
 	struct BlendMode
@@ -124,6 +141,21 @@ namespace Game
 		Factor AlphaSrcFactor  = Factor::One;
 		Factor AlphaDstFactor  = Factor::OneMinusSrcAlpha;
 		Equation AlphaEquation = Equation::Add;
+
+		constexpr bool operator == (const BlendMode& mode) const
+		{
+			return ColorSrcFactor == mode.ColorSrcFactor && 
+				ColorDstFactor == mode.ColorDstFactor &&
+				ColorEquation == mode.ColorEquation &&
+				AlphaSrcFactor == mode.AlphaSrcFactor &&
+				AlphaDstFactor == mode.AlphaDstFactor &&
+				AlphaEquation == mode.AlphaEquation;
+		}
+
+		constexpr bool operator != (const BlendMode& mode) const
+		{
+			return !(*this == mode);
+		}
 	};
 
 	class OpenGlFunctions
@@ -141,6 +173,9 @@ namespace Game
 			PolygonFacing PolygonFacing = PolygonFacing::Back;
 
 			glm::vec4 ClearColor = glm::vec4(0.f, 0.f, 0.f, 0.f);
+
+			StencilTest StencilTest;
+			BlendMode BlendMode;
 		};
 
 		Pointer<Internals> m_Internals;
@@ -149,8 +184,9 @@ namespace Game
 
 		OpenGlFunctions(Context &context);
 		void MakeCurrent();
-		static OpenGlFunctions& GetFunctions();
 	public:
+		static OpenGlFunctions& GetFunctions();
+		
 		void Clear(BufferBit buffer);
 
 		void Enable(Capability capability);
@@ -182,8 +218,11 @@ namespace Game
 			return SetViewPort(pos.X, pos.Y, size.Width, size.Height);
 		}
 
-		void SetBlendMode(const BlendMode &mode);
-		void SetStencilTest(const StencilTest &test);
+		void SetBlendMode(const BlendMode &blendMode);
+		void SetStencilTest(const StencilTest &stencilTest);
+
+		BlendMode GetBlendMode() const;
+		StencilTest GetStencilTest() const;
 
 		void Flush();
 		void Finish();

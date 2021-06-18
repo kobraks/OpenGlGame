@@ -26,6 +26,13 @@ namespace Game
 
 	OpenGlFunctions& OpenGlFunctions::GetFunctions()
 	{
+		ASSERT(s_Instance, "Insance of OpenGLFunctions does not exists");
+
+		if (s_Instance->m_Context.IsContextCurrent())
+		{
+			ASSERT(false, "Not in current OpenGL Context");
+		}
+		
 		return *s_Instance;
 	}
 
@@ -138,23 +145,41 @@ namespace Game
 		return m_Internals->PolygonFacing;
 	}
 
-	void OpenGlFunctions::SetBlendMode(const BlendMode &mode)
+	void OpenGlFunctions::SetBlendMode(const BlendMode &blendMode)
 	{
 		CHECK_IF_VALID_CONTEXT();
 
 		GL_CHECK(
-		         glBlendFuncSeparate(static_cast<GLenum>(mode.ColorSrcFactor), static_cast<GLenum>(mode.ColorDstFactor), static_cast<GLenum>(mode.AlphaSrcFactor
-		         ), static_cast<GLenum>(mode.AlphaDstFactor))
+		         glBlendFuncSeparate(static_cast<GLenum>(blendMode.ColorSrcFactor), static_cast<GLenum>(blendMode.ColorDstFactor), static_cast<GLenum>(blendMode.AlphaSrcFactor
+		         ), static_cast<GLenum>(blendMode.AlphaDstFactor))
 		        );
-		GL_CHECK(glBlendEquationSeparate(static_cast<GLenum>(mode.ColorEquation), static_cast<GLenum>(mode.AlphaEquation)));
+		GL_CHECK(glBlendEquationSeparate(static_cast<GLenum>(blendMode.ColorEquation), static_cast<GLenum>(blendMode.AlphaEquation)));
+
+		m_Internals->BlendMode = blendMode;
 	}
 
-	void OpenGlFunctions::SetStencilTest(const StencilTest &test)
+	void OpenGlFunctions::SetStencilTest(const StencilTest &stencilTest)
 	{
 		CHECK_IF_VALID_CONTEXT();
 
-		GL_CHECK(glStencilFuncSeparate(static_cast<GLenum>(test.Face), static_cast<GLenum>(test.TestFunction), test.Ref, test.Mask));
-		GL_CHECK(glStencilOpSeparate(static_cast<GLenum>(test.Face), static_cast<GLenum>(test.StencilFail), static_cast<GLenum>(test.DepthFails), static_cast<GLenum>(test.Pass)));
+		GL_CHECK(glStencilFuncSeparate(static_cast<GLenum>(stencilTest.Face), static_cast<GLenum>(stencilTest.TestFunction), stencilTest.Ref, stencilTest.Mask));
+		GL_CHECK(glStencilOpSeparate(static_cast<GLenum>(stencilTest.Face), static_cast<GLenum>(stencilTest.StencilFail), static_cast<GLenum>(stencilTest.DepthFails), static_cast<GLenum>(stencilTest.Pass)));
+
+		m_Internals->StencilTest = stencilTest;
+	}
+
+	BlendMode OpenGlFunctions::GetBlendMode() const
+	{
+		CHECK_IF_VALID_CONTEXT();
+
+		return m_Internals->BlendMode;
+		
+	}
+	StencilTest OpenGlFunctions::GetStencilTest() const
+	{
+		CHECK_IF_VALID_CONTEXT();
+
+		return m_Internals->StencilTest;
 	}
 
 	void OpenGlFunctions::Flush()
