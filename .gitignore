@@ -12,6 +12,18 @@
 **/*.pdb
 **/*.cd
 
+#ignoring build directory
+Build
+Build/*
+
+#ignoring include directory
+Include
+Include/*
+
+#ignoring lib directory
+Lib
+Lib/*
+
 #removing blendfiles
 **/*.blend*
 OrginalModels/*
