@@ -67,6 +67,7 @@
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneCamera.cpp" />
+    <ClCompile Include="SceneDeserialize.cpp" />
     <ClCompile Include="SceneSerializer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderLoader.cpp" />
@@ -102,6 +103,7 @@
     <ClInclude Include="EntityLuaHandle.h" />
     <ClInclude Include="Entity.h" />
     <ClInclude Include="Event.h" />
+    <ClInclude Include="Exception.h" />
     <ClInclude Include="FileWatcher.h" />
     <ClInclude Include="Font.h" />
     <ClInclude Include="FrameBuffer.h" />

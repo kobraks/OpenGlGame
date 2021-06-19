@@ -88,6 +88,9 @@
     <Filter Include="Source Files\Renderer">
       <UniqueIdentifier>{dce6516e-eed7-4089-ab45-9ef9e4d15343}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Scene\SecneSerializer">
+      <UniqueIdentifier>{89be0e52-4b4d-45d5-97bb-c75aad7f9167}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -264,9 +267,6 @@
     <ClCompile Include="Component.cpp">
       <Filter>Source Files\Entity\Component</Filter>
     </ClCompile>
-    <ClCompile Include="SceneSerializer.cpp">
-      <Filter>Source Files\Scene</Filter>
-    </ClCompile>
     <ClCompile Include="FileWatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -281,6 +281,12 @@
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneDeserialize.cpp">
+      <Filter>Source Files\Scene\SecneSerializer</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneSerializer.cpp">
+      <Filter>Source Files\Scene\SecneSerializer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -541,6 +547,9 @@
     </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Header Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="Exception.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
