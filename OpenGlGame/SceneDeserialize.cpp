@@ -35,9 +35,8 @@ namespace Game
 		/// 1 in case of invalid value
 		/// 2 in case of wrong type</returns>
 		template <typename Type>
-		int GetValue(sol::object obj, std::string validKey, std::string key, Type &value)
+		int GetValue(sol::object obj, std::string validKey, const std::string &key, Type &value)
 		{
-			key = ToUpper(Trim(key));
 			const std::string lowerKey = Trim(validKey);
 
 			validKey = ToUpperCopy(validKey);
@@ -75,9 +74,8 @@ namespace Game
 		/// 0 in case of success
 		/// 1 in case of invalid value
 		/// 2 in case of wrong type</returns>
-		int GetValue3(sol::table obj, std::string validKey, std::string key, glm::vec3 &value)
+		int GetValue3(sol::table obj, std::string validKey, const std::string &key, glm::vec3 &value)
 		{
-			key = ToUpper(Trim(key));
 			const std::string lowerKey = Trim(validKey);
 
 			validKey = ToUpperCopy(validKey);
@@ -114,7 +112,9 @@ namespace Game
 		{
 			for(auto [key, value] : component)
 			{
-				if(GetValue<std::string>(value, "Tag", key.as<std::string>(), comp.Tag) >= 0);
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()))
+;				
+				if(GetValue<std::string>(value, "Tag", upperKey, comp.Tag) >= 0);
 				else
 					LOG_WARN("Unknwon key value {}", key.as<std::string>());
 			}
@@ -127,11 +127,13 @@ namespace Game
 
 			for(auto [key, value] : component)
 			{
-				if(GetValue3(value.as<sol::table>(), "Position", key.as<std::string>(), vec) >= 0)
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
+				
+				if(GetValue3(value.as<sol::table>(), "Position", upperKey, vec) >= 0)
 					comp.SetPosition(vec);
-				else if(GetValue3(value.as<sol::table>(), "Rotation", key.as<std::string>(), vec) >= 0)
+				else if(GetValue3(value.as<sol::table>(), "Rotation", upperKey, vec) >= 0)
 					comp.SetRotation(vec);
-				else if(GetValue3(value.as<sol::table>(), "Scale", key.as<std::string>(), vec) >= 0)
+				else if(GetValue3(value.as<sol::table>(), "Scale", upperKey, vec) >= 0)
 					comp.SetScale(vec);
 				else
 					LOG_WARN("Unknown key value: {}", key.as<std::string>());
@@ -154,14 +156,16 @@ namespace Game
 
 			for(auto [key, value] : component)
 			{
-				if(GetValue<bool>(value, "Primary", key.as<std::string>(), primary) >= 0);
-				else if(GetValue<bool>(value, "FixedAspectRatio", key.as<std::string>(), fixed) >= 0);
-				else if(GetValue<SceneCamera::ProjectionType>(value, "Type", key.as<std::string>(), type) >= 0);
-				else if(GetValue<float>(value, "NearClip", key.as<std::string>(), nearClip) >= 0);
-				else if(GetValue<float>(value, "FarClip", key.as<std::string>(), farClip) >= 0);
-				else if(GetValue<float>(value, "FOV", key.as<std::string>(), fov) >= 0);
-				else if(GetValue<float>(value, "Size", key.as<std::string>(), size) >= 0);
-				else if(GetValue<float>(value, "AspectRatio", key.as<std::string>(), aspect) >= 0);
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
+				
+				if(GetValue<bool>(value, "Primary", upperKey, primary) >= 0);
+				else if(GetValue<bool>(value, "FixedAspectRatio", upperKey, fixed) >= 0);
+				else if(GetValue<SceneCamera::ProjectionType>(value, "Type", upperKey, type) >= 0);
+				else if(GetValue<float>(value, "NearClip", upperKey, nearClip) >= 0);
+				else if(GetValue<float>(value, "FarClip", upperKey, farClip) >= 0);
+				else if(GetValue<float>(value, "FOV", upperKey, fov) >= 0);
+				else if(GetValue<float>(value, "Size", upperKey, size) >= 0);
+				else if(GetValue<float>(value, "AspectRatio", upperKey, aspect) >= 0);
 				else
 					LOG_WARN("Unknown key value: {}", key.as<std::string>());
 			}
@@ -202,17 +206,19 @@ namespace Game
 
 			for(auto [key, value] : component)
 			{
-				if(GetValue<bool>(value, "Active", key.as<std::string>(), active) >= 0);
-				else if(GetValue<float>(value, "Constant", key.as<std::string>(), constant) >= 0);
-				else if(GetValue<float>(value, "Linear", key.as<std::string>(), linear) >= 0);
-				else if(GetValue<float>(value, "Quadratic", key.as<std::string>(), quadratic) >= 0);
-				else if(GetValue<float>(value, "CutOff", key.as<std::string>(), cutOff) >= 0);
-				else if(GetValue<float>(value, "OuterCutOff", key.as<std::string>(), outerCutOff) >= 0);
-				else if(GetValue<std::string>(value, "LightCookie", key.as<std::string>(), cookie) >= 0);
-				else if(GetValue<LightType>(value, "Type", key.as<std::string>(), type) >= 0);
-				else if(value.is<sol::table>() && GetValue3(value, "DiffuseColor", key.as<std::string>(), diffuse) >= 0);
-				else if(value.is<sol::table>() && GetValue3(value, "AmbientColor", key.as<std::string>(), ambient) >= 0);
-				else if(value.is<sol::table>() && GetValue3(value, "SpecularColor", key.as<std::string>(), specular) >= 0);
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
+				
+				if(GetValue<bool>(value, "Active", upperKey, active) >= 0);
+				else if(GetValue<float>(value, "Constant", upperKey, constant) >= 0);
+				else if(GetValue<float>(value, "Linear", upperKey, linear) >= 0);
+				else if(GetValue<float>(value, "Quadratic", upperKey, quadratic) >= 0);
+				else if(GetValue<float>(value, "CutOff", upperKey, cutOff) >= 0);
+				else if(GetValue<float>(value, "OuterCutOff", upperKey, outerCutOff) >= 0);
+				else if(GetValue<std::string>(value, "LightCookie", upperKey, cookie) >= 0);
+				else if(GetValue<LightType>(value, "Type", upperKey, type) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "DiffuseColor", upperKey, diffuse) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "AmbientColor", upperKey, ambient) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "SpecularColor", upperKey, specular) >= 0);
 				else
 					LOG_WARN("Unknown key value: {}", key.as<std::string>());
 			}
@@ -264,7 +270,7 @@ namespace Game
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
 				
-				if(GetValue<std::string>(value, "Path", key.as<std::string>(), comp.ScriptPath) >= 0)
+				if(GetValue<std::string>(value, "Path", upperKey, comp.ScriptPath) >= 0)
 					comp.OpenFile(comp.ScriptPath);
 				else if(upperKey == "PROPERTIES"); //TODO Parameters for scripts
 				else
@@ -277,9 +283,11 @@ namespace Game
 		{
 			for(auto [key, value] : component)
 			{
-				if(GetValue<std::string>(value, "Path", key.as<std::string>(), comp.ModelPath) >= 0)
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
+				
+				if(GetValue<std::string>(value, "Path", upperKey, comp.ModelPath) >= 0)
 					comp.LoadModel(comp.ModelPath);
-				else if(GetValue<bool>(value, "Drawable", key.as<std::string>(), comp.Drawable) >= 0);
+				else if(GetValue<bool>(value, "Drawable", upperKey, comp.Drawable) >= 0);
 				else
 					LOG_WARN("Unknown key value: {}", key.as<std::string>());
 			}
@@ -476,7 +484,7 @@ namespace Game
 
 	void SceneSerializer::ProcessEntity(uint64_t index, Entity entity, sol::table entityTable)
 	{
-		LOG_DEBUG("Processing entity table");
+		LOG_DEBUG("Processing entity {}, table", index);
 
 		if(!entityTable.valid())
 		{
