@@ -20,6 +20,287 @@
 
 namespace Game
 {
+	namespace Priv
+	{
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="Type"></typeparam>
+		/// <param name="obj">Object</param>
+		/// <param name="validKey">Valid key</param>
+		/// <param name="key">Recived key</param>
+		/// <param name="value">Value to be set</param>
+		/// <returns>-1 in case of key != validKey
+		/// 0 in case of success
+		/// 1 in case of invalid value
+		/// 2 in case of wrong type</returns>
+		template <typename Type>
+		int GetValue(sol::object obj, std::string validKey, std::string key, Type &value)
+		{
+			key = ToUpper(Trim(key));
+			const std::string lowerKey = Trim(validKey);
+
+			validKey = ToUpperCopy(validKey);
+
+			if(key == validKey)
+			{
+				LOG_DEBUG("Found {} key", lowerKey);
+				if(obj.valid())
+				{
+					if(obj.is<Type>())
+					{
+						value = obj.as<Type>();
+						LOG_DEBUG("Readed {}", value);
+						return 0;
+					}
+					LOG_DEBUG("valuse of {} has unexpected type", lowerKey);
+					return 2;
+				}
+				LOG_DEBUG("Value is not valid");
+				return 1;
+			}
+
+			return -1;
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <typeparam name="Type"></typeparam>
+		/// <param name="obj">Object</param>
+		/// <param name="validKey">Valid key</param>
+		/// <param name="key">Recived key</param>
+		/// <param name="value">Value to be set</param>
+		/// <returns>-1 in case of key != validKey
+		/// 0 in case of success
+		/// 1 in case of invalid value
+		/// 2 in case of wrong type</returns>
+		int GetValue3(sol::table obj, std::string validKey, std::string key, glm::vec3 &value)
+		{
+			key = ToUpper(Trim(key));
+			const std::string lowerKey = Trim(validKey);
+
+			validKey = ToUpperCopy(validKey);
+
+			if(key == validKey)
+			{
+				LOG_DEBUG("Found {} key", lowerKey);
+				if(obj.valid())
+				{
+					if(obj.is<sol::table>())
+					{
+						value = ReadVector3(obj);
+						LOG_DEBUG("Readed [{}, {}, {}]", value.x, value.y, value.z);
+						return 0;
+					}
+					LOG_DEBUG("valuse of {} has unexpected type", lowerKey);
+					return 2;
+				}
+				LOG_DEBUG("Value is not valid");
+				return 1;
+			}
+
+			return -1;
+		}
+
+		template <typename Component>
+		void ProcessComponentPa(uint64_t index, Component &comp, sol::table component)
+		{
+			static_assert(false);
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, TagComponent &comp, sol::table component)
+		{
+			for(auto [key, value] : component)
+			{
+				if(GetValue<std::string>(value, "Tag", key.as<std::string>(), comp.Tag) >= 0);
+				else
+					LOG_WARN("Unknwon key value {}", key.as<std::string>());
+			}
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, TransformComponent &comp, sol::table component)
+		{
+			glm::vec3 vec;
+
+			for(auto [key, value] : component)
+			{
+				if(GetValue3(value.as<sol::table>(), "Position", key.as<std::string>(), vec) >= 0)
+					comp.SetPosition(vec);
+				else if(GetValue3(value.as<sol::table>(), "Rotation", key.as<std::string>(), vec) >= 0)
+					comp.SetRotation(vec);
+				else if(GetValue3(value.as<sol::table>(), "Scale", key.as<std::string>(), vec) >= 0)
+					comp.SetScale(vec);
+				else
+					LOG_WARN("Unknown key value: {}", key.as<std::string>());
+			}
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, CameraComponent &comp, sol::table component)
+		{
+			auto type = SceneCamera::ProjectionType::Perspective;
+
+			float nearClip = 0.f;
+			float farClip  = 0.f;
+			float fov      = 0.f;
+			float size     = 0.f;
+			float aspect   = 0.f;
+
+			bool primary = false;
+			bool fixed   = false;
+
+			for(auto [key, value] : component)
+			{
+				if(GetValue<bool>(value, "Primary", key.as<std::string>(), primary) >= 0);
+				else if(GetValue<bool>(value, "FixedAspectRatio", key.as<std::string>(), fixed) >= 0);
+				else if(GetValue<SceneCamera::ProjectionType>(value, "Type", key.as<std::string>(), type) >= 0);
+				else if(GetValue<float>(value, "NearClip", key.as<std::string>(), nearClip) >= 0);
+				else if(GetValue<float>(value, "FarClip", key.as<std::string>(), farClip) >= 0);
+				else if(GetValue<float>(value, "FOV", key.as<std::string>(), fov) >= 0);
+				else if(GetValue<float>(value, "Size", key.as<std::string>(), size) >= 0);
+				else if(GetValue<float>(value, "AspectRatio", key.as<std::string>(), aspect) >= 0);
+				else
+					LOG_WARN("Unknown key value: {}", key.as<std::string>());
+			}
+
+			comp.FixedAspectRatio = fixed;
+			comp.Primary          = primary;
+
+			if(type == SceneCamera::ProjectionType::Perspective)
+			{
+				comp.Camera.SetPerspective(fov, nearClip, farClip);
+				comp.Camera.SetAspectRatio(aspect);
+			}
+			else
+			{
+				comp.Camera.SetOrthographic(size, nearClip, farClip);
+				comp.Camera.SetAspectRatio(aspect);
+			}
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, LightComponent &comp, sol::table component)
+		{
+			bool active = false;
+			auto type   = LightType::Directional;
+
+			glm::vec3 diffuse;
+			glm::vec3 ambient;
+			glm::vec3 specular;
+
+			float constant  = 0.f;
+			float linear    = 0.f;
+			float quadratic = 0.f;
+
+			float cutOff      = 0.f;
+			float outerCutOff = 0.f;
+
+			std::string cookie = {};
+
+			for(auto [key, value] : component)
+			{
+				if(GetValue<bool>(value, "Active", key.as<std::string>(), active) >= 0);
+				else if(GetValue<float>(value, "Constant", key.as<std::string>(), constant) >= 0);
+				else if(GetValue<float>(value, "Linear", key.as<std::string>(), linear) >= 0);
+				else if(GetValue<float>(value, "Quadratic", key.as<std::string>(), quadratic) >= 0);
+				else if(GetValue<float>(value, "CutOff", key.as<std::string>(), cutOff) >= 0);
+				else if(GetValue<float>(value, "OuterCutOff", key.as<std::string>(), outerCutOff) >= 0);
+				else if(GetValue<std::string>(value, "LightCookie", key.as<std::string>(), cookie) >= 0);
+				else if(GetValue<LightType>(value, "Type", key.as<std::string>(), type) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "DiffuseColor", key.as<std::string>(), diffuse) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "AmbientColor", key.as<std::string>(), ambient) >= 0);
+				else if(value.is<sol::table>() && GetValue3(value, "SpecularColor", key.as<std::string>(), specular) >= 0);
+				else
+					LOG_WARN("Unknown key value: {}", key.as<std::string>());
+			}
+
+			Pointer<Light> light = nullptr;
+			if(type == LightType::Directional)
+				light = comp.Light = MakePointer<DirectionalLight>();
+			if(type == LightType::Spot || type == LightType::Point)
+			{
+				Pointer<PointLight> l = nullptr;
+
+				if(type == LightType::Point)
+					l = MakePointer<PointLight>();
+				else
+				{
+					Pointer<SpotLight> l2 = MakePointer<SpotLight>();
+
+					if(!cookie.empty())
+						l2->SetTexture(TextureLoader::Load(cookie, TEXTURES_PATH));
+
+					l2->SetOuterCutOff(outerCutOff);
+					l2->SetCutOff(cutOff);
+
+					l = l2;
+				}
+
+				l->SetConstant(constant);
+				l->SetLinear(linear);
+				l->SetQuadratic(quadratic);
+				light = l;
+			}
+
+			if(light)
+			{
+				light->SetActive(active);
+				light->SetAmbientColor(ambient);
+				light->SetAmbientColor(diffuse);
+				light->SetAmbientColor(specular);
+
+				comp.Light       = light;
+				comp.TexturePath = cookie;
+			}
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, LuaScriptComponent &comp, sol::table component)
+		{
+			for(auto [key, value] : component)
+			{
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
+				
+				if(GetValue<std::string>(value, "Path", key.as<std::string>(), comp.ScriptPath) >= 0)
+					comp.OpenFile(comp.ScriptPath);
+				else if(upperKey == "PROPERTIES"); //TODO Parameters for scripts
+				else
+					LOG_WARN("Unknown key value: {}", key.as<std::string>());
+			}
+		}
+
+		template <>
+		void ProcessComponentPa(uint64_t index, ModelComponent &comp, sol::table component)
+		{
+			for(auto [key, value] : component)
+			{
+				if(GetValue<std::string>(value, "Path", key.as<std::string>(), comp.ModelPath) >= 0)
+					comp.LoadModel(comp.ModelPath);
+				else if(GetValue<bool>(value, "Drawable", key.as<std::string>(), comp.Drawable) >= 0);
+				else
+					LOG_WARN("Unknown key value: {}", key.as<std::string>());
+			}
+		}
+
+		template <typename Component>
+		void ProcessComponentP(uint64_t index, Entity entity, std::string name, sol::table component)
+		{
+			if(entity.HasComponent<Component>())
+			{
+				LOG_WARN("Entity {} already has {}", index, name);
+				return;
+			}
+
+			LOG_DEBUG("Adding {} to entity: {}", index, name);
+			auto &comp = entity.AddComponent<Component>();
+
+			ProcessComponentPa<Component>(index, comp, component);
+		}
+	}
+
 	bool SceneSerializer::Deserialize(const std::string &filePath)
 	{
 		try
@@ -123,7 +404,8 @@ namespace Game
 	{
 		struct EntityStruct
 		{
-			int64_t Id = 0;
+			int64_t Key = 0;
+			int64_t Id  = 0;
 			sol::table EntityTable;
 		};
 
@@ -139,13 +421,24 @@ namespace Game
 		//Searching for an id
 		for(const auto [key, value] : entities)
 		{
-			if(value.is<sol::table>())
+			if(!key.is<uint64_t>())
+				throw Exception("Table name is not an number");
+
+			if(value != sol::nil && value.is<sol::table>())
 			{
 				EntityStruct ent;
 				ent.EntityTable = value.as<sol::table>();
 				ent.Id          = FindEntityId(ent.EntityTable);
+				ent.Key         = key.as<uint64_t>();
 
 				ents.emplace_back(ent);
+
+				if(ent.Id >= 0)
+				{
+					LOG_DEBUG("Used static id for entity: {}, id = {}", ent.Key, ent.Id);
+				}
+				else
+					LOG_DEBUG("Used auto id for entity: {}", ent.Key);
 			}
 			else
 			{
@@ -155,8 +448,8 @@ namespace Game
 
 		std::ranges::sort(ents, [](const EntityStruct &e1, const EntityStruct &e2) { return e1.Id > e2.Id; });
 
-		for(const auto &ent : ents)
-			ProcessEntity(ent.Id < 0 ? m_Scene->CreateEmpty() : m_Scene->CreateEmpty(ent.Id), ent.EntityTable);
+		for(const auto &[key, id, entityTable] : ents)
+			ProcessEntity(key, id < 0 ? m_Scene->CreateEmpty() : m_Scene->CreateEmpty(id), entityTable);
 	}
 
 	int64_t SceneSerializer::FindEntityId(sol::table entityTable)
@@ -169,17 +462,10 @@ namespace Game
 
 			if(k == "ID")
 			{
-				LOG_DEBUG("Id found");
-
-				if(value.is<uint32_t>())
-				{
+				if(value != sol::nil && value.is<uint32_t>())
 					id = value.as<uint32_t>();
-					LOG_DEBUG("Setting id to: {}", id);
-				}
 				else
-				{
 					LOG_WARN("Unable to read id value");
-				}
 
 				break;
 			}
@@ -188,326 +474,45 @@ namespace Game
 		return id;
 	}
 
-	void SceneSerializer::ProcessEntity(Entity entity, sol::table entityTable)
+	void SceneSerializer::ProcessEntity(uint64_t index, Entity entity, sol::table entityTable)
 	{
 		LOG_DEBUG("Processing entity table");
 
 		if(!entityTable.valid())
 		{
-			throw std::exception("Entity table is invalid");
+			throw Exception("Entity table is invalid");
 		}
 
 		for(auto [key, value] : entityTable)
 		{
-			if(key.is<std::string>())
-			{
-				if(ToUpperCopy(TrimCopy(key.as<std::string>())) == "ID");
-				else if(value.is<sol::table>())
-					ProcessComponent(entity, TrimCopy(key.as<std::string>()), value.as<sol::table>());
-				else
-					LOG_WARN("{} Value is not valid table", key.as<std::string>());
-			}
+			const auto trimedKey = TrimCopy(key.as<std::string>());
+			const auto upperKey = ToUpperCopy(trimedKey);
+			
+			if(upperKey == "ID");
+			else if(value.is<sol::table>())
+				ProcessComponent(index, entity, trimedKey, value.as<sol::table>());
 			else
-				LOG_WARN("Key is not valid string");
+				LOG_WARN("{} Value is not valid table of entity: {}", key.as<std::string>(), index);
 		}
 	}
 
-	template <typename Type>
-	int GetValue(sol::object obj, std::string validKey, const std::string &key, Type &value)
-	{
-		const std::string lowerKey = Trim(validKey);
-
-		validKey = ToUpperCopy(validKey);
-
-		if(key == validKey)
-		{
-			LOG_DEBUG("Found {} key", lowerKey);
-			if(obj.valid())
-			{
-				if(obj.is<Type>())
-				{
-					value = obj.as<Type>();
-					LOG_DEBUG("Readed {}", value);
-					return 0;
-				}
-				LOG_DEBUG("valuse of {} has unexpected type", lowerKey);
-				return 2;
-			}
-			LOG_DEBUG("Value is not valid");
-			return 1;
-		}
-
-		return -1;
-	}
-
-	int GetValue3(sol::table obj, std::string validKey, const std::string &key, glm::vec3 &value)
-	{
-		const std::string lowerKey = Trim(validKey);
-
-		validKey = ToUpperCopy(validKey);
-
-		if(key == validKey)
-		{
-			LOG_DEBUG("Found {} key", lowerKey);
-			if(obj.valid())
-			{
-				if(obj.is<sol::table>())
-				{
-					value = ReadVector3(obj);
-					LOG_DEBUG("Readed [{}, {}, {}]", value.x, value.y, value.z);
-					return 0;
-				}
-				LOG_DEBUG("valuse of {} has unexpected type", lowerKey);
-				return 2;
-			}
-			LOG_DEBUG("Value is not valid");
-			return 1;
-		}
-
-		return -1;
-	}
-
-	template <typename Component>
-	void ProcessComponentPa(Component &comp, sol::table component)
-	{
-		static_assert(false);
-	}
-
-	template <>
-	void ProcessComponentPa(TagComponent &comp, sol::table component)
-	{
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-
-			const auto uKey = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue<std::string>(v, "Tag", uKey, comp.Tag) >= 0);
-			else
-				LOG_WARN("Ignoring uknown key {}", k.as<std::string>());
-		}
-	}
-
-	template <>
-	void ProcessComponentPa(TransformComponent &comp, sol::table component)
-	{
-		glm::vec3 vec;
-
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-			const auto uKey = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue3(v.as<sol::table>(), "Position", uKey, vec) >= 0)
-				comp.SetPosition(vec);
-			else if(GetValue3(v.as<sol::table>(), "Rotation", uKey, vec) >= 0)
-				comp.SetRotation(vec);
-			else if(GetValue3(v.as<sol::table>(), "Scale", uKey, vec) >= 0)
-				comp.SetScale(vec);
-			else
-				LOG_WARN("Unknown key value: {}", k.as<std::string>());
-		}
-	}
-
-	template <>
-	void ProcessComponentPa(CameraComponent &comp, sol::table component)
-	{
-		auto type = SceneCamera::ProjectionType::Perspective;
-
-		float nearClip = 0.f;
-		float farClip  = 0.f;
-		float fov      = 0.f;
-		float size     = 0.f;
-		float aspect   = 0.f;
-
-		bool primary = false;
-		bool fixed   = false;
-
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-
-			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue<bool>(v, "Primary", key, primary) >= 0);
-			else if(GetValue<bool>(v, "FixedAspectRatio", key, fixed) >= 0);
-			else if(GetValue<SceneCamera::ProjectionType>(v, "Type", key, type) >= 0);
-			else if(GetValue<float>(v, "NearClip", key, nearClip) >= 0);
-			else if(GetValue<float>(v, "FarClip", key, farClip) >= 0);
-			else if(GetValue<float>(v, "FOV", key, fov) >= 0);
-			else if(GetValue<float>(v, "Size", key, size) >= 0);
-			else if(GetValue<float>(v, "AspectRatio", key, aspect) >= 0);
-			else
-				LOG_WARN("Unknown key value: {}", k.as<std::string>());
-		}
-
-		comp.FixedAspectRatio = fixed;
-		comp.Primary          = primary;
-
-		if(type == SceneCamera::ProjectionType::Perspective)
-		{
-			comp.Camera.SetPerspective(fov, nearClip, farClip);
-			comp.Camera.SetAspectRatio(aspect);
-		}
-		else
-		{
-			comp.Camera.SetOrthographic(size, nearClip, farClip);
-			comp.Camera.SetAspectRatio(aspect);
-		}
-	}
-
-	template <>
-	void ProcessComponentPa(LightComponent &comp, sol::table component)
-	{
-		bool active = false;
-		auto type   = LightType::Directional;
-
-		glm::vec3 diffuse;
-		glm::vec3 ambient;
-		glm::vec3 specular;
-
-		float constant  = 0.f;
-		float linear    = 0.f;
-		float quadratic = 0.f;
-
-		float cutOff      = 0.f;
-		float outerCutOff = 0.f;
-
-		std::string cookie = {};
-
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-
-			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue<bool>(v, "Active", key, active) >= 0);
-			else if(GetValue<float>(v, "Constant", key, constant) >= 0);
-			else if(GetValue<float>(v, "Linear", key, linear) >= 0);
-			else if(GetValue<float>(v, "Quadratic", key, quadratic) >= 0);
-			else if(GetValue<float>(v, "CutOff", key, cutOff) >= 0);
-			else if(GetValue<float>(v, "OuterCutOff", key, outerCutOff) >= 0);
-			else if(GetValue<std::string>(v, "LightCookie", key, cookie) >= 0);
-			else if(GetValue<LightType>(v, "Type", key, type) >= 0);
-			else if(v.is<sol::table>() && GetValue3(v, "DiffuseColor", key, diffuse) >= 0);
-			else if(v.is<sol::table>() && GetValue3(v, "AmbientColor", key, ambient) >= 0);
-			else if(v.is<sol::table>() && GetValue3(v, "SpecularColor", key, specular) >= 0);
-			else
-				LOG_WARN("Unknown key value: {}", k.as<std::string>());
-		}
-
-		Pointer<Light> light = nullptr;
-		if(type == LightType::Directional)
-			light = comp.Light = MakePointer<DirectionalLight>();
-		if(type == LightType::Spot || type == LightType::Point)
-		{
-			Pointer<PointLight> l = nullptr;
-
-			if(type == LightType::Point)
-				l = MakePointer<PointLight>();
-			else
-			{
-				Pointer<SpotLight> l2 = MakePointer<SpotLight>();
-
-				if(!cookie.empty())
-					l2->SetTexture(TextureLoader::Load(cookie, TEXTURES_PATH));
-
-				l2->SetOuterCutOff(outerCutOff);
-				l2->SetCutOff(cutOff);
-
-				l = l2;
-			}
-
-			l->SetConstant(constant);
-			l->SetLinear(linear);
-			l->SetQuadratic(quadratic);
-			light = l;
-		}
-
-		if(light)
-		{
-			light->SetActive(active);
-			light->SetAmbientColor(ambient);
-			light->SetAmbientColor(diffuse);
-			light->SetAmbientColor(specular);
-
-			comp.Light       = light;
-			comp.TexturePath = cookie;
-		}
-	}
-
-	template <>
-	void ProcessComponentPa(LuaScriptComponent &comp, sol::table component)
-	{
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-
-			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue<std::string>(v, "Path", key, comp.ScriptPath) >= 0)
-				comp.OpenFile(comp.ScriptPath);
-			else if(key == "PROPERTIES"); //TODO Parameters for scripts
-			else
-				LOG_WARN("Unknown key value: {}", k.as<std::string>());
-		}
-	}
-
-	template <>
-	void ProcessComponentPa(ModelComponent &comp, sol::table component)
-	{
-		for(auto [k, v] : component)
-		{
-			if(!k.is<std::string>())
-				throw std::exception(fmt::format("Key value of {} is not an valid string", comp.Name()).c_str());
-
-			const auto key = TrimCopy(ToUpperCopy(k.as<std::string>()));
-
-			if(GetValue<std::string>(v, "Path", key, comp.ModelPath) >= 0)
-				comp.LoadModel(comp.ModelPath);
-			else if(GetValue<bool>(v, "Drawable", key, comp.Drawable) >= 0);
-			else
-				LOG_WARN("Unknown key value: {}", k.as<std::string>());
-		}
-	}
-
-	template <typename Component>
-	void ProcessComponentP(Entity entity, std::string name, sol::table component)
-	{
-		if(entity.HasComponent<Component>())
-		{
-			LOG_WARN("Entity already has {}", name);
-			return;
-		}
-
-		LOG_DEBUG("Adding {}", name);
-		auto &comp = entity.AddComponent<Component>();
-
-		ProcessComponentPa<Component>(comp, component);
-	}
-
-	void SceneSerializer::ProcessComponent(Entity entity, std::string name, sol::table component)
+	void SceneSerializer::ProcessComponent(uint64_t index, Entity entity, std::string name, sol::table component)
 	{
 		LOG_DEBUG("Processing component: {}", name);
 		const std::string upperName = ToUpperCopy(name);
 
 		if(upperName == "TAGCOMPONENT")
-			ProcessComponentP<TagComponent>(entity, name, component);
+			Priv::ProcessComponentP<TagComponent>(index, entity, name, component);
 		else if(upperName == "TRANSFORMCOMPONENT")
-			ProcessComponentP<TransformComponent>(entity, name, component);
+			Priv::ProcessComponentP<TransformComponent>(index, entity, name, component);
 		else if(upperName == "CAMERACOMPONENT")
-			ProcessComponentP<CameraComponent>(entity, name, component);
+			Priv::ProcessComponentP<CameraComponent>(index, entity, name, component);
 		else if(upperName == "LIGHTCOMPONENT")
-			ProcessComponentP<LightComponent>(entity, name, component);
+			Priv::ProcessComponentP<LightComponent>(index, entity, name, component);
 		else if(upperName == "LUASCRIPTCOMPONENT")
-			ProcessComponentP<LuaScriptComponent>(entity, name, component);
+			Priv::ProcessComponentP<LuaScriptComponent>(index, entity, name, component);
 		else if(upperName == "MODELCOMPONENT")
-			ProcessComponentP<ModelComponent>(entity, name, component);
+			Priv::ProcessComponentP<ModelComponent>(index, entity, name, component);
 		else
 			LOG_WARN("Ignoring unknown component named: {}", name);
 	}

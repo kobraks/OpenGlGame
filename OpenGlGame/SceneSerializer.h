@@ -1,4 +1,7 @@
 #pragma once
+#include "pch.h"
+#include "pch.h"
+
 #include <utility>
 #include <string>
 
@@ -27,7 +30,7 @@ namespace Game
 		void ProcessScene(sol::table scene);
 		void ProcessEntityTable(sol::table entities);
 		static int64_t FindEntityId(sol::table entityTable);
-		void ProcessEntity(Entity entity, sol::table entityTable);
-		void ProcessComponent(Entity entity, std::string name, sol::table component);
+		void ProcessEntity(uint64_t index, Entity entity, sol::table entityTable);
+		void ProcessComponent(unsigned long long index, Entity entity, std::string name, sol::table component);
 	};
 }
