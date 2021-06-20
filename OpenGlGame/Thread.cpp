@@ -12,11 +12,7 @@ namespace Game
 
 	Thread::~Thread()
 	{
-		if(Joinable())
-		{
-			Stop();
-			Join();
-		}
+		Shutdown();
 
 		delete m_Thread;
 	}
@@ -34,40 +30,44 @@ namespace Game
 	void Thread::Stop()
 	{
 		m_Run = false;
-		m_Variable.notify_all();
+		m_Condition.notify_one();
 	}
 
 	void Thread::AddTask(Task &&task)
 	{
 		std::lock_guard<std::mutex> guard(m_Mutex);
-		m_Tasks.emplace_back(std::forward<Task>(task));
-		m_Variable.notify_all();
+		m_Tasks.emplace(std::forward<Task>(task));
+		m_Condition.notify_one();
 	}
-	
+
+	void Thread::Shutdown()
+	{
+		if(Joinable())
+		{
+			Stop();
+			Join();
+		}
+	}
+
 	void Thread::Execute()
 	{
-		std::unique_lock<std::mutex> guard(m_Mutex);
-		std::queue<size_t> deleteQueue;
-
 		while(m_Run.load())
 		{
-			if(m_Tasks.empty())
-				m_Variable.wait(guard);
+			Task task;
+			bool result = true;
 
-			for (size_t i = 0; i < m_Tasks.size(); ++i)
 			{
-				auto task = m_Tasks[i];
-				guard.unlock();
-				if (task(m_Id))
-					deleteQueue.push(i);
-				guard.lock();
+				std::unique_lock<std::mutex> guard(m_Mutex);
+
+				m_Condition.wait(guard, [this] { return !m_Tasks.empty() || !m_Run.load(); });
+				if (m_Tasks.empty())
+					continue;
+				
+				if (!result) m_Tasks.pop();
+				task = m_Tasks.front();
 			}
 
-			while(!deleteQueue.empty())
-			{
-				m_Tasks.erase(m_Tasks.begin() + deleteQueue.front());
-				deleteQueue.pop();
-			}
+			result = task();
 		}
 	}
 }

@@ -9,24 +9,18 @@ namespace Game
 	{
 		m_Threads.resize(threadCount);
 
-		std::fill(m_Threads.begin(), m_Threads.end(), nullptr);
+		uint32_t id = 0; 
+		std::generate(m_Threads.begin(), m_Threads.end(), [&id]{return MakeScope<Thread>(id++);});
 	}
 
 	ThreadPool::~ThreadPool()
 	{
-		for(auto &thread : m_Threads) delete thread;
+		for(auto &thread : m_Threads) thread->Shutdown();
 	}
 
-	void ThreadPool::AddTask(Thread::Task &&task)
+	void ThreadPool::IssueTask(Thread::Task &&task)
 	{
-		if(!m_Threads[m_CurrentAssigment]) AddThread();
-
 		m_Threads[m_CurrentAssigment]->AddTask(std::forward<Thread::Task>(task));
 		m_CurrentAssigment = (m_CurrentAssigment + 1) % m_ThreadCount;
-	}
-
-	void ThreadPool::AddThread()
-	{
-		m_Threads[m_CurrentAssigment] = new Thread(m_CurrentAssigment);
 	}
 }

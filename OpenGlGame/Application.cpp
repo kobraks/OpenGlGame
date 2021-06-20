@@ -312,6 +312,9 @@ namespace Game
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
 
+		LOG_INFO("Creating thread pool with {} threads", std::thread::hardware_concurrency());
+		m_ThreadPool = MakeScope<ThreadPool>(std::thread::hardware_concurrency());
+
 		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());
 		PushOverlay(logLayer);
 		PushOverlay(MakePointer<StatisticLayer>());

@@ -8,6 +8,7 @@
 #include "Clock.h"
 #include "Window.h"
 #include "LayerStack.h"
+#include "ThreadPool.h"
 
 #include "Shortcut.h"
 
@@ -24,6 +25,7 @@ namespace Game
 		Scope<Window> m_Window;
 		Scope<sol::state> m_Lua;
 		Scope<PropertyManager> m_Properties;
+		Scope<ThreadPool> m_ThreadPool;
 
 		bool m_Running     = true;
 		bool m_Minimalized = false;
@@ -56,6 +58,7 @@ namespace Game
 
 		void RegisterShortcut(const Shortcut& shortcut);
 
+		ThreadPool& GetThreadPool() const { return *m_ThreadPool; }
 		Window& GetWindow() const { return *m_Window; }
 
 		void Close() { Exit(0); }

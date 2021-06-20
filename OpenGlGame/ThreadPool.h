@@ -2,12 +2,13 @@
 #include <vector>
 
 #include "Thread.h"
+#include "Types.h"
 
 namespace Game
 {
 	class ThreadPool
 	{
-		std::vector<Thread*> m_Threads;
+		std::vector<Scope<Thread>> m_Threads;
 
 		const size_t m_ThreadCount;
 		size_t m_CurrentAssigment = 0;
@@ -16,9 +17,6 @@ namespace Game
 		explicit ThreadPool(const size_t threadCount);
 		~ThreadPool();
 
-		void AddTask(Thread::Task&& task);
-
-	private:
-		void AddThread();
+		void IssueTask(Thread::Task&& task);
 	};
 }
