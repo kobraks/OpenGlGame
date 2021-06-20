@@ -100,7 +100,7 @@ Scene =
         };
         {
             TagComponent = {
-                "PointLight0";
+                Tag = "PointLight0";
             };
 
             TransformComponent = {
