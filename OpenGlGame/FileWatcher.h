@@ -9,6 +9,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <condition_variable>
 
 namespace Game
 {
@@ -32,6 +33,7 @@ namespace Game
 			OnChange OnChange;
 		};
 
+		std::condition_variable m_Condition;
 		std::unordered_map<std::string, File> m_Files;
 		std::mutex m_Mutex;
 		Pointer<std::thread> m_Thread = nullptr;

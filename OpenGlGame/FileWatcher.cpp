@@ -21,6 +21,7 @@ namespace Game
 	FileWatcher::~FileWatcher()
 	{
 		m_Run.store(false);
+		m_Condition.notify_all();
 		if(m_Thread->joinable())
 			m_Thread->join();
 	}
@@ -80,10 +81,11 @@ namespace Game
 	{
 		while(m_Run.load())
 		{
-			std::this_thread::sleep_for(m_Delay.load());
+			//std::this_thread::sleep_for(m_Delay.load());
 
 			std::unique_lock guard(m_Mutex);
-
+			m_Condition.wait_for(guard, m_Delay.load());
+			
 			auto it      = m_Files.begin();
 			bool deleted = false;
 			while(it != m_Files.end())
