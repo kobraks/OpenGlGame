@@ -7,20 +7,18 @@ namespace Game
 {
 	RenderBuffer::Internals::Internals()
 	{
-		CHECK_IF_VALID_CONTEXT;
 		glGenRenderbuffers(1, &Id);
 	}
 
 	RenderBuffer::Internals::Internals(IdType id)
 	{
 		m_IdProvided = true;
-		Id           = id;
+		Id = id;
 	}
 
 	RenderBuffer::Internals::~Internals()
 	{
-		CHECK_IF_VALID_CONTEXT;
-		if(!m_IdProvided)
+		if (!m_IdProvided)
 			glDeleteRenderbuffers(1, &Id);
 	}
 
@@ -46,7 +44,6 @@ namespace Game
 
 	void RenderBuffer::Bind() const
 	{
-		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glBindRenderbuffer(GL_RENDERBUFFER, *this));
 	}
 
@@ -57,26 +54,27 @@ namespace Game
 
 	void RenderBuffer::Storage(uint32_t width, uint32_t height, InternalFormat format, uint32_t samples)
 	{
-		m_Internals->Size    = {width, height};
-		m_Internals->Format  = format;
+		m_Internals->Size = {width, height};
+		m_Internals->Format = format;
 		m_Internals->Samples = samples;
 
-		CHECK_IF_VALID_CONTEXT;
-		GL_CHECK(glNamedRenderbufferStorageMultisample(m_Internals->Id, samples, static_cast<GLenum>(format), width, height));
+
+		GL_CHECK(
+			glNamedRenderbufferStorageMultisample(m_Internals->Id, samples, static_cast<GLenum>(format), width, height))
+		;
 	}
 
-	void RenderBuffer::Storage(const Vector2u &size, InternalFormat format)
+	void RenderBuffer::Storage(const Vector2u& size, InternalFormat format)
 	{
 		Storage(size, format, 1);
 	}
 
-	void RenderBuffer::Storage(const Vector2u &size, InternalFormat format, uint32_t samples)
+	void RenderBuffer::Storage(const Vector2u& size, InternalFormat format, uint32_t samples)
 	{
-		m_Internals->Size    = size;
-		m_Internals->Format  = format;
+		m_Internals->Size = size;
+		m_Internals->Format = format;
 		m_Internals->Samples = samples;
 
-		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glNamedRenderbufferStorage(m_Internals->Id, static_cast<GLenum>(format), size.Width, size.Height));
 	}
 
@@ -88,15 +86,14 @@ namespace Game
 
 	uint32_t RenderBuffer::MaxSamples()
 	{
-		static int samples  = 0;
+		static int samples = 0;
 		static bool checked = false;
 
-		if(!checked)
+		if (!checked)
 		{
 			checked = true;
 
-			CHECK_IF_VALID_CONTEXT samples;
-			glGetIntegerv(GL_MAX_SAMPLES, &samples);
+			GL_CHECK(glGetIntegerv(GL_MAX_SAMPLES, &samples));
 		}
 
 		return static_cast<unsigned>(samples);

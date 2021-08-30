@@ -11,10 +11,12 @@
 namespace Game
 {
 	class Model;
+	class ModelLoader;
 
 	class Mesh
 	{
 		friend class Model;
+		friend class ModelLoader;
 
 		glm::mat4 m_Transform = glm::mat4(1.f);
 
@@ -27,6 +29,10 @@ namespace Game
 
 		std::string m_Name;
 
+		bool m_Ready = false;
+
+		Mesh(const std::string &name, uint64_t verticesCount, uint64_t indicesCount, const glm::mat4 &transform = glm::mat4(1.f));
+	
 	public:
 		Mesh() = delete;
 		Mesh(
@@ -36,7 +42,7 @@ namespace Game
 			Pointer<Material> material = nullptr,
 			const glm::mat4 &transform = glm::mat4(1.f)
 			);
-
+		
 		size_t GetVerticesCount() const { return m_Vertices.size(); }
 		size_t GetIndicesCount() const { return m_Indices.size(); }
 
@@ -51,8 +57,12 @@ namespace Game
 
 		Pointer<Material> GetMaterial() const { return m_Material; }
 		void SetMaterial(const Pointer<Material> &material) { m_Material = material; }
+
+		bool IsReady() const { return m_Ready; }
 	
 	private:
 		void Create(const std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices);
+
+		void Reserve(uint64_t verticesCount, uint64_t indicesCount);
 	};
 }

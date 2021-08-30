@@ -333,14 +333,6 @@ namespace Game
 
 		OpenGL.SetDebugMessageCallback(DebugCallback, nullptr);
 #endif
-
-		int count;
-		GLFWmonitor **monitors = glfwGetMonitors(&count);
-
-		for(int i = 0; i < count; ++i)
-		{
-			LOG_INFO("Monitor name: {}", glfwGetMonitorName(monitors[i]));
-		}
 	}
 
 #define ENUM_TO_STRING_ENUM(e, v) #v,  static_cast<int>(e::##v)
@@ -391,7 +383,7 @@ namespace Game
 		inputMetaTable.set("Keyboard", lua["Mouse"]);
 		inputMetaTable.set("Mode", inputModeTable);
 		inputMetaTable.set("CursorMode", cursorModeTable);
-		
+
 		SetAsReadOnlyTable(inputMetaTable["Mode"], inputModeTable, Deny);
 		SetAsReadOnlyTable(inputMetaTable["CursorMode"], cursorModeTable, Deny);
 
@@ -402,29 +394,29 @@ namespace Game
 		LOG_TRACE("Registering Application");
 		m_Properties->Register("Properties", lua);
 
-		auto applicationMetaTable = lua.create_table_with();
-		applicationMetaTable["GetTime"] = [this]() { return m_Clock.GetElapsedTime().AsSeconds(); };
+		auto applicationMetaTable          = lua.create_table_with();
+		applicationMetaTable["GetTime"]    = [this]() { return m_Clock.GetElapsedTime().AsSeconds(); };
 		applicationMetaTable["Properties"] = lua["Properties"];
-		applicationMetaTable["Exit"] = [this](sol::variadic_args args)
-		                       {
-			                       if(args.size() == 1)
-			                       {
-				                       if(args[0].is<int>())
-					                       Exit(args[0].as<int>());
-				                       else
-					                       SCRIPT_LOG_ERROR("Unknown parameter type");
-			                       }
-			                       else if(args.size() == 0)
-				                       Exit(0);
-			                       else
-				                       SCRIPT_LOG_ERROR("Called with too big amount of arguments");
-		                       };
+		applicationMetaTable["Exit"]       = [this](sol::variadic_args args)
+		{
+			if(args.size() == 1)
+			{
+				if(args[0].is<int>())
+					Exit(args[0].as<int>());
+				else
+					SCRIPT_LOG_ERROR("Unknown parameter type");
+			}
+			else if(args.size() == 0)
+				Exit(0);
+			else
+				SCRIPT_LOG_ERROR("Called with too big amount of arguments");
+		};
 
 		auto applicationTable = lua.create_named_table("Application");
 		SetAsReadOnlyTable(applicationTable, applicationMetaTable, Deny);
-		
+
 		lua["Properties"] = sol::nil;
-		lua["Exit"] = lua["Application"]["Exit"];
+		lua["Exit"]       = lua["Application"]["Exit"];
 	}
 
 	void Application::InitializeSettings()

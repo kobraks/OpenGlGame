@@ -4,7 +4,7 @@
 
 namespace Game
 {
-	class Exception : std::exception
+	class Exception : public std::exception
 	{
 		std::string m_Message;
 

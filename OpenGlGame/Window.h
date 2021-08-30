@@ -9,12 +9,12 @@
 #include "Types.h"
 #include "Vector2.h"
 #include "Context.h"
-#include "Rect.h"
-
+#include "Monitor.h"
 
 namespace Game
 {
 	class Cursor;
+	class Monitor;
 
 	enum class InputMode
 	{
@@ -30,54 +30,7 @@ namespace Game
 		Hidden = GLFW_CURSOR_HIDDEN,
 		Disabled = GLFW_CURSOR_DISABLED
 	};
-
-	struct GammaRamp
-	{
-		size_t Size;
-		uint16_t *Red   = nullptr;
-		uint16_t *Green = nullptr;
-		uint16_t *Blue  = nullptr;
-
-		~GammaRamp();
-	};
-
-	struct VideoMode
-	{
-		Vector2u Size;
-
-		int RedBits     = 0;
-		int GreenBits   = 0;
-		int BlueBits    = 0;
-		int RefreshRate = 0;
-	};
-
-	inline bool operator==(const VideoMode &left, const VideoMode &right)
-	{
-		return left.Size == right.Size && left.RedBits == right.RedBits && left.GreenBits == right.GreenBits && left.BlueBits == right.BlueBits && left.
-			RefreshRate == right.RefreshRate;
-	}
-
-	struct Monitor
-	{
-		std::string Name;
-
-		Vector2u Size;
-		Vector2f Scale;
-		Vector2i Position;
-		IntRect WorkArea;
-		void *Pointer       = nullptr;
-		void *NativePointer = nullptr;
-
-		VideoMode CurrentVideoMode;
-		std::vector<VideoMode> VideoModes;
-
-		void SetUserPointer(void *pointer);
-		void SetGamma(const float &gamma);
-		void SetGammaRamp(const GammaRamp &ramp);
-
-		GammaRamp GetGammaRamp() const;
-	};
-
+	
 	struct WindowProperties
 	{
 		std::string Title;
@@ -91,6 +44,8 @@ namespace Game
 
 	class Window
 	{
+		friend class Monitor;
+
 	public:
 		using EventCallbackFunction = std::function<void(Event &)>;
 
@@ -169,7 +124,7 @@ namespace Game
 		Vector2u GetRelativePosition(const Vector2u &position) const;
 
 		Monitor GetMonitor() const { return *m_Monitor; }
-		VideoMode GetVideoMode() const { return m_Monitor->CurrentVideoMode; }
+		VideoMode GetVideoMode() const { return m_Monitor->GetVideoMode(); }
 
 		void ToggleFullscreen();
 		void ToggleFullscreen(const Monitor &monitor);
@@ -182,17 +137,10 @@ namespace Game
 
 		bool IsFullscreen() const;
 
-		static std::vector<Monitor> GetMonitors();
-		static Monitor GetMonitor(size_t monitor);
-		static Monitor GetPrimaryMonitor();
-
 		void Minimalize();
 		void Restore();
 		void Maximalize();
 	protected:
-		static Monitor PopulateMonitor(GLFWmonitor *monitor);
-		static std::vector<VideoMode> GetVideoModes(GLFWmonitor *monitor);
-		static VideoMode GetVideoMode(GLFWvidmode mode);
 		static void InitializeGlfw();
 
 		void Init(const WindowProperties &props);

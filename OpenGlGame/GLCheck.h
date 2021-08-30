@@ -1,8 +1,10 @@
 #pragma once
 #include <string_view>
 #include "Context.h"
+#include "Exception.h"
 
-#define CHECK_IF_VALID_CONTEXT if (!Context::GetContext() || !Context::GetContext()->IsContextCurrent()) return
+#define CHECK_IF_VALID_CONTEXT if (!Context::GetContext() || !Context::GetContext()->IsContextCurrent()) {ASSERT(false, "Not in valid context");}
+
 
 namespace Game::Priv
 {
@@ -10,7 +12,8 @@ namespace Game::Priv
 }
 
 #ifdef _DEBUG
-#define GL_CHECK(expr) do {\
+#define GL_CHECK(expr) CHECK_IF_VALID_CONTEXT; \
+	do {\
 	expr; \
 	Game::Priv::GLCheckError(#expr, __FILE__, __LINE__);\
 	}while(0)

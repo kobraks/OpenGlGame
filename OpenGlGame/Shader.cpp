@@ -10,29 +10,29 @@
 
 namespace Game
 {
-	static constexpr std::string_view ShaderTypeToString(const Shader::Type &type)
+	static constexpr std::string_view ShaderTypeToString(const Shader::Type& type)
 	{
-		switch(type)
+		switch (type)
 		{
-			case Shader::Type::Vertex: return "Vertex";
-			case Shader::Type::Fragment: return "Fragment";
-			case Shader::Type::Geometry: return "Geometry";
-			case Shader::Type::Compute: return "Compute";
-			case Shader::Type::Control: return "Tessellation Control";
-			case Shader::Type::Evaluation: return "Tessellation Evaluation";
-			case Shader::Type::Unknown: return "Unknown";
+		case Shader::Type::Vertex: return "Vertex";
+		case Shader::Type::Fragment: return "Fragment";
+		case Shader::Type::Geometry: return "Geometry";
+		case Shader::Type::Compute: return "Compute";
+		case Shader::Type::Control: return "Tessellation Control";
+		case Shader::Type::Evaluation: return "Tessellation Evaluation";
+		case Shader::Type::Unknown: return "Unknown";
 		}
 		return {};
 	}
 
-	ShaderSource ShaderSource::Load(const std::string &fileName, const std::string &directory)
+	ShaderSource ShaderSource::Load(const std::string& fileName, const std::string& directory)
 	{
 		const auto name = directory + "/" + fileName;
 		LOG_DEBUG("Loading shader source from: \"{}\"", name);
 
 		std::ifstream file(name, std::ios::in);
 
-		if(!file.good())
+		if (!file.good())
 		{
 			LOG_ERROR("Unable to open and load \"{}\"", name);
 			file.close();
@@ -47,19 +47,17 @@ namespace Game
 		return ShaderSource(stream.str());
 	}
 
-	Shader::Internals::Internals(const Shader::Type &type) : Type(type)
+	Shader::Internals::Internals(const Shader::Type& type) : Type(type)
 	{
-		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(Shader = glCreateShader(static_cast<GLenum>(type)));
 	}
 
 	Shader::Internals::~Internals()
 	{
-		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glDeleteShader(Shader));
 	}
 
-	void Shader::Internals::SetSource(const ShaderSource &source)
+	void Shader::Internals::SetSource(const ShaderSource& source)
 	{
 		auto cstr = source.Source().c_str();
 
@@ -67,7 +65,7 @@ namespace Game
 		GL_LOG_DEBUG("Source code: \n{}\nEND", source.Source());
 
 		Source = source;
-		CHECK_IF_VALID_CONTEXT;
+
 		GL_CHECK(glShaderSource(Shader, 1, &cstr, nullptr));
 	}
 
@@ -75,11 +73,11 @@ namespace Game
 	{
 		GL_LOG_INFO("Compiling [id: {}] {} Shader", Shader, ShaderTypeToString(Type));
 
-		CHECK_IF_VALID_CONTEXT false;
+
 		GL_CHECK(glCompileShader(Shader));
 		int status = Get(ParameterName::CompileStatus);
 
-		if(status == GL_FALSE)
+		if (status == GL_FALSE)
 		{
 			GL_LOG_ERROR("Unable to compile [id: {}] {} Shader", Shader, ShaderTypeToString(Type));
 			return Complied = false;
@@ -93,10 +91,10 @@ namespace Game
 	{
 		int length = Get(ParameterName::LogLength);
 
-		if(length > 0)
+		if (length > 0)
 		{
-			std::string log(static_cast<std::string::size_type>(length + 1), 0);
-		CHECK_IF_VALID_CONTEXT {};
+			std::string log(length + 1, 0);
+
 			GL_CHECK(glGetShaderInfoLog(Shader, length, &length, &log[0]));
 
 			return log;
@@ -113,13 +111,12 @@ namespace Game
 		return value;
 	}
 
-	void Shader::Internals::Get(ParameterName name, int *value) const
+	void Shader::Internals::Get(ParameterName name, int* value) const
 	{
-		CHECK_IF_VALID_CONTEXT;
 		GL_CHECK(glGetShaderiv(Shader, static_cast<GLenum>(name), value));
 	}
 
-	Shader::Shader(const Type &type)
+	Shader::Shader(const Type& type)
 	{
 		ASSERT(type != Type::Unknown, "Unknown ShaderType");
 
@@ -129,7 +126,7 @@ namespace Game
 		GL_LOG_INFO("{} Shader id: {}", ShaderTypeToString(type), m_Internals->Shader);
 	}
 
-	Shader::Shader(const Type &type, const ShaderSource &source) : Shader(type)
+	Shader::Shader(const Type& type, const ShaderSource& source) : Shader(type)
 	{
 		SetSource(source);
 		Compile();

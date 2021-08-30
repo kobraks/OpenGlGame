@@ -8,6 +8,7 @@
 #include "MouseEvent.h"
 #include "ApplicationEvent.h"
 #include "Cursor.h"
+#include "Monitor.h"
 
 namespace Game
 {
@@ -17,59 +18,6 @@ namespace Game
 	static void GLFWErrorCallback(int error, const char *description)
 	{
 		LOG_ERROR("GLFW Error ({0}): {1}", error, description);
-	}
-
-	GammaRamp::~GammaRamp()
-	{
-		delete[] Red;
-		delete[] Green;
-		delete[] Blue;
-
-		Red = Green = Blue = nullptr;
-	}
-
-	void Monitor::SetUserPointer(void *pointer)
-	{
-		glfwSetMonitorUserPointer(static_cast<GLFWmonitor*>(NativePointer), pointer);
-		Pointer = pointer;
-	}
-
-	void Monitor::SetGamma(const float &gamma)
-	{
-		glfwSetGamma(static_cast<GLFWmonitor*>(NativePointer), gamma);
-	}
-
-	void Monitor::SetGammaRamp(const GammaRamp &ramp)
-	{
-		GLFWgammaramp gammaRamp;
-		gammaRamp.size = ramp.Size;
-
-		if(!ramp.Blue || !ramp.Green || !ramp.Red)
-			return;
-
-		gammaRamp.blue  = ramp.Blue;
-		gammaRamp.green = ramp.Green;
-		gammaRamp.red   = ramp.Red;
-
-		glfwSetGammaRamp(static_cast<GLFWmonitor*>(NativePointer), &gammaRamp);
-	}
-
-	GammaRamp Monitor::GetGammaRamp() const
-	{
-		GammaRamp gammaRamp;
-		auto ramp = glfwGetGammaRamp(static_cast<GLFWmonitor *>(NativePointer));
-
-		gammaRamp.Size = ramp->size;
-
-		gammaRamp.Red = new uint16_t[ramp->size];
-		gammaRamp.Green = new uint16_t[ramp->size];
-		gammaRamp.Blue = new uint16_t[ramp->size];
-		
-		std::memcpy(gammaRamp.Red, ramp->red, ramp->size);
-		std::memcpy(gammaRamp.Green, ramp->green, ramp->size);
-		std::memcpy(gammaRamp.Blue, ramp->blue, ramp->size);
-
-		return gammaRamp;
 	}
 
 	Window::Window(const WindowProperties &properties)
@@ -186,14 +134,13 @@ namespace Game
 
 	void Window::ToggleFullscreen()
 	{
-		auto monitor = GetPrimaryMonitor();
-
-		ToggleFullscreen(monitor, monitor.CurrentVideoMode);
+		const auto monitor = Monitor::GetPrimary();
+		ToggleFullscreen(monitor, monitor.GetVideoMode());
 	}
 
 	void Window::ToggleFullscreen(const Monitor &monitor)
 	{
-		ToggleFullscreen(monitor, monitor.CurrentVideoMode);
+		ToggleFullscreen(monitor, monitor.GetVideoMode());
 	}
 
 	void Window::ToggleFullscreen(const Monitor &monitor, const VideoMode &mode)
@@ -208,7 +155,7 @@ namespace Game
 			
 			glfwSetWindowMonitor(
 			                     m_Window,
-			                     static_cast<GLFWmonitor*>(monitor.NativePointer),
+			                     static_cast<GLFWmonitor*>(monitor.GetNativePointer()),
 			                     0,
 			                     0,
 			                     static_cast<int>(mode.Size.Width),
@@ -254,31 +201,6 @@ namespace Game
 		return m_Fullscreen;
 	}
 
-	std::vector<Monitor> Window::GetMonitors()
-	{
-		std::vector<Monitor> monitors;
-		InitializeGlfw();
-
-		int count               = 0;
-		GLFWmonitor **wMonitors = glfwGetMonitors(&count);
-
-		for(int i = 0; i < count; ++i)
-			monitors.emplace_back(PopulateMonitor(wMonitors[i]));
-
-		return monitors;
-	}
-
-	Monitor Window::GetMonitor(size_t monitor)
-	{
-		return GetMonitors()[monitor];
-	}
-
-	Monitor Window::GetPrimaryMonitor()
-	{
-		InitializeGlfw();
-		return PopulateMonitor(glfwGetPrimaryMonitor());
-	}
-
 	void Window::Minimalize()
 	{
 		glfwIconifyWindow(m_Window);
@@ -290,61 +212,6 @@ namespace Game
 	void Window::Maximalize()
 	{
 		glfwMaximizeWindow(m_Window);
-	}
-
-	Monitor Window::PopulateMonitor(GLFWmonitor *monitor)
-	{
-		Monitor monitorInfo;
-
-		int x;
-		int y;
-		glfwGetMonitorPhysicalSize(monitor, &x, &y);
-
-		monitorInfo.Size = Vector2u(static_cast<Vector2<unsigned>::ValueType>(x), static_cast<Vector2<unsigned>::ValueType>(y));
-
-		glfwGetMonitorContentScale(monitor, &monitorInfo.Scale.X, &monitorInfo.Scale.Y);
-		glfwGetMonitorPos(monitor, &monitorInfo.Position.X, &monitorInfo.Position.Y);
-		glfwGetMonitorWorkarea(monitor, &monitorInfo.WorkArea.X, &monitorInfo.WorkArea.Y, &monitorInfo.WorkArea.Width, &monitorInfo.WorkArea.Height);
-
-		monitorInfo.Name    = glfwGetMonitorName(monitor);
-		monitorInfo.Pointer = glfwGetMonitorUserPointer(monitor);
-
-		monitorInfo.VideoModes       = GetVideoModes(monitor);
-		monitorInfo.CurrentVideoMode = GetVideoMode(*glfwGetVideoMode(monitor));
-
-		monitorInfo.NativePointer = monitor;
-
-		return monitorInfo;
-	}
-
-	std::vector<VideoMode> Window::GetVideoModes(GLFWmonitor *monitor)
-	{
-		std::vector<VideoMode> videoModes;
-
-		int count                = 0;
-		const GLFWvidmode *modes = glfwGetVideoModes(monitor, &count);
-
-		videoModes.reserve(static_cast<std::vector<VideoMode>::size_type>(count));
-
-		for(int i = 0; i < count; ++i)
-		{
-			videoModes.emplace_back(GetVideoMode(modes[i]));
-		}
-
-		return videoModes;
-	}
-
-	VideoMode Window::GetVideoMode(const GLFWvidmode mode)
-	{
-		VideoMode videoMode;
-
-		videoMode.RedBits     = mode.redBits;
-		videoMode.GreenBits   = mode.greenBits;
-		videoMode.BlueBits    = mode.blueBits;
-		videoMode.RefreshRate = mode.refreshRate;
-		videoMode.Size        = Vector2u(static_cast<Vector2<unsigned>::ValueType>(mode.width), static_cast<Vector2<unsigned>::ValueType>(mode.height));
-
-		return videoMode;
 	}
 
 	void Window::InitializeGlfw()

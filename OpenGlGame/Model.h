@@ -6,8 +6,12 @@
 
 namespace Game
 {
+	class ModelLoader;
+	
 	class Model
 	{
+		friend class ModelLoader;
+		
 	public:
 		using SizeType = size_t;
 		using MeshContainerType = std::vector<Pointer<Mesh>>;
@@ -15,6 +19,7 @@ namespace Game
 		MeshContainerType m_Meshes;
 		glm::mat4 m_Transform = glm::mat4(1.f);
 
+		bool m_Ready = true;
 	public:
 		Model() = default;
 		explicit Model(const MeshContainerType &meshes, const glm::mat4 &transform = glm::mat4(1.f));
@@ -42,5 +47,7 @@ namespace Game
 
 		MeshContainerType::const_iterator begin() const { return m_Meshes.begin(); }
 		MeshContainerType::const_iterator end() const { return m_Meshes.end(); }
+
+		bool IsReady() const {return m_Ready; }
 	};
 }

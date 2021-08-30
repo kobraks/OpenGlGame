@@ -14,6 +14,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "TextureLoader.h"
+#include "Application.h"
 
 constexpr uint32_t ASSIMP_FLAGS = aiProcess_CalcTangentSpace | aiProcess_Triangulate | aiProcess_GenUVCoords | aiProcess_FixInfacingNormals |
 	aiProcess_JoinIdenticalVertices | aiProcess_ValidateDataStructure | aiProcess_ImproveCacheLocality | aiProcess_OptimizeGraph | aiProcess_OptimizeMeshes |
@@ -81,6 +82,41 @@ namespace Game
 	}
 
 	Pointer<Model> ModelLoader::Load(const std::string &fileName, const std::string &directory)
+	{
+		Pointer<Model> model = MakePointer<Model>();
+		model->m_Ready       = false;
+
+		Application::Get().GetThreadPool().IssueTask(std::bind(LoadTask, fileName, directory, model));
+
+		return model;
+
+		const std::string name = directory + "/" + fileName;
+
+		LOG_INFO("Opening \"{}\"", name);
+
+		auto importer     = MakePointer<Assimp::Importer>();
+		const auto *scene = importer->ReadFile(name, ASSIMP_FLAGS);
+
+		if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		{
+			LOG_ERROR("Unable to import \"{}\", {}", name, importer->GetErrorString());
+			return nullptr;
+		}
+
+		LOG_INFO("Scene imported sucessfuly");
+		const auto meshesCount = scene->mNumMeshes;
+		LOG_DEBUG("Scene meshes count: {}", meshesCount);
+
+		Model::MeshContainerType meshes;
+		meshes.reserve(meshesCount);
+
+		ProcessNode(meshes, glm::mat4(1.f), scene->mRootNode, scene);
+
+		//Pointer<Model> model = MakePointer<Model>(meshes);
+		//return model;
+	}
+
+	Pointer<Model> ModelLoader::ForceLoad(const std::string &fileName, const std::string &directory)
 	{
 		const std::string name = directory + "/" + fileName;
 
@@ -207,7 +243,7 @@ namespace Game
 
 		material->Get(AI_MATKEY_SHININESS, result->Shininess);
 		LOG_DEBUG("Shininess level: {}", result->Shininess);
-		
+
 		material->Get(AI_MATKEY_SHININESS_STRENGTH, result->ShininessStrength);
 		LOG_DEBUG("Shininess level: {}", result->ShininessStrength);
 
@@ -265,5 +301,32 @@ namespace Game
 		LOG_DEBUG("Processing {}, Color (R: {}, G: {}, B: {})", ToStringColor(colorType), result.r, result.g, result.b);
 
 		return result;
+	}
+
+	bool ModelLoader::LoadTask(const std::string &fileName, const std::string &directory, Pointer<Model> &model)
+	{
+		const std::string name = directory + "/" + fileName;
+
+		LOG_INFO("Opening \"{}\"", name);
+
+		auto importer     = MakePointer<Assimp::Importer>();
+		const auto *scene = importer->ReadFile(name, ASSIMP_FLAGS);
+
+		if(!scene || scene->mFlags == AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+		{
+			LOG_ERROR("Unable to import \"{}\", {}", name, importer->GetErrorString());
+			return false;
+		}
+
+		LOG_INFO("Scene imported sucessfuly");
+		const auto meshesCount = scene->mNumMeshes;
+		LOG_DEBUG("Scene meshes count: {}", meshesCount);
+
+		Model::MeshContainerType meshes;
+		meshes.reserve(meshesCount);
+
+		ProcessNode(meshes, glm::mat4(1.f), scene->mRootNode, scene);
+
+		return false;
 	}
 }

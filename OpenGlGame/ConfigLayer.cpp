@@ -6,6 +6,7 @@
 #include "ImGuiUtils.h"
 #include "Application.h"
 #include "KeyEvent.h"
+#include "Monitor.h"
 
 namespace Game
 {
@@ -33,23 +34,23 @@ namespace Game
 			ImGuiChildWindowProps props{"Monitors"};
 			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(props);
 
-			const auto monitors    = app.GetWindow().GetMonitors();
+			const auto monitors    = Monitor::GetAll();
 			const auto currentMode = app.GetWindow().GetVideoMode();
 
 			for(const auto &monitor : monitors)
 			{
-				if(TreeNodeEx("Monitor: {}", 0, monitor.Name))
+				if(TreeNodeEx("Monitor: {}", 0, monitor.GetName()))
 				{
-					Text("Position: {}, {}", monitor.Position.X, monitor.Position.Y);
-					Text("Scale: {}, {}", monitor.Scale.X, monitor.Scale.Y);
+					Text("Position: {}, {}", monitor.GetPosition().X, monitor.GetPosition().Y);
+					Text("Scale: {}, {}", monitor.GetScale().X, monitor.GetScale().Y);
 					Text(
 					     "WorkSpace: X: {}, Y: {}, Width: {}, Height: {}",
-					     monitor.WorkArea.X,
-					     monitor.WorkArea.Y,
-					     monitor.WorkArea.Width,
-					     monitor.WorkArea.Height
+					     monitor.GetWorkArea().X,
+					     monitor.GetWorkArea().Y,
+					     monitor.GetWorkArea().Width,
+					     monitor.GetWorkArea().Height
 					    );
-					const auto &mode = monitor.CurrentVideoMode;
+					const auto &mode = monitor.GetVideoMode();
 					Text(
 					     "Current Video mode: {}x{} {}Hz R:{} G:{}, B:{}",
 					     mode.Size.X,
@@ -61,9 +62,9 @@ namespace Game
 					    );
 					if(TreeNodeEx("Video mods", ImGuiTreeNodeFlags_DefaultOpen))
 					{
-						for(size_t i = 0; i < monitor.VideoModes.size(); ++i)
+						for(size_t i = 0; i < monitor.GetVideoModes().size(); ++i)
 						{
-							const auto &mode         = monitor.VideoModes[i];
+							const auto &mode         = monitor.GetVideoModes()[i];
 							ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_Bullet | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
 							if(mode == currentMode)
