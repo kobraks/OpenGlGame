@@ -23,14 +23,14 @@ namespace Game
 	class FileWatcher
 	{
 	public:
-		using OnChange = std::function<void(std::string, FileStatus)>;
+		using OnChangeFunctionType = std::function<void(std::string, FileStatus)>;
 		using DelayType = std::chrono::duration<int, std::milli>;
 	
 	private:
 		struct File
 		{
 			std::filesystem::file_time_type Time;
-			OnChange OnChange;
+			OnChangeFunctionType OnChange;
 		};
 
 		std::condition_variable m_Condition;
@@ -47,8 +47,11 @@ namespace Game
 	public:
 		~FileWatcher();
 
-		static void AddFile(const std::string &filePath, OnChange onChange);
-		static void AddFolder(const std::string &filePath, OnChange onChange);
+		static void AddFile(const std::string &filePath, OnChangeFunctionType onChange);
+		static void AddFile(const std::filesystem::path& file, OnChangeFunctionType onChange);
+
+		static void AddFolder(const std::string &filePath, OnChangeFunctionType onChange);
+		static void AddFolder(const std::filesystem::path& path, OnChangeFunctionType onChange);
 
 		static void SetDelay(DelayType delay);
 

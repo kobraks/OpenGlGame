@@ -3,6 +3,8 @@
 
 #include <filesystem>
 
+#include "Exception.h"
+
 namespace Game
 {
 	FileWatcher::FileWatcher()
@@ -22,54 +24,62 @@ namespace Game
 	{
 		m_Run.store(false);
 		m_Condition.notify_all();
-		if(m_Thread->joinable())
+		if (m_Thread->joinable())
 			m_Thread->join();
 	}
 
-	void FileWatcher::AddFile(const std::string &filePath, OnChange onChange)
+	void FileWatcher::AddFile(const std::string& filePath, OnChangeFunctionType onChange)
 	{
-		const auto path = std::filesystem::current_path() / filePath;
-
-		if(!exists(path))
-			throw std::runtime_error(fmt::format("\"{}\" Folder does not exists,", filePath));
-
-		if(is_regular_file(path))
-		{
-			std::unique_lock guard(GetInstance().m_Mutex);
-			auto &files = GetInstance().m_Files;
-
-			if(files.contains(path.string()))
-				throw std::runtime_error(fmt::format("Already watching that file \"{}\"", filePath));
-
-			files.emplace(std::make_pair<std::string, File>(path.string(), {last_write_time(path), onChange}));
-		}
-		else
-			throw std::runtime_error(fmt::format("\"{}\" given file is not an regular file", filePath));
+		AddFile(std::filesystem::current_path() / filePath, onChange);
 	}
 
-	void FileWatcher::AddFolder(const std::string &filePath, OnChange onChange)
+	void FileWatcher::AddFile(const std::filesystem::path& file, OnChangeFunctionType onChange)
 	{
-		const auto path = std::filesystem::current_path() / filePath;
+		if (!exists(file))
+			throw Exception("\"{}\" File does not exists.", file.string());
 
-		if(!exists(path))
-			throw std::runtime_error(fmt::format("\"{}\" Folder does not exists,", filePath));
+		std::string filePath = file.string();
 
-		if(is_directory(path))
+		if (is_regular_file(file))
 		{
-			for(auto file : path)
+			std::unique_lock(GetInstance().m_Mutex);
+			auto& files = GetInstance().m_Files;
+
+			if (files.contains(filePath))
+				throw Exception("Already watching that file \"{}\"", filePath);
+
+			files.emplace(std::make_pair(filePath, File{last_write_time(file), onChange}));
+		}
+		else
+			throw Exception("\"{}\" given file is not an regular file", filePath);
+	}
+
+	void FileWatcher::AddFolder(const std::filesystem::path& path, OnChangeFunctionType onChange)
+	{
+		if (!exists(path))
+			throw Exception("\"{}\" Folder does not exists,", path.string());
+
+		if (is_directory(path))
+		{
+			for (const auto& file : path)
 			{
-				if(is_directory(file))
+				if (is_directory(file))
 				{
-					AddFolder(file.string(), onChange);
+					AddFolder(file, onChange);
 				}
-				else if(is_regular_file(file))
+				else if (is_regular_file(file))
 				{
-					AddFile(file.string(), onChange);
+					AddFile(file, onChange);
 				}
 			}
 		}
 		else
-			throw std::runtime_error(fmt::format("\"{}\"path is not an directory", filePath));
+			throw Exception("\"{}\"path is not an directory", path.string());
+	}
+
+	void FileWatcher::AddFolder(const std::string& filePath, OnChangeFunctionType onChange)
+	{
+		AddFolder(std::filesystem::current_path() / filePath, onChange);
 	}
 
 	void FileWatcher::SetDelay(DelayType delay)
@@ -79,18 +89,18 @@ namespace Game
 
 	void FileWatcher::Run()
 	{
-		while(m_Run.load())
+		while (m_Run.load())
 		{
 			//std::this_thread::sleep_for(m_Delay.load());
 
 			std::unique_lock guard(m_Mutex);
 			m_Condition.wait_for(guard, m_Delay.load());
-			
-			auto it      = m_Files.begin();
+
+			auto it = m_Files.begin();
 			bool deleted = false;
-			while(it != m_Files.end())
+			while (it != m_Files.end())
 			{
-				if(!std::filesystem::exists(it->first))
+				if (!std::filesystem::exists(it->first))
 				{
 					it->second.OnChange(it->first, FileStatus::Erased);
 					m_Files.erase(it);
@@ -98,10 +108,10 @@ namespace Game
 				}
 				else
 				{
-					if(!deleted)
+					if (!deleted)
 					{
 						const auto time = std::filesystem::last_write_time(it->first);
-						if(it->second.Time != time)
+						if (it->second.Time != time)
 						{
 							it->second.OnChange(it->first, FileStatus::Modified);
 							it->second.Time = time;
