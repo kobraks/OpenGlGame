@@ -5,6 +5,7 @@
 #include "PropertyManager.h"
 
 #include "Scene.h"
+#include "Component.h"
 
 namespace Game
 {
@@ -21,6 +22,9 @@ namespace Game
 		Entity() = default;
 		Entity(const Entity& other) = default;
 		Entity(const entt::entity& handle, Scene* scene);
+
+		UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
+		const std::string& GetName() const { return GetComponent<TagComponent>().Tag; }
 		
 		constexpr bool operator==(const Entity& entity) const noexcept
 		{
@@ -42,6 +46,14 @@ namespace Game
 		{
 			ASSERT(!HasComponent<Component>(), "Entity already has component");
 			Component& component = m_Scene->m_Registry.emplace<Component>(m_EntityHandle, this, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<Component>(*this, component);
+			return component;
+		}
+
+		template <typename Component, typename ...Args>
+		Component& AddOrReplaceComponent(Args&& ...args)
+		{
+			Component& component = m_Scene->m_Registry.emplace_or_replace<Component>(m_EntityHandle, this, std::forward<Args>(args)...);
 			m_Scene->OnComponentAdded<Component>(*this, component);
 			return component;
 		}

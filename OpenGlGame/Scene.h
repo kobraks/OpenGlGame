@@ -8,6 +8,7 @@ namespace Game
 {
 	class Entity;
 	class Camera;
+	class UUID;
 	
 	class Scene
 	{
@@ -26,8 +27,8 @@ namespace Game
 		Scene(const std::string &title = "Untitled");
 		~Scene();
 
-		Entity CreateEntity(const std::string &tag = {});
-		Entity CreateEntity(uint32_t hint, const std::string &tag = {});
+		Entity CreateEntity(const std::string &name = {});
+		Entity CreateEntity(UUID uuid, const std::string &name = {});
 		void DestroyEntity(const Entity &entity);
 
 		void OnUpdate();
@@ -45,9 +46,6 @@ namespace Game
 		void OnComponentAdded(Entity &entity, Component &component);
 	
 	private:
-		Entity CreateEmpty();
-		Entity CreateEmpty(uint32_t hint);
-
 		friend class Entity;
 		friend class SceneSerializer;
 	};

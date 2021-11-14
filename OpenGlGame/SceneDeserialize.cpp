@@ -35,7 +35,7 @@ namespace Game
 		/// 1 in case of invalid value
 		/// 2 in case of wrong type</returns>
 		template <typename Type>
-		int GetValue(sol::object obj, std::string validKey, const std::string &key, Type &value)
+		auto GetValue(sol::object obj, std::string validKey, const std::string &key, Type &value)->int
 		{
 			const std::string lowerKey = Trim(validKey);
 
@@ -74,7 +74,7 @@ namespace Game
 		/// 0 in case of success
 		/// 1 in case of invalid value
 		/// 2 in case of wrong type</returns>
-		int GetValue3(sol::table obj, std::string validKey, const std::string &key, glm::vec3 &value)
+		auto GetValue3(sol::table obj, std::string validKey, const std::string &key, glm::vec3 &value)->int
 		{
 			const std::string lowerKey = Trim(validKey);
 
@@ -102,18 +102,17 @@ namespace Game
 		}
 
 		template <typename Component>
-		void ProcessComponentPa(uint64_t index, Component &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, Component &comp, sol::table componentTable)->void
 		{
 			static_assert(false);
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, TagComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, TagComponent &comp, sol::table componentTable)->void
 		{
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
-				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()))
-;				
+				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
 				if(GetValue<std::string>(value, "Tag", upperKey, comp.Tag) >= 0);
 				else
 					LOG_WARN("Unknwon key value {}", key.as<std::string>());
@@ -121,14 +120,14 @@ namespace Game
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, TransformComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, TransformComponent &comp, sol::table componentTable)->void
 		{
 			glm::vec3 vec;
 
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
-				
+
 				if(GetValue3(value.as<sol::table>(), "Position", upperKey, vec) >= 0)
 					comp.SetPosition(vec);
 				else if(GetValue3(value.as<sol::table>(), "Rotation", upperKey, vec) >= 0)
@@ -141,7 +140,7 @@ namespace Game
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, CameraComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, CameraComponent &comp, sol::table componentTable)->void
 		{
 			auto type = SceneCamera::ProjectionType::Perspective;
 
@@ -154,10 +153,10 @@ namespace Game
 			bool primary = false;
 			bool fixed   = false;
 
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
-				
+
 				if(GetValue<bool>(value, "Primary", upperKey, primary) >= 0);
 				else if(GetValue<bool>(value, "FixedAspectRatio", upperKey, fixed) >= 0);
 				else if(GetValue<SceneCamera::ProjectionType>(value, "Type", upperKey, type) >= 0);
@@ -186,7 +185,7 @@ namespace Game
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, LightComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, LightComponent &comp, sol::table componentTable)->void
 		{
 			bool active = false;
 			auto type   = LightType::Directional;
@@ -204,10 +203,10 @@ namespace Game
 
 			std::string cookie = {};
 
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
-				
+
 				if(GetValue<bool>(value, "Active", upperKey, active) >= 0);
 				else if(GetValue<float>(value, "Constant", upperKey, constant) >= 0);
 				else if(GetValue<float>(value, "Linear", upperKey, linear) >= 0);
@@ -264,12 +263,12 @@ namespace Game
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, LuaScriptComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, LuaScriptComponent &comp, sol::table componentTable)->void
 		{
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
-				
+
 				if(GetValue<std::string>(value, "Path", upperKey, comp.ScriptPath) >= 0)
 					comp.OpenFile(comp.ScriptPath);
 				else if(upperKey == "PROPERTIES"); //TODO Parameters for scripts
@@ -279,12 +278,12 @@ namespace Game
 		}
 
 		template <>
-		void ProcessComponentPa(uint64_t index, ModelComponent &comp, sol::table component)
+		auto ProcessComponentPa(uint64_t index, ModelComponent &comp, sol::table componentTable)->void
 		{
-			for(auto [key, value] : component)
+			for(auto [key, value] : componentTable)
 			{
 				const auto upperKey = ToUpperCopy(TrimCopy(key.as<std::string>()));
-				
+
 				if(GetValue<std::string>(value, "Path", upperKey, comp.ModelPath) >= 0)
 					comp.LoadModel(comp.ModelPath);
 				else if(GetValue<bool>(value, "Drawable", upperKey, comp.Drawable) >= 0);
@@ -294,32 +293,36 @@ namespace Game
 		}
 
 		template <typename Component>
-		void ProcessComponentP(uint64_t index, Entity entity, std::string name, sol::table component)
+		auto ProcessComponentP(uint64_t index, Entity entity, std::string name, sol::table componentTable)->void
 		{
 			if(entity.HasComponent<Component>())
 			{
 				LOG_WARN("Entity {} already has {}", index, name);
-				return;
+				LOG_DEBUG("Replacing {} to entity: {}", index, name);
 			}
 
-			LOG_DEBUG("Adding {} to entity: {}", index, name);
-			auto &comp = entity.AddComponent<Component>();
-
-			ProcessComponentPa<Component>(index, comp, component);
+			auto &component = entity.AddComponent<Component>();
+			ProcessComponentPa<Component>(index, component, componentTable);
 		}
 	}
 
-	bool SceneSerializer::Deserialize(const std::string &filePath)
+	auto SceneSerializer::Deserialize(const std::string &filePath)->bool
 	{
 		try
 		{
 			sol::state state;
 			// state->open_libraries(sol::lib::string);
 
-			state.new_enum<LightType>("LightType", {ENUM(LightType, Directional), ENUM(LightType, Spot), ENUM(LightType, Point)});
+			state.new_enum<LightType>(
+			                          "LightType",
+			                          {ENUM(LightType, Directional), ENUM(LightType, Spot), ENUM(LightType, Point)}
+			                         );
 			state.new_enum<SceneCamera::ProjectionType>(
 			                                            "CameraType",
-			                                            {ENUM(SceneCamera::ProjectionType, Perspective), ENUM(SceneCamera::ProjectionType, Orthographic)}
+			                                            {
+				                                            ENUM(SceneCamera::ProjectionType, Perspective),
+				                                            ENUM(SceneCamera::ProjectionType, Orthographic)
+			                                            }
 			                                           );
 
 
@@ -345,7 +348,7 @@ namespace Game
 		return true;
 	}
 
-	void SceneSerializer::ReadScene(sol::state &state)
+	auto SceneSerializer::ReadScene(sol::state &state)->void
 	{
 		for(auto [k, v] : state.globals())
 		{
@@ -365,7 +368,7 @@ namespace Game
 		}
 	}
 
-	void SceneSerializer::ProcessScene(sol::table scene)
+	auto SceneSerializer::ProcessScene(sol::table scene)->void
 	{
 		LOG_DEBUG("Processing Scene table")
 
@@ -408,12 +411,13 @@ namespace Game
 		}
 	}
 
-	void SceneSerializer::ProcessEntityTable(sol::table entities)
+	auto SceneSerializer::ProcessEntityTable(sol::table entities)->void
 	{
 		struct EntityStruct
 		{
-			int64_t Key = 0;
-			int64_t Id  = 0;
+			uint64_t Key = 0;
+			uint64_t Id  = 0;
+			bool HasId   = false;
 			sol::table EntityTable;
 		};
 
@@ -436,8 +440,9 @@ namespace Game
 			{
 				EntityStruct ent;
 				ent.EntityTable = value.as<sol::table>();
-				ent.Id          = FindEntityId(ent.EntityTable);
 				ent.Key         = key.as<uint64_t>();
+
+				FindEntityId(ent.EntityTable, ent.Id, ent.HasId);
 
 				ents.emplace_back(ent);
 
@@ -456,13 +461,14 @@ namespace Game
 
 		std::ranges::sort(ents, [](const EntityStruct &e1, const EntityStruct &e2) { return e1.Id > e2.Id; });
 
-		for(const auto &[key, id, entityTable] : ents)
-			ProcessEntity(key, id < 0 ? m_Scene->CreateEmpty() : m_Scene->CreateEmpty(id), entityTable);
+		for(const auto &[key, id, HasId, entityTable] : ents)
+			ProcessEntity(key, !HasId ? m_Scene->CreateEntity() : m_Scene->CreateEntity(id), entityTable);
 	}
 
-	int64_t SceneSerializer::FindEntityId(sol::table entityTable)
+	auto FindEntityId(sol::table entityTable, uint64_t &id, bool &found)->void
 	{
 		int64_t id = -1;
+		found      = false;
 
 		for(auto [key, value] : entityTable)
 		{
@@ -470,19 +476,20 @@ namespace Game
 
 			if(k == "ID")
 			{
-				if(value != sol::nil && value.is<uint32_t>())
-					id = value.as<uint32_t>();
+				if(value != sol::nil && value.is<uint64_t>())
+				{
+					id    = value.as<uint64_t>();
+					found = true;
+				}
 				else
 					LOG_WARN("Unable to read id value");
 
 				break;
 			}
 		}
-
-		return id;
 	}
 
-	void SceneSerializer::ProcessEntity(uint64_t index, Entity entity, sol::table entityTable)
+	auto SceneSerializer::ProcessEntity(uint64_t index, Entity entity, sol::table entityTable)->void
 	{
 		LOG_DEBUG("Processing entity {}, table", index);
 
@@ -494,8 +501,8 @@ namespace Game
 		for(auto [key, value] : entityTable)
 		{
 			const auto trimedKey = TrimCopy(key.as<std::string>());
-			const auto upperKey = ToUpperCopy(trimedKey);
-			
+			const auto upperKey  = ToUpperCopy(trimedKey);
+
 			if(upperKey == "ID");
 			else if(value.is<sol::table>())
 				ProcessComponent(index, entity, trimedKey, value.as<sol::table>());
@@ -504,7 +511,7 @@ namespace Game
 		}
 	}
 
-	void SceneSerializer::ProcessComponent(uint64_t index, Entity entity, std::string name, sol::table component)
+	auto SceneSerializer::ProcessComponent(uint64_t index, Entity entity, std::string name, sol::table component)->void
 	{
 		LOG_DEBUG("Processing component: {}", name);
 		const std::string upperName = ToUpperCopy(name);

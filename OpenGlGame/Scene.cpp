@@ -10,24 +10,27 @@ namespace Game
 	Scene::Scene(const std::string &title) : m_Title(title) { }
 	Scene::~Scene() {}
 
-	Entity Scene::CreateEntity(const std::string &tag)
+	Entity Scene::CreateEntity(const std::string &name)
 	{
+		return CreateEntity(UUID(), name);
+
 		Entity entity = CreateEntity();
 
 		entity.AddComponent<TransformComponent>();
 		auto &tagc = entity.AddComponent<TagComponent>();
-		tagc.Tag   = tag.empty() ? "Entity" : tag;
+		tagc.Tag   = name.empty() ? "Entity" : name;
 
 		return entity;
 	}
 
-	Entity Scene::CreateEntity(uint32_t hint, const std::string &tag)
+	Entity Scene::CreateEntity(UUID uuid, const std::string &name)
 	{
-		Entity entity = CreateEntity(hint);
-
+		Entity entity = {m_Registry.create(), this};
+		entity.AddComponent<IDComponent>(uuid);
+		auto& tag = entity.AddComponent<TagComponent>();
 		entity.AddComponent<TransformComponent>();
-		auto &tagC = entity.AddComponent<TagComponent>();
-		tagC.Tag   = tag.empty() ? "Entity" : tag;
+
+		tag.Tag = name.empty() ? "Entity" : name;
 
 		return entity;
 	}
@@ -132,16 +135,6 @@ namespace Game
 		}
 
 		return {};
-	}
-
-	Entity Scene::CreateEmpty()
-	{
-		return Entity{m_Registry.create(), this};
-	}
-
-	Entity Scene::CreateEmpty(uint32_t hint)
-	{
-		return Entity{m_Registry.create(static_cast<entt::entity>(hint)), this};
 	}
 
 	template <typename Component>

@@ -10,6 +10,7 @@
 #include "Light.h"
 #include "Transformable.h"
 #include "ScriptableEntity.h"
+#include "UUID.h"
 
 namespace Game
 {
@@ -29,6 +30,14 @@ namespace Game
 		std::string Name() const { return m_Name; }
 
 		Entity* GetEntity() const { return m_Entity; }
+	};
+
+	class IDComponent : public Component
+	{
+	public:
+		IDComponent(Entity* entity = nullptr) : Component("IDComponent", entity) {}
+
+		UUID ID;
 	};
 
 	class TagComponent: public Component

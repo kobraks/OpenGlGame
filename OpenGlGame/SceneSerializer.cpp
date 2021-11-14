@@ -19,7 +19,7 @@ namespace Game
 	static void SerializeEntity(LuaSerializer &out, Entity entity)
 	{
 		out.BeginTable();
-		out.Value("Id", static_cast<uint32_t>(entity));
+		out.Value("Id", entity.GetUUID());
 
 
 		if(entity.HasComponent<TagComponent>())

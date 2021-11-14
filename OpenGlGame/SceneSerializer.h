@@ -29,7 +29,7 @@ namespace Game
 		void ReadScene(sol::state& state);
 		void ProcessScene(sol::table scene);
 		void ProcessEntityTable(sol::table entities);
-		static int64_t FindEntityId(sol::table entityTable);
+		static void FindEntityId(sol::table entityTable, uint64_t &id, bool &found);
 		void ProcessEntity(uint64_t index, Entity entity, sol::table entityTable);
 		void ProcessComponent(unsigned long long index, Entity entity, std::string name, sol::table component);
 	};
