@@ -142,6 +142,9 @@ namespace Game
 	{
 		static_assert(false);
 	}
+	
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, IDComponent &component) {}
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, TagComponent &component) {}

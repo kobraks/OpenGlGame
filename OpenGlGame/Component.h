@@ -9,11 +9,13 @@
 #include "SceneCamera.h"
 #include "Light.h"
 #include "Transformable.h"
-#include "ScriptableEntity.h"
-#include "UUID.h"
+// #include "ScriptableEntity.h"
+// #include "UUID.h"
 
 namespace Game
 {
+	class ScriptableEntity;
+	class EntityLuaHandle;
 	class Entity;
 	class Model;
 
@@ -27,8 +29,7 @@ namespace Game
 
 		virtual ~Component() {}
 
-		std::string Name() const { return m_Name; }
-
+		const std::string &Name() const { return m_Name; }
 		Entity* GetEntity() const { return m_Entity; }
 	};
 
@@ -37,7 +38,7 @@ namespace Game
 	public:
 		IDComponent(Entity* entity = nullptr) : Component("IDComponent", entity) {}
 
-		UUID ID;
+		// UUID ID;
 	};
 
 	class TagComponent: public Component

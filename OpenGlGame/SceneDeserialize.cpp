@@ -462,12 +462,12 @@ namespace Game
 		std::ranges::sort(ents, [](const EntityStruct &e1, const EntityStruct &e2) { return e1.Id > e2.Id; });
 
 		for(const auto &[key, id, HasId, entityTable] : ents)
-			ProcessEntity(key, !HasId ? m_Scene->CreateEntity() : m_Scene->CreateEntity(id), entityTable);
+			ProcessEntity(key, !HasId ? m_Scene->CreateEntity() : m_Scene->CreateEntity(UUID(id)), entityTable);
 	}
 
 	auto FindEntityId(sol::table entityTable, uint64_t &id, bool &found)->void
 	{
-		int64_t id = -1;
+		id = -1;
 		found      = false;
 
 		for(auto [key, value] : entityTable)

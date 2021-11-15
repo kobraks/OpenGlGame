@@ -12,7 +12,7 @@ namespace Game
 	class Component;
 	class EntityLuaHandle;
 	class Scene;
-	
+
 	class Entity
 	{
 	private:
@@ -23,7 +23,7 @@ namespace Game
 		Entity(const Entity& other) = default;
 		Entity(const entt::entity& handle, Scene* scene);
 
-		UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
+		// Game::UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
 		const std::string& GetName() const { return GetComponent<TagComponent>().Tag; }
 		
 		constexpr bool operator==(const Entity& entity) const noexcept
