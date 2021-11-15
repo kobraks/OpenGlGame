@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Renderer.h"
 #include "Component.h"
+#include "ScriptableEntity.h"
 
 namespace Game
 {

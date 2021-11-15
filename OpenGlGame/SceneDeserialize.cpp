@@ -465,10 +465,10 @@ namespace Game
 			ProcessEntity(key, !HasId ? m_Scene->CreateEntity() : m_Scene->CreateEntity(UUID(id)), entityTable);
 	}
 
-	auto FindEntityId(sol::table entityTable, uint64_t &id, bool &found)->void
+	auto SceneSerializer::FindEntityId(sol::table entityTable, uint64_t &id, bool &found)->void
 	{
-		id = -1;
-		found      = false;
+		id    = -1;
+		found = false;
 
 		for(auto [key, value] : entityTable)
 		{
