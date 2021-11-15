@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Asset.cpp" />
+    <ClCompile Include="AssetId.cpp" />
     <ClCompile Include="AssetManager.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="Clock.cpp" />
@@ -84,6 +85,7 @@
     <ClCompile Include="Time.cpp" />
     <ClCompile Include="Transformable.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="UUID.cpp" />
     <ClCompile Include="Vertex.cpp" />
     <ClCompile Include="VertexArray.cpp" />
     <ClCompile Include="Window.cpp" />
@@ -91,6 +93,7 @@
   <ItemGroup>
     <ClInclude Include="Assert.h" />
     <ClInclude Include="Asset.h" />
+    <ClInclude Include="AssetId.h" />
     <ClInclude Include="AssetManager.h" />
     <ClInclude Include="Attachment.h" />
     <ClInclude Include="Buffer.h" />
@@ -175,6 +178,7 @@
     <ClInclude Include="Transformable.h" />
     <ClInclude Include="Types.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="UUID.h" />
     <ClInclude Include="Vector2.h" />
     <ClInclude Include="Vertex.h" />
     <ClInclude Include="VertexArray.h" />
@@ -288,7 +292,7 @@
       <EnableModules>true</EnableModules>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-      <WarningLevel>EnableAllWarnings</WarningLevel>
+      <WarningLevel>Level3</WarningLevel>
       <AdditionalOptions>/constexpr %(AdditionalOptions)</AdditionalOptions>
       <TreatAngleIncludeAsExternal>true</TreatAngleIncludeAsExternal>
       <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
