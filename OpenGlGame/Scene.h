@@ -44,7 +44,9 @@ namespace Game
 	private:
 		template <typename Component>
 		void OnComponentAdded(Entity &entity, Component &component);
-	
+
+		Entity CreateEmpty();
+		Entity CreateEmpty(UUID uuid);
 	private:
 		friend class Entity;
 		friend class SceneSerializer;

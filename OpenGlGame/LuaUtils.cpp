@@ -6,10 +6,10 @@
 
 namespace Game
 {
-	std::string ToString(const sol::state_view &lua, const sol::table &table, std::vector<sol::object> &visited, int level = 0)
+	std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
 	{
 		if(table == sol::nil)
-			return ToString(lua, table.as<sol::object>());
+			return ToString(table.as<sol::object>());
 
 		if(!table.valid())
 			return {};
@@ -25,7 +25,7 @@ namespace Game
 
 			if(metaTable && !metaTable->empty())
 			{
-				return ToString(lua, *metaTable, visited, level);
+				return ToString(*metaTable, visited, level);
 			}
 		}
 
@@ -43,11 +43,11 @@ namespace Game
 
 			if(value.get_type() == sol::type::table)
 			{
-				const auto tableContent = ToString(lua, value.as<sol::table>(), visited, level + 1);
+				const auto tableContent = ToString(value.as<sol::table>(), visited, level + 1);
 				if(!tableContent.empty())
 				{
 					result.append(beg);
-					result.append(ToString(lua, key));
+					result.append(key.as<std::string>());
 					result.append(" = ");
 
 					wasTable = true;
@@ -60,10 +60,10 @@ namespace Game
 			else
 			{
 				result.append(beg);
-				result.append(ToString(lua, key));
+				result.append(key.as<std::string>());
 				result.append(" = ");
 
-				result.append(ToString(lua, value.as<sol::object>()));
+				result.append(ToString(value.as<sol::object>()));
 				result.append("\n");
 			}
 		}
@@ -72,7 +72,6 @@ namespace Game
 	}
 
 	std::string ToString(
-		const sol::state_view &lua,
 		sol::variadic_args::const_iterator begin,
 		const sol::variadic_args::const_iterator &end,
 		std::vector<sol::object> &visited
@@ -85,19 +84,19 @@ namespace Game
 			if(begin->get_type() == sol::type::table)
 			{
 				result.append("\n");
-				result.append(ToString(lua, begin->get<sol::table>(), visited));
+				result.append(ToString(begin->get<sol::table>(), visited));
 			}
 			else
-				result.append(ToString(lua, begin->get<sol::object>()));
+				result.append(ToString(begin->get<sol::object>()));
 
-			result.append(ToString(lua, ++begin, end));
+			result.append(ToString(++begin, end));
 			return result;
 		}
 
 		return "";
 	}
 
-	std::string ToString(const sol::state_view &lua, const sol::variadic_args &args, std::vector<sol::object> &visited)
+	std::string ToString(const sol::variadic_args &args, std::vector<sol::object> &visited)
 	{
 		std::string result;
 		for(auto arg : args)
@@ -105,42 +104,81 @@ namespace Game
 			if(arg.get_type() == sol::type::table)
 			{
 				result.append("\n");
-				result.append(ToString(lua, arg.get<sol::table>(), visited));
+				result.append(ToString(arg.get<sol::table>(), visited));
 			}
 			else
-				result.append(ToString(lua, arg.get<sol::object>()));
+				result.append(ToString(arg.get<sol::object>()));
 		}
 
 		return result;
 	}
 
-	std::string ToString(const sol::state_view &lua, const sol::object &object)
+	std::string ToString(const sol::object &object)
 	{
 		if(!object.valid() && object != sol::nil)
 			return {};
 
-		return lua["tostring"](object);
+		lua_State *L = object.lua_state();
+		bool pushed  = false;
+
+		std::string result;
+		std::string oldValue;
+
+		if(lua_gettop(L) >= 2 && lua_type(L, -2) == LUA_TTABLE && lua_type(L, -1) == LUA_TSTRING)
+		{
+			pushed = true;
+
+			oldValue = LuaGetString(L, -1);
+			lua_rawget(L, -2);
+		}
+
+		switch(lua_type(L, -1))
+		{
+			case LUA_TNUMBER:
+				result = fmt::format("{}", lua_tonumber(L, -1));
+				break;
+			case LUA_TSTRING:
+				result = fmt::format("{}", lua_tostring(L, -1));
+				break;
+			case LUA_TBOOLEAN:
+				result = fmt::format("{}", (lua_toboolean(L, -1) ? "true" : "false"));
+				break;
+			case LUA_TNIL:
+				result = fmt::format("nil");
+				break;
+			default:
+				result = fmt::format("{}: {}", luaL_typename(L, -1), lua_topointer(L, -1));
+				break;
+		}
+
+		if (pushed)
+		{
+			lua_pop(L, 1);
+			lua_pushstring(L, oldValue.c_str());
+		}
+
+		return result;
 	}
 
-	std::string ToString(const sol::state_view &lua, const sol::table &table, int level)
+	std::string ToString(const sol::table &table, int level)
 	{
 		std::vector<sol::object> visited;
 
-		return ToString(lua, table, visited, level);
+		return ToString(table, visited, level);
 	}
 
-	std::string ToString(const sol::state_view &lua, sol::variadic_args::const_iterator begin, const sol::variadic_args::const_iterator &end)
+	std::string ToString(sol::variadic_args::const_iterator begin, const sol::variadic_args::const_iterator &end)
 	{
 		std::vector<sol::object> visited;
 
-		return ToString(lua, begin, end, visited);
+		return ToString(begin, end, visited);
 	}
 
-	std::string ToString(const sol::state_view &lua, const sol::variadic_args &args)
+	std::string ToString(const sol::variadic_args &args)
 	{
 		std::vector<sol::object> visited;
 
-		return ToString(lua, args, visited);
+		return ToString(args, visited);
 	}
 
 	bool DoFile(sol::state &state, const std::string &fileName)
@@ -221,7 +259,11 @@ namespace Game
 		{
 			for(const auto &[k, value] : table)
 			{
-				const std::string key = ToUpperCopy(k.is<std::string>() ? TrimCopy(k.as<std::string>()) : std::to_string(k.as<int>()));
+				const std::string key = ToUpperCopy(
+				                                    k.is<std::string>()
+					                                    ? TrimCopy(k.as<std::string>())
+					                                    : std::to_string(k.as<int>())
+				                                   );
 
 				if(key == "WIDTH" || key == "X" || key == "1" || key == "R" || key == "RED")
 					result.x = value.as<float>();
@@ -264,25 +306,25 @@ namespace Game
 	void PrintStack(lua_State *L)
 	{
 		int top = lua_gettop(L);
-		for (int i = 1; i <= top; ++i)
+		for(int i = 1; i <= top; ++i)
 		{
 			printf("%d\t%s\t", i, luaL_typename(L, i));
 			switch(lua_type(L, i))
 			{
-			case LUA_TNUMBER:
-				printf("%g\n", lua_tonumber(L, i));
-				break;
-			case LUA_TSTRING:
-				printf("%s\n", lua_tostring(L, i));
-				break;
-			case LUA_TBOOLEAN:
-				printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
-				break;
-			case LUA_TNIL:
-				printf("%s\n", "nil");
-			default:
-				printf("%p\n", lua_topointer(L, i));
-				break;
+				case LUA_TNUMBER:
+					printf("%g\n", lua_tonumber(L, i));
+					break;
+				case LUA_TSTRING:
+					printf("%s\n", lua_tostring(L, i));
+					break;
+				case LUA_TBOOLEAN:
+					printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
+					break;
+				case LUA_TNIL:
+					printf("%s\n", "nil");
+				default:
+					printf("%p\n", lua_topointer(L, i));
+					break;
 			}
 		}
 	}

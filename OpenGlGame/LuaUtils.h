@@ -11,10 +11,10 @@
 
 namespace Game
 {
-	std::string ToString(const sol::state_view &lua, const sol::object &object);
-	std::string ToString(const sol::state_view &lua, const sol::table &table);
-	std::string ToString(const sol::state_view &lua, sol::variadic_args::const_iterator begin, const sol::variadic_args::const_iterator &end);
-	std::string ToString(const sol::state_view &lua, const sol::variadic_args &args);
+	std::string ToString(const sol::object &object);
+	std::string ToString(const sol::table &table);
+	std::string ToString(sol::variadic_args::const_iterator begin, const sol::variadic_args::const_iterator &end);
+	std::string ToString(const sol::variadic_args &args);
 
 	bool DoFile(sol::state &state, const std::string &fileName);
 	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &environment);

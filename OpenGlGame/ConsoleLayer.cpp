@@ -141,7 +141,7 @@ namespace Game
 	{
 		auto consoleMetaTable = state.create_table_with();
 
-		consoleMetaTable.set_function("Print", [&](sol::variadic_args args) { PrintMessage(ToString(args.lua_state(), args)); });
+		consoleMetaTable.set_function("Print", [&](sol::variadic_args args) { PrintMessage(ToString(args)); });
 		consoleMetaTable.set_function("Clear", [&]() { Clear(); });
 		consoleMetaTable.set_function("ClearHistory", [&]() { ClearHistory(); });
 

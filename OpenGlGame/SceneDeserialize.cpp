@@ -446,7 +446,7 @@ namespace Game
 
 				ents.emplace_back(ent);
 
-				if(ent.Id >= 0)
+				if(ent.HasId)
 				{
 					LOG_DEBUG("Used static id for entity: {}, id = {}", ent.Key, ent.Id);
 				}
@@ -462,7 +462,7 @@ namespace Game
 		std::ranges::sort(ents, [](const EntityStruct &e1, const EntityStruct &e2) { return e1.Id > e2.Id; });
 
 		for(const auto &[key, id, HasId, entityTable] : ents)
-			ProcessEntity(key, !HasId ? m_Scene->CreateEntity() : m_Scene->CreateEntity(UUID(id)), entityTable);
+			ProcessEntity(key, !HasId ? m_Scene->CreateEmpty(UUID()) : m_Scene->CreateEmpty(UUID(id)), entityTable);
 	}
 
 	auto SceneSerializer::FindEntityId(sol::table entityTable, uint64_t &id, bool &found)->void

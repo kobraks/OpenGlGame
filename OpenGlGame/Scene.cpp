@@ -14,19 +14,11 @@ namespace Game
 	Entity Scene::CreateEntity(const std::string &name)
 	{
 		return CreateEntity(UUID(), name);
-
-		Entity entity = CreateEntity();
-
-		entity.AddComponent<TransformComponent>();
-		auto &tagc = entity.AddComponent<TagComponent>();
-		tagc.Tag   = name.empty() ? "Entity" : name;
-
-		return entity;
 	}
 
 	Entity Scene::CreateEntity(UUID uuid, const std::string &name)
 	{
-		Entity entity = {m_Registry.create(), this};
+		Entity entity = CreateEmpty();
 		entity.AddComponent<IDComponent>(uuid);
 		auto& tag = entity.AddComponent<TagComponent>();
 		entity.AddComponent<TransformComponent>();
@@ -136,6 +128,18 @@ namespace Game
 		}
 
 		return {};
+	}
+
+	Entity Scene::CreateEmpty()
+	{
+		return {m_Registry.create(), this};
+	}
+	Entity Scene::CreateEmpty(UUID uuid)
+	{
+		Entity entity { m_Registry.create(), this};
+		entity.AddComponent<IDComponent>(uuid);
+
+		return entity;
 	}
 
 	template <typename Component>

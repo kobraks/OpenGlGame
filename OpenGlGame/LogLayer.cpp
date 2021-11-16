@@ -60,7 +60,7 @@ namespace
 		}
 
 		const auto level   = static_cast<spdlog::level::level_enum>(severity);
-		const auto message = Game::ToString(args.lua_state(), args);
+		const auto message = Game::ToString(args);
 
 		Game::Log::GetScriptLogger()->log(level, message);
 	}

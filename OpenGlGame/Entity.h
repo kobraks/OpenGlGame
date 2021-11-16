@@ -25,6 +25,8 @@ namespace Game
 
 		UUID GetUUID() const { return GetComponent<IDComponent>().ID; }
 		const std::string& GetName() const { return GetComponent<TagComponent>().Tag; }
+
+		const glm::mat4& Transform() const { return GetComponent<TransformComponent>().GetTransform(); }
 		
 		constexpr bool operator==(const Entity& entity) const noexcept
 		{
@@ -76,6 +78,12 @@ namespace Game
 		bool HasComponent() const
 		{
 			return m_Scene->m_Registry.has<Component>(m_EntityHandle);
+		}
+
+		template <typename ...Args>
+		bool HasAny() const
+		{
+			return m_Scene->m_Registry.any<Args...>(m_EntityHandle);
 		}
 	};
 
