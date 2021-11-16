@@ -154,11 +154,12 @@ namespace Game
 		}
 
 		LOG_INFO("Sucessfuly executed script \"{}\"", fileName);
+		return true;
 	}
 
-	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &env)
+	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &environment)
 	{
-		const auto result = state.do_file(fileName, env);
+		const auto result = state.do_file(fileName, environment);
 		if(!result.valid())
 		{
 			const sol::error error = result;
@@ -167,11 +168,12 @@ namespace Game
 		}
 
 		LOG_INFO("Sucessfuly executed script \"{}\"", fileName);
+		return true;
 	}
 
 	bool DoString(sol::state &state, const std::string &string)
 	{
-		const auto result = state.do_file(string);
+		const auto result = state.do_string(string);
 		if(!result.valid())
 		{
 			const sol::error error = result;
@@ -182,9 +184,9 @@ namespace Game
 		return true;
 	}
 
-	bool DoString(sol::state &state, const std::string &string, sol::environment &env)
+	bool DoString(sol::state &state, const std::string &string, sol::environment &environment)
 	{
-		const auto result = state.do_file(string, env);
+		const auto result = state.do_string(string, environment);
 		if(!result.valid())
 		{
 			const sol::error error = result;
@@ -202,7 +204,7 @@ namespace Game
 			std::string string;
 			size_t len;
 
-			const char *str = lua_tolstring(L, 2, &len);
+			const char *str = lua_tolstring(L, index, &len);
 			string.append(str, len);
 			return string;
 		}
@@ -257,5 +259,31 @@ namespace Game
 	glm::vec4 ReadVector4(const sol::table &vector)
 	{
 		return ReadVector<glm::vec4>(vector);
+	}
+
+	void PrintStack(lua_State *L)
+	{
+		int top = lua_gettop(L);
+		for (int i = 1; i <= top; ++i)
+		{
+			printf("%d\t%s\t", i, luaL_typename(L, i));
+			switch(lua_type(L, i))
+			{
+			case LUA_TNUMBER:
+				printf("%g\n", lua_tonumber(L, i));
+				break;
+			case LUA_TSTRING:
+				printf("%s\n", lua_tostring(L, i));
+				break;
+			case LUA_TBOOLEAN:
+				printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
+				break;
+			case LUA_TNIL:
+				printf("%s\n", "nil");
+			default:
+				printf("%p\n", lua_topointer(L, i));
+				break;
+			}
+		}
 	}
 }

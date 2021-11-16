@@ -17,11 +17,10 @@ namespace Game
 	std::string ToString(const sol::state_view &lua, const sol::variadic_args &args);
 
 	bool DoFile(sol::state &state, const std::string &fileName);
-	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &env);
+	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &environment);
 
 	bool DoString(sol::state &state, const std::string &string);
-	bool DoString(sol::state &state, const std::string &string, sol::environment &env);
-
+	bool DoString(sol::state &state, const std::string &string, sol::environment &environment);
 
 	//Getting string from stack at given index
 	std::string LuaGetString(lua_State *L, int index);
@@ -30,17 +29,25 @@ namespace Game
 	glm::vec3 ReadVector3(const sol::table &vector);
 	glm::vec4 ReadVector4(const sol::table &vector);
 
+	void PrintStack(lua_State *L);
+
 	inline int Deny(lua_State *L)
 	{
 		return luaL_error(L, "Access denied");
 	}
 
-	template <typename Table, typename Table2, typename DenyFunction>
-	void SetAsReadOnlyTable(Table &&table, Table2 &&metaTable, DenyFunction denyFunction)
+	template <typename TableType, typename MetaTableType, typename DenyFunctionType>
+	void SetAsReadOnlyTable(TableType &&table, MetaTableType &&metaTable, DenyFunctionType denyFunction)
 	{
 		metaTable[sol::meta_function::new_index] = denyFunction;
 		metaTable[sol::meta_function::index]     = metaTable;
 
 		table[sol::metatable_key] = metaTable;
+	}
+
+	template <typename TableType, typename MetaTableType>
+	void SetAsReadOnlyTable(TableType &&table, MetaTableType &&metaTable)
+	{
+		SetAsReadOnlyTable(table, metaTable, Deny);
 	}
 }
