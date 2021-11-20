@@ -3,7 +3,7 @@
 #include <sol/variadic_args.hpp>
 #include <sol/table.hpp>
 #include <sol/metatable.hpp>
-
+#include <functional>
 
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -25,11 +25,14 @@ namespace Game
 	//Getting string from stack at given index
 	std::string LuaGetString(lua_State *L, int index);
 
+	void LuaForEach(lua_State* L, int tableIndex, std::function<void(int, int)> function);
+
+
 	glm::vec2 ReadVector2(const sol::table &vector);
 	glm::vec3 ReadVector3(const sol::table &vector);
 	glm::vec4 ReadVector4(const sol::table &vector);
 
-	void PrintStack(lua_State *L);
+	void PrintLuaStack(lua_State *L);
 
 	inline int Deny(lua_State *L)
 	{

@@ -1,12 +1,16 @@
 #include "pch.h"
 #include "LuaUtils.h"
 
+#include <mutex>
 #include <vector>
+
 #include "Utils.h"
 
 namespace Game
 {
-	std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
+	static std::mutex s_Mutex;
+
+	static std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
 	{
 		if(table == sol::nil)
 			return ToString(table.as<sol::object>());
@@ -71,7 +75,7 @@ namespace Game
 		return result;
 	}
 
-	std::string ToString(
+	static std::string ToString(
 		sol::variadic_args::const_iterator begin,
 		const sol::variadic_args::const_iterator &end,
 		std::vector<sol::object> &visited
@@ -96,7 +100,7 @@ namespace Game
 		return "";
 	}
 
-	std::string ToString(const sol::variadic_args &args, std::vector<sol::object> &visited)
+	static std::string ToString(const sol::variadic_args &args, std::vector<sol::object> &visited)
 	{
 		std::string result;
 		for(auto arg : args)
@@ -151,13 +155,19 @@ namespace Game
 				break;
 		}
 
-		if (pushed)
+		if(pushed)
 		{
 			lua_pop(L, 1);
 			lua_pushstring(L, oldValue.c_str());
 		}
 
 		return result;
+	}
+
+	std::string ToString(const sol::table &table)
+	{
+		std::vector<sol::object> visited;
+		return ToString(table, visited, 0);
 	}
 
 	std::string ToString(const sol::table &table, int level)
@@ -183,6 +193,8 @@ namespace Game
 
 	bool DoFile(sol::state &state, const std::string &fileName)
 	{
+		std::unique_lock guard(s_Mutex);
+
 		const auto result = state.do_file(fileName);
 		if(!result.valid())
 		{
@@ -197,6 +209,8 @@ namespace Game
 
 	bool DoFile(sol::state &state, const std::string &fileName, sol::environment &environment)
 	{
+		std::unique_lock guard(s_Mutex);
+
 		const auto result = state.do_file(fileName, environment);
 		if(!result.valid())
 		{
@@ -211,6 +225,8 @@ namespace Game
 
 	bool DoString(sol::state &state, const std::string &string)
 	{
+		std::unique_lock guard(s_Mutex);
+
 		const auto result = state.do_string(string);
 		if(!result.valid())
 		{
@@ -224,6 +240,8 @@ namespace Game
 
 	bool DoString(sol::state &state, const std::string &string, sol::environment &environment)
 	{
+		std::unique_lock guard(s_Mutex);
+
 		const auto result = state.do_string(string, environment);
 		if(!result.valid())
 		{
@@ -248,6 +266,22 @@ namespace Game
 		}
 
 		return {};
+	}
+
+	void LuaForEach(lua_State *L, int tableIndex, std::function<void(int, int)> function)
+	{
+		const int index = tableIndex < 0 ? lua_gettop(L) + tableIndex + 1 : tableIndex;
+
+		luaL_checktype(L, index, LUA_TTABLE);
+		
+		lua_pushnil(L);
+
+		while(lua_next(L, index) != 0)
+		{
+			lua_pushvalue(L, -2);
+			function(-1, -2);
+			lua_pop(L, 2);
+		}
 	}
 
 	template <class Type>
@@ -303,7 +337,7 @@ namespace Game
 		return ReadVector<glm::vec4>(vector);
 	}
 
-	void PrintStack(lua_State *L)
+	void PrintLuaStack(lua_State *L)
 	{
 		int top = lua_gettop(L);
 		for(int i = 1; i <= top; ++i)

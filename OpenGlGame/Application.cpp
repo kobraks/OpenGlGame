@@ -345,7 +345,7 @@ namespace Game
 		auto &lua = *m_Lua;
 
 		LOG_DEBUG("Opening Lua libraries");
-		lua.open_libraries(sol::lib::base);
+		lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::coroutine, sol::lib::debug, sol::lib::math, sol::lib::os, sol::lib::io);
 
 		LOG_TRACE("Registering Application arguments");
 		lua["ArgumentCount"] = m_Arguments.size();
