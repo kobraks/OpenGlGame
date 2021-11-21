@@ -299,7 +299,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>lua54.lib;opengl32.lib;glad.lib;FreeImage.lib;glfw3dll.lib;fmtd.lib;spdlogd.lib;freetyped.lib;assimpd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>lua54.lib;opengl32.lib;glad.lib;FreeImage.lib;glfw3dll.lib;fmtd.lib;spdlogd.lib;freetyped.lib;assimpd.lib;yaml-cppd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)/Lib/</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

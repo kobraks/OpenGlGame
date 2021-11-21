@@ -10,6 +10,11 @@ namespace Game
 {
 	static std::mutex s_Mutex;
 
+	static int GetGlobalIndex(lua_State *L, int index)
+	{
+		return index < 0 ? lua_gettop(L) + index + 1 : index;
+	}
+
 	static std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
 	{
 		if(table == sol::nil)
@@ -268,12 +273,12 @@ namespace Game
 		return {};
 	}
 
-	void LuaForEach(lua_State *L, int tableIndex, std::function<void(int, int)> function)
+	void ForEach(lua_State *L, int tableIndex, std::function<void(int, int)> function)
 	{
-		const int index = tableIndex < 0 ? lua_gettop(L) + tableIndex + 1 : tableIndex;
+		const int index = GetGlobalIndex(L, tableIndex);
 
 		luaL_checktype(L, index, LUA_TTABLE);
-		
+
 		lua_pushnil(L);
 
 		while(lua_next(L, index) != 0)
@@ -282,6 +287,29 @@ namespace Game
 			function(-1, -2);
 			lua_pop(L, 2);
 		}
+	}
+
+	int LuaForEach(lua_State *L)
+	{
+		luaL_checktype(L, -2, LUA_TTABLE);
+		luaL_checktype(L, -1, LUA_TFUNCTION);
+
+		lua_pushvalue(L, -2);
+		lua_pushnil(L);
+
+		while(lua_next(L, -2) != 0)
+		{
+			lua_pushvalue(L, -4);
+			lua_pushvalue(L, -3);
+			lua_pushvalue(L, -3);
+
+			lua_call(L, 2, 0);
+			lua_pop(L, 1);
+		}
+
+		lua_pop(L, 1);
+
+		return 0;
 	}
 
 	template <class Type>
