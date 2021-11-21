@@ -16,7 +16,7 @@
 
 namespace Game
 {
-	using PropertyIdType = std::string;
+	using PropertyIDType = std::string;
 
 	class PropertyManager;
 	
@@ -32,14 +32,15 @@ namespace Game
 		};
 
 	private:
-		const PropertyIdType m_Id;
+		const PropertyIDType m_Id;
 		Type m_Type;
 
 	public:
-		BaseProperty(std::string typeName, PropertyIdType id);
+		BaseProperty(std::string typeName, PropertyIDType id);
+		virtual ~BaseProperty() = default;
 
 		const Type& Type() const { return m_Type; }
-		const PropertyIdType& Id() const { return m_Id; }
+		const PropertyIDType& ID() const { return m_Id; }
 
 		virtual Pointer<BaseProperty> Clone() const = 0;
 
@@ -60,37 +61,37 @@ namespace Game
 	{
 	public:
 		using ValueType = T;
-		using SetterFunction = std::function<void(ValueType)>;
-		using GetterFunction = std::function<ValueType()>;
+		using SetterFunctionType = std::function<void(ValueType)>;
+		using GetterFunctionType = std::function<ValueType()>;
 
 	private:
-		SetterFunction m_Setter = nullptr;
-		GetterFunction m_Getter = nullptr;
+		SetterFunctionType m_Setter = nullptr;
+		GetterFunctionType m_Getter = nullptr;
 
 		std::optional<ValueType> m_Value = std::nullopt;
 
 	public:
-		explicit Property(PropertyIdType id) : BaseProperty(GET_TYPE_NAME(T), std::move(id)) {}
+		explicit Property(PropertyIDType id) : BaseProperty(GET_TYPE_NAME(T), std::move(id)) {}
 
-		Property(PropertyIdType id, const ValueType &value) : Property(std::move(id))
+		Property(PropertyIDType id, const ValueType &value) : Property(std::move(id))
 		{
 			m_Value = value;
 		}
 
-		Property(PropertyIdType id, SetterFunction onSet, GetterFunction onGet) : Property(std::move(id))
+		Property(PropertyIDType id, SetterFunctionType onSet, GetterFunctionType onGet) : Property(std::move(id))
 		{
 			m_Getter = onGet;
 			m_Setter = onSet;
 		}
 
-		Property(PropertyIdType id, const ValueType &value, SetterFunction onSet) : Property(std::move(id), value)
+		Property(PropertyIDType id, const ValueType &value, SetterFunctionType onSet) : Property(std::move(id), value)
 		{
 			m_Setter = onSet;
 		}
 
 		[[nodiscard]] Pointer<BaseProperty> Clone() const override
 		{
-			auto pointer = MakePointer<Property<T>>(Id());
+			auto pointer = MakePointer<Property<T>>(ID());
 
 			Property<T> &property = *pointer;
 			property.m_Getter     = m_Getter;
@@ -127,7 +128,6 @@ namespace Game
 		}
 
 		const ValueType& operator*() const { return Value(); }
-		ValueType& operator*() { return Value(); }
 
 	private:
 		sol::object LuaGet(sol::state &state) override
@@ -135,7 +135,7 @@ namespace Game
 			return sol::make_object<ValueType>(state, Value());
 		}
 
-		void LuaSet(sol::object object)
+		void LuaSet(sol::object object) override
 		{
 			if (object == sol::nil || !object.is<ValueType>())
 				return;

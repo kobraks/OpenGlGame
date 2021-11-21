@@ -2,14 +2,14 @@
 #include <unordered_map>
 #include <sol/object.hpp>
 
-#include "Types.h"
 #include "Property.h"
+#include "Types.h"
 
 namespace Game
 {
 	class PropertyManager
 	{
-		using PropertyList = std::unordered_map<PropertyIdType, Pointer<BaseProperty>>;
+		using PropertyList = std::unordered_map<PropertyIDType, Pointer<BaseProperty>>;
 
 		PropertyList m_Properties;
 
@@ -17,8 +17,8 @@ namespace Game
 	public:
 		PropertyManager() = default;
 
-		bool Contains(const PropertyIdType &id) const { return m_Properties.contains(id); }
-		void Remove(const PropertyIdType &id);
+		bool Contains(const PropertyIDType &id) const { return m_Properties.contains(id); }
+		void Remove(const PropertyIDType &id);
 
 		size_t Size() const { return m_Properties.size(); }
 
@@ -35,31 +35,35 @@ namespace Game
 
 	private:
 		Pointer<BaseProperty> GetBaseProperty(const std::string &name) const;
-	
+
 	public:
-		template <typename T>
-		void Set(const PropertyIdType &id, const T &value)
+		template <typename Type>
+		void Set(const PropertyIDType &id, const Type &value)
 		{
-			if(auto property = Find<T>(id); property)
+			if(auto property = Find<Type>(id); property)
 				property->SetValue(value);
 			else
-				Add(Property<T>(id, value));
+				Add(Property<Type>(id, value));
 		}
 
 		template <typename Type>
-		bool Add(const PropertyIdType &id, const Type &value)
+		bool Add(const PropertyIDType &id, const Type &value)
 		{
 			return AddProperty<Type>(Property<Type>(id, value));
 		}
-		
+
 		template <typename Type>
-		bool Add(const PropertyIdType &id, const Type &value, Property<Type>::SetterFunction onSet)
+		bool Add(const PropertyIDType &id, const Type &value, typename Property<Type>::SetterFunctionType onSet)
 		{
 			return AddProperty<Type>(Property<Type>(id, value, onSet));
 		}
 
 		template <typename Type>
-		bool Add(const PropertyIdType &id, Property<Type>::GetterFunction getter, Property<Type>::SetterFunction onSet)
+		bool Add(
+			const PropertyIDType &id,
+			typename Property<Type>::GetterFunctionType getter,
+			typename Property<Type>::SetterFunctionType onSet
+			)
 		{
 			return AddProperty<Type>(Property<Type>(id, onSet, getter));
 		}
@@ -70,16 +74,14 @@ namespace Game
 			return AddProperty<Type>(property);
 		}
 
-
 		template <typename Type>
-		bool Add(const std::pair<PropertyIdType, Type> &pair)
+		bool Add(const std::pair<PropertyIDType, Type> &pair)
 		{
 			return AddProperty<Type>(std::make_from_tuple<Property<Type>>(pair));
-			return false;
 		}
 
 		template <typename Type>
-		const Property<Type>& GetProperty(const PropertyIdType &id) const
+		const Property<Type>& GetProperty(const PropertyIDType &id) const
 		{
 			auto property = Find<Type>(id);
 
@@ -92,7 +94,7 @@ namespace Game
 		}
 
 		template <typename Type>
-		Property<Type>& GetProperty(const PropertyIdType &id)
+		Property<Type>& GetProperty(const PropertyIDType &id)
 		{
 			auto property = Find<Type>(id);
 
@@ -105,13 +107,13 @@ namespace Game
 		}
 
 		template <typename Type>
-		Type Get(const PropertyIdType &id)
+		Type Get(const PropertyIDType &id)
 		{
 			return GetProperty<Type>(id).Value();
 		}
 
 		template <typename Type>
-		Type Get(const PropertyIdType &id) const
+		Type Get(const PropertyIDType &id) const
 		{
 			return GetProperty<Type>(id).Value();
 		}
@@ -119,7 +121,7 @@ namespace Game
 
 	private:
 		template <typename T>
-		Pointer<Property<T>> Find(const PropertyIdType &id) const
+		Pointer<Property<T>> Find(const PropertyIDType &id) const
 		{
 			if(const auto &it = m_Properties.find(id); it != m_Properties.end())
 				return std::dynamic_pointer_cast<Property<T>>(it->second);
@@ -130,9 +132,9 @@ namespace Game
 		template <typename T>
 		bool AddProperty(const Property<T> &property)
 		{
-			if(!Contains(property.Id()))
+			if(!Contains(property.ID()))
 			{
-				auto it = m_Properties.emplace(std::make_pair(property.Id(), property.Clone()));
+				auto it = m_Properties.emplace(std::make_pair(property.ID(), property.Clone()));
 
 				return true;
 			}
@@ -142,9 +144,16 @@ namespace Game
 		template <typename T>
 		bool AddProperty(Property<T> &&property)
 		{
-			if(!Contains(property.Id()))
+			if(!Contains(property.ID()))
 			{
-				auto it = m_Properties.emplace(std::make_pair(property.Id(), MakePointer<Property<T>>(std::forward<Property<T>>(property))));
+				auto it = m_Properties.emplace(
+				                               std::make_pair(
+				                                              property.ID(),
+				                                              MakePointer<Property<T>>(
+					                                               std::forward<Property<T>>(property)
+					                                              )
+				                                             )
+				                              );
 
 				return true;
 			}

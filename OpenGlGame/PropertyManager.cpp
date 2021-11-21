@@ -1,11 +1,38 @@
 #include "pch.h"
 #include "PropertyManager.h"
 
+#include "LuaUtils.h"
+
 namespace Game
 {
-	static uint32_t s_RegisterIndex = 0;
+	static bool AddLuaProperty(PropertyManager &manager, const PropertyIDType &id, sol::object value)
+	{
+		return manager.Add<sol::object>(id, value);
+	}
 
-	void PropertyManager::Remove(const PropertyIdType &id)
+	static bool AddLuaProperty(
+		PropertyManager &manager,
+		const PropertyIDType &id,
+		sol::object setterObject,
+		sol::object getterObject
+		)
+	{
+		ASSERT(
+		       setterObject.is<sol::function>() && getterObject.is<sol::function>(),
+		       "You must provide get and set functions"
+		      );
+
+		if(!(setterObject.is<sol::function>() && getterObject.is<sol::function>()))
+			throw std::runtime_error(fmt::format("Get and Set must be functions"));
+
+		using Property = Property<sol::object>;
+		auto setter = setterObject.as<Property::SetterFunctionType>();
+		auto getter = getterObject.as<Property::GetterFunctionType>();
+
+		return manager.Add<sol::object>(id, getter, setter);
+	}
+
+	void PropertyManager::Remove(const PropertyIDType &id)
 	{
 		if(auto it = m_Properties.find(id); it != m_Properties.end())
 			m_Properties.erase(it);
@@ -17,35 +44,44 @@ namespace Game
 			m_Properties[id] = property->Clone();
 	}
 
-	static bool AddLuaProperty(PropertyManager &manager, const PropertyIdType &id, sol::object value)
-	{
-		return manager.Add<sol::object>(id, value);
-	}
-
 	void PropertyManager::Register(const std::string &name, sol::state &state)
 	{
-		const auto typeName = fmt::format("PropertyManager{}", s_RegisterIndex++);
-
 		m_State = &state;
 
-		state.set(name, *this);
+		auto metaTable = state.create_table();
 
-		state.new_usertype<PropertyManager>(typeName);
-
-		state[typeName]["Get"] = [this](PropertyIdType id) ->sol::object
+		metaTable["Get"] = [this](PropertyIDType id) ->sol::object
 		{
 			if(auto prop = this->GetBaseProperty(id); prop)
 				return prop->LuaGet(*this->m_State);
 			return sol::nil;
 		};
-		state[typeName]["Set"] = [this](PropertyIdType id, sol::object value) ->void
+
+		metaTable["Set"] = [this](PropertyIDType id, sol::object value)
 		{
 			if(auto prop = this->GetBaseProperty(id); prop)
 				prop->LuaSet(value);
 			else
 				AddLuaProperty(*this, id, value);
 		};
-		state[typeName]["Add"] = [this](PropertyIdType id, sol::object value) { return AddLuaProperty(*this, id, value); };
+
+		metaTable["Add"] = [this](PropertyIDType id, sol::variadic_args args)
+		{
+			if(args.size() > 2)
+			{
+				assert(false);
+				return false;
+			}
+
+			if(args.size() == 1)
+				return AddLuaProperty(*this, id, args[0].as<sol::object>());
+			if(args.size() == 2)
+				return AddLuaProperty(*this, id, args[0].as<sol::object>(), args[1].as<sol::object>());
+		};
+
+		auto table = state.create_table(name);
+
+		SetAsReadOnlyTable(table, metaTable);
 	}
 
 	Pointer<BaseProperty> PropertyManager::GetBaseProperty(const std::string &name) const
