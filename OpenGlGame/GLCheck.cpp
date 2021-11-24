@@ -51,7 +51,7 @@ namespace Game::Priv
 			while(errorCode != GL_NO_ERROR)
 			{
 				const auto& error = ErrorString(errorCode);
-				fmt::format_to(buffer, "{}: {}\n", error.Name, error.Description);
+				fmt::format_to(std::back_inserter(buffer), "{}: {}\n", error.Name, error.Description);
 				
 				errorCode = glGetError();
 			}

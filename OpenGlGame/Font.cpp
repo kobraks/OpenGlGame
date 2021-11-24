@@ -433,12 +433,12 @@ namespace Game
 					LOG_ERROR("Failed to set bitmap font size to: {}", characterSize);
 
 					fmt::memory_buffer buffer;
-					fmt::format_to(buffer, "Available sizes are: ");
+					fmt::format_to(std::back_inserter(buffer), "Available sizes are: ");
 
 					for (int i = 0; i < face->num_fixed_sizes; ++i)
 					{
 						const uint32_t size = (face->available_sizes[i].y_ppem + 32) >> 6;
-						fmt::format_to(buffer, "{} ", size);
+						fmt::format_to(std::back_inserter(buffer), "{} ", size);
 					}
 					LOG_INFO(buffer.data());
 				}

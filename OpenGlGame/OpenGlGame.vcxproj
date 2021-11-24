@@ -71,7 +71,6 @@
     <ClCompile Include="RenderTarget.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="SceneCamera.cpp" />
-    <ClCompile Include="SceneDeserialize.cpp" />
     <ClCompile Include="SceneSerializer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderLoader.cpp" />

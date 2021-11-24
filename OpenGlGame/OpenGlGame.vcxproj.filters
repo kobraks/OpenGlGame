@@ -288,9 +288,6 @@
     <ClCompile Include="Renderer.cpp">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="SceneDeserialize.cpp">
-      <Filter>Source Files\Scene\SecneSerializer</Filter>
-    </ClCompile>
     <ClCompile Include="SceneSerializer.cpp">
       <Filter>Source Files\Scene\SecneSerializer</Filter>
     </ClCompile>

@@ -47,7 +47,6 @@ namespace Game
 	{
 		//Source http://lua-users.org/wiki/SandBoxes
 
-		
 		//TODO MY OWN DEBUG FUNCTIONALITY
 		env["debug"] = sol::nil;
 		
@@ -91,7 +90,7 @@ namespace Game
 
 			DoFile(state, path, Environment);
 			
-			FileWatcher::AddFile(
+			FileWatcher::Watch(
 			                     path,
 			                     [&](std::string file, FileStatus status)
 			                     {
