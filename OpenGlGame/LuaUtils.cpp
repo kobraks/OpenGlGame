@@ -15,6 +15,34 @@ namespace Game
 		return index < 0 ? lua_gettop(L) + index + 1 : index;
 	}
 
+	static std::string GetString(lua_State *L)
+	{
+		switch(lua_type(L, -1))
+		{
+			case LUA_TNUMBER:
+				return fmt::format("{}", lua_tonumber(L, -1));
+			case LUA_TSTRING:
+				return fmt::format("{}", lua_tostring(L, -1));
+			case LUA_TBOOLEAN:
+				return fmt::format("{}", (lua_toboolean(L, -1) ? "true" : "false"));
+			case LUA_TNIL:
+				return fmt::format("nil");
+			default:
+				return fmt::format("{}: {}", luaL_typename(L, -1), lua_topointer(L, -1));
+		}
+	}
+
+	static std::string GetString(const sol::object &obj)
+	{
+		lua_State *L = obj.lua_state();
+		lua_pushvalue(L, -1);
+
+		std::string result = GetString(L);
+
+		lua_pop(L, 1);
+		return result;
+	}
+
 	static std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
 	{
 		if(table == sol::nil)
@@ -42,8 +70,10 @@ namespace Game
 		auto wasTable = false;
 		std::string result;
 
-		for(const auto [key, value] : table)
+		for(const auto [k, value] : table)
 		{
+			std::string key = GetString(k.as<sol::object>());
+
 			if(wasTable)
 			{
 				wasTable = false;
@@ -56,7 +86,7 @@ namespace Game
 				if(!tableContent.empty())
 				{
 					result.append(beg);
-					result.append(key.as<std::string>());
+					result.append(key);
 					result.append(" = ");
 
 					wasTable = true;
@@ -69,7 +99,7 @@ namespace Game
 			else
 			{
 				result.append(beg);
-				result.append(key.as<std::string>());
+				result.append(key);
 				result.append(" = ");
 
 				result.append(ToString(value.as<sol::object>()));
@@ -128,45 +158,20 @@ namespace Game
 			return {};
 
 		lua_State *L = object.lua_state();
-		bool pushed  = false;
 
-		std::string result;
-		std::string oldValue;
-
-		if(lua_gettop(L) >= 2 && lua_type(L, -2) == LUA_TTABLE && lua_type(L, -1) == LUA_TSTRING)
+		if (lua_gettop(L) >= 2 && lua_type(L, -2) == LUA_TTABLE && (lua_type(L, -1) == LUA_TSTRING || lua_type(L, -1) == LUA_TNUMBER))
 		{
-			pushed = true;
+			lua_pushvalue(L, -2);
+			lua_pushvalue(L, -2);
+			lua_gettable(L, -2);
 
-			oldValue = LuaGetString(L, -1);
-			lua_rawget(L, -2);
+			std::string result = GetString(L);
+			lua_pop(L, 2);
+
+			return result;
 		}
 
-		switch(lua_type(L, -1))
-		{
-			case LUA_TNUMBER:
-				result = fmt::format("{}", lua_tonumber(L, -1));
-				break;
-			case LUA_TSTRING:
-				result = fmt::format("{}", lua_tostring(L, -1));
-				break;
-			case LUA_TBOOLEAN:
-				result = fmt::format("{}", (lua_toboolean(L, -1) ? "true" : "false"));
-				break;
-			case LUA_TNIL:
-				result = fmt::format("nil");
-				break;
-			default:
-				result = fmt::format("{}: {}", luaL_typename(L, -1), lua_topointer(L, -1));
-				break;
-		}
-
-		if(pushed)
-		{
-			lua_pop(L, 1);
-			lua_pushstring(L, oldValue.c_str());
-		}
-
-		return result;
+		return GetString(object);
 	}
 
 	std::string ToString(const sol::table &table)
