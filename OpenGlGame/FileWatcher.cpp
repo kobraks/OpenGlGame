@@ -2,6 +2,7 @@
 #include "FileWatcher.h"
 
 #include <filesystem>
+#include <queue>
 
 #include "Exception.h"
 
@@ -24,62 +25,24 @@ namespace Game
 	{
 		m_Run.store(false);
 		m_Condition.notify_all();
-		if (m_Thread->joinable())
+		if(m_Thread->joinable())
 			m_Thread->join();
 	}
 
-	void FileWatcher::AddFile(const std::string& filePath, OnChangeFunctionType onChange)
+	void FileWatcher::Watch(const std::filesystem::path &path, OnChangeFunctionType onChange)
 	{
-		AddFile(std::filesystem::current_path() / filePath, onChange);
-	}
+		const std::string sPath = path.string();
 
-	void FileWatcher::AddFile(const std::filesystem::path& file, OnChangeFunctionType onChange)
-	{
-		if (!exists(file))
-			throw Exception("\"{}\" File does not exists.", file.string());
+		if(!exists(path))
+			throw Exception("\"{}\", Does not exists.", sPath);
 
-		std::string filePath = file.string();
-
-		if (is_regular_file(file))
-		{
-			std::unique_lock(GetInstance().m_Mutex);
-			auto& files = GetInstance().m_Files;
-
-			if (files.contains(filePath))
-				throw Exception("Already watching that file \"{}\"", filePath);
-
-			files.emplace(std::make_pair(filePath, File{last_write_time(file), onChange}));
-		}
+		std::unique_lock guard(GetInstance().m_Mutex);
+		if(is_regular_file(path))
+			GetInstance().Add(path, onChange, false);
+		else if(is_directory(path))
+			GetInstance().AddFolderNoMutex(path, onChange);
 		else
-			throw Exception("\"{}\" given file is not an regular file", filePath);
-	}
-
-	void FileWatcher::AddFolder(const std::filesystem::path& path, OnChangeFunctionType onChange)
-	{
-		if (!exists(path))
-			throw Exception("\"{}\" Folder does not exists,", path.string());
-
-		if (is_directory(path))
-		{
-			for (const auto& file : path)
-			{
-				if (is_directory(file))
-				{
-					AddFolder(file, onChange);
-				}
-				else if (is_regular_file(file))
-				{
-					AddFile(file, onChange);
-				}
-			}
-		}
-		else
-			throw Exception("\"{}\"path is not an directory", path.string());
-	}
-
-	void FileWatcher::AddFolder(const std::string& filePath, OnChangeFunctionType onChange)
-	{
-		AddFolder(std::filesystem::current_path() / filePath, onChange);
+			throw Exception("Unknown file type \"{}\"", sPath);
 	}
 
 	void FileWatcher::SetDelay(DelayType delay)
@@ -87,40 +50,83 @@ namespace Game
 		GetInstance().m_Delay.store(delay);
 	}
 
+	void FileWatcher::Add(const std::filesystem::path &path, OnChangeFunctionType onChange, bool isDirectory)
+	{
+		std::string sPath = path.string();
+
+		if(m_Files.contains(sPath))
+			return;
+
+		m_Files.emplace(std::make_pair(sPath, File{last_write_time(path), onChange, isDirectory}));
+	}
+
+	void FileWatcher::AddFolderNoMutex(const std::filesystem::path &path, OnChangeFunctionType onChange)
+	{
+		Add(path, onChange, true);
+
+		for(const auto &file : path)
+		{
+			if(is_directory(file))
+				AddFolderNoMutex(file, onChange);
+			else
+				Add(file, onChange, false);
+		}
+	}
+
+	void FileWatcher::ProcessEntry(const std::string &fileName, File &file)
+	{
+		try
+		{
+			if(file.IsFolder)
+				ProcessDirectory(fileName, file);
+			else
+			{
+				const auto time = std::filesystem::last_write_time(fileName);
+				if(file.Time != time)
+				{
+					file.OnChange(fileName, FileStatus::Modified);
+					file.Time = time;
+				}
+			}
+		}
+		catch(...) {}
+	}
+
+	void FileWatcher::ProcessDirectory(const std::string &directoryName, const File &file)
+	{
+		std::filesystem::path path = directoryName;
+
+		for(const auto f : path)
+		{
+			if(!m_Files.contains(f.string()))
+			{
+				file.OnChange(f.string(), FileStatus::Created);
+				m_Files.emplace(std::make_pair(f.string(), File{last_write_time(f), file.OnChange, is_directory(f)}));
+			}
+		}
+	}
+
 	void FileWatcher::Run()
 	{
-		while (m_Run.load())
+		while(m_Run.load())
 		{
-			//std::this_thread::sleep_for(m_Delay.load());
-
 			std::unique_lock guard(m_Mutex);
 			m_Condition.wait_for(guard, m_Delay.load());
+			if(!m_Run.load())
+				return;
 
 			auto it = m_Files.begin();
-			bool deleted = false;
-			while (it != m_Files.end())
+			std::queue<std::string> deletionQueue;
+
+			while(it != m_Files.end())
 			{
-				if (!std::filesystem::exists(it->first))
+				if(!std::filesystem::exists(it->first))
 				{
 					it->second.OnChange(it->first, FileStatus::Erased);
-					m_Files.erase(it);
-					deleted = true;
+					deletionQueue.emplace(it->first);
 				}
 				else
-				{
-					if (!deleted)
-					{
-						const auto time = std::filesystem::last_write_time(it->first);
-						if (it->second.Time != time)
-						{
-							it->second.OnChange(it->first, FileStatus::Modified);
-							it->second.Time = time;
-						}
-					}
-
-					++it;
-					deleted = false;
-				}
+					ProcessEntry(it->first, it->second);
 			}
 		}
 	}
