@@ -201,7 +201,7 @@ namespace Game
 
 		fmt::memory_buffer timeString;
 
-		format_to(timeString, "{}:{}:{}", tm.tm_hour, tm.tm_min, tm.tm_sec);
+		format_to(std::back_inserter(timeString), "{}:{}:{}", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
 		Message message{
 			msg.logger_name.data(),

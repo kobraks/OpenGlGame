@@ -1,6 +1,13 @@
 #pragma once
-#include <spdlog/spdlog.h>
 #include "Types.h"
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/string_cast.hpp>
+
+#pragma warning(push, 0)
+#include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
+#pragma warning(pop, 0)
 
 #define APPLICATION_LOGGER_NAME "Application"
 #define OPENGL_LOGGER_NAME "OpenGl"
@@ -15,17 +22,35 @@ namespace Game
 	public:
 		static void Init(bool consoleOutput = true, bool fileOutput = true);
 
-		static Pointer<spdlog::logger>& GetScriptLogger() { return m_ScriptLogger; }
-		static Pointer<spdlog::logger>& GetApplicationLogger() { return m_ApplicationLogger; }
-		static Pointer<spdlog::logger>& GetOpenGLLogger() { return m_OpenGlLogger; }
-		static Pointer<spdlog::logger>& GetAssertionLogger() { return m_AssertionLogger; }
+		static Pointer<spdlog::logger>& GetScriptLogger() { return s_ScriptLogger; }
+		static Pointer<spdlog::logger>& GetApplicationLogger() { return s_ApplicationLogger; }
+		static Pointer<spdlog::logger>& GetOpenGLLogger() { return s_OpenGlLogger; }
+		static Pointer<spdlog::logger>& GetAssertionLogger() { return s_AssertionLogger; }
 
 	private:
-		static Pointer<spdlog::logger> m_AssertionLogger;
-		static Pointer<spdlog::logger> m_ScriptLogger;
-		static Pointer<spdlog::logger> m_ApplicationLogger;
-		static Pointer<spdlog::logger> m_OpenGlLogger;
+		static Pointer<spdlog::logger> s_AssertionLogger;
+		static Pointer<spdlog::logger> s_ScriptLogger;
+		static Pointer<spdlog::logger> s_ApplicationLogger;
+		static Pointer<spdlog::logger> s_OpenGlLogger;
 	};
+}
+
+template <typename OStream, glm::length_t L, typename T, glm::qualifier Q>
+OStream& operator<<(OStream &os, const glm::vec<L, T, Q> &vector)
+{
+	return os << glm::to_string(vector);
+}
+
+template <typename OStream, glm::length_t C, glm::length_t R, typename T, glm::qualifier Q>
+OStream& operator<<(OStream &os, const glm::mat<C, R, T, Q> &matrix)
+{
+	return os << glm::to_string(matrix);
+}
+
+template <typename OStream, typename T, glm::qualifier Q>
+OStream& operator<<(OStream &os, glm::qua<T, Q> quaternio)
+{
+	return os << glm::to_string(quaternio);
 }
 
 

@@ -24,10 +24,10 @@ namespace Game
 		return logger;
 	}
 
-	Pointer<spdlog::logger> Log::m_ApplicationLogger = nullptr;
-	Pointer<spdlog::logger> Log::m_ScriptLogger      = nullptr;
-	Pointer<spdlog::logger> Log::m_OpenGlLogger      = nullptr;
-	Pointer<spdlog::logger> Log::m_AssertionLogger   = nullptr;
+	Pointer<spdlog::logger> Log::s_ApplicationLogger = nullptr;
+	Pointer<spdlog::logger> Log::s_ScriptLogger      = nullptr;
+	Pointer<spdlog::logger> Log::s_OpenGlLogger      = nullptr;
+	Pointer<spdlog::logger> Log::s_AssertionLogger   = nullptr;
 
 	void Log::Init(bool consoleOutput, bool fileOutput)
 	{
@@ -47,13 +47,13 @@ namespace Game
 		if(consoleOutput)
 			sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>())->set_pattern("%^- %D %T [%l] %n: %v%$");
 
-		m_OpenGlLogger = SetUpLogger(GL_LOGGER_NAME, std::begin(sinks), std::end(sinks));
+		s_OpenGlLogger = SetUpLogger(GL_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 
 		if(fileOutput)
 			sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>("Logs/Log.log", true))->set_pattern("- %D %T [%l] %n: %v");
 
-		m_ApplicationLogger = SetUpLogger(APPLICATION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
-		m_AssertionLogger = SetUpLogger(ASSERTION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
+		s_ApplicationLogger = SetUpLogger(APPLICATION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
+		s_AssertionLogger = SetUpLogger(ASSERTION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 
 		if (fileOutput)
 		{
@@ -61,6 +61,6 @@ namespace Game
 			sinks[sinks.size() - 1]->set_pattern("- %D %T [%l] %n: %v");
 		}
 
-		m_ScriptLogger = SetUpLogger(SCRIPT_LOGGER_NAME, std::begin(sinks), std::end(sinks));
+		s_ScriptLogger = SetUpLogger(SCRIPT_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 	}
 }
