@@ -1,178 +1,145 @@
 #include "pch.h"
 #include "SceneSerializer.h"
 
-#include "Defines.h"
-#include "Application.h"
-#include "Scene.h"
-#include "Entity.h"
 #include "Component.h"
+#include "Entity.h"
 
-#include "ModelLoader.h"
-#include "TextureLoader.h"
+#include <fstream>
+#include <yaml-cpp/yaml.h>
 
-#include "LuaUtils.h"
-#include "Utils.h"
-#include "LuaSerializer.h"
+namespace YAML
+{
+	template <>
+	struct convert<glm::vec2>
+	{
+		static Node encode(const glm::vec2 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.SetStyle(EmitterStyle::Flow);
+			return node;
+		}
+
+		static bool decode(const Node &node, glm::vec2 &rhs)
+		{
+			if(!node.IsSequence() || node.size() != 0)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.x = node[1].as<float>();
+		}
+	};
+
+
+	template <>
+	struct convert<glm::vec3>
+	{
+		static Node encode(const glm::vec3 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.SetStyle(EmitterStyle::Flow);
+			return node;
+		}
+
+		static bool decode(const Node &node, glm::vec3 &rhs)
+		{
+			if(!node.IsSequence() || node.size() != 3)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			return true;
+		}
+	};
+
+	template <>
+	struct convert<glm::vec4>
+	{
+		static Node encode(const glm::vec4 &rhs)
+		{
+			Node node;
+			node.push_back(rhs.x);
+			node.push_back(rhs.y);
+			node.push_back(rhs.z);
+			node.push_back(rhs.w);
+			node.SetStyle(EmitterStyle::Flow);
+			return node;
+		}
+
+		static bool decode(const Node &node, glm::vec4 &rhs)
+		{
+			if(!node.IsSequence() || node.size() != 4)
+				return false;
+
+			rhs.x = node[0].as<float>();
+			rhs.y = node[1].as<float>();
+			rhs.z = node[2].as<float>();
+			rhs.w = node[3].as<float>();
+			return true;
+		}
+	};
+}
 
 namespace Game
 {
-	static void SerializeEntity(LuaSerializer &out, Entity entity)
+	YAML::Emitter& operator<<(YAML::Emitter &out, const glm::vec2 &v)
 	{
-		out.BeginTable();
-		out.Value("Id", entity.GetUUID());
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
 
-
-		if(entity.HasComponent<TagComponent>())
-		{
-			const auto &comp = entity.GetComponent<TagComponent>();
-			out.BeginTable(comp.Name());
-
-			out.Value("Tag", comp.Tag);
-
-			out.EndTable();
-		}
-
-		if(entity.HasComponent<TransformComponent>())
-		{
-			const auto &comp = entity.GetComponent<TransformComponent>();
-			out.BeginTable(comp.Name());
-
-			out.Value("Position", comp.GetPosition());
-			out.Value("Rotation", comp.GetRotation());
-			out.Value("Scale", comp.GetScale());
-
-			out.EndTable();
-		}
-
-		if(entity.HasComponent<CameraComponent>())
-		{
-			const auto &comp   = entity.GetComponent<CameraComponent>();
-			const auto &camera = comp.Camera;
-
-			out.BeginTable(comp.Name());
-
-			if(camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
-			{
-				out.Value("Type", "Perspective");
-				out.Value("FarClip", camera.GetPerspectiveFarClip());
-				out.Value("NearClip", camera.GetPerspectiveNearClip());
-				out.Value("FOV", glm::degrees(camera.GetPerspectiveVerticalFOV()));
-				out.Value("AspectRatio", camera.GetAspectRatio());
-			}
-			else
-			{
-				out.Value("Type", "Orthographic");
-				out.Value("FarClip", camera.GetOrthographicFarClip());
-				out.Value("NearClip", camera.GetOrthographicNearClip());
-				out.Value("Size", glm::degrees(camera.GetOrthographicSize()));
-				out.Value("AspectRatio", camera.GetAspectRatio());
-			}
-
-			out.EndTable();
-		}
-
-		if(entity.HasComponent<LightComponent>())
-		{
-			const auto &comp = entity.GetComponent<LightComponent>();
-			const auto light = comp.Light;
-
-			if(light)
-			{
-				if(const auto lightInfo = light->GetInfo(); lightInfo.Type != LightType::Unknown)
-				{
-					out.BeginTable(comp.Name());
-					out.Value("Active", lightInfo.Active);
-
-					if (lightInfo.Type == LightType::Directional)
-						out.Value("Type", "LightType.Directional");
-					if (lightInfo.Type == LightType::Point)
-						out.Value("Type", "LightType.Point");
-					if (lightInfo.Type == LightType::Spot)
-						out.Value("Type", "LightType.Spot");
-
-					out.Color("DiffuseColor", lightInfo.DiffuseColor);
-					out.Color("AmbientColor", lightInfo.AmbientColor);
-					out.Color("SpecularColor", lightInfo.SpecularColor);
-
-					if (lightInfo.Type == LightType::Point || lightInfo.Type == LightType::Spot)
-					{
-						out.Value("Constant", lightInfo.Constant);
-						out.Value("Linear", lightInfo.Linear);
-						out.Value("Quadratic", lightInfo.Quadratic);
-
-						if (lightInfo.Type == LightType::Spot)
-						{
-							out.Value("CutOff", lightInfo.CutOff);
-							out.Value("OuterCutOff", lightInfo.OuterCutOff);
-							out.String("LightCookie", comp.TexturePath);
-						}
-					}
-					
-					out.EndTable();
-				}
-			}
-		}
-
-		if(entity.HasComponent<ModelComponent>())
-		{
-			const auto &comp = entity.GetComponent<ModelComponent>();
-			out.BeginTable(comp.Name());
-
-			out.Value("Path", fmt::format("\"{}\"", comp.ModelPath));
-			out.Value("Drawable", comp.Drawable);
-
-			out.EndTable();
-		}
-		if(entity.HasComponent<LuaScriptComponent>())
-		{
-			const auto &comp = entity.GetComponent<LuaScriptComponent>();
-			out.BeginTable(comp.Name());
-
-			//TODO Properties
-			out.Value("Path", fmt::format("\"{}\"", comp.ScriptPath));
-
-			out.EndTable();
-		}
-
-		out.EndTable();
+		return out;
 	}
 
-
-
-	SceneSerializer::SceneSerializer(const Pointer<Scene> scene) : m_Scene(scene)
+	YAML::Emitter& operator<<(YAML::Emitter &out, const glm::vec3 &v)
 	{
-		m_AppState = &Application::Get().GetLua();
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+		return out;
 	}
+
+	YAML::Emitter& operator<<(YAML::Emitter &out, const glm::vec4 &v)
+	{
+		out << YAML::Flow;
+		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+		return out;
+	}
+
+	static void SerializeEntity(YAML::Emitter &out, Entity entity)
+	{
+		ASSERT(entity.HasComponent<IDComponent>());
+	}
+
+	SceneSerializer::SceneSerializer(const Ref<Scene> &scene) : m_Scene(scene)
+	{}
 
 	void SceneSerializer::Serialize(const std::string &filePath)
 	{
-		LuaSerializer serializer(filePath);
+		YAML::Emitter out;
 
-		if(serializer.Good())
+		out << YAML::BeginMap;
+		out << YAML::Key << "Scene" << YAML::Value << m_Scene->Title();
+		out << YAML::Key << "Entities" << YAML::Value << YAML::BeginSeq;
+		m_Scene->m_Registry.each([&](auto entityID)
 		{
-			serializer.BeginTable("Scene");
-			serializer.Value("Title", fmt::format("\"{}\"", m_Scene->Title()));
+			Entity entity = { entityID, m_Scene.get() };
+			if (!entity)
+				return;
 
-			serializer.BeginTable("Entities");
+			SerializeEntity(out, entity);
+		});
+		out << YAML::EndSeq;
+		out << YAML::EndMap;
 
-			m_Scene->m_Registry.each(
-			                         [&](auto entityId)
-			                         {
-				                         Entity entity{entityId, m_Scene.get()};
-				                         if(!entity)
-					                         return;
-
-				                         SerializeEntity(serializer, entity);
-			                         }
-			                        );
-
-
-			serializer.EndTable();
-			serializer.EndTable();
-		}
-		else
-		{
-			LOG_ERROR("Unable to open \"{}\" scene not saved", filePath);
-		}
+		std::ofstream fout(filePath);
+		fout << out.c_str();
+	}
+	bool SceneSerializer::Deserialize(const std::string &filePath)
+	{
+		return false;
 	}
 }

@@ -85,7 +85,7 @@ namespace Game
 		{
 			auto property = Find<Type>(id);
 
-			ASSERT(property, "No property with id: \"{}\" exists", id);
+			ASSERT(property, fmt::format("No property with id: \"{}\" exists", id));
 
 			if(!property)
 				throw std::runtime_error(fmt::format("No property with id: \"{}\" exists", id));
@@ -98,7 +98,7 @@ namespace Game
 		{
 			auto property = Find<Type>(id);
 
-			ASSERT(property, "No property with id: \"{}\" exists", id);
+			ASSERT(property, fmt::format("No property with id: \"{}\" exists", id));
 
 			if(!property)
 				throw std::runtime_error(fmt::format("No property with id: \"{}\" exists", id));

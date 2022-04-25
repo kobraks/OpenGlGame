@@ -55,6 +55,7 @@
     <ClCompile Include="LightBuffer.cpp" />
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="LogLayer.cpp" />
+    <ClCompile Include="LuaHelper.cpp" />
     <ClCompile Include="LuaSerializer.cpp" />
     <ClCompile Include="LuaUtils.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -141,6 +142,7 @@
     <ClInclude Include="LightBuffer.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="LogLayer.h" />
+    <ClInclude Include="LuaHelper.h" />
     <ClInclude Include="LuaRegister.h" />
     <ClInclude Include="LuaSerializer.h" />
     <ClInclude Include="LuaUtils.h" />
@@ -287,7 +289,7 @@
       <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;SOL_SAFE_NUMERIC;NOMINMAX;SPDLOG_FMT_EXTERNAL;GLFW_INCLUDE_NONE;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Include\;$(SolutionDir)Include\lua\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Include\;$(SolutionDir)Include\lua\;$(BOOST_DIR)\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableModules>true</EnableModules>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -299,7 +301,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>lua54.lib;opengl32.lib;glad.lib;FreeImage.lib;glfw3dll.lib;fmtd.lib;spdlogd.lib;freetyped.lib;assimpd.lib;yaml-cppd.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)/Lib/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Lib\;$(BOOST_DIR)\stage\lib\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -310,7 +312,7 @@
       <PreprocessorDefinitions>SOL_ALL_SAFETIES_ON;SOL_SAFE_NUMERIC;NOMINMAX;SPDLOG_FMT_EXTERNAL;GLFW_INCLUDE_NONE;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)Include\;$(SolutionDir)Include\lua\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Include\;$(SolutionDir)Include\lua\;$(BOOST_DIR)\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableModules>true</EnableModules>
       <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
@@ -322,7 +324,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>lua54.lib;opengl32.lib;glad.lib;FreeImage.lib;glfw3dll.lib;freetype.lib;assimp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)/Lib/</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)Lib\;$(BOOST_DIR)\stage\lib\</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

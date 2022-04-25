@@ -24,7 +24,7 @@ namespace Game
 
 		if (!isProgram)
 		{
-			ASSERT(false, "Provided id {} do not belong to shader program", id);
+			ASSERT(false, fmt::format("Provided id {} do not belong to shader program", id));
 			std::runtime_error(fmt::format("Provided id {} do not belong to shader program", id));
 		}
 
@@ -588,7 +588,7 @@ namespace Game
 		if (iter != m_Internals->ActiveUniforms.end())
 			return *iter;
 
-		ASSERT(false, "Shader does not contains uniform at given location, {}", location);
+		ASSERT(false, fmt::format("Shader does not contains uniform at given location, {}", location));
 		throw std::runtime_error("Shader does not contains uniform at given location");
 	}
 
@@ -602,7 +602,7 @@ namespace Game
 		if (iter != m_Internals->ActiveUniformBlocks.end())
 			return *iter;
 
-		ASSERT(false, "Shader does not contains uniform at given index, {}", index);
+		ASSERT(false, fmt::format("Shader does not contains uniform at given index, {}", index));
 		throw std::runtime_error("Shader does not contains uniform at given index");
 	}
 

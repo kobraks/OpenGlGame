@@ -206,7 +206,7 @@ namespace Game
 			fmt::memory_buffer buffer;
 			format_to(std::back_inserter(buffer), "{}: {} -> {}", status, error.Name, error.Desc);
 
-			ASSERT(false, "Unable to create framebuffer {}", buffer.data());
+			ASSERT(false, fmt::format("Unable to create framebuffer {}", buffer.data()));
 			throw std::runtime_error(fmt::format("Unable to create frame buffer {}", buffer.data()));
 		}
 	}

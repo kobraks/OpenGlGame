@@ -57,6 +57,20 @@ namespace Game
 			return sol::nil;
 		};
 
+		metaTable["GetProperty"] = [this](PropertyIDType id) -> sol::object
+		{
+			if (auto prop = this->GetBaseProperty(id); prop)
+			{
+				auto table = m_State->create_table(0, 2);
+				table["Name"] = prop->ID();
+				table["Value"] = prop->LuaGet(*m_State);
+
+				return table;
+			}
+
+			return sol::nil;
+		};
+
 		metaTable["Set"] = [this](PropertyIDType id, sol::object value)
 		{
 			if(auto prop = this->GetBaseProperty(id); prop)
@@ -77,6 +91,53 @@ namespace Game
 				return AddLuaProperty(*this, id, args[0].as<sol::object>());
 			if(args.size() == 2)
 				return AddLuaProperty(*this, id, args[0].as<sol::object>(), args[1].as<sol::object>());
+		};
+
+		metaTable["Remove"] = [this](PropertyIDType id)
+		{
+			return this->Remove(id);
+		};
+
+		metaTable["Clear"] = [this](PropertyIDType id)
+		{
+			return this->Clear();
+		};
+
+		metaTable["Contains"] = [this](PropertyIDType id)
+		{
+			return this->Contains(id);
+		};
+
+		metaTable["Size"] = [this](PropertyIDType id)
+		{
+			return this->Size();
+		};
+
+		metaTable["GetNames"] = [this]()
+		{
+			auto table = this->m_State->create_table(m_Properties.size(), 0);
+
+			int i = 1;
+			for (auto it : m_Properties)
+				table[i++] = it.first.c_str();
+
+			return table;
+		};
+
+		metaTable["GetAll"] = [this]()
+		{
+			auto table = m_State->create_table(m_Properties.size(), 0);
+
+			int i = 1;
+			for (auto it : m_Properties)
+			{
+				auto local = table[i++] = m_State->create_table(0, 2);
+
+				local["Name"] = it.first;
+				local["Value"] = it.second->LuaGet(*m_State);
+			}
+
+			return table;
 		};
 
 		auto table = state.create_table(name);

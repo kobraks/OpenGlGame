@@ -1,29 +1,71 @@
 #pragma once
+#include <boost/multiprecision/cpp_int.hpp>
+#include <fmt/format.h>
+#include <ostream>
 
 namespace Game
 {
 	class UUID
 	{
-		uint64_t m_UUID;
+		boost::multiprecision::uint128_t m_UUID;
 
 	public:
 		UUID();
-		explicit UUID(uint64_t uuid);
+		explicit UUID(boost::multiprecision::uint128_t uuid);
 
 		UUID(const UUID &) = default;
 
-		operator uint64_t() const { return m_UUID; }
+		operator boost::multiprecision::uint128_t() const { return m_UUID; }
+
+		bool operator==(const UUID &right) const
+		{
+			return m_UUID == right.m_UUID;
+		}
+
+		std::strong_ordering operator<=>(const UUID &right) const
+		{
+			if (m_UUID == right.m_UUID)
+				return std::strong_ordering::equal;
+			if (m_UUID > right.m_UUID)
+				return std::strong_ordering::greater;
+			return std::strong_ordering::less;
+		}
+
+		friend std::ostream &operator<<(std::ostream &out, const Game::UUID &right);
+
+		template<typename T, typename Char, typename Enabled>
+		friend struct fmt::formatter;
 	};
+
+	std::ostream &operator<<(std::ostream &out, const Game::UUID &right)
+	{
+		return out << right.m_UUID;
+	}
 }
+
+template<>
+struct fmt::formatter<Game::UUID>
+{
+	constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin())
+	{
+		return ctx.end();
+	}
+
+	template <typename FormatContext>
+	auto format(const Game::UUID &input, FormatContext &ctx) -> decltype(ctx.begin())
+	{
+		return format_to(ctx.out(), "{}", boost::multiprecision::to_string(static_cast<boost::multiprecision::uint128_t>(input)));
+	}
+};
 
 namespace std
 {
-	template<>
+	template <>
 	struct hash<Game::UUID>
 	{
-		size_t operator()(const Game::UUID& uuid) const noexcept
+		size_t operator()(const Game::UUID &uuid) const noexcept
 		{
-			return std::hash<uint64_t>()(static_cast<uint64_t>(uuid));
+			return boost::multiprecision::hash_value(static_cast<boost::multiprecision::uint128_t>(uuid));
 		}
 	};
 }

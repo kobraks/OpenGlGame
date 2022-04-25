@@ -1,22 +1,44 @@
 #pragma once
 
-#include <spdlog/sinks/base_sink.h>
-#include <thread>
-#include <vector>
-#include <utility>
 #include <string>
+#include <thread>
+#include <utility>
+#include <vector>
+#include <spdlog/sinks/base_sink.h>
 
-#include "Layer.h"
 #include "Color.h"
 #include "imgui.h"
+#include "Layer.h"
 #include "LuaRegister.h"
 
 namespace Game
 {
 	class LogLayer: public Layer, public LuaRegister, public spdlog::sinks::base_sink<std::mutex>
 	{
-		struct Message;
-		
+		struct Source
+		{
+			const char *FileName{nullptr};
+			const char *FunctionName{nullptr};
+			int Line{0};
+		};
+
+		struct Message
+		{
+			std::string Name;
+			std::string Desc;
+			std::string Text;
+
+			Color Color;
+
+			spdlog::level::level_enum Level;
+
+			size_t ThreadId{0};
+			Source Source;
+
+			std::string Time;
+			bool Selected = false;
+		};
+
 		bool m_Show           = true;
 		bool m_ScrollToBottom = true;
 		bool m_AutoPopUp      = true;
@@ -30,10 +52,10 @@ namespace Game
 	public:
 		LogLayer();
 
-		virtual void OnAttach() override;
-		virtual void OnImGuiRender() override;
-		virtual void OnEvent(Event& event) override;
-		
+		void OnAttach() override;
+		void OnImGuiRender() override;
+		void OnEvent(Event &event) override;
+
 		void Clear();
 
 		void Visible(bool visible) { m_Show = visible; }
@@ -57,17 +79,17 @@ namespace Game
 
 		const auto& GetMessages() const { return m_Messages; }
 	protected:
-		virtual void sink_it_(const spdlog::details::log_msg &msg) override;
-		virtual void flush_() override;
+		void sink_it_(const spdlog::details::log_msg &msg) override;
+		void flush_() override;
 
-		virtual void Register(sol::state& state) override;
+		void Register(sol::state &state) override;
 
 	private:
 		void LoggerCombo(Pointer<spdlog::logger> logger);
 
 		static void SetUpTable();
-		
+
 		void PrintMessagesTable();
-		void PrintMessage(size_t i, Message& message);
+		void PrintMessage(size_t i, Message &message);
 	};
 }

@@ -11,6 +11,7 @@
 **/*.exe
 **/*.pdb
 **/*.cd
+**/*.sln.DotSettings*
 
 #ignoring build directory
 Build

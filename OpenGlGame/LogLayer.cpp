@@ -90,14 +90,14 @@ namespace
 
 namespace Game
 {
-	struct Source
+	/*struct Source
 	{
 		const char *FileName{nullptr};
 		const char *FunctionName{nullptr};
 		int Line{0};
-	};
+	};*/
 
-	struct LogLayer::Message
+	/*struct LogLayer::Message
 	{
 		std::string Name;
 		std::string Desc;
@@ -112,7 +112,7 @@ namespace Game
 
 		std::string Time;
 		bool Selected = false;
-	};
+	};*/
 
 	LogLayer::LogLayer() : Layer("LogLayer") {}
 

@@ -2,7 +2,7 @@
 
 speed = 10
 
---Colled once per u
+--Colled once per update
 --Parameter enttiy 
 function OnUpdate(e)
 end
