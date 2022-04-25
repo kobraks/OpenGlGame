@@ -1,7 +1,7 @@
 #pragma once
+#include <ostream>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <fmt/format.h>
-#include <ostream>
 
 namespace Game
 {
@@ -24,37 +24,38 @@ namespace Game
 
 		std::strong_ordering operator<=>(const UUID &right) const
 		{
-			if (m_UUID == right.m_UUID)
+			if(m_UUID == right.m_UUID)
 				return std::strong_ordering::equal;
-			if (m_UUID > right.m_UUID)
+			if(m_UUID > right.m_UUID)
 				return std::strong_ordering::greater;
 			return std::strong_ordering::less;
 		}
 
-		friend std::ostream &operator<<(std::ostream &out, const Game::UUID &right);
+		friend std::ostream& operator<<(std::ostream &out, const UUID &right);
 
-		template<typename T, typename Char, typename Enabled>
+		template <typename T, typename Char, typename Enabled>
 		friend struct fmt::formatter;
 	};
 
-	std::ostream &operator<<(std::ostream &out, const Game::UUID &right)
-	{
-		return out << right.m_UUID;
-	}
+	std::ostream& operator<<(std::ostream &out, const UUID &right);
 }
 
-template<>
+template <>
 struct fmt::formatter<Game::UUID>
 {
-	constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin())
+	constexpr auto parse(format_parse_context &ctx)->decltype(ctx.begin())
 	{
 		return ctx.end();
 	}
 
 	template <typename FormatContext>
-	auto format(const Game::UUID &input, FormatContext &ctx) -> decltype(ctx.begin())
+	auto format(const Game::UUID &input, FormatContext &ctx)->decltype(ctx.begin())
 	{
-		return format_to(ctx.out(), "{}", boost::multiprecision::to_string(static_cast<boost::multiprecision::uint128_t>(input)));
+		return format_to(
+		                 ctx.out(),
+		                 "{}",
+		                 boost::multiprecision::to_string(static_cast<boost::multiprecision::uint128_t>(input))
+		                );
 	}
 };
 

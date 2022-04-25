@@ -22,4 +22,9 @@ namespace Game
 	UUID::UUID() : m_UUID(Combine(Random(), Random())) {}
 
 	UUID::UUID(boost::multiprecision::uint128_t uuid) : m_UUID(uuid) {}
+
+	std::ostream& operator<<(std::ostream &out, const UUID &right)
+	{
+		return out << to_string(right.m_UUID);
+	}
 }
