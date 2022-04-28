@@ -10,3 +10,4 @@ Libraries used:
 *   [Lua](https://www.lua.org/download.html)
 *   [Sol](https://github.com/ThePhD/sol2)
 *   [Spdlog](https://github.com/gabime/spdlog)
+*   [boost](https://www.boost.org/)
