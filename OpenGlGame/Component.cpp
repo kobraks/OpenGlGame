@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Component.h"
 
+#include "Assert.h"
+
 #include "Defines.h"
 #include "ModelLoader.h"
 #include "Model.h"
@@ -16,11 +18,12 @@ namespace Game
 	static int LuaRegisterValue(lua_State *L)
 	{
 		//Stack:
-		//Global table 
-		//New key
-		//Value
+		//1 - Global table 
+		//2 - New key
+		//3 - Value
 		
 		//Checking for correct arguments
+		ASSERT(lua_gettop(L) == 3, fmt::format("Not enough arguments expected: \"{}\" got: \"{}\"", 3, lua_gettop(L)));
 		luaL_checkany(L, 1);
 		luaL_checkany(L, 2);
 		luaL_checkany(L, 3);
