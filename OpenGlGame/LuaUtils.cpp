@@ -5,10 +5,42 @@
 #include <vector>
 
 #include "Utils.h"
+#include "Log.h"
 
 namespace Game
 {
 	static std::mutex s_Mutex;
+
+	constexpr std::string_view TypeToStr(const sol::type &type)
+	{
+		switch(type)
+		{
+			case sol::type::none:
+				return "none";
+			case sol::type::lua_nil:
+				return "nil_t";
+			case sol::type::string:
+				return "string";
+			case sol::type::number:
+				return "number";
+			case sol::type::thread:
+				return "thread";
+			case sol::type::boolean:
+				return "boolean";
+			case sol::type::function:
+				return "function";
+			case sol::type::userdata:
+				return "userdata";
+			case sol::type::lightuserdata:
+				return "lightuserdata";
+			case sol::type::table:
+				return "table";
+			case sol::type::poly:
+				return "poly";
+			default:
+				return "";
+		}
+	}
 
 	static int GetGlobalIndex(lua_State *L, int index)
 	{
@@ -34,13 +66,21 @@ namespace Game
 
 	static std::string GetString(const sol::object &obj)
 	{
-		lua_State *L = obj.lua_state();
-		lua_pushvalue(L, -1);
+		const auto type = obj.get_type();
 
-		std::string result = GetString(L);
-
-		lua_pop(L, 1);
-		return result;
+		switch(type)
+		{
+			case sol::type::number:
+				return fmt::format("{:g}", obj.as<double>());
+			case sol::type::string:
+				return obj.as<std::string>();
+			case sol::type::boolean:
+				return fmt::format("{}", obj.as<bool>() ? "true" : "false");
+			case sol::type::nil:
+				return "nil";
+			default:
+				return fmt::format("{}: {}", TypeToStr(type), obj.pointer());
+		}
 	}
 
 	static std::string ToString(const sol::table &table, std::vector<sol::object> &visited, int level = 0)
@@ -156,20 +196,6 @@ namespace Game
 	{
 		if(!object.valid() && object != sol::nil)
 			return {};
-
-		lua_State *L = object.lua_state();
-
-		if (lua_gettop(L) >= 2 && lua_type(L, -2) == LUA_TTABLE && (lua_type(L, -1) == LUA_TSTRING || lua_type(L, -1) == LUA_TNUMBER))
-		{
-			lua_pushvalue(L, -2);
-			lua_pushvalue(L, -2);
-			lua_gettable(L, -2);
-
-			std::string result = GetString(L);
-			lua_pop(L, 2);
-
-			return result;
-		}
 
 		return GetString(object);
 	}
@@ -372,27 +398,38 @@ namespace Game
 
 	void PrintLuaStack(lua_State *L)
 	{
+		fmt::memory_buffer out;
+
+
 		int top = lua_gettop(L);
 		for(int i = 1; i <= top; ++i)
 		{
-			printf("%d\t%s\t", i, luaL_typename(L, i));
+			fmt::format_to(std::back_inserter(out), "{}\t{}\t", i, luaL_typename(L, i));
+			// printf("%d\t%s\t", i, luaL_typename(L, i));
 			switch(lua_type(L, i))
 			{
 				case LUA_TNUMBER:
-					printf("%g\n", lua_tonumber(L, i));
+					fmt::format_to(std::back_inserter(out), "{:g}\n", lua_tonumber(L, i));
+					// printf("%g\n", lua_tonumber(L, i));
 					break;
 				case LUA_TSTRING:
-					printf("%s\n", lua_tostring(L, i));
+					fmt::format_to(std::back_inserter(out), "{}\n", lua_tostring(L, i));
+					// printf("%s\n", lua_tostring(L, i));
 					break;
 				case LUA_TBOOLEAN:
-					printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
+					fmt::format_to(std::back_inserter(out),  "{}\n", lua_toboolean(L, i));
+					// printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
 					break;
 				case LUA_TNIL:
-					printf("%s\n", "nil");
+					fmt::format_to(std::back_inserter(out), "nil\n");
+					// printf("%s\n", "nil");
 				default:
-					printf("%p\n", lua_topointer(L, i));
+					fmt::format_to(std::back_inserter(out), "{:p}", lua_topointer(L, i));
+					// printf("%p\n", lua_topointer(L, i));
 					break;
 			}
 		}
+
+		PRINT_SCRIPT_DEBUG("Lua Stack\n{}", out.data());
 	}
 }
