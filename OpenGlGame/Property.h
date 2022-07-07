@@ -46,7 +46,7 @@ namespace Game
 
 
 	protected:
-		virtual sol::object LuaGet(sol::state& state)
+		virtual sol::object LuaGet(sol::this_state &state)
 		{
 			return sol::nil;
 		}
@@ -84,11 +84,6 @@ namespace Game
 			m_Setter = onSet;
 		}
 
-		Property(PropertyIDType id, const ValueType &value, SetterFunctionType onSet) : Property(std::move(id), value)
-		{
-			m_Setter = onSet;
-		}
-
 		[[nodiscard]] Pointer<BaseProperty> Clone() const override
 		{
 			auto pointer = MakePointer<Property<T>>(ID());
@@ -99,6 +94,14 @@ namespace Game
 			property.m_Value      = m_Value;
 
 			return pointer;
+		}
+
+		void SetSetterAndGetterFunction(SetterFunctionType setterFunction, GetterFunctionType getterFunction)
+		{
+			m_Setter = setterFunction;
+			m_Getter = getterFunction;
+
+			m_Value = std::nullopt;
 		}
 
 		ValueType Value() const
@@ -130,9 +133,12 @@ namespace Game
 		const ValueType& operator*() const { return Value(); }
 
 	private:
-		sol::object LuaGet(sol::state &state) override
+		sol::object LuaGet(sol::this_state &state) override
 		{
-			return sol::make_object<ValueType>(state, Value());
+			if constexpr (std::is_same_v<sol::object, T>)
+				return Value();
+			else
+				return sol::make_object(state, Value());
 		}
 
 		void LuaSet(sol::object object) override

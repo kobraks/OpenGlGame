@@ -5,6 +5,8 @@
 
 namespace Game
 {
+	static bool s_Registred = false;
+
 	static bool AddLuaProperty(PropertyManager &manager, const PropertyIDType &id, sol::object value)
 	{
 		return manager.Add<sol::object>(id, value);
@@ -44,105 +46,68 @@ namespace Game
 			m_Properties[id] = property->Clone();
 	}
 
-	void PropertyManager::Register(const std::string &name, sol::state &state)
+	sol::object PropertyManager::LuaGet(sol::this_state state, const PropertyIDType &id)
 	{
-		m_State = &state;
+		if (auto prop = GetBaseProperty(id); prop)
+			return prop->LuaGet(state);
+		return sol::nil;
+	}
 
-		auto metaTable = state.create_table();
+	void PropertyManager::LuaSet(const PropertyIDType &id, sol::object value)
+	{
+		if (auto prop = GetBaseProperty(id); prop)
+			return prop->LuaSet(value);
 
-		metaTable["Get"] = [this](PropertyIDType id) ->sol::object
+		AddLuaProperty(*this, id, value);
+	}
+
+	bool PropertyManager::LuaAdd(const PropertyIDType &id, sol::variadic_args args)
+	{
+		if (args.size() > 2)
 		{
-			if(auto prop = this->GetBaseProperty(id); prop)
-				return prop->LuaGet(*this->m_State);
-			return sol::nil;
-		};
+			ASSERT(false, "Too many Arguments");
+			return false;
+		}
 
-		metaTable["GetProperty"] = [this](PropertyIDType id) -> sol::object
+		if (args.size() == 0)
+			return AddLuaProperty(*this, id, sol::nil);
+		if (args.size() == 1)
+			return AddLuaProperty(*this, id, args[0].as<sol::object>());
+		if (args.size() == 2)
+			return AddLuaProperty(*this, id, args[0].as<sol::object>(), args[1].as<sol::object>());
+
+		return false;
+	}
+
+	sol::table PropertyManager::LuaGetNames(sol::this_state state) const
+	{
+		//TODO some sort of cashing
+		sol::table table(state, sol::new_table(m_Properties.size()));
+
+		int i = 1;
+		for (auto it : m_Properties)
+			table[i++] = it.first;
+
+		return table;
+
+	}
+
+	sol::table PropertyManager::LuaGetAll(sol::this_state state) const
+	{
+		//TODO some sort of cashing
+
+		sol::table table(state, sol::new_table(m_Properties.size()));
+
+		int i = 1;
+		for (auto it : m_Properties)
 		{
-			if (auto prop = this->GetBaseProperty(id); prop)
-			{
-				auto table = m_State->create_table(0, 2);
-				table["Name"] = prop->ID();
-				table["Value"] = prop->LuaGet(*m_State);
+			auto local = table[i++] = sol::table(state, sol::new_table(0, 2));
 
-				return table;
-			}
+			local["Name"] = it.first;
+			local["Value"] = it.second->LuaGet(state);
+		}
 
-			return sol::nil;
-		};
-
-		metaTable["Set"] = [this](PropertyIDType id, sol::object value)
-		{
-			if(auto prop = this->GetBaseProperty(id); prop)
-				prop->LuaSet(value);
-			else
-				AddLuaProperty(*this, id, value);
-		};
-
-		metaTable["Add"] = [this](PropertyIDType id, sol::variadic_args args)
-		{
-			if(args.size() > 2)
-			{
-				assert(false);
-				return false;
-			}
-
-			if(args.size() == 1)
-				return AddLuaProperty(*this, id, args[0].as<sol::object>());
-			if(args.size() == 2)
-				return AddLuaProperty(*this, id, args[0].as<sol::object>(), args[1].as<sol::object>());
-		};
-
-		metaTable["Remove"] = [this](PropertyIDType id)
-		{
-			return this->Remove(id);
-		};
-
-		metaTable["Clear"] = [this](PropertyIDType id)
-		{
-			return this->Clear();
-		};
-
-		metaTable["Contains"] = [this](PropertyIDType id)
-		{
-			return this->Contains(id);
-		};
-
-		metaTable["Size"] = [this](PropertyIDType id)
-		{
-			return this->Size();
-		};
-
-		metaTable["GetNames"] = [this]()
-		{
-			auto table = this->m_State->create_table(m_Properties.size(), 0);
-
-			int i = 1;
-			for (auto it : m_Properties)
-				table[i++] = it.first.c_str();
-
-			return table;
-		};
-
-		metaTable["GetAll"] = [this]()
-		{
-			auto table = m_State->create_table(m_Properties.size(), 0);
-
-			int i = 1;
-			for (auto it : m_Properties)
-			{
-				auto local = table[i++] = m_State->create_table(0, 2);
-
-				local["Name"] = it.first;
-				local["Value"] = it.second->LuaGet(*m_State);
-			}
-
-			return table;
-		};
-
-		auto table = state.create_table(name);
-
-		SetAsReadOnlyTable(table, metaTable);
+		return table;
 	}
 
 	Pointer<BaseProperty> PropertyManager::GetBaseProperty(const std::string &name) const
@@ -153,5 +118,24 @@ namespace Game
 		}
 
 		return nullptr;
+	}
+
+	void PropertyManager::Register(sol::state &state)
+	{
+		auto ut = state.new_usertype<PropertyManager>("PropertyManager");
+
+		ut["Get"]      = &PropertyManager::LuaGet;
+		ut["GetNames"] = &PropertyManager::LuaGetNames;
+		ut["GetAll"]   = &PropertyManager::LuaGetAll;
+		ut["Set"]      = &PropertyManager::LuaSet;
+		ut["Add"]      = &PropertyManager::LuaAdd;
+
+		ut["Clear"] = &PropertyManager::Clear;
+		ut["Remove"] = &PropertyManager::Remove;
+
+		ut["Contains"] = &PropertyManager::Contains;
+		ut["Size"] = &PropertyManager::Size;
+		ut["Clone"] = &PropertyManager::Clone;
+		
 	}
 }

@@ -4,16 +4,15 @@
 
 #include "Property.h"
 #include "Types.h"
+#include "LuaRegister.h"
 
 namespace Game
 {
-	class PropertyManager
+	class PropertyManager : public LuaRegister
 	{
 		using PropertyList = std::unordered_map<PropertyIDType, Pointer<BaseProperty>>;
 
 		PropertyList m_Properties;
-
-		sol::state *m_State = nullptr;
 	public:
 		PropertyManager() = default;
 
@@ -25,16 +24,23 @@ namespace Game
 		void Clear() { m_Properties.clear(); }
 		void Clone(const PropertyManager &manager);
 
-		void Register(const std::string &name, sol::state &state);
-
 		PropertyList::iterator begin() { return m_Properties.begin(); }
 		PropertyList::iterator end() { return m_Properties.end(); }
 
 		PropertyList::const_iterator begin() const { return m_Properties.begin(); }
 		PropertyList::const_iterator end() const { return m_Properties.end(); }
 
+	protected:
+		sol::object LuaGet(sol::this_state state, const PropertyIDType &id);
+		void LuaSet(const PropertyIDType &id, sol::object value);
+		bool LuaAdd(const PropertyIDType &id, sol::variadic_args args);
+
+		sol::table LuaGetNames(sol::this_state state) const;
+		sol::table LuaGetAll(sol::this_state state) const;
+
 	private:
 		Pointer<BaseProperty> GetBaseProperty(const std::string &name) const;
+		void Register(sol::state &state) override;
 
 	public:
 		template <typename Type>
@@ -50,12 +56,6 @@ namespace Game
 		bool Add(const PropertyIDType &id, const Type &value)
 		{
 			return AddProperty<Type>(Property<Type>(id, value));
-		}
-
-		template <typename Type>
-		bool Add(const PropertyIDType &id, const Type &value, typename Property<Type>::SetterFunctionType onSet)
-		{
-			return AddProperty<Type>(Property<Type>(id, value, onSet));
 		}
 
 		template <typename Type>

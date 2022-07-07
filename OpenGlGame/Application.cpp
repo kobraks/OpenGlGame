@@ -392,7 +392,8 @@ namespace Game
 		SetAsReadOnlyTable(inputTable, inputMetaTable, Deny);
 
 		LOG_TRACE("Registering Application");
-		m_Properties->Register("Properties", lua);
+		LuaRegister(*m_Properties);
+		m_Lua->set("Properties", *m_Properties);
 
 		auto applicationMetaTable          = lua.create_table_with();
 		applicationMetaTable["GetTime"]    = [this]() { return m_Clock.GetElapsedTime().AsSeconds(); };
