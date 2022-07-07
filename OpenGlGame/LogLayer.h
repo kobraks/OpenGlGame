@@ -13,6 +13,10 @@
 
 namespace Game
 {
+	template <class ImGuiMenu>
+	class ImGuiGuard;
+	class ImGuiTable;
+
 	class LogLayer: public Layer, public LuaRegister, public spdlog::sinks::base_sink<std::mutex>
 	{
 		struct Source
@@ -35,7 +39,10 @@ namespace Game
 			size_t ThreadId{0};
 			Source Source;
 
-			std::string Time;
+			std::string TimeString;
+			size_t IdHash = 0;
+			size_t IdSelectedHash = 0;
+			size_t IdTextMultiline = 0;
 			bool Selected = false;
 		};
 
@@ -45,6 +52,7 @@ namespace Game
 		bool m_AllowScrolling = true;
 
 		int32_t m_MinLogLevelToPopUp = 0;
+		inline static size_t s_MaxMessages = 1000;
 
 		ImGuiTextFilter m_Filter;
 
@@ -90,6 +98,7 @@ namespace Game
 		static void SetUpTable();
 
 		void PrintMessagesTable();
-		void PrintMessage(size_t i, Message &message);
+		void PrintMessage(ImGuiGuard<ImGuiTable>& tableGuard, size_t i, Message &message);
+		void PrintSelectedMessage(ImGuiGuard<ImGuiTable>& tableGuard, size_t i, Message &message);
 	};
 }
