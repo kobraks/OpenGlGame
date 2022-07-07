@@ -54,12 +54,17 @@ OStream& operator<<(OStream &os, glm::qua<T, Q> quaternio)
 }
 
 
-#define PRINT_TRACE(...) ::Game::Log::GetApplicationLogger()->trace(__VA_ARGS__)
-#define PRINT_DEBUG(...)::Game::Log::GetApplicationLogger()->debug(__VA_ARGS__);
-#define PRINT_INFO(...) ::Game::Log::GetApplicationLogger()->info(__VA_ARGS__)
-#define PRINT_WARN(...) ::Game::Log::GetApplicationLogger()->warn(__VA_ARGS__)
-#define PRINT_ERROR(...) ::Game::Log::GetApplicationLogger()->error(__VA_ARGS__)
-#define PRINT_CRITICAL(...) ::Game::Log::GetApplicationLogger()->critical(__VA_ARGS__)
+#define GET_APPLICATION_LOGGER (*::Game::Log::GetApplicationLogger())
+#define GET_SCRIPT_LOGGER (*::Game::Log::GetScriptLogger())
+#define GET_OPENGL_LOGGER (*::Game::Log::GetOpenGLLogger())
+#define GET_ASSERTION_LOGGER (*::Game::Log::GetAsseritionLogger())
+
+#define PRINT_TRACE(...) GET_APPLICATION_LOGGER.trace(__VA_ARGS__)
+#define PRINT_DEBUG(...)GET_APPLICATION_LOGGER.debug(__VA_ARGS__);
+#define PRINT_INFO(...) GET_APPLICATION_LOGGER.info(__VA_ARGS__)
+#define PRINT_WARN(...) GET_APPLICATION_LOGGER.warn(__VA_ARGS__)
+#define PRINT_ERROR(...) GET_APPLICATION_LOGGER.error(__VA_ARGS__)
+#define PRINT_CRITICAL(...) GET_APPLICATION_LOGGER.critical(__VA_ARGS__)
 
 #define LOG_TRACE(...) PRINT_TRACE(__VA_ARGS__)
 #define LOG_DEBUG(...) PRINT_DEBUG(__VA_ARGS__)
@@ -68,12 +73,12 @@ OStream& operator<<(OStream &os, glm::qua<T, Q> quaternio)
 #define LOG_ERROR(...) PRINT_ERROR(__VA_ARGS__)
 #define LOG_CRITICAL(...) PRINT_CRITICAL(__VA_ARGS__)
 
-#define PRINT_SCRIPT_TRACE(...) ::Game::Log::GetScriptLogger()->trace(__VA_ARGS__)
-#define PRINT_SCRIPT_DEBUG(...)::Game::Log::GetScriptLogger()->debug(__VA_ARGS__);
-#define PRINT_SCRIPT_INFO(...) ::Game::Log::GetScriptLogger()->info(__VA_ARGS__)
-#define PRINT_SCRIPT_WARN(...) ::Game::Log::GetScriptLogger()->warn(__VA_ARGS__)
-#define PRINT_SCRIPT_ERROR(...) ::Game::Log::GetScriptLogger()->error(__VA_ARGS__)
-#define PRINT_SCRIPT_CRITICAL(...) ::Game::Log::GetScriptLogger()->critical(__VA_ARGS__)
+#define PRINT_SCRIPT_TRACE(...) GET_SCRIPT_LOGGER.trace(__VA_ARGS__)
+#define PRINT_SCRIPT_DEBUG(...)GET_SCRIPT_LOGGER.debug(__VA_ARGS__);
+#define PRINT_SCRIPT_INFO(...) GET_SCRIPT_LOGGER.info(__VA_ARGS__)
+#define PRINT_SCRIPT_WARN(...) GET_SCRIPT_LOGGER.warn(__VA_ARGS__)
+#define PRINT_SCRIPT_ERROR(...) GET_SCRIPT_LOGGER.error(__VA_ARGS__)
+#define PRINT_SCRIPT_CRITICAL(...) GET_SCRIPT_LOGGER.critical(__VA_ARGS__)
 
 #define SCRIPT_LOG_TRACE(...) PRINT_SCRIPT_TRACE(__VA_ARGS__)
 #define SCRIPT_LOG_DEBUG(...) PRINT_SCRIPT_DEBUG(__VA_ARGS__)
@@ -82,12 +87,12 @@ OStream& operator<<(OStream &os, glm::qua<T, Q> quaternio)
 #define SCRIPT_LOG_ERROR(...) PRINT_SCRIPT_ERROR(__VA_ARGS__)
 #define SCRIPT_LOG_CRITICAL(...) PRINT_SCRIPT_CRITICAL(__VA_ARGS__)
 
-#define PRINT_OPENGL_TRACE(...) ::Game::Log::GetOpenGLLogger()->trace(__VA_ARGS__)
-#define PRINT_OPENGL_DEBUG(...)::Game::Log::GetOpenGLLogger()->debug(__VA_ARGS__);
-#define PRINT_OPENGL_INFO(...) ::Game::Log::GetOpenGLLogger()->info(__VA_ARGS__)
-#define PRINT_OPENGL_WARN(...) ::Game::Log::GetOpenGLLogger()->warn(__VA_ARGS__)
-#define PRINT_OPENGL_ERROR(...) ::Game::Log::GetOpenGLLogger()->error(__VA_ARGS__)
-#define PRINT_OPENGL_CRITICAL(...) ::Game::Log::GetOpenGLLogger()->critical(__VA_ARGS__)
+#define PRINT_OPENGL_TRACE(...) GET_OPENGL_LOGGER.trace(__VA_ARGS__)
+#define PRINT_OPENGL_DEBUG(...) GET_OPENGL_LOGGER.debug(__VA_ARGS__);
+#define PRINT_OPENGL_INFO(...) GET_OPENGL_LOGGER.info(__VA_ARGS__)
+#define PRINT_OPENGL_WARN(...) GET_OPENGL_LOGGER.warn(__VA_ARGS__)
+#define PRINT_OPENGL_ERROR(...) GET_OPENGL_LOGGER.error(__VA_ARGS__)
+#define PRINT_OPENGL_CRITICAL(...) GET_OPENGL_LOGGER.critical(__VA_ARGS__)
 
 #define OPENGL_LOG_TRACE(...) PRINT_OPENGL_TRACE(__VA_ARGS__)
 #define OPENGL_LOG_DEBUG(...) PRINT_OPENGL_DEBUG(__VA_ARGS__)
@@ -102,3 +107,10 @@ OStream& operator<<(OStream &os, glm::qua<T, Q> quaternio)
 #define GL_LOG_WARN(...) PRINT_OPENGL_WARN(__VA_ARGS__)
 #define GL_LOG_ERROR(...) PRINT_OPENGL_ERROR(__VA_ARGS__)
 #define GL_LOG_CRITICAL(...) PRINT_OPENGL_CRITICAL(__VA_ARGS__)
+
+#define PRINT_GL_TRACE(...) PRINT_OPENGL_TRACE(__VA_ARGS__)
+#define PRINT_GL_DEBUG(...) PRINT_OPENGL_DEBUG(__VA_ARGS__)
+#define PRINT_GL_INFO(...) PRINT_OPENGL_INFO(__VA_ARGS__)
+#define PRINT_GL_WARN(...) PRINT_OPENGL_WARN(__VA_ARGS__)
+#define PRINT_GL_ERROR(...) PRINT_OPENGL_ERROR(__VA_ARGS__)
+#define PRINT_GL_CRITICAL(...) PRINT_OPENGL_CRITICAL(__VA_ARGS__)
