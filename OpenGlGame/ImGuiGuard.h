@@ -40,9 +40,9 @@ namespace Game
 	{
 		std::string_view Id;
 		int ColumnsCount;
-		ImGuiTableFlags Flags = 0;
-		const ImVec2& OuterSize = ImVec2(-FLT_MIN, 0);
-		float InnerWidth = 0.0f;
+		ImGuiTableFlags Flags   = 0;
+		const ImVec2 &OuterSize = ImVec2(-FLT_MIN, 0);
+		float InnerWidth        = 0.0f;
 	};
 
 	class ImGuiMainWindow
@@ -58,7 +58,11 @@ namespace Game
 	public:
 		ImGuiMainWindow(const ImGuiMainWindowProps &props);
 		ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowPosition &position);
-		ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowPosition &position, const ImGuiWindowSize &size);
+		ImGuiMainWindow(
+			const ImGuiMainWindowProps &props,
+			const ImGuiWindowPosition &position,
+			const ImGuiWindowSize &size
+			);
 		ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowSize &size);
 
 		void Begin();
@@ -90,7 +94,7 @@ namespace Game
 	{
 		ImGuiTableProps m_Props;
 	public:
-		ImGuiTable(const ImGuiTableProps& props);
+		ImGuiTable(const ImGuiTableProps &props);
 
 		void Begin();
 		void End();
@@ -104,10 +108,29 @@ namespace Game
 		void End();
 	};
 
+	class ImGuiID
+	{
+		std::variant<std::string, int, const void*> Id;
+
+	public:
+		explicit ImGuiID(const std::string &id) : Id(id){}
+		template <typename ...Args>
+		explicit ImGuiID(std::string_view format, Args &&... args) : Id(
+		                                                                fmt::format(format, std::forward<Args>(args)...)
+		                                                               ) {}
+
+		explicit ImGuiID(int i) : Id(i) {}
+		explicit ImGuiID(const void *p) : Id(p) {}
+
+		void Begin();
+		void End();
+	};
+
 	template <class ImGuiMenu>
 	class ImGuiUniqueGuard
 	{
 		ImGuiMenu m_ImGuiMenu;
+		bool m_IsLocked = true;
 	public:
 		template <typename ...Args>
 		ImGuiUniqueGuard(Args && ... args) : m_ImGuiMenu(std::forward<Args>(args)...)
@@ -117,7 +140,7 @@ namespace Game
 
 		~ImGuiUniqueGuard()
 		{
-			m_ImGuiMenu.End();
+			Unlock();
 		}
 
 		ImGuiUniqueGuard(const ImGuiUniqueGuard &) = delete;
@@ -129,6 +152,23 @@ namespace Game
 		ImGuiMenu Get() const { return m_ImGuiMenu; }
 
 		operator ImGuiMenu() const { return m_ImGuiMenu; }
+
+		bool IsLocked() const { return m_IsLocked; }
+
+		void Lock()
+		{
+			if(m_IsLocked)
+				return;
+
+			m_IsLocked = true;
+			m_ImGuiMenu.Begin();
+		}
+
+		void Unlock()
+		{
+			m_IsLocked = false;
+			m_ImGuiMenu.End();
+		}
 	};
 
 	template <class ImGuiMenu>
@@ -136,11 +176,13 @@ namespace Game
 	{
 		ImGuiMenu m_ImGuiMenu;
 		size_t *m_ReferenceCount = nullptr;
+		bool *m_IsLocked         = nullptr;
 
 	public:
 		template <typename ...Args>
 		ImGuiGuard(Args &&... args) : m_ImGuiMenu(std::forward<Args>(args)...),
-		                              m_ReferenceCount(new size_t(1))
+		                              m_ReferenceCount(new size_t(1)),
+		                              m_IsLocked(new bool(true))
 		{
 			m_ImGuiMenu.Begin();
 		}
@@ -152,6 +194,7 @@ namespace Game
 			if((*m_ReferenceCount) == 0)
 			{
 				delete m_ReferenceCount;
+				delete m_IsLocked;
 				m_ImGuiMenu.End();
 			}
 		}
@@ -170,6 +213,7 @@ namespace Game
 		{
 			m_ReferenceCount = guard.m_ReferenceCount;
 			m_ImGuiMenu      = guard.m_ImGuiMenu;
+			m_IsLocked       = guard.m_IsLocked;
 
 			++(*m_ReferenceCount);
 
@@ -180,8 +224,10 @@ namespace Game
 		{
 			m_ReferenceCount = guard.m_ReferenceCount;
 			m_ImGuiMenu      = guard.m_ImGuiMenu;
+			m_IsLocked       = guard.m_IsLocked;
 
 			guard.m_ReferenceCount = nullptr;
+			guard.m_IsLocked       = nullptr;
 
 			return *this;
 		}
@@ -190,5 +236,22 @@ namespace Game
 		operator ImGuiMenu() const { return m_ImGuiMenu; }
 
 		size_t GetReferenceCount() const { return *m_ReferenceCount; }
+
+		bool IsLocked() const { return *m_IsLocked; }
+
+		void Lock()
+		{
+			if(*m_IsLocked)
+				return;
+
+			(*m_IsLocked) = true;
+			m_ImGuiMenu.Begin();
+		}
+
+		void Unlock()
+		{
+			(*m_IsLocked) = false;
+			m_ImGuiMenu.End();
+		}
 	};
 }

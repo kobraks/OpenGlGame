@@ -5,7 +5,10 @@ namespace Game
 {
 	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props) : m_Props(props) {}
 
-	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowPosition &position) : ImGuiMainWindow(props)
+	ImGuiMainWindow::ImGuiMainWindow(
+		const ImGuiMainWindowProps &props,
+		const ImGuiWindowPosition &position
+		) : ImGuiMainWindow(props)
 	{
 		m_PosSet = true;
 		m_Pos    = position;
@@ -21,7 +24,10 @@ namespace Game
 		m_Size    = size;
 	}
 
-	ImGuiMainWindow::ImGuiMainWindow(const ImGuiMainWindowProps &props, const ImGuiWindowSize &size) : ImGuiMainWindow(props)
+	ImGuiMainWindow::ImGuiMainWindow(
+		const ImGuiMainWindowProps &props,
+		const ImGuiWindowSize &size
+		) : ImGuiMainWindow(props)
 	{
 		m_SizeSet = true;
 		m_Size    = size;
@@ -67,7 +73,13 @@ namespace Game
 
 	void ImGuiTable::Begin()
 	{
-		ImGui::BeginTable(m_Props.Id.data(), m_Props.ColumnsCount, m_Props.Flags, m_Props.OuterSize, m_Props.InnerWidth);
+		ImGui::BeginTable(
+		                  m_Props.Id.data(),
+		                  m_Props.ColumnsCount,
+		                  m_Props.Flags,
+		                  m_Props.OuterSize,
+		                  m_Props.InnerWidth
+		                 );
 	}
 
 	void ImGuiTable::End()
@@ -83,5 +95,30 @@ namespace Game
 	void ImGuiGroup::End()
 	{
 		ImGui::EndGroup();
+	}
+
+	void ImGuiID::Begin()
+	{
+		if(std::holds_alternative<std::string>(Id))
+		{
+			ImGui::PushID(std::get<std::string>(Id).c_str());
+			return;
+		}
+
+		if(std::holds_alternative<int>(Id))
+		{
+			ImGui::PushID(std::get<int>(Id));
+			return;
+		}
+
+		if(std::holds_alternative<const void*>(Id))
+		{
+			ImGui::PushID(std::get<const void*>(Id));
+		}
+	}
+
+	void ImGuiID::End()
+	{
+		ImGui::PopID();
 	}
 }
