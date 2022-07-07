@@ -20,7 +20,7 @@ namespace Game
 
 	struct Statistics
 	{
-		std::array<float, BUFFER_SIZE> History;
+		std::array<float, BUFFER_SIZE> History{};
 		uint32_t CurrentIndex = 0;
 		double TotalInHistory = 0;
 		float MinimalValue    = 0;

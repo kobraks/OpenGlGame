@@ -209,6 +209,31 @@ namespace Game
 			END_MAP(); //LightComponent
 		}
 
+		if (entity.HasComponent<LuaScriptComponent>())
+		{
+			BEGIN_MAP("LuaScriptComponent"); //LuaScriptComponent
+
+			const auto &luaScript = entity.GetComponent<LuaScriptComponent>();
+			const auto &userValues = luaScript.UserValues; 
+			const auto &env = luaScript.Environment;
+
+			//TODO Properties Serialize
+			BEGIN_MAP("Properties"); //Properties
+
+			for (auto &name : userValues)
+			{
+				
+			}
+
+			END_MAP(); //Properties
+
+			VALUE("ScriptPath", luaScript.ScriptPath);
+
+
+
+			END_MAP(); //LuaScriptComponent
+		}
+
 		out << YAML::EndMap;
 	}
 

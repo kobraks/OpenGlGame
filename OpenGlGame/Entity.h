@@ -59,6 +59,15 @@ namespace Game
 			m_Scene->OnComponentAdded<Component>(*this, component);
 			return component;
 		}
+
+		template <typename Component, typename ...Args>
+		Component& ReplaceComponent(Args&& ...args)
+		{
+			ASSERT(HasComponent<Component>(), "Entity does not have component");
+			Component& component = m_Scene->m_Registry.replace<Component>(m_EntityHandle, this, std::forward<Args>(args)...);
+			m_Scene->OnComponentAdded<Component>(*this, component);
+			return component;
+		}
 		
 		template <typename Component>
 		Component& GetComponent() const
@@ -77,13 +86,19 @@ namespace Game
 		template <typename Component>
 		bool HasComponent() const
 		{
-			return m_Scene->m_Registry.has<Component>(m_EntityHandle);
+			return m_Scene->m_Registry.all_of<Component>(m_EntityHandle);
 		}
 
-		template <typename ...Args>
+		template <typename ...Components>
 		bool HasAny() const
 		{
-			return m_Scene->m_Registry.any<Args...>(m_EntityHandle);
+			return m_Scene->m_Registry.any_of<Components...>(m_EntityHandle);
+		}
+
+		template <typename ...Components>
+		bool HasAll() const
+		{
+			return m_Scene->m_Registry.all_of<Components...>(m_EntityHandle);
 		}
 	};
 

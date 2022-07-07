@@ -28,7 +28,7 @@ namespace Game
 		GL_CHECK(glBindVertexArray(Id));
 		indexBuffer->Bind();
 
-		OPENGL_LOG_DEBUG("Adding Index buffer (id: {}) to vertex arrray (id: {})", indexBuffer->Id(), Id);
+		// OPENGL_LOG_DEBUG("Adding Index buffer (id: {}) to vertex arrray (id: {})", indexBuffer->Id(), Id);
 
 		IndexBuffer = indexBuffer;
 	}
@@ -43,7 +43,7 @@ namespace Game
 		GL_CHECK(glBindVertexArray(Id));
 		vertexBuffer->Bind();
 
-		OPENGL_LOG_DEBUG("Adding Vertex buffer (id: {}) to vertex array (id: {})", vertexBuffer->Id(), Id);
+		// OPENGL_LOG_DEBUG("Adding Vertex buffer (id: {}) to vertex array (id: {})", vertexBuffer->Id(), Id);
 
 		const auto& layout = vertexBuffer->GetLayout();
 		for (const auto& element : layout)
@@ -55,14 +55,14 @@ namespace Game
 			case ShaderDataType::Float3:
 			case ShaderDataType::Float4:
 				{
-					OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
+					// OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
 					GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
 					GL_CHECK(
 						glVertexAttribPointer(VertexBufferIndex, element.GetComponentCount(),
 							ShaderDataTypeToOpenGLBaseType(element.Type), element.
 							Normalized ? GL_TRUE : GL_FALSE, layout.GetStride(), (const void*)(element.Offset) )
 					);
-					OPENGL_LOG_DEBUG(
+					/*OPENGL_LOG_DEBUG(
 						"Float Index: {}, element count: {}, DataType: {}, Normalized: {}, Stride: {}, Offset: {}",
 						VertexBufferIndex,
 						element.GetComponentCount(),
@@ -70,7 +70,7 @@ namespace Game
 						element.Normalized,
 						layout.GetStride(),
 						element.Offset
-					)
+					)*/
 
 					VertexBufferIndex++;
 					break;
@@ -81,7 +81,7 @@ namespace Game
 			case ShaderDataType::Int4:
 			case ShaderDataType::Bool:
 				{
-					OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
+					// OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
 
 					GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
 					GL_CHECK(
@@ -91,14 +91,14 @@ namespace Game
 					);
 
 
-					OPENGL_LOG_DEBUG(
-						"Int Index: {}, element count: {}, DataType: {}, Stride: {}, Offset: {}",
-						VertexBufferIndex,
-						element.GetComponentCount(),
-						element.Type,
-						layout.GetStride(),
-						element.Offset
-					)
+					// OPENGL_LOG_DEBUG(
+					// 	"Int Index: {}, element count: {}, DataType: {}, Stride: {}, Offset: {}",
+					// 	VertexBufferIndex,
+					// 	element.GetComponentCount(),
+					// 	element.Type,
+					// 	layout.GetStride(),
+					// 	element.Offset
+					// )
 
 					VertexBufferIndex++;
 					break;
@@ -109,7 +109,7 @@ namespace Game
 					uint8_t count = element.GetComponentCount();
 					for (uint8_t i = 0; i < count; ++i)
 					{
-						OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
+						// OPENGL_LOG_DEBUG("Enabling vertex attrib array: {}", VertexBufferIndex);
 						GL_CHECK(glEnableVertexAttribArray(VertexBufferIndex));
 						GL_CHECK(
 							glVertexAttribPointer(VertexBufferIndex, count, ShaderDataTypeToOpenGLBaseType(element.Type)
@@ -118,7 +118,7 @@ namespace Game
 						);
 						GL_CHECK(glVertexAttribDivisor(VertexBufferIndex, 1));
 
-						OPENGL_LOG_DEBUG(
+						/*OPENGL_LOG_DEBUG(
 							"Matrix Index: {}, element count: {}, DataType: {}, Normalized: {}, Stride: {}, Offset: {}",
 							VertexBufferIndex,
 							count,
@@ -126,7 +126,7 @@ namespace Game
 							element.Normalized,
 							layout.GetStride(),
 							element.Offset + sizeof(float)* count * i
-						)
+						)*/
 						VertexBufferIndex++;
 					}
 				}
@@ -156,14 +156,14 @@ namespace Game
 	VertexArray::Internals::Internals()
 	{
 		glCreateVertexArrays(1, &Id);
-		OPENGL_LOG_DEBUG("Creating vertex array: {}", Id);
+		// OPENGL_LOG_DEBUG("Creating vertex array: {}", Id);
 	}
 
 	VertexArray::Internals::~Internals()
 	{
 		if (Id != 0)
 			glDeleteVertexArrays(1, &Id);
-		OPENGL_LOG_DEBUG("Removing vertex array: {}", Id);
+		// OPENGL_LOG_DEBUG("Removing vertex array: {}", Id);
 	}
 
 	VertexArray::VertexArray(IdType id)
