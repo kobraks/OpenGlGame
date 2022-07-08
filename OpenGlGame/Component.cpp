@@ -13,6 +13,8 @@
 
 #include <sol/sol.hpp>
 
+#include "Entity.h"
+
 namespace Game
 {
 	static int LuaRegisterValue(lua_State *L)
@@ -75,7 +77,18 @@ namespace Game
 		env["rawget"] = sol::nil;
 		env["rawset"] = sol::nil;
 	}
-	
+
+	Component::Component(std::string name, Entity *entity) : m_Name(std::move(name))
+	{
+		m_Scene = entity->m_Scene;
+		m_EntityId = entity->m_EntityHandle;
+	}
+
+	Entity Component::GetEntity() const
+	{
+		return Entity{m_EntityId, m_Scene};
+	}
+
 	void LuaScriptComponent::OpenFile(const std::string &fileName)
 	{
 		ScriptPath = fileName;

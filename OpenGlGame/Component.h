@@ -4,6 +4,7 @@
 #include <string>
 
 #include <sol/environment.hpp>
+#include <entt/entt.hpp>
 
 #include "Types.h"
 #include "SceneCamera.h"
@@ -18,19 +19,19 @@ namespace Game
 	class EntityLuaHandle;
 	class Entity;
 	class Model;
+	class Scene;
 
 	class Component
 	{
 		std::string m_Name;
-		Entity *m_Entity;
+		Scene *m_Scene = nullptr;
+		entt::entity m_EntityId {};
 	public:
-		Component(std::string name, Entity *entity = nullptr) : m_Name(std::move(name)),
-		                                                        m_Entity(entity) {}
-
-		virtual ~Component() {}
+		explicit Component(std::string name, Entity* entity = nullptr);
+		virtual ~Component() = default;
 
 		const std::string &Name() const { return m_Name; }
-		Entity* GetEntity() const { return m_Entity; }
+		Entity GetEntity() const;
 	};
 
 	class IDComponent : public Component
@@ -106,7 +107,9 @@ namespace Game
 	class NativeScriptComponent: public Component
 	{
 	public:
-		NativeScriptComponent(Entity *entity = nullptr) : Component("NativeScriptComponent", entity) {}
+		explicit NativeScriptComponent(Entity *entity = nullptr) : Component("NativeScriptComponent", entity),
+		                                                           InstantiateScript(nullptr),
+		                                                           DestroyScript(nullptr) {}
 
 		ScriptableEntity *Instance = nullptr;
 

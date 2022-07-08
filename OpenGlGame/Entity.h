@@ -41,7 +41,8 @@ namespace Game
 		constexpr operator bool() const noexcept { return m_EntityHandle != entt::null; }
 		constexpr operator entt::entity() const noexcept { return m_EntityHandle; }
 		constexpr operator uint32_t() const noexcept { return static_cast<uint32_t>(m_EntityHandle);}
-	
+
+		friend class Component;
 	public:
 		template <typename Component, typename ...Args>
 		Component& AddComponent(Args&& ...args)

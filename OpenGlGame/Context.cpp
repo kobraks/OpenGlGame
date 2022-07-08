@@ -71,9 +71,9 @@ namespace Game
 		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		ASSERT(status, "Failed to initialize Glad!");
 
-		LOG_INFO("OpenGL Info: ");/*
-		LOG_INFO(" Vedor: {0}", glGetString(GL_VENDOR));
-		LOG_INFO(" Renderer: {0}", glGetString(GL_RENDERER));
-		LOG_INFO(" Version: {0}", glGetString(GL_VERSION));*/
+		LOG_INFO("OpenGL Info: ");
+		LOG_INFO(" Vedor: {0}", (const char*)glGetString(GL_VENDOR));
+		LOG_INFO(" Renderer: {0}", (const char*)glGetString(GL_RENDERER));
+		LOG_INFO(" Version: {0}", (const char*)glGetString(GL_VERSION));
 	}
 }
