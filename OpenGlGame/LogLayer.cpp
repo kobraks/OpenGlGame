@@ -57,7 +57,7 @@ namespace
 		}
 	}
 
-	void Print(int severity, const sol::variadic_args &args)
+	void Print(sol::this_state state, int severity, const sol::variadic_args &args)
 	{
 		if(severity < spdlog::level::trace)
 		{
@@ -74,7 +74,25 @@ namespace
 		const auto level   = static_cast<spdlog::level::level_enum>(severity);
 		const auto message = Game::ToString(args);
 
-		Game::Log::GetScriptLogger()->log(level, message);
+		lua_Debug info;
+		//Getting info about caller
+		lua_getstack(state, 1, &info);
+		lua_getinfo(state, "nSl", &info);
+
+		std::string source = info.source;
+		if(!source.empty())
+		{
+			if(source[0] == '@' || source[0] == '=')
+				source = info.short_src;
+			else if(!info.name && std::string(info.what) == "main")
+				source = "Console";
+		}
+
+		Game::Log::GetScriptLogger()->log(
+		                                  {source.c_str(), info.currentline, info.name ? info.name : "<Unknown>"},
+		                                  level,
+		                                  message
+		                                 );
 	}
 
 	void SetLogLevel(int severity)
@@ -94,7 +112,7 @@ namespace
 		Game::Log::GetScriptLogger()->set_level(static_cast<spdlog::level::level_enum>(severity));
 	}
 
-	std::string_view GetFirst(const std::string &string, size_t size)
+	constexpr std::string_view GetFirst(const std::string &string, size_t size)
 	{
 		return {string.begin(), string.size() > size ? string.begin() + size : string.end()};
 	}
@@ -151,7 +169,10 @@ namespace Game
 			if(m_Messages.size() >= s_MaxMessages)
 			{
 				ImGui::PopStyleColor();
-				ImGui::TextColored({1, 0, 0, 1}, "Buffer full for memory save no more messages will be shown please claer buffer");
+				ImGui::TextColored(
+				                   {1, 0, 0, 1},
+				                   "Buffer full for memory save no more messages will be shown please claer buffer"
+				                  );
 			}
 			ImGui::PopID();
 
@@ -203,6 +224,12 @@ namespace Game
 
 		fmt::format_to(std::back_inserter(timeString), "{}:{}:{}", tm.tm_hour, tm.tm_min, tm.tm_sec);
 
+		const Source source{
+			msg.source.filename ? msg.source.filename : "(null)",
+			msg.source.funcname ? msg.source.funcname : "(null)",
+			msg.source.line
+		};
+
 		Message message{
 			msg.logger_name.data(),
 			msg.payload.data(),
@@ -210,7 +237,7 @@ namespace Game
 			SelectTextColor(msg.level),
 			msg.level,
 			msg.thread_id,
-			{msg.source.filename, msg.source.funcname, msg.source.line},
+			source,
 			fmt::to_string(timeString),
 			std::hash<std::string>()(fmt::format("{}{}", m_Messages.size(), message.Text)),
 			std::hash<std::string>()(fmt::format("Selected{}{}", m_Messages.size(), message.Text)),
@@ -244,13 +271,16 @@ namespace Game
 
 		loggerMetaTable["Level"] = state["Level"];
 
-		loggerMetaTable["Print"]    = Print;
-		loggerMetaTable["Debug"]    = [](const sol::variadic_args &args) { Print(0, args); };
-		loggerMetaTable["Info"]     = [](const sol::variadic_args &args) { Print(1, args); };
-		loggerMetaTable["Warn"]     = [](const sol::variadic_args &args) { Print(2, args); };
-		loggerMetaTable["Error"]    = [](const sol::variadic_args &args) { Print(3, args); };
-		loggerMetaTable["Err"]      = [](const sol::variadic_args &args) { Print(4, args); };
-		loggerMetaTable["Critical"] = [](const sol::variadic_args &args) { Print(5, args); };
+		loggerMetaTable["Print"] = Print;
+		loggerMetaTable["Debug"] = [](sol::this_state state, const sol::variadic_args &args) { Print(state, 0, args); };
+		loggerMetaTable["Info"] = [](sol::this_state state, const sol::variadic_args &args) { Print(state, 1, args); };
+		loggerMetaTable["Warn"] = [](sol::this_state state, const sol::variadic_args &args) { Print(state, 2, args); };
+		loggerMetaTable["Error"] = [](sol::this_state state, const sol::variadic_args &args) { Print(state, 3, args); };
+		loggerMetaTable["Err"] = [](sol::this_state state, const sol::variadic_args &args) { Print(state, 4, args); };
+		loggerMetaTable["Critical"] = [](sol::this_state state, const sol::variadic_args &args)
+		{
+			Print(state, 5, args);
+		};
 
 		loggerMetaTable["SetLevel"]        = [](const int severity) { SetLogLevel(severity); };
 		loggerMetaTable["CurrentLevel"]    = []() { return static_cast<int>(Log::GetScriptLogger()->level()); };
@@ -364,35 +394,35 @@ namespace Game
 		}
 	}
 
-	void LogLayer::PrintSelectedMessage(ImGuiGuard<ImGuiTable> &tableGuard, size_t i, Message &message)
+	void LogLayer::PrintSelectedMessage(ImGuiGuard<ImGuiTable> &tableGuard, size_t i, Message &msg)
 	{
 		tableGuard.Unlock();
 
 		{
-			ImGuiUniqueGuard<ImGuiID> idGuard(static_cast<int>(message.IdSelectedHash));
+			ImGuiUniqueGuard<ImGuiID> idGuard(static_cast<int>(msg.IdSelectedHash));
 			{
 				ImGuiUniqueGuard<ImGuiGroup> groupGuard();
 
 				//Soruce text display
-				ImGui::Text("File: %s", message.Source.FileName);
-				ImGui::Text("Function name: %s", message.Source.FunctionName);
-				ImGui::Text("Line: %i", message.Source.Line);
+				Text("File {}", msg.Source.File);
+				Text("Function {}", msg.Source.Function);
+				Text("Line {}", msg.Source.Line);
 
 				ImGui::Separator();
 
 				//Printing other stored information
-				ImGui::Text("Time: %s", message.TimeString.c_str());
-				ImGui::Text("Name: %s", message.Name.c_str());
-				ImGui::Text("Level: %s", to_string_view(message.Level).data());
+				ImGui::Text("Time: %s", msg.TimeString.c_str());
+				ImGui::Text("Name: %s", msg.Name.c_str());
+				ImGui::Text("Level: %s", to_string_view(msg.Level).data());
 
-				ImGui::PushID(static_cast<int>(message.IdTextMultiline));
-				InputTextMultiline("", message.Desc, ImVec2(0, 0), ImGuiInputTextFlags_ReadOnly);
+				ImGui::PushID(static_cast<int>(msg.IdTextMultiline));
+				InputTextMultiline("", msg.Desc, ImVec2(0, 0), ImGuiInputTextFlags_ReadOnly);
 				ImGui::PopID();
 
 				ImGui::Separator();
 
 				if(ImGui::Button("Copy"))
-					ImGui::SetClipboardText(message.Text.c_str());
+					ImGui::SetClipboardText(msg.Text.c_str());
 
 				ImGui::Separator();
 			}

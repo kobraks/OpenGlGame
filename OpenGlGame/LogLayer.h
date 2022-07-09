@@ -21,8 +21,8 @@ namespace Game
 	{
 		struct Source
 		{
-			const char *FileName{nullptr};
-			const char *FunctionName{nullptr};
+			std::string File;
+			std::string Function;
 			int Line{0};
 		};
 
@@ -99,6 +99,6 @@ namespace Game
 
 		void PrintMessagesTable();
 		void PrintMessage(ImGuiGuard<ImGuiTable>& tableGuard, size_t i, Message &message);
-		void PrintSelectedMessage(ImGuiGuard<ImGuiTable>& tableGuard, size_t i, Message &message);
+		void PrintSelectedMessage(ImGuiGuard<ImGuiTable>& tableGuard, size_t i, Message &msg);
 	};
 }
