@@ -59,25 +59,13 @@ namespace
 
 	void Print(sol::this_state state, int severity, const sol::variadic_args &args)
 	{
-		if(severity < spdlog::level::trace)
-		{
-			PRINT_SCRIPT_WARN("Unknown log severity level, deducing Trace level");
-			severity = spdlog::level::trace;
-		}
-
-		if(severity > spdlog::level::off)
-		{
-			PRINT_SCRIPT_WARN("Unknown log severity level, deducing Critical level");
-			severity = spdlog::level::critical;
-		}
-
-		const auto level   = static_cast<spdlog::level::level_enum>(severity);
 		const auto message = Game::ToString(args);
 
 		lua_Debug info;
 		//Getting info about caller
-		lua_getstack(state, 1, &info);
+		lua_getstack(state, 1, &info); //Filling with caller function
 		lua_getinfo(state, "nSl", &info);
+		//Filling lua_Debug struct with all the info about function that was selected above
 
 		std::string source = info.source;
 		if(!source.empty())
@@ -88,11 +76,31 @@ namespace
 				source = "Console";
 		}
 
-		Game::Log::GetScriptLogger()->log(
-		                                  {source.c_str(), info.currentline, info.name ? info.name : "<Unknown>"},
-		                                  level,
-		                                  message
-		                                 );
+		if(severity < spdlog::level::trace)
+		{
+			SCRIPT_LOGGER.log(
+			                  {source.c_str(), info.currentline, info.name ? info.name : "<Unknown>"},
+			                  spdlog::level::warn,
+			                  "Unknown log severity level, deducing Trace level"
+			                 );
+
+			severity = spdlog::level::trace;
+		}
+
+		if(severity > spdlog::level::off)
+		{
+			SCRIPT_LOGGER.log(
+			                  {source.c_str(), info.currentline, info.name ? info.name : "<Unknown>"},
+			                  spdlog::level::warn,
+			                  "Unknown log severity level, deducing Critical level"
+			                 );
+
+			severity = spdlog::level::critical;
+		}
+
+		const auto level = static_cast<spdlog::level::level_enum>(severity);
+
+		SCRIPT_LOGGER.log({source.c_str(), info.currentline, info.name ? info.name : "<Unknown>"}, level, message);
 	}
 
 	void SetLogLevel(int severity)
@@ -411,9 +419,9 @@ namespace Game
 				ImGui::Separator();
 
 				//Printing other stored information
-				ImGui::Text("Time: %s", msg.TimeString.c_str());
-				ImGui::Text("Name: %s", msg.Name.c_str());
-				ImGui::Text("Level: %s", to_string_view(msg.Level).data());
+				Text("Time: {}", msg.TimeString);
+				Text("Name: {}", msg.Name);
+				Text("Level {}", to_string_view(msg.Level));
 
 				ImGui::PushID(static_cast<int>(msg.IdTextMultiline));
 				InputTextMultiline("", msg.Desc, ImVec2(0, 0), ImGuiInputTextFlags_ReadOnly);

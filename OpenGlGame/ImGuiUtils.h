@@ -41,7 +41,7 @@ namespace Game
 	template <class ...Args>
 	void Text(const std::string_view &text, Args &&... args)
 	{
-		return ImGui::Text(fmt::format(text, std::forward<Args>(args)...).c_str());
+		return ImGui::TextUnformatted(fmt::format(text, std::forward<Args>(args) ...).c_str());
 	}
 
 	template <class ...Args>
