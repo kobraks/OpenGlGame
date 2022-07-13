@@ -7,3 +7,9 @@
 [submodule "vendor/sol2"]
 	path = vendor/sol2
 	url = https://github.com/ThePhD/sol2
+[submodule "vendor/fmt"]
+	path = vendor/fmt
+	url = https://github.com/kobraks/fmt
+[submodule "vendor/GLFW"]
+	path = vendor/GLFW
+	url = https://github.com/kobraks/glfw

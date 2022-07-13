@@ -34,11 +34,13 @@ project "Engine"
 		"%{IncludeDir.Lua}",
 		"%{IncludeDir.Sol2}",
 		"%{IncludeDir.Fmt}",
+		"%{IncludeDir.GLFW}",
 	}
 
 	links
 	{
 		"Glad",
+		"GLFW",
 		"Lua54",
 		"Fmt",
 		
