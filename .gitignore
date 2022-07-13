@@ -1,3 +1,8 @@
+#ignore binaries
+**/bin/
+bin-int/
+Intermedites/
+
 #ignore all vs studio config files
 **/Debug
 **/Release
@@ -12,6 +17,12 @@
 **/*.pdb
 **/*.cd
 **/*.sln.DotSettings*
+.vs/
+**.sln
+**.vcxproj
+**.vcxproj.filters
+**.vcxproj.user
+**.csproj
 
 #ignoring build directory
 Build
@@ -29,6 +40,9 @@ Lib/*
 **/*.blend*
 OrginalModels/*
 OrginalModels
+
+# Directories
+scripts/__pycache__
 
 #removing templorary files
 **/*.dat
