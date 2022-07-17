@@ -13,3 +13,12 @@
 [submodule "vendor/GLFW"]
 	path = vendor/GLFW
 	url = https://github.com/kobraks/glfw
+[submodule "vendor/FreeImage"]
+	path = vendor/FreeImage
+	url = https://github.com/kobraks/FreeImage
+[submodule "vendor/ImGui"]
+	path = vendor/ImGui
+	url = https://github.com/kobraks/imgui
+[submodule "vendor/ImGuizmo"]
+	path = vendor/ImGuizmo
+	url = https://github.com/kobraks/ImGuizmo

@@ -2,7 +2,7 @@
 #include "Image.h"
 
 #include <algorithm>
-#include <FreeImage/FreeImage.h>
+#include <FreeImage.h>
 
 #include "Assert.h"
 

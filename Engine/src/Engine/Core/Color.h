@@ -5,6 +5,8 @@
 
 #include <glm/vec4.hpp>
 
+#include <imgui.h>
+
 namespace Game
 {
 	class Color
@@ -56,6 +58,7 @@ namespace Game
 		Color(glm::vec4 color) : Color(color.x, color.y, color.z, color.w) {}
 
 		operator glm::vec4() const { return glm::vec4(R / 255.f, G / 255.f, B / 255.f, A / 255.f); }
+		operator ImVec4() const { return ImVec4{R / 255.f, G / 255.f, B / 255.f, A / 255.f}; }
 
 		uint8_t& operator[](const size_t index)
 		{

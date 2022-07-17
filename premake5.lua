@@ -21,7 +21,7 @@ workspace "OpenGlGame"
 	{
 		"MultiProcessorCompile"
 	}
-
+	
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 group "Dependencies"
@@ -30,7 +30,8 @@ group "Dependencies"
 	include "vendor/Lua"
 	include "vendor/fmt"
 	include "vendor/GLFW"
---	include "Hazel/vendor/imgui"
+	include "vendor/FreeImage"
+	include "vendor/ImGui"
 --	include "Hazel/vendor/yaml-cpp"
 group ""
 

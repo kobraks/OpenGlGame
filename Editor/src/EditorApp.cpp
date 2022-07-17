@@ -1,4 +1,4 @@
-/*#include <Engine.h>
+#include <Engine.h>
 #include <Engine/Core/EntryPoint.h>
 
 namespace Game
@@ -6,14 +6,14 @@ namespace Game
 	class Editor : public Application
 	{
 	public:
-		Editor(const ApplicationSpecyfication& spec) : Application(spec)
+		Editor(const ApplicationSpecification& spec) : Application(spec)
 		{
 			
 		}
 
 		Application* CreateApplication(ApplicationCommandLineArgs args)
 		{
-			ApplicationSpecyfication spec;
+			ApplicationSpecification spec;
 			spec.Name = "Editor";
 			spec.CommandLineArgs = args;
 

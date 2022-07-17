@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#define SPDLOG_FMT_EXTERNAL
+
 #ifdef GAME_DEBUG
 	#define GAME_ENABLE_ASSERTS
 	#define GAME_ENABLE_PROFILING

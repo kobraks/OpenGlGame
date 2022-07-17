@@ -1,4 +1,6 @@
 #pragma once
+
+#include "Engine/Core/Base.h"
 #include "Engine/Core/Rect.h"
 
 #include <GLFW/glfw3.h>

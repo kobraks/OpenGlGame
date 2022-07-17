@@ -15,8 +15,11 @@ project "Engine"
 		"src/**.h",
 		"src/**.cpp",
 		
-		"%{IncludeDir.glm}/glm/**.hpp",
-		"%{IncludeDir.glm}/glm/**.inl",
+		"%{wks.location}/vendor/glm/**.hpp",
+		"%{wks.location}/vendor/glm/**.inl",
+		
+		"%{wks.location}/vendor/ImGuizmo/ImGuizmo.h",
+		"%{wks.location}/vendor/ImGuizmo/ImGuizmo.cpp",
 	}
 
 	defines
@@ -35,6 +38,9 @@ project "Engine"
 		"%{IncludeDir.Sol2}",
 		"%{IncludeDir.Fmt}",
 		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.FreeImage}",
+		"%{IncludeDir.ImGui}",
+		"%{IncludeDir.ImGuizmo}",
 	}
 
 	links
@@ -43,12 +49,14 @@ project "Engine"
 		"GLFW",
 		"Lua54",
 		"Fmt",
+		"ImGui",
+		"FreeImage",
 		
 		"opengl32.lib",
 	}
 
-	--filter "files:vendor/ImGuizmo/**.cpp"
-	--flags { "NoPCH" }
+	filter "files:%{wks.location}/vendor/ImGuizmo/**.cpp"
+	flags { "NoPCH" }
 
 	filter "system:windows"
 		systemversion "latest"
