@@ -8,6 +8,7 @@
 
 #include <imgui.h>
 #include <fmt/format.h>
+#include <type_traits>
 
 namespace Game
 {
@@ -39,25 +40,25 @@ namespace Game
 		);
 
 	template <class ...Args>
-	void Text(const std::string_view &text, Args &&... args)
+	void Text(fmt::format_string<Args...> format, Args &&... args)
 	{
-		return ImGui::TextUnformatted(fmt::format(text, std::forward<Args>(args) ...).c_str());
+		return ImGui::TextUnformatted(fmt::format(format, std::forward<Args>(args) ...).c_str());
 	}
 
 	template <class ...Args>
-	void TextColored(const ImVec4 &color, const std::string_view &text, Args &&... args)
+	void TextColored(const ImVec4 &color, fmt::format_string<Args...> format, Args &&... args)
 	{
-		return ImGui::TextColored(color, fmt::format(text, std::forward<Args>(args)...).c_str());
+		return ImGui::TextColored(color, fmt::format(format, std::forward<Args>(args)...).c_str());
 	}
 
 	template <class ...Args>
-	void BulletText(const std::string_view &text, Args &&... args)
+	void BulletText(fmt::format_string<Args...> format, Args &&... args)
 	{
-		return ImGui::BulletText(fmt::format(text, std::forward<Args>(args)...).c_str());
+		return ImGui::BulletText(fmt::format(format, std::forward<Args>(args)...).c_str());
 	}
 
 	template <class ...Args>
-	bool TreeNodeEx(const std::string_view &label, ImGuiTreeNodeFlags flags = 0, Args &&...args)
+	bool TreeNodeEx(fmt::format_string<Args...> label, ImGuiTreeNodeFlags flags = 0, Args &&...args)
 	{
 		return ImGui::TreeNodeEx(fmt::format(label, std::forward<Args>(args)...).c_str(), flags);
 	}

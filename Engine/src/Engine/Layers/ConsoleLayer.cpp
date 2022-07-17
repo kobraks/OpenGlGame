@@ -60,9 +60,8 @@ namespace Game
 				ImGuiWindowFlags_HorizontalScrollbar
 			};
 			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
-
 			for(auto &[message, color] : m_Messages)
-				ImGui::TextColored(color, message.c_str());
+				ImGui::TextColored(ImVec4(color.R / 255.f, color.G / 255.f, color.B / 255.f, color.A / 255.f), message.c_str());
 
 			if (m_ScrollToBottom)
 			{

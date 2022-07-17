@@ -11,7 +11,9 @@ IncludeDir["FreeImage"] = "%{wks.location}/vendor/FreeImage/Source"
 IncludeDir["ImGui"] = "%{wks.location}/vendor/ImGui"
 IncludeDir["Glm"] = "%{wks.location}/vendor/glm"
 IncludeDir["ImGuizmo"] = "%{wks.location}/vendor/ImGuizmo"
+IncludeDir["Boost"] = "%{BOOST_DIR}"
 
 LibraryDir = {}
+LibraryDir["Boost"] = "%{BOOST_DIR}/stage/lib"
 
 Library = {}

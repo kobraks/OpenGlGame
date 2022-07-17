@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 	GAME_PROFILE_END_SESSION();
 
 	GAME_PROFILE_BEGIN_SESSION("Runtime", "EngineProfile-Startup.json");
-	auto app = Game::CreateApplication({argc, argv});
+	//auto app = Game::CreateApplication({argc, argv});
 	GAME_PROFILE_END_SESSION();
 
 	GAME_PROFILE_BEGIN_SESSION("Shutdown", "EngineProfile-Startup.json");

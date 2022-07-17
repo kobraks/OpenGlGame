@@ -1,5 +1,5 @@
 project "Lua54"
-    kind "SharedLib"
+    kind "StaticLib"
     language "C"
     staticruntime "off"
     

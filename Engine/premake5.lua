@@ -9,7 +9,7 @@ project "Engine"
 
 	pchheader "pch.h"
 	pchsource "src/pch.cpp"
-
+	
 	files
 	{
 		"src/**.h",
@@ -25,12 +25,14 @@ project "Engine"
 	defines
 	{
 		"_CRT_SECURE_NO_WARNINGS",
-		"GLFW_INCLUDE_NONE"
+		"GLFW_INCLUDE_NONE",
+		"SPDLOG_FMT_EXTERNAL"
 	}
 
 	includedirs
 	{
 		"src",
+		"%{IncludeDir.Boost}",
 		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.Glm}",
@@ -50,12 +52,12 @@ project "Engine"
 		"Lua54",
 		"Fmt",
 		"ImGui",
-		"FreeImage",
+		"FreeImageLib",
 		
 		"opengl32.lib",
 	}
 
-	filter "files:%{wks.location}/vendor/ImGuizmo/**.cpp"
+	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
 	flags { "NoPCH" }
 
 	filter "system:windows"
