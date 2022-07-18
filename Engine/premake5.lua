@@ -3,6 +3,7 @@ project "Engine"
 	language "C++"
 	cppdialect "C++20"
 	staticruntime "off"
+--	warnings "Everything"
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -26,7 +27,8 @@ project "Engine"
 	{
 		"_CRT_SECURE_NO_WARNINGS",
 		"GLFW_INCLUDE_NONE",
-		"SPDLOG_FMT_EXTERNAL"
+		"SPDLOG_FMT_EXTERNAL",
+		"FREEIMAGE_LIB"
 	}
 
 	includedirs
@@ -43,6 +45,7 @@ project "Engine"
 		"%{IncludeDir.FreeImage}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.Entt}",
 	}
 
 	links

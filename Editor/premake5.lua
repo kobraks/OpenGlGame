@@ -25,8 +25,8 @@ project "Editor"
 		"%{IncludeDir.Fmt}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.FreeImage}",
-		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
+		"%{IncludeDir.Entt}",
 	}
 
 	links

@@ -7,8 +7,8 @@
 #include <functional>
 
 #include <imgui.h>
-#include <fmt/format.h>
 #include <type_traits>
+#include <fmt/format.h>
 
 namespace Game
 {

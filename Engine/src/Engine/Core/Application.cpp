@@ -27,6 +27,15 @@
 
 namespace
 {
+	static void RemoveSink(spdlog::sink_ptr sink, spdlog::logger& logger)
+	{
+		auto &sinks = logger.sinks();
+		auto iter = std::find(sinks.begin(), sinks.end(), sink);
+
+		if (iter != sinks.end())
+			sinks.erase(iter);
+	}
+
 	constexpr spdlog::level::level_enum GetSeverity(GLenum severity)
 	{
 		switch(severity)

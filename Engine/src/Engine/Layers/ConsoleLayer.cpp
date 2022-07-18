@@ -71,6 +71,7 @@ namespace Game
 		}
 
 		ImGui::Separator();
+		ImGui::PushID("ConsoleInputText");
 		if(InputText(
 		             "",
 		             m_Command,
@@ -97,6 +98,7 @@ namespace Game
 			m_HistoryPos = -1;
 			m_Command.clear();
 		}
+		ImGui::PopID();
 
 		ImGui::SetItemDefaultFocus();
 		if(m_ReclaimFocus)
