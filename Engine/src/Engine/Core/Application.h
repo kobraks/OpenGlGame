@@ -12,6 +12,7 @@
 #include "Engine/Utils/Shortcut.h"
 
 #include <vector>
+#include <stdexcept>
 
 // #include "ThreadPool.h"
 
@@ -33,6 +34,11 @@ namespace Game
 		const char* operator[](int index) const
 		{
 			ASSERT(index < Count);
+			if (index < 0 || index >= Count)
+			{
+				throw std::out_of_range("OutOfRange");
+			}
+
 			return Args[index];
 		}
 	};
@@ -40,12 +46,18 @@ namespace Game
 	struct ApplicationSpecification
 	{
 		std::string Name = "Application";
-		std::string WrokingDirectory;
+		std::string WorkingDirectory;
+
+		bool Fullscreen = false;
+		Vector2u WindowSize { 800, 600 };
+
 		ApplicationCommandLineArgs CommandLineArgs;
 	};
 
 	class Application
 	{
+		ApplicationSpecification m_Specification;
+
 		Scope<Window> m_Window;
 		Scope<sol::state> m_Lua;
 		Scope<PropertyManager> m_Properties;
@@ -56,7 +68,7 @@ namespace Game
 
 		LayerStack m_LayerStack;
 
-		ImGuiLayer *m_ImGuiLayer = nullptr;
+		Pointer<ImGuiLayer> m_ImGuiLayer = nullptr;
 
 		int m_ExitCode = 0;
 
@@ -77,8 +89,8 @@ namespace Game
 		virtual ~Application();
 
 		void OnEvent(Event &event);
-		void PushLayer(Layer* layer);
-		void PushOverlay(Layer* overlay);
+		void PushLayer(Pointer<Layer> layer);
+		void PushOverlay(Pointer<Layer> overlay);
 
 		void RegisterShortcut(const Shortcut& shortcut);
 
@@ -91,7 +103,7 @@ namespace Game
 		static Application& Get() { return *s_Instance; }
 		int Run();
 
-		void ProcessArgs(int argc, char **argv);
+		virtual void ProcessArgs(const ApplicationCommandLineArgs &args);
 
 		void SetUpdateRate(float rate);
 		float GetUpdateRate() const { return 1000.f / static_cast<float>(m_UpdateRate); }
@@ -107,7 +119,7 @@ namespace Game
 		void LuaRegister(LuaRegister &luaObject);
 
 		sol::state& GetLua() const { return *m_Lua; }
-		void Initialize();
+		virtual void Initialize();
 	private:
 		void InitializeLua();
 

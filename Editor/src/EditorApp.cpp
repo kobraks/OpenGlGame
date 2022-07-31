@@ -1,12 +1,23 @@
 #include <Engine.h>
 #include <Engine/Core/EntryPoint.h>
 
+#include "EditorLayer.h"
+
 namespace Game
 {
 	class Editor: public Application
 	{
 	public:
-		Editor(const ApplicationSpecification &spec) : Application(spec) { }
+		Editor(const ApplicationSpecification &spec) : Application(spec)
+		{
+		}
+
+		void Initialize() override
+		{
+			Application::Initialize();
+
+			PushLayer(MakePointer<EditorLayer>());
+		}
 	};
 
 	Application* CreateApplication(ApplicationCommandLineArgs args)

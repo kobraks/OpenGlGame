@@ -10,7 +10,9 @@
 #include <utility>
 #include <vector>
 #include <spdlog/sinks/base_sink.h>
-#include <imgui.h>
+
+
+struct ImGuiTextFilter;
 
 namespace Game
 {
@@ -55,7 +57,7 @@ namespace Game
 		int32_t m_MinLogLevelToPopUp = 0;
 		inline static size_t s_MaxMessages = 1000;
 
-		ImGuiTextFilter m_Filter;
+		Scope<ImGuiTextFilter> m_Filter;
 
 		std::vector<Message> m_Messages;
 	public:

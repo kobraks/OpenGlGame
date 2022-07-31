@@ -28,12 +28,14 @@ project "Engine"
 		"_CRT_SECURE_NO_WARNINGS",
 		"GLFW_INCLUDE_NONE",
 		"SPDLOG_FMT_EXTERNAL",
-		"FREEIMAGE_LIB"
+		"FREEIMAGE_LIB",
+		"IMGUI_DISABLE_OBSOLETE_FUNCTIONS"
 	}
 
 	includedirs
 	{
 		"src",
+		"%{wks.location}/vendor",
 		"%{IncludeDir.Boost}",
 		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.Glad}",

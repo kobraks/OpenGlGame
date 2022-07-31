@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "PropertyManager.h"
 
-#include "Engine/Lua/LuaUtils.h"
+#include "Engine/Utils/LuaUtils.h"
 
 namespace Game
 {

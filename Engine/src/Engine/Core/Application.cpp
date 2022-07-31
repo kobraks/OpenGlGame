@@ -5,20 +5,20 @@
 
 #include "Engine/Lua/LuaRegister.h"
 
-#include "Engine/Layers/ImGuiLayer.h"
-#include "Engine/Layers/StatisticLayer.h"
-#include "Engine/Layers/LogLayer.h"
-#include "Engine/Layers/ConsoleLayer.h"
 #include "Engine/Layers/ConfigLayer.h"
+#include "Engine/Layers/ConsoleLayer.h"
+#include "Engine/Layers/ImGuiLayer.h"
+#include "Engine/Layers/LogLayer.h"
+#include "Engine/Layers/StatisticLayer.h"
 
 #include "Engine/Devices/Keyboard.h"
 #include "Engine/Devices/Mouse.h"
-#include "Engine/Lua/LuaUtils.h"
+#include "Engine/Utils/LuaUtils.h"
 
 #include "Engine/Events/ApplicationEvent.h"
 
-#include <GLFW/glfw3.h>
 #include <lua.hpp>
+#include <GLFW/glfw3.h>
 
 // #include "Renderer.h"
 
@@ -27,12 +27,12 @@
 
 namespace
 {
-	static void RemoveSink(spdlog::sink_ptr sink, spdlog::logger& logger)
+	void RemoveSink(spdlog::sink_ptr sink, spdlog::logger &logger)
 	{
 		auto &sinks = logger.sinks();
-		auto iter = std::find(sinks.begin(), sinks.end(), sink);
+		auto iter   = std::find(sinks.begin(), sinks.end(), sink);
 
-		if (iter != sinks.end())
+		if(iter != sinks.end())
 			sinks.erase(iter);
 	}
 
@@ -40,11 +40,16 @@ namespace
 	{
 		switch(severity)
 		{
-			case GL_DEBUG_SEVERITY_HIGH: return spdlog::level::critical;
-			case GL_DEBUG_SEVERITY_MEDIUM: return spdlog::level::err;
-			case GL_DEBUG_SEVERITY_LOW: return spdlog::level::warn;
-			case GL_DEBUG_SEVERITY_NOTIFICATION: return spdlog::level::info;
-			default: return spdlog::level::trace;
+			case GL_DEBUG_SEVERITY_HIGH:
+				return spdlog::level::critical;
+			case GL_DEBUG_SEVERITY_MEDIUM:
+				return spdlog::level::err;
+			case GL_DEBUG_SEVERITY_LOW:
+				return spdlog::level::warn;
+			case GL_DEBUG_SEVERITY_NOTIFICATION:
+				return spdlog::level::info;
+			default:
+				return spdlog::level::trace;
 		}
 	}
 
@@ -52,13 +57,20 @@ namespace
 	{
 		switch(source)
 		{
-			case GL_DEBUG_SOURCE_API: return "API";
-			case GL_DEBUG_SOURCE_APPLICATION: return "Application";
-			case GL_DEBUG_SOURCE_OTHER: return "Other";
-			case GL_DEBUG_SOURCE_SHADER_COMPILER: return "Shader Compiler";
-			case GL_DEBUG_SOURCE_THIRD_PARTY: return "Third Party";
-			case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "Window System";
-			default: return "Unknown";
+			case GL_DEBUG_SOURCE_API:
+				return "API";
+			case GL_DEBUG_SOURCE_APPLICATION:
+				return "Application";
+			case GL_DEBUG_SOURCE_OTHER:
+				return "Other";
+			case GL_DEBUG_SOURCE_SHADER_COMPILER:
+				return "Shader Compiler";
+			case GL_DEBUG_SOURCE_THIRD_PARTY:
+				return "Third Party";
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+				return "Window System";
+			default:
+				return "Unknown";
 		}
 	}
 
@@ -66,23 +78,35 @@ namespace
 	{
 		switch(type)
 		{
-			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "Deprecated Behavior";
-			case GL_DEBUG_TYPE_ERROR: return "Error";
-			case GL_DEBUG_TYPE_MARKER: return "Maker";
-			case GL_DEBUG_TYPE_OTHER: return "Other";
-			case GL_DEBUG_TYPE_PERFORMANCE: return "Performance";
-			case GL_DEBUG_TYPE_POP_GROUP: return "Pop Group";
-			case GL_DEBUG_TYPE_PORTABILITY: return "Portability";
-			case GL_DEBUG_TYPE_PUSH_GROUP: return "Push Group";
-			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "Undefined Behavior";
-			default: return "Unknown";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+				return "Deprecated Behavior";
+			case GL_DEBUG_TYPE_ERROR:
+				return "Error";
+			case GL_DEBUG_TYPE_MARKER:
+				return "Maker";
+			case GL_DEBUG_TYPE_OTHER:
+				return "Other";
+			case GL_DEBUG_TYPE_PERFORMANCE:
+				return "Performance";
+			case GL_DEBUG_TYPE_POP_GROUP:
+				return "Pop Group";
+			case GL_DEBUG_TYPE_PORTABILITY:
+				return "Portability";
+			case GL_DEBUG_TYPE_PUSH_GROUP:
+				return "Push Group";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+				return "Undefined Behavior";
+			default:
+				return "Unknown";
 		}
 	}
 
 	void EnableInputMode(int inputMode)
 	{
-		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(
+				Game::InputMode::RawMouseMotion) || inputMode == static_cast<int>(Game::InputMode::StickyKeys) ||
+			inputMode
+			== static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().SetInputMode(true, static_cast<Game::InputMode>(inputMode));
 		else
 			SCRIPT_LOG_ERROR(
@@ -97,8 +121,10 @@ namespace
 
 	void DisableInputMode(int inputMode)
 	{
-		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(
+				Game::InputMode::RawMouseMotion) || inputMode == static_cast<int>(Game::InputMode::StickyKeys) ||
+			inputMode
+			== static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().SetInputMode(false, static_cast<Game::InputMode>(inputMode));
 		else
 			SCRIPT_LOG_ERROR(
@@ -113,8 +139,10 @@ namespace
 
 	bool GetInputMode(int inputMode)
 	{
-		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(Game::InputMode::RawMouseMotion) || inputMode ==
-			static_cast<int>(Game::InputMode::StickyKeys) || inputMode == static_cast<int>(Game::InputMode::StickyMouseButtons))
+		if(inputMode == static_cast<int>(Game::InputMode::LockKeyModes) || inputMode == static_cast<int>(
+				Game::InputMode::RawMouseMotion) || inputMode == static_cast<int>(Game::InputMode::StickyKeys) ||
+			inputMode
+			== static_cast<int>(Game::InputMode::StickyMouseButtons))
 			Game::Application::Get().GetWindow().GetInputMode(static_cast<Game::InputMode>(inputMode));
 		else
 			SCRIPT_LOG_ERROR(
@@ -131,8 +159,8 @@ namespace
 
 	void SetCursorMode(int cursorMode)
 	{
-		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(Game::CursorMode::Hidden) || cursorMode == static_cast<
-			int>(Game::CursorMode::Disabled))
+		if(cursorMode == static_cast<int>(Game::CursorMode::Normal) || cursorMode == static_cast<int>(
+			Game::CursorMode::Hidden) || cursorMode == static_cast<int>(Game::CursorMode::Disabled))
 			Game::Application::Get().GetWindow().SetCursorMode(static_cast<Game::CursorMode>(cursorMode));
 		else
 			SCRIPT_LOG_ERROR(
@@ -149,9 +177,24 @@ namespace
 		return static_cast<int>(Game::Application::Get().GetWindow().GetCursorMode());
 	}
 
-	void DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *userParam)
+	void DebugCallback(
+		GLenum source,
+		GLenum type,
+		GLuint id,
+		GLenum severity,
+		GLsizei length,
+		const GLchar *message,
+		const void *userParam
+		)
 	{
-		Game::Log::GetOpenGLLogger()->log(GetSeverity(severity), "ID: {}, Source: {}, Type: {}, Message = {}", id, GetSource(source), GetType(type), message);
+		Game::Log::GetOpenGLLogger()->log(
+		                                  GetSeverity(severity),
+		                                  "ID: {}, Source: {}, Type: {}, Message = {}",
+		                                  id,
+		                                  GetSource(source),
+		                                  GetType(type),
+		                                  message
+		                                 );
 	}
 }
 
@@ -166,7 +209,7 @@ namespace Game
 	// 	 Log::Init();
 	// }
 
-	Application::Application(const ApplicationSpecification &specification)
+	Application::Application(const ApplicationSpecification &specification) : m_Specification(specification)
 	{
 		s_Instance = this;
 	}
@@ -205,14 +248,14 @@ namespace Game
 		}
 	}
 
-	void Application::PushLayer(Layer* layer)
+	void Application::PushLayer(Pointer<Layer> layer)
 	{
 		LOG_DEBUG("Adding {0} layer", layer->GetName());
 		m_LayerStack.PushLayer(layer);
 		layer->OnAttach();
 	}
 
-	void Application::PushOverlay(Layer* overlay)
+	void Application::PushOverlay(Pointer<Layer> overlay)
 	{
 		LOG_DEBUG("Adding {0} overlay", overlay->GetName());
 		m_LayerStack.PushOverlay(overlay);
@@ -247,7 +290,7 @@ namespace Game
 			{
 				m_FrameTime = clock.Restart();
 
-				for(Layer* layer : m_LayerStack)
+				for(Pointer<Layer> &layer : m_LayerStack)
 				{
 					layer->OnUpdate();
 				}
@@ -257,7 +300,7 @@ namespace Game
 				int32_t updateTime = updateClock.GetElapsedTime().AsMilliseconds();
 				while((updateTime - updateNext) >= m_UpdateRate && updates++ < m_MaxUpdates)
 				{
-					for(Layer* layer : m_LayerStack)
+					for(Pointer<Layer> &layer : m_LayerStack)
 						layer->OnConstUpdate(Milliseconds(m_UpdateRate));
 					updateNext += m_UpdateRate;
 				}
@@ -267,8 +310,9 @@ namespace Game
 				if(s_ShowImGuiTest)
 					ImGui::ShowDemoWindow(&s_ShowImGuiTest);
 
-				for(Layer* layer : m_LayerStack)
+				for(Pointer<Layer> &layer : m_LayerStack)
 					layer->OnImGuiRender();
+
 
 				m_ImGuiLayer->End();
 			}
@@ -279,14 +323,16 @@ namespace Game
 		return m_ExitCode;
 	}
 
-	void Application::ProcessArgs(int argc, char **argv)
+	void Application::ProcessArgs(const ApplicationCommandLineArgs &args)
 	{
-		for(int i = 0; i < argc; ++i)
-			m_Arguments.emplace_back(argv[i]);
+		GAME_PROFILE_FUNCTION();
+		for(int i = 0; i < args.Count; ++i)
+			m_Arguments.emplace_back(args[i]);
 	}
 
 	void Application::SetUpdateRate(float rate)
 	{
+		GAME_PROFILE_FUNCTION();
 		if(200 >= rate && 1 <= rate)
 		{
 			m_UpdateRate = static_cast<uint32_t>(1000.f / rate);
@@ -295,6 +341,7 @@ namespace Game
 
 	void Application::SetMaxUpdates(uint64_t maxUpdates)
 	{
+		GAME_PROFILE_FUNCTION();
 		if(200 >= maxUpdates && 1 <= maxUpdates)
 		{
 			m_MaxUpdates = maxUpdates;
@@ -303,11 +350,13 @@ namespace Game
 
 	void Application::LuaRegister(Game::LuaRegister &luaObject)
 	{
+		GAME_PROFILE_FUNCTION();
 		luaObject.Register(*m_Lua);
 	}
 
 	void Application::Initialize()
 	{
+		GAME_PROFILE_FUNCTION();
 		auto logLayer = MakePointer<LogLayer>();
 
 		Log::GetScriptLogger()->sinks().push_back(logLayer);
@@ -321,20 +370,32 @@ namespace Game
 		InitializeLua();
 		InitializeSettings();
 
-		m_Window = std::make_unique<Window>(WindowProperties{"Game", 800, 600});
+		m_Window = std::make_unique<Window>(
+		                                    WindowProperties{
+			                                    m_Specification.Name,
+			                                    m_Specification.WindowSize.X,
+			                                    m_Specification.WindowSize.Y
+		                                    }
+		                                   );
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
-		LOG_INFO("Created Window [With: {}, Height: {}, Name: \"{}\"]", m_Window->GetWidth(), m_Window->GetHeight(), m_Window->GetTitle());
+		LOG_INFO(
+		         "Created Window [Width: {}, Height: {}, Name: \"{}\", Fullscreen: {}]",
+		         m_Window->GetWidth(),
+		         m_Window->GetHeight(),
+		         m_Window->GetTitle(),
+		         m_Window->IsFullscreen()
+		        );
 		LOG_INFO("Max updates: {0}", m_MaxUpdates);
 		LOG_INFO("Update rate {0}", m_UpdateRate);
 
 		LOG_INFO("Creating thread pool with {} threads", std::thread::hardware_concurrency());
 		// m_ThreadPool = MakeScope<ThreadPool>(std::thread::hardware_concurrency());
 
-		PushOverlay(m_ImGuiLayer = new ImGuiLayer());
-		PushOverlay(&(*logLayer));
-		PushOverlay(new StatisticLayer());
-		PushOverlay(new ConsoleLayer());
+		PushOverlay(m_ImGuiLayer = MakePointer<ImGuiLayer>());
+		PushOverlay(logLayer);
+		PushOverlay(MakePointer<StatisticLayer>());
+		PushOverlay(MakePointer<ConsoleLayer>());
 		// PushOverlay(MakePointer<ConfigLayer>());
 
 		auto OpenGL = m_Window->GetFunctions();
@@ -356,12 +417,22 @@ namespace Game
 
 	void Application::InitializeLua()
 	{
+		GAME_PROFILE_FUNCTION();
+
 		LOG_INFO("Starting Lua machine");
 		m_Lua     = MakeScope<sol::state>();
 		auto &lua = *m_Lua;
 
 		LOG_DEBUG("Opening Lua libraries");
-		lua.open_libraries(sol::lib::base, sol::lib::string, sol::lib::coroutine, sol::lib::debug, sol::lib::math, sol::lib::os, sol::lib::io);
+		lua.open_libraries(
+		                   sol::lib::base,
+		                   sol::lib::string,
+		                   sol::lib::coroutine,
+		                   sol::lib::debug,
+		                   sol::lib::math,
+		                   sol::lib::os,
+		                   sol::lib::io
+		                  );
 
 		LOG_TRACE("Registering Application arguments");
 		lua["ArgumentCount"] = m_Arguments.size();
@@ -394,7 +465,10 @@ namespace Game
 		inputMetaTable.set_function("DisableMode", DisableInputMode);
 		inputMetaTable.set_function("GetInputMode", GetInputMode);
 		inputMetaTable.set_function("GetInputMode", GetInputMode);
-		inputMetaTable.set_function("IsRawMouseMotionSupported", [this]() { return m_Window->IsRawMouseInputSupported(); });
+		inputMetaTable.set_function(
+		                            "IsRawMouseMotionSupported",
+		                            [this]() { return m_Window->IsRawMouseInputSupported(); }
+		                           );
 		inputMetaTable.set("Keyboard", lua["Keyboard"]);
 		inputMetaTable.set("Keyboard", lua["Mouse"]);
 		inputMetaTable.set("Mode", inputModeTable);
@@ -438,8 +512,19 @@ namespace Game
 
 	void Application::InitializeSettings()
 	{
-		m_Properties->Add<float>("UpdateRate", [this]()->float { return this->GetUpdateRate(); }, [this](float value) { this->SetUpdateRate(value); });
-		m_Properties->Add<uint64_t>("MaxUpdates", [this]()->uint64_t { return this->GetMaxUpdates(); }, [this](uint64_t value) { this->SetMaxUpdates(value); });
+		GAME_PROFILE_FUNCTION();
+
+		m_Properties->Add<float>(
+		                         "UpdateRate",
+		                         [this]()->float { return this->GetUpdateRate(); },
+		                         [this](float value) { this->SetUpdateRate(value); }
+		                        );
+		m_Properties->Add<uint64_t>(
+		                            "MaxUpdates",
+		                            [this]()->uint64_t { return this->GetMaxUpdates(); },
+		                            [this](uint64_t value) { this->SetMaxUpdates(value); }
+		                           );
+
 		m_Properties->Add<uint32_t>(
 		                            "WindowWidth",
 		                            [this]() { return this->GetWindow().GetSize().Width; },
@@ -456,6 +541,17 @@ namespace Game
 			                            this->GetWindow().SetSize(this->GetWindow().GetWidth(), value);
 		                            }
 		                           );
+
+		m_Properties->Add<bool>(
+		                        "FullscreenMode",
+		                        [this] { return this->GetWindow().IsFullscreen(); },
+		                        [this](bool value) { this->GetWindow().ToggleFullscreen(); }
+		                       );
+		m_Properties->Add<std::string>(
+		                               "WindowName",
+		                               [this] { return std::string(this->GetWindow().GetTitle()); },
+		                               [this](std::string value) { this->GetWindow().SetTitle(value); }
+		                              );
 	}
 
 	bool Application::OnWindowClose(WindowCloseEvent &event)

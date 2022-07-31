@@ -1,7 +1,7 @@
 BOOST = os.getenv("BOOST_DIR")
 
 IncludeDir = {}
-IncludeDir["Boost"] = "%{BOOST_DIR}"
+IncludeDir["Boost"] = "%{BOOST}"
 
 IncludeDir["Glad"] = "%{wks.location}/vendor/glad/include"
 IncludeDir["Spdlog"] = "%{wks.location}/vendor/spdlog/include"
@@ -17,6 +17,6 @@ IncludeDir["Entt"] = "%{wks.location}/vendor/entt"
 
 
 LibraryDir = {}
-LibraryDir["Boost"] = "%{BOOST_DIR}/stage/lib"
+LibraryDir["Boost"] = "%{BOOST}/stage/lib"
 
 Library = {}

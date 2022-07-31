@@ -3,7 +3,7 @@
 
 #include "Engine/Core/Window.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Lua/LuaUtils.h"
+#include "Engine/Utils/LuaUtils.h"
 
 #include <Windows.h>
 #include <GLFW/glfw3.h>

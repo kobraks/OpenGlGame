@@ -6,7 +6,7 @@
 #include "Engine/ImGui/ImGuiGuard.h"
 #include "Engine/ImGui/ImGuiUtils.h"
 #include "Engine/Events/KeyEvent.h"
-#include "Engine/Lua/LuaUtils.h"
+#include "Engine/Utils/LuaUtils.h"
 
 #include <fstream>
 #include <imgui.h>
@@ -46,19 +46,20 @@ namespace Game
 		if(!m_Show)
 			return;
 
-		ImGuiMainWindowProps props{"Console", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
-		ImGuiWindowSize size{{520, 600}, ImGuiCond_Appearing};
+		const ImGuiMainWindowProps props{"ConsoleWindow", m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize};
+		const ImGuiWindowSize size{{520, 600}, ImGuiCond_Appearing};
 		ImGuiUniqueGuard<ImGuiMainWindow> guard(props, size);
 
 		const float footerHeightToReserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 
 		{
-			ImGuiChildWindowProps childProps{
+			const ImGuiChildWindowProps childProps{
 				"ConsoleLog",
 				{520 - ImGui::GetStyle().ItemSpacing.x, -footerHeightToReserve},
 				false,
 				ImGuiWindowFlags_HorizontalScrollbar
 			};
+
 			ImGuiUniqueGuard<ImGuiChildWindow> childGuard(childProps);
 			for(auto &[message, color] : m_Messages)
 				ImGui::TextColored(ImVec4(color.R / 255.f, color.G / 255.f, color.B / 255.f, color.A / 255.f), message.c_str());

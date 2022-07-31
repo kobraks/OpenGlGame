@@ -1,7 +1,7 @@
 #include "pch.h"
-#include "OpenGlFunctions.h"
+#include "Engine/OpenGL/OpenGlFunctions.h"
 
-#include "Context.h"
+#include "Engine/Renderer/Context.h"
 
 namespace Game
 {

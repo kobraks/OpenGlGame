@@ -13,10 +13,16 @@ project "Editor"
 		"src/**.cpp",
 	}
 	
+	defines 
+	{
+		"SPDLOG_FMT_EXTERNAL"
+	}
+	
 	includedirs
 	{
 		"%{wks.location}/Engine/src",
 		"%{wks.location}/vendor",
+		"%{IncludeDir.Boost}",
 		"%{IncludeDir.Spdlog}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.Glm}",

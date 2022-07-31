@@ -11,9 +11,10 @@
 
 #include "Engine/Devices/Keyboard.h"
 
-#include "Engine/Lua/LuaUtils.h"
+#include "Engine/Utils/LuaUtils.h"
 
 #include <chrono>
+#include "imgui.h"
 
 namespace
 {
@@ -130,7 +131,10 @@ namespace
 
 namespace Game
 {
-	LogLayer::LogLayer() : Layer("LogLayer") {}
+	LogLayer::LogLayer() : Layer("LogLayer")
+	{
+		m_Filter = MakeScope<ImGuiTextFilter>();
+	}
 
 	void LogLayer::OnAttach()
 	{
@@ -170,7 +174,7 @@ namespace Game
 			if(ImGui::Button("Clear"))
 				Clear();
 
-			m_Filter.Draw("Filter", -100.f);
+			m_Filter->Draw("Filter", -100.f);
 
 			ImGui::PushID("Num of messages");
 			if(m_Messages.size() >= s_MaxMessages)
@@ -223,8 +227,9 @@ namespace Game
 			}
 		}
 
-		spdlog::memory_buf_t formatted;
-		formatter_->format(msg, formatted);
+		spdlog::memory_buf_t formatted{};
+		spdlog::sinks::base_sink<std::mutex>::formatter_->format(msg, formatted);
+		// std::cout << fmt::to_string(formatted);
 
 		time_t time = std::chrono::system_clock::to_time_t(msg.time);
 		std::tm tm;
@@ -348,7 +353,7 @@ namespace Game
 				{
 					auto &message = m_Messages[i];
 
-					if(!m_Filter.PassFilter(message.Text.c_str()))
+					if(!m_Filter->PassFilter(message.Text.c_str()))
 						continue;
 
 					PrintMessage(guard, i, message);

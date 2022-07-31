@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Base.h"
-#include "Engine/Renderer/OpenGlFunctions.h"
+#include "Engine/OpenGL/OpenGlFunctions.h"
 
 #include <unordered_map>
 
