@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Events/Event.h"
 #include "Engine/Core/KeyCodes.h"
+#include "Engine/Events/Event.h"
 
 namespace Game
 {
@@ -18,18 +18,18 @@ namespace Game
 
 	class KeyPressedEvent: public KeyEvent
 	{
-		uint16_t m_RepeatCount;
+		bool m_IsRepeat;
 
 	public:
-		KeyPressedEvent(const KeyCode keyCode, const uint16_t repeatCount) : KeyEvent(keyCode),
-		                                                                     m_RepeatCount(repeatCount) {}
+		KeyPressedEvent(const KeyCode keyCode, bool isRepeat = false) : KeyEvent(keyCode),
+			m_IsRepeat(isRepeat) {}
 
-		uint16_t GetRepeatCount() const { return m_RepeatCount; }
+		bool IsRepeat() const { return m_IsRepeat; }
 
 		std::string ToString() const override
 		{
 			std::stringstream ss;
-			ss << "KeyPressedEvent: " << m_KeyCode << " (" << m_RepeatCount << " repeats)";
+			ss << "KeyPressedEvent: " << m_KeyCode << " (repeat = " << m_IsRepeat << ")";
 			return ss.str();
 		}
 
@@ -51,7 +51,7 @@ namespace Game
 		EVENT_CLASS_TYPE(KeyReleased)
 	};
 
-	class KeyTypedEvent : public KeyEvent
+	class KeyTypedEvent: public KeyEvent
 	{
 	public:
 		KeyTypedEvent(const KeyCode keyCode) : KeyEvent(keyCode) {}

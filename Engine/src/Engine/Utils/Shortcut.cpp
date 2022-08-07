@@ -19,7 +19,7 @@ namespace Game
 
 	bool Shortcut::OnKeyPress(KeyPressedEvent &event)
 	{
-		if(event.GetRepeatCount() == 0)
+		if (!event.IsRepeat())
 		{
 			const auto code = event.GetKeyCode();
 

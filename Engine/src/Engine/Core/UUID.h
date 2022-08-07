@@ -46,7 +46,8 @@ namespace Game
 	template <typename OStream>
 	OStream& operator<<(OStream &out, const UUID &right)
 	{
-		return out << right.m_UUID.str();
+		out << right.m_UUID.str();
+		return out;
 	}
 }
 

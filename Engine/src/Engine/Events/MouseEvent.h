@@ -73,7 +73,7 @@ namespace Game
 			return ss.str();
 		}
 
-		EVENT_CLASS_TYPE(MouseButtonPressed);
+		EVENT_CLASS_TYPE(MouseButtonPressed)
 	};
 
 	class MouseButtonReleasedEvent : public MouseButtonEvent
@@ -88,6 +88,6 @@ namespace Game
 			return ss.str();
 		}
 
-		EVENT_CLASS_TYPE(MouseButtonReleased);
+		EVENT_CLASS_TYPE(MouseButtonReleased)
 	};
 }
