@@ -1,0 +1,56 @@
+#ignore binaries
+**/bin/
+bin-int/
+Intermedites/
+
+#ignore all vs studio config files
+**/Debug
+**/Release
+**/.vs
+**/.vscode
+**/x64
+**/fmt.dir
+**/*.bat
+**/*.vcxproj.*
+**/Obj
+**/*.exe
+**/*.pdb
+**/*.cd
+**/*.sln.DotSettings*
+.vs/
+**.sln
+**.vcxproj
+**.vcxproj.filters
+**.vcxproj.user
+**.csproj
+
+#ignoring build directory
+Build
+Build/*
+
+#ignoring include directory
+Include
+Include/*
+
+#ignoring lib directory
+Lib
+Lib/*
+
+#removing blendfiles
+**/*.blend*
+OrginalModels/*
+OrginalModels
+
+# Directories
+scripts/__pycache__
+
+#removing templorary files
+**/*.dat
+**/*.tmp
+**/*.txt
+**/*.swp
+**/*.json
+**/*.bin
+**/*.log
+**/*.ini
+**/*.conf

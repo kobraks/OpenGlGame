@@ -1,0 +1,24 @@
+[submodule "vendor/spdlog"]
+	path = vendor/spdlog
+	url = https://github.com/gabime/spdlog
+[submodule "vendor/glm"]
+	path = vendor/glm
+	url = https://github.com/g-truc/glm
+[submodule "vendor/sol2"]
+	path = vendor/sol2
+	url = https://github.com/ThePhD/sol2
+[submodule "vendor/fmt"]
+	path = vendor/fmt
+	url = https://github.com/kobraks/fmt
+[submodule "vendor/GLFW"]
+	path = vendor/GLFW
+	url = https://github.com/kobraks/glfw
+[submodule "vendor/FreeImage"]
+	path = vendor/FreeImage
+	url = https://github.com/kobraks/FreeImage
+[submodule "vendor/ImGui"]
+	path = vendor/ImGui
+	url = https://github.com/kobraks/imgui
+[submodule "vendor/ImGuizmo"]
+	path = vendor/ImGuizmo
+	url = https://github.com/kobraks/ImGuizmo
