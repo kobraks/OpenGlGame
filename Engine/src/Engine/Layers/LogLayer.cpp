@@ -416,7 +416,7 @@ namespace Game
 		{
 			ImGuiUniqueGuard<ImGuiID> idGuard(static_cast<int>(msg.IdSelectedHash));
 			{
-				ImGuiUniqueGuard<ImGuiGroup> groupGuard();
+				ImGuiUniqueGuard<ImGuiGroup> groupGuard;
 
 				//Soruce text display
 				Text("File: {}", msg.Source.File);

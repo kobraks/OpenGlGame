@@ -27,7 +27,7 @@ namespace Game::Math
 		translation = vec3(localMatrix[3]);
 		localMatrix[3] = vec4(0, 0, 0, localMatrix[3].w);
 
-		vec3 row[3], pdum3;
+		vec3 row[3];
 
 		for (length_t i = 0; i < 3; ++i)
 			for (length_t j = 0; j < 3; ++j)
@@ -41,7 +41,7 @@ namespace Game::Math
 		row[2] = detail::scale(row[2], 1.f);
 
 #if 0
-		pdum3 = cross(row[1], row[2]);
+		vec3 pdum3 = cross(row[1], row[2]);
 		if (dot(row[0], pdum3) < 0)
 		{
 			for (length_t i = 0; i < 3; ++i)

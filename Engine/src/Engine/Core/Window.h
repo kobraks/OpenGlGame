@@ -4,6 +4,7 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Renderer/Context.h"
 #include "Engine/Devices/Monitor.h"
+#include "Engine/Devices/Cursor.h"
 
 #include <String>
 #include <vector>
@@ -13,9 +14,6 @@
 
 namespace Game
 {
-	class Cursor;
-	class Monitor;
-
 	enum class InputMode
 	{
 		StickyKeys = GLFW_STICKY_KEYS,
@@ -53,13 +51,13 @@ namespace Game
 		struct WindowData
 		{
 			std::string Title;
-			uint32_t Width;
-			uint32_t Height;
+			uint32_t Width = 0;
+			uint32_t Height = 0;
 
-			uint32_t X;
-			uint32_t Y;
+			uint32_t X = 0;
+			uint32_t Y = 0;
 
-			bool VSync;
+			bool VSync = false;
 			EventCallbackFunction EventCallback;
 		};
 
@@ -76,7 +74,6 @@ namespace Game
 
 		Scope<Monitor> m_Monitor = nullptr;
 		Scope<Cursor> m_Cursor   = nullptr;
-
 	public:
 		explicit Window(const WindowProperties &properties);
 		virtual ~Window();
@@ -98,7 +95,7 @@ namespace Game
 
 		Vector2<uint32_t> GetSize() const { return Vector2u{GetWidth(), GetHeight()}; }
 		void SetSize(Vector2u size);
-		void SetSize(size_t width, size_t height);
+		void SetSize(uint32_t width, uint32_t height);
 
 		void SetEventCallback(const EventCallbackFunction &callback) { m_Data.EventCallback = callback; }
 		void SetVSync(bool enabled);

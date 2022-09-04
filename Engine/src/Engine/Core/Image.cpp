@@ -12,18 +12,30 @@ namespace Game
 	{
 		switch(type)
 		{
-			case ImageType::BMP: return FIF_BMP;
-			case ImageType::EXR: return FIF_EXR;
-			case ImageType::J2K: return FIF_J2K;
-			case ImageType::JP2: return FIF_JP2;
-			case ImageType::JPEG: return FIF_JPEG;
-			case ImageType::JXR: return FIF_JXR;
-			case ImageType::PBM: return FIF_PBM;
-			case ImageType::PGM: return FIF_PGM;
-			case ImageType::PNG: return FIF_PNG;
-			case ImageType::PPM: return FIF_PPM;
-			case ImageType::TIFF: return FIF_TIFF;
-			default: return FIF_UNKNOWN;
+			case ImageType::BMP:
+				return FIF_BMP;
+			case ImageType::EXR:
+				return FIF_EXR;
+			case ImageType::J2K:
+				return FIF_J2K;
+			case ImageType::JP2:
+				return FIF_JP2;
+			case ImageType::JPEG:
+				return FIF_JPEG;
+			case ImageType::JXR:
+				return FIF_JXR;
+			case ImageType::PBM:
+				return FIF_PBM;
+			case ImageType::PGM:
+				return FIF_PGM;
+			case ImageType::PNG:
+				return FIF_PNG;
+			case ImageType::PPM:
+				return FIF_PPM;
+			case ImageType::TIFF:
+				return FIF_TIFF;
+			default:
+				return FIF_UNKNOWN;
 		}
 	}
 
@@ -32,22 +44,29 @@ namespace Game
 		Create(width, height, background);
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const Color *pixels) : m_Width(width), m_Height(height)
+	Image::Image(uint32_t width, uint32_t height, const Color *pixels) : m_Width(width),
+	                                                                     m_Height(height)
 	{
 		m_Pixels = new Color[static_cast<size_t>(width) * height];
 		std::memcpy(m_Pixels, pixels, static_cast<size_t>(width) * height * sizeof(Color));
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const uint8_t *pixels) : m_Width(width), m_Height(height)
+	Image::Image(uint32_t width, uint32_t height, const uint8_t *pixels) : m_Width(width),
+	                                                                       m_Height(height)
 	{
 		m_Pixels = new Color[static_cast<size_t>(width) * height];
 
 		std::memcpy(m_Pixels, pixels, static_cast<size_t>(width) * height * sizeof(Color));
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const glm::vec4 *pixels) : m_Width(width), m_Height(height)
+	Image::Image(uint32_t width, uint32_t height, const glm::vec4 *pixels) : m_Width(width),
+	                                                                         m_Height(height)
 	{
 		m_Pixels = new Color[static_cast<size_t>(width) * height];
+
+		ASSERT(pixels)
+		if(pixels)
+			return;
 
 		for(uint32_t i = 0; i < width; ++i)
 			for(uint32_t j = 0; j < height; ++j)
@@ -57,15 +76,25 @@ namespace Game
 			}
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const float *pixels) : m_Width(width), m_Height(height)
+	Image::Image(uint32_t width, uint32_t height, const float *pixels) : m_Width(width),
+	                                                                     m_Height(height)
 	{
 		m_Pixels = new Color[static_cast<size_t>(width) * height];
+
+		ASSERT(pixels)
+		if(pixels)
+			return;
 
 		for(uint32_t i = 0; i < width; ++i)
 			for(uint32_t j = 0; j < height; ++j)
 			{
 				const size_t colorIndex = (i + j * width) * 4;
-				m_Pixels[i + j * width] = Color(pixels[colorIndex + 0], pixels[colorIndex + 1], pixels[colorIndex + 2], pixels[colorIndex + 3]);
+				m_Pixels[i + j * width] = Color(
+				                                pixels[colorIndex + 0],
+				                                pixels[colorIndex + 1],
+				                                pixels[colorIndex + 2],
+				                                pixels[colorIndex + 3]
+				                               );
 			}
 	}
 
@@ -116,13 +145,20 @@ namespace Game
 	{
 		Clear();
 
-		const auto format = FreeImage_GetFileTypeFromMemory(reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), static_cast<int>(size));
+		const auto format = FreeImage_GetFileTypeFromMemory(
+		                                                    reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)),
+		                                                    static_cast<int>(size)
+		                                                   );
 		if(format == FIF_UNKNOWN)
 		{
 			throw std::runtime_error("Unknown image format");
 		}
 
-		const auto image = FreeImage_LoadFromMemory(format, reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)), static_cast<int>(size));
+		const auto image = FreeImage_LoadFromMemory(
+		                                            format,
+		                                            reinterpret_cast<FIMEMORY*>(const_cast<uint8_t*>(pixels)),
+		                                            static_cast<int>(size)
+		                                           );
 		if(!image)
 		{
 			throw std::runtime_error("Unable to open memory file");
@@ -159,7 +195,14 @@ namespace Game
 
 	void Image::Save(const std::string &fileName, ImageType type)
 	{
-		auto handler = FreeImage_Allocate(m_Width, m_Height, 32, FI_RGBA_RED_MASK, FI_RGBA_GREEN_MASK, FI_RGBA_BLUE_MASK);
+		auto handler = FreeImage_Allocate(
+		                                  static_cast<int>(m_Width),
+		                                  static_cast<int>(m_Height),
+		                                  32,
+		                                  FI_RGBA_RED_MASK,
+		                                  FI_RGBA_GREEN_MASK,
+		                                  FI_RGBA_BLUE_MASK
+		                                 );
 
 		for(size_t i = 0; i < m_Width; ++i)
 			for(size_t j = 0; j < m_Height; ++j)
@@ -172,7 +215,7 @@ namespace Game
 				color.rgbBlue     = static_cast<BYTE>(pixel.B);
 				color.rgbReserved = static_cast<BYTE>(pixel.A);
 
-				FreeImage_SetPixelColor(handler, i, j, &color);
+				FreeImage_SetPixelColor(handler, static_cast<uint32_t>(i), static_cast<uint32_t>(j), &color);
 			}
 
 		FreeImage_Save(ConvertType(type), handler, fileName.c_str(), 0);
@@ -245,7 +288,12 @@ namespace Game
 
 		for(size_t i = 0; i < size; ++i)
 		{
-			m_Pixels[i] = Color(pixels[i * 4 + FI_RGBA_RED], pixels[i * 4 + FI_RGBA_GREEN], pixels[i * 4 + FI_RGBA_BLUE], pixels[i * 4 + FI_RGBA_ALPHA]);
+			m_Pixels[i] = Color(
+			                    pixels[i * 4 + FI_RGBA_RED],
+			                    pixels[i * 4 + FI_RGBA_GREEN],
+			                    pixels[i * 4 + FI_RGBA_BLUE],
+			                    pixels[i * 4 + FI_RGBA_ALPHA]
+			                   );
 		}
 
 		FreeImage_Unload(image);

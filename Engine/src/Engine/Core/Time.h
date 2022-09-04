@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Engine/Core/Base.h"
+
 namespace Game
 {
 	class Time

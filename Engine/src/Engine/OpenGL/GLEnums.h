@@ -180,7 +180,7 @@ namespace Game
 		MirroredRepeat = GL_MIRRORED_REPEAT
 	};
 
-	enum class Filter
+	enum class Filter : GLenum
 	{
 		Nearest = GL_NEAREST,
 		Linear = GL_LINEAR,
@@ -209,7 +209,16 @@ namespace Game
 	{
 		Color = GL_COLOR_BUFFER_BIT,
 		Depth = GL_DEPTH_BUFFER_BIT,
-		Stencil = GL_STENCIL_BUFFER_BIT
+		Stencil = GL_STENCIL_BUFFER_BIT,
+
+		ColorDepth = GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+		ColorStencil = GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT,
+
+		DepthStencil = GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
+		DepthColor = ColorDepth,
+		
+		StencilColor = ColorStencil,
+		StencilDepth = DepthStencil
 	};
 
 	enum class Capability : uint32_t
@@ -313,6 +322,66 @@ namespace Game
 		ReadOnly = GL_READ_ONLY,
 		WriteOnly = GL_WRITE_ONLY,
 		ReadWrite = GL_READ_WRITE
+	};
+
+	enum class TextureParamName : uint32_t
+	{
+		DepthStencilMode = GL_DEPTH_STENCIL_TEXTURE_MODE,
+		BaseLevel = GL_TEXTURE_BASE_LEVEL,
+		CompareFunc = GL_TEXTURE_COMPARE_FUNC,
+		CompareMode = GL_TEXTURE_COMPARE_MODE,
+		LodBias = GL_TEXTURE_LOD_BIAS,
+		MinFilter = GL_TEXTURE_MIN_FILTER,
+		MagFilter = GL_TEXTURE_MAG_FILTER,
+		MinLod = GL_TEXTURE_MIN_LOD,
+		MaxLod = GL_TEXTURE_MAX_LOD,
+		MaxLevel = GL_TEXTURE_MAX_LEVEL,
+		SwizzleR = GL_TEXTURE_SWIZZLE_R,
+		SwizzleG = GL_TEXTURE_SWIZZLE_G,
+		SwizzleB = GL_TEXTURE_SWIZZLE_B,
+		SwizzleA = GL_TEXTURE_SWIZZLE_A,
+		WrapS = GL_TEXTURE_WRAP_S,
+		WrapT = GL_TEXTURE_WRAP_T,
+		WrapR = GL_TEXTURE_WRAP_R,
+
+		BorderColor = GL_TEXTURE_BORDER_COLOR,
+		SwizzleRGBA = GL_TEXTURE_SWIZZLE_RGBA
+	};
+
+	enum class TextureTarget : uint32_t
+	{
+		Texture1D = GL_TEXTURE_1D,
+		Texture2D = GL_TEXTURE_2D,
+		Texture3D = GL_TEXTURE_3D,
+
+		Texture1DArray = GL_TEXTURE_1D_ARRAY,
+		Texture2DArray = GL_TEXTURE_2D_ARRAY,
+
+		CubeMap = GL_TEXTURE_CUBE_MAP,
+		CubeMapArray = GL_TEXTURE_CUBE_MAP_ARRAY,
+
+		Buffer = GL_TEXTURE_BUFFER,
+		Multisample2D = GL_TEXTURE_2D_MULTISAMPLE,
+		Mutlisample2DArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 
+
+
+		Proxy1D = GL_PROXY_TEXTURE_1D,
+		Proxy2D = GL_PROXY_TEXTURE_2D,
+
+		Rectangle = GL_TEXTURE_RECTANGLE,
+		ProxyRectangle = GL_PROXY_TEXTURE_RECTANGLE,
+
+		Proxy1DArray = GL_PROXY_TEXTURE_1D_ARRAY,
+		Proxy2DArray = GL_PROXY_TEXTURE_2D_ARRAY,
+		ProxyCubeMap = GL_PROXY_TEXTURE_CUBE_MAP,
+
+		CubeMapPositiveX = GL_TEXTURE_CUBE_MAP_POSITIVE_X,
+		CubeMapPositiveY = GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
+		CubeMapPositiveZ = GL_TEXTURE_CUBE_MAP_POSITIVE_Z,
+
+		CubeMapNegativeX = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
+		CubeMapNegativeY = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
+		CubeMapNegativeZ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
 	};
 
 	inline BufferBit operator|(const BufferBit &left, const BufferBit &right)

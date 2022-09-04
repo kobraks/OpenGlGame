@@ -9,7 +9,7 @@ namespace Game
 {
 	struct GammaRamp
 	{
-		size_t Size;
+		uint32_t Size = 0;
 		uint16_t* Red = nullptr;
 		uint16_t* Green = nullptr;
 		uint16_t* Blue = nullptr;

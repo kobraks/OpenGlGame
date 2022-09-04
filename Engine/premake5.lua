@@ -29,7 +29,6 @@ project "Engine"
 		"GLFW_INCLUDE_NONE",
 		"SPDLOG_FMT_EXTERNAL",
 		"FREEIMAGE_LIB",
-		"IMGUI_DISABLE_OBSOLETE_FUNCTIONS"
 	}
 
 	includedirs
@@ -63,7 +62,10 @@ project "Engine"
 	}
 
 	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
-	flags { "NoPCH" }
+		flags { "NoPCH" }
+		
+	filter "action:vs*"
+		buildoptions { "/external:anglebrackets" }
 
 	filter "system:windows"
 		systemversion "latest"

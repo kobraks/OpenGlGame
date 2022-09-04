@@ -74,7 +74,7 @@ namespace Game
 		SetSize(size.Width, size.Height);
 	}
 
-	void Window::SetSize(size_t width, size_t height)
+	void Window::SetSize(uint32_t width, uint32_t height)
 	{
 		glfwSetWindowSize(m_Window, static_cast<int>(width), static_cast<int>(height));
 		m_Data.Width  = width;

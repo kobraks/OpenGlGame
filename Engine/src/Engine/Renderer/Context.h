@@ -15,7 +15,7 @@ namespace Game
 		static inline thread_local Context* s_Context = nullptr;
 		
 		void *m_WindowHandler = nullptr;
-		OpenGlFunctions m_Functions;
+		Scope<OpenGlFunctions> m_Functions = nullptr;
 		
 		std::thread::id m_ThreadId;
 	public:
@@ -32,10 +32,10 @@ namespace Game
 		bool operator!=(const Context &context) const;
 
 		void SwapBuffers();
-		OpenGlFunctions GetFunctions() const { return m_Functions; }
+		[[nodiscard]] OpenGlFunctions GetFunctions() const { return *m_Functions; }
 		void MakeCurrent();
 
-		[[nodiscard]] bool IsContextCurrent() const;
+		[[nodiscard]] bool IsCurrent() const;
 
 		static Context* GetCurrentContext();
 		static Context* GetContext();

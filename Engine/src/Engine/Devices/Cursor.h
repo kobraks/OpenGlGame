@@ -18,7 +18,9 @@ namespace Game
 			VerdicalResize,
 			IBeam
 		};
-	private:		
+	private:
+		size_t* m_RefCout = nullptr;
+
 		Window* m_Window = nullptr;
 		Image m_Image;
 
@@ -28,8 +30,15 @@ namespace Game
 
 		bool m_Created = false;
 		bool m_SystemCursor = false;
+
 	public:
 		Cursor();
+		Cursor(const Cursor& cursor);
+		Cursor(Cursor&& cursor) noexcept;
+
+		Cursor &operator=(const Cursor& cursor) noexcept;
+		Cursor &operator=(Cursor&& cursor) noexcept;
+
 		explicit Cursor(CursorType cursor);
 		Cursor(const Image& image, Vector2i hotSpot);
 		~Cursor();
@@ -44,6 +53,7 @@ namespace Game
 	private:
 		void Create();
 		void Destroy();
+		void Destructor();
 
 		void Update();
 

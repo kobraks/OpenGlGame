@@ -41,12 +41,12 @@ namespace Game
 	{
 		glfwMakeContextCurrent(static_cast<GLFWwindow*>(m_WindowHandler));
 		m_ThreadId = std::this_thread::get_id();
-		m_Functions.MakeCurrent();
+		m_Functions->MakeCurrent();
 		s_Context = this;
 		s_Contests[std::this_thread::get_id()] = this;
 	}
 
-	bool Context::IsContextCurrent() const
+	bool Context::IsCurrent() const
 	{
 		return std::this_thread::get_id() == m_ThreadId;
 	}
@@ -65,11 +65,12 @@ namespace Game
 		return s_Context;
 	}
 
-	Context::Context(void *windowHandler) : m_WindowHandler(windowHandler), m_Functions(*this), m_ThreadId(std::this_thread::get_id())
+	Context::Context(void *windowHandler) : m_WindowHandler(windowHandler), m_ThreadId(std::this_thread::get_id())
 	{
 		MakeCurrent();
 		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		ASSERT(status, "Failed to initialize Glad!");
+		m_Functions = Scope<OpenGlFunctions>(new OpenGlFunctions(*this));
 
 		LOG_INFO("OpenGL Info: ");
 		LOG_INFO(" Vedor: {0}", (const char*)glGetString(GL_VENDOR));

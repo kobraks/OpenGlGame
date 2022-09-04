@@ -42,6 +42,9 @@ project "Editor"
 
 	filter "system:windows"
 		systemversion "latest"
+		
+	filter "action:vs*"
+		buildoptions { "/external:anglebrackets" }
 
 	filter "configurations:Debug"
 		defines "GAME_DEBUG"

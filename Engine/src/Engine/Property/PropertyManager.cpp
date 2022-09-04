@@ -82,7 +82,7 @@ namespace Game
 	sol::table PropertyManager::LuaGetNames(sol::this_state state) const
 	{
 		//TODO some sort of cashing
-		sol::table table(state, sol::new_table(m_Properties.size()));
+		sol::table table(state, sol::new_table(static_cast<uint32_t>(m_Properties.size())));
 
 		int i = 1;
 		for (auto it : m_Properties)
@@ -96,7 +96,7 @@ namespace Game
 	{
 		//TODO some sort of cashing
 
-		sol::table table(state, sol::new_table(m_Properties.size()));
+		sol::table table(state, sol::new_table(static_cast<uint32_t>(m_Properties.size())));
 
 		int i = 1;
 		for (auto it : m_Properties)
