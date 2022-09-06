@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Engine/OpenGL/Shader.h"
 
+#include "Engine/Renderer/Context.h"
+
 #include <fstream>
 #include <sstream>
 
@@ -56,37 +58,33 @@ namespace Game
 		m_Source = source;
 	}
 
-	Shader::Internals::Internals(const Shader::Type &type) : Type(type)
+	Shader::Internals::Internals(const Shader::Type &type) : Type(type), Functions(OpenGlFunctions::GetFunctions())
 	{
-		Shader = glCreateShader(static_cast<GLenum>(type));
+		Shader = Functions.CreateShader(static_cast<uint32_t>(type));
 	}
 
 	Shader::Internals::~Internals()
 	{
-		glDeleteShader(Shader);
+		Functions.DeleteShader(Shader);
 	}
 
 	void Shader::Internals::SetSource(const ShaderSource &source)
 	{
-		auto cstr = source.Source().c_str();
-
 		GL_LOG_INFO("Attaching source code to {} shader {}", Shader, ShaderTypeToString(Type));
 		GL_LOG_DEBUG("Source code: \n{}\nEND", source.Source());
 
 		Source = source;
 
-		glShaderSource(Shader, 1, &cstr, nullptr);
+		Functions.ShaderSource(Shader, source.Source());
 	}
 
 	bool Shader::Internals::Compile()
 	{
 		GL_LOG_INFO("Compliling [id: {}] {} Shader", Shader, ShaderTypeToString(Type));
 
-		glCompileShader(Shader);
+		Functions.CompileShader(Shader);
 
-		int status = Get(ParameterName::CompileStatus);
-
-		if (status == GL_FALSE)
+		if (const int status = Get(ShaderParameterName::CompileStatus); status == GL_FALSE)
 		{
 			GL_LOG_ERROR("Unable to compile [id: {}] {} Shader", Shader, ShaderTypeToString(Type));
 			return Compiled = false;
@@ -98,31 +96,12 @@ namespace Game
 
 	std::string Shader::Internals::GetLog() const
 	{
-		int length = Get(ParameterName::LogLength);
-
-		if (length > 0)
-		{
-			std::string log(length + 1, 0);
-
-			glGetShaderInfoLog(Shader, length, &length, &log[0]);
-
-			return log;
-		}
-
-		return {};
+		return Functions.ShaderInfoLog(Shader);
 	}
 
-	int Shader::Internals::Get(ParameterName name) const
+	int Shader::Internals::Get(ShaderParameterName name) const
 	{
-		int value = 0;
-		Get(name, &value);
-
-		return value;
-	}
-
-	void Shader::Internals::Get(ParameterName name, int *value) const
-	{
-		glGetShaderiv(Shader, static_cast<GLenum>(name), value);
+		return Functions.GetShader(Shader, name);
 	}
 
 	Shader::Shader(const Type &type)

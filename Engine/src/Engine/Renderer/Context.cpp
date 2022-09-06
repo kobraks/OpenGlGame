@@ -69,7 +69,11 @@ namespace Game
 	{
 		MakeCurrent();
 		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
 		ASSERT(status, "Failed to initialize Glad!");
+		if (!status)
+			throw std::runtime_error("Failed to initialize Glad!");
+
 		m_Functions = Scope<OpenGlFunctions>(new OpenGlFunctions(*this));
 
 		LOG_INFO("OpenGL Info: ");

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Base.h"
+#include "Engine/OpenGL/OpenGlFunctions.h"
 
 #include <string>
 #include <filesystem>
@@ -37,16 +38,7 @@ namespace Game
 			Evaluation = GL_TESS_EVALUATION_SHADER
 		};
 
-		enum class ParameterName : GLenum
-		{
-			ShaderType = GL_SHADER_TYPE,
-			DeleteStatus = GL_DELETE_STATUS,
-			CompileStatus = GL_COMPILE_STATUS,
-			LogLength = GL_INFO_LOG_LENGTH,
-			SourceLength = GL_SHADER_SOURCE_LENGTH
-		};
-
-		using IdType = uint32_t;
+		using IDType = uint32_t;
 
 	private:
 		class Internals
@@ -56,7 +48,9 @@ namespace Game
 
 			Type Type = Type::Unknown;
 			bool Compiled = false;
-			IdType Shader = 0;
+			IDType Shader = 0;
+
+			mutable OpenGlFunctions Functions;
 
 			explicit Internals(const Shader::Type& type);
 
@@ -67,8 +61,7 @@ namespace Game
 
 			std::string GetLog() const;
 
-			int Get(ParameterName name) const;
-			void Get(ParameterName name, int *value) const;
+			int Get(ShaderParameterName name) const;
 		};
 
 		Pointer<Internals> m_Internals;
@@ -85,9 +78,9 @@ namespace Game
 
 		std::string GetLog() const { return m_Internals->GetLog(); }
 
-		operator IdType() const { return m_Internals->Shader; }
+		operator IDType() const { return m_Internals->Shader; }
 
-		IdType ID() const { return m_Internals->Shader; }
+		IDType ID() const { return m_Internals->Shader; }
 
 		Type GetType() const { return m_Internals->Type; }
 

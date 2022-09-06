@@ -695,6 +695,113 @@ namespace Game
 		glNamedFramebufferRenderbuffer(frameBuffer, attachment, renderBufferTarget, renderBuffer);
 	}
 
+	uint32_t OpenGlFunctions::CreateShader(uint32_t shaderType)
+	{
+		CHECK_FOR_CURRENT_CONTEXT();
+
+		return glCreateShader(shaderType);
+	}
+
+	void OpenGlFunctions::DeleteShader(uint32_t shader)
+	{
+		CHECK_FOR_CURRENT_CONTEXT();
+
+		glDeleteShader(shader);
+	}
+
+	void OpenGlFunctions::ShaderSource(
+		uint32_t shader,
+		uint32_t count,
+		const char* const *string,
+		const int32_t *length
+		)
+	{
+		CHECK_FOR_CURRENT_CONTEXT();
+
+		glShaderSource(shader, static_cast<GLsizei>(count), string, length);
+	}
+
+	void OpenGlFunctions::ShaderSource(
+		uint32_t shader,
+		uint32_t count,
+		const std::string *string,
+		const int32_t *length
+		)
+	{
+		for (uint32_t i = 0; i < count; ++i)
+			ShaderSource(shader, string[i]);
+	}
+
+	void OpenGlFunctions::ShaderSource(uint32_t shader, uint32_t count, const std::string_view *string)
+	{
+		for (uint32_t i = 0; i < count; ++i)
+			ShaderSource(shader, string[i]);
+	}
+
+	void OpenGlFunctions::ShaderSource(uint32_t shader, const std::string_view &string)
+	{
+		const int32_t length = static_cast<int32_t>(string.size());
+		const char* cstr = string.data();
+
+		ShaderSource(shader, 1, &cstr, &length);
+	}
+
+	void OpenGlFunctions::ShaderSource(uint32_t shader, const std::string &string)
+	{
+		const char* cstr = string.c_str();
+
+		ShaderSource(shader, 1, &cstr, nullptr);
+	}
+
+	void OpenGlFunctions::ShaderSource(uint32_t shader, const char *string, int32_t length)
+	{
+		ShaderSource(shader, 1, &string, &length);
+	}
+
+	void OpenGlFunctions::ShaderSource(uint32_t shader, const char *string)
+	{
+		ShaderSource(shader, 1, &string, nullptr);
+	}
+
+	void OpenGlFunctions::CompileShader(uint32_t shader)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glCompileShader(shader);
+	}
+
+	void OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name, int32_t *params)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glGetShaderiv(shader, static_cast<GLenum>(name), params);
+	}
+
+	int32_t OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name)
+	{
+		int32_t v = 0;
+
+		GetShader(shader, name, &v);
+
+		return v;
+	}
+
+	std::string OpenGlFunctions::ShaderInfoLog(uint32_t shader)
+	{
+		int32_t length = GetShader(shader, ShaderParameterName::LogLength);
+
+		if (length > 0)
+		{
+			std::string log(length + 1, 0);
+
+			glGetShaderInfoLog(shader, length + 1, nullptr, &log[0]);
+
+			return log;
+		}
+
+		return "";
+	}
+
 	bool OpenGlFunctions::GetBoolean(uint32_t name)
 	{
 		return GetV<bool>(name);

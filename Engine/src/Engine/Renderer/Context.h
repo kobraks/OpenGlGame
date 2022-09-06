@@ -41,6 +41,5 @@ namespace Game
 		static Context* GetContext();
 	private:
 		Context(void *windowHandler);
-		Context(void *windowHandler, void *mainWindow);
 	};
 }

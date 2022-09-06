@@ -1,6 +1,6 @@
 #pragma once
 
-#include "GLEnums.h"
+#include "Engine/OpenGL/GLEnums.h"
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Rect.h"
@@ -367,6 +367,25 @@ namespace Game
 		uint32_t CheckFrameBufferStatus(uint32_t frameBuffer, uint32_t target = GL_DRAW_FRAMEBUFFER);
 		void FrameBufferTexture(uint32_t frameBuffer, uint32_t attachment, uint32_t texture, int32_t level);
 		void FrameBufferRenderBuffer(uint32_t frameBuffer, uint32_t attachment, uint32_t renderBufferTarget, uint32_t renderBuffer);
+
+		uint32_t CreateShader(uint32_t shaderType);
+		void DeleteShader(uint32_t shader);
+
+		void ShaderSource(uint32_t shader, uint32_t count, const char* const* string, const int32_t* length);
+		void ShaderSource(uint32_t shader, uint32_t count, const std::string* string, const int32_t* length);
+		void ShaderSource(uint32_t shader, uint32_t count, const std::string_view* string);
+		void ShaderSource(uint32_t shader, const std::string_view& string);
+		void ShaderSource(uint32_t shader, const std::string& string);
+		void ShaderSource(uint32_t shader, const char* string, int32_t length);
+		void ShaderSource(uint32_t shader, const char* string);
+
+		void CompileShader(uint32_t shader);
+
+		void GetShader(uint32_t shader, ShaderParameterName name, int32_t* params);
+		int32_t GetShader(uint32_t shader, ShaderParameterName name);
+
+		std::string ShaderInfoLog(uint32_t shader);
+
 
 		bool GetBoolean(uint32_t name);
 		double GetDouble(uint32_t name);

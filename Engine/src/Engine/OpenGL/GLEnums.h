@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Engine/Core/Base.h"
 #include <glad/glad.h>
+#include "Engine/Core/Base.h"
 
 namespace Game
 {
@@ -11,12 +11,12 @@ namespace Game
 		Vec2 = GL_FLOAT_VEC2,
 		Vec3 = GL_FLOAT_VEC3,
 		Vec4 = GL_FLOAT_VEC4,
-		
+
 		Double = GL_DOUBLE,
 		DVec2 = GL_DOUBLE_VEC2,
 		DVec3 = GL_DOUBLE_VEC3,
 		DVec4 = GL_DOUBLE_VEC4,
-		
+
 		Int = GL_INT,
 		IVec2 = GL_INT_VEC2,
 		IVec3 = GL_INT_VEC3,
@@ -32,23 +32,23 @@ namespace Game
 		BVec3 = GL_BOOL_VEC3,
 		BVec4 = GL_BOOL_VEC4,
 
-		Mat2 = GL_FLOAT_MAT2,	
-		Mat2x3 = GL_FLOAT_MAT2x3,	
+		Mat2 = GL_FLOAT_MAT2,
+		Mat2x3 = GL_FLOAT_MAT2x3,
 		Mat2x4 = GL_FLOAT_MAT2x4,
-		
-		Mat3 = GL_FLOAT_MAT3,	
-		Mat3x2 = GL_FLOAT_MAT3x2,	
+
+		Mat3 = GL_FLOAT_MAT3,
+		Mat3x2 = GL_FLOAT_MAT3x2,
 		Mat3x4 = GL_FLOAT_MAT3x4,
-		
-		Mat4 = GL_FLOAT_MAT4,	
-		Mat4x2 = GL_FLOAT_MAT4x2,	
+
+		Mat4 = GL_FLOAT_MAT4,
+		Mat4x2 = GL_FLOAT_MAT4x2,
 		Mat4x3 = GL_FLOAT_MAT4x3,
 
 		Sampler1D = GL_SAMPLER_1D,
 		Sampler2D = GL_SAMPLER_2D,
 		Sampler3D = GL_SAMPLER_3D
 	};
-	
+
 	enum class InternalFormat : int32_t
 	{
 		CompressedRed = GL_COMPRESSED_RED,
@@ -216,7 +216,7 @@ namespace Game
 
 		DepthStencil = GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT,
 		DepthColor = ColorDepth,
-		
+
 		StencilColor = ColorStencil,
 		StencilDepth = DepthStencil
 	};
@@ -362,7 +362,7 @@ namespace Game
 
 		Buffer = GL_TEXTURE_BUFFER,
 		Multisample2D = GL_TEXTURE_2D_MULTISAMPLE,
-		Mutlisample2DArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY, 
+		Mutlisample2DArray = GL_TEXTURE_2D_MULTISAMPLE_ARRAY,
 
 
 		Proxy1D = GL_PROXY_TEXTURE_1D,
@@ -382,6 +382,15 @@ namespace Game
 		CubeMapNegativeX = GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
 		CubeMapNegativeY = GL_TEXTURE_CUBE_MAP_NEGATIVE_Y,
 		CubeMapNegativeZ = GL_TEXTURE_CUBE_MAP_NEGATIVE_Z,
+	};
+
+	enum class ShaderParameterName : GLenum
+	{
+		ShaderType = GL_SHADER_TYPE,
+		DeleteStatus = GL_DELETE_STATUS,
+		CompileStatus = GL_COMPILE_STATUS,
+		LogLength = GL_INFO_LOG_LENGTH,
+		SourceLength = GL_SHADER_SOURCE_LENGTH
 	};
 
 	inline BufferBit operator|(const BufferBit &left, const BufferBit &right)
