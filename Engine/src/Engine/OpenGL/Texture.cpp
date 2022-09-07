@@ -58,17 +58,6 @@ namespace Game
 		SetParameter(TextureParamName::WrapT, static_cast<int>(t));
 	}
 
-	void Texture::SetWrapping(Wrapping s, Wrapping t, Wrapping r)
-	{
-		m_Internals->Wrapping.S = s;
-		m_Internals->Wrapping.T = t;
-		m_Internals->Wrapping.R = r;
-
-		SetParameter(TextureParamName::WrapS, static_cast<int>(s));
-		SetParameter(TextureParamName::WrapT, static_cast<int>(t));
-		SetParameter(TextureParamName::WrapR, static_cast<int>(r));
-	}
-
 	void Texture::SetWrappingS(Wrapping wrapping)
 	{
 		m_Internals->Wrapping.S = wrapping;
@@ -81,13 +70,6 @@ namespace Game
 		m_Internals->Wrapping.T = wrapping;
 
 		SetParameter(TextureParamName::WrapT, static_cast<int>(wrapping));
-	}
-
-	void Texture::SetWrappingR(Wrapping wrapping)
-	{
-		m_Internals->Wrapping.R = wrapping;
-
-		SetParameter(TextureParamName::WrapR, static_cast<int>(wrapping));
 	}
 
 	void Texture::SetFilters(Filter min, Filter mag)

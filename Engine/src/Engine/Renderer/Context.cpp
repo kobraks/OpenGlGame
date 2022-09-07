@@ -22,6 +22,11 @@ namespace Game
 		return Scope<Context>(new Context(window.GetNativeWindow()));
 	}
 
+	OpenGLVersion Context::GetVersion() const
+	{
+		return m_Version;
+	}
+
 	bool Context::operator==(const Context &context) const
 	{
 		return m_ThreadId == context.m_ThreadId && m_WindowHandler == context.m_WindowHandler;
@@ -80,5 +85,7 @@ namespace Game
 		LOG_INFO(" Vedor: {0}", (const char*)glGetString(GL_VENDOR));
 		LOG_INFO(" Renderer: {0}", (const char*)glGetString(GL_RENDERER));
 		LOG_INFO(" Version: {0}", (const char*)glGetString(GL_VERSION));
+
+		m_Version = {m_Functions->GetInteger(GL_MAJOR_VERSION), m_Functions->GetInteger(GL_MINOR_VERSION)};
 	}
 }

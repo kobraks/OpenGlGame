@@ -197,10 +197,10 @@ namespace Game
 	public:
 		OpenGlFunctions();
 		OpenGlFunctions(const OpenGlFunctions &functions);
-		OpenGlFunctions(OpenGlFunctions &&functions);
+		OpenGlFunctions(OpenGlFunctions &&functions) noexcept;
 
 		OpenGlFunctions& operator=(const OpenGlFunctions &functions);
-		OpenGlFunctions& operator=(OpenGlFunctions &&functions);
+		OpenGlFunctions& operator=(OpenGlFunctions &&functions) noexcept;
 
 		static OpenGlFunctions& GetFunctions();
 
@@ -331,9 +331,9 @@ namespace Game
 			const void *data
 			);
 
-		void BindTexture(TextureTarget target, uint32_t texture);
-		void BindRenderBuffer(uint32_t buffer);
-		void BindFrameBuffer(uint32_t buffer, bool read = false);
+		void BindTexture(TextureTarget target, uint32_t texture) const;
+		void BindRenderBuffer(uint32_t buffer) const;
+		void BindFrameBuffer(uint32_t buffer, bool read = false) const;
 
 		void GetTextureImage(
 			uint32_t texture,
@@ -342,7 +342,7 @@ namespace Game
 			DataType type,
 			uint32_t bufferSize,
 			void *pixels
-			);
+			) const;
 
 		uint32_t GenRenderBuffer();
 		uint32_t* GenRenderBuffers(uint32_t size);
@@ -381,35 +381,40 @@ namespace Game
 
 		void CompileShader(uint32_t shader);
 
-		void GetShader(uint32_t shader, ShaderParameterName name, int32_t* params);
-		int32_t GetShader(uint32_t shader, ShaderParameterName name);
+		void GetShader(uint32_t shader, ShaderParameterName name, int32_t* params) const;
+		int32_t GetShader(uint32_t shader, ShaderParameterName name) const;
 
 		std::string ShaderInfoLog(uint32_t shader);
 
+		bool GetBoolean(uint32_t name) const { return GetV<bool>(name); }
+		double GetDouble(uint32_t name) const { return GetV<double>(name); }
+		float GetFloat(uint32_t name) const { return GetV<float>(name); }
+		int32_t GetInteger(uint32_t name) const { return GetV<int32_t>(name); }
+		int64_t GetInteger64(uint32_t name) const { return GetV<int64_t>(name); }
 
-		bool GetBoolean(uint32_t name);
-		double GetDouble(uint32_t name);
-		float GetFloat(uint32_t name);
-		int32_t GetInteger(uint32_t name);
-		int64_t GetInteger64(uint32_t name);
+		std::string GetString(uint32_t name) const;
+		std::string GetString(uint32_t name, uint32_t index) const;
 
-		bool GetBoolean(uint32_t name, uint32_t index);
-		double GetDouble(uint32_t name, uint32_t index);
-		float GetFloat(uint32_t name, uint32_t index);
-		int32_t GetInteger(uint32_t name, uint32_t index);
-		int64_t GetInteger64(uint32_t name, uint32_t index);
+		std::string_view GetStringView(uint32_t name) const;
+		std::string_view GetStringView(uint32_t name, uint32_t index) const;
 
-		void Get(uint32_t name, bool *data);
-		void Get(uint32_t name, double *data);
-		void Get(uint32_t name, float *data);
-		void Get(uint32_t name, int32_t *data);
-		void Get(uint32_t name, int64_t *data);
+		bool GetBoolean(uint32_t name, uint32_t index) const { return GetV<bool>(name, index); }
+		double GetDouble(uint32_t name, uint32_t index) const { return GetV<double>(name, index); }
+		float GetFloat(uint32_t name, uint32_t index) const { return GetV<float>(name, index); }
+		int32_t GetInteger(uint32_t name, uint32_t index) const { return GetV<int32_t>(name, index); }
+		int64_t GetInteger64(uint32_t name, uint32_t index) const { return GetV<int64_t>(name, index); }
 
-		void Get(uint32_t target, uint32_t index, bool *data);
-		void Get(uint32_t target, uint32_t index, double *data);
-		void Get(uint32_t target, uint32_t index, float *data);
-		void Get(uint32_t target, uint32_t index, int32_t *data);
-		void Get(uint32_t target, uint32_t index, int64_t *data);
+		void Get(uint32_t name, bool *data) const;
+		void Get(uint32_t name, double *data) const;
+		void Get(uint32_t name, float *data) const;
+		void Get(uint32_t name, int32_t *data) const;
+		void Get(uint32_t name, int64_t *data) const;
+
+		void Get(uint32_t target, uint32_t index, bool *data) const;
+		void Get(uint32_t target, uint32_t index, double *data) const;
+		void Get(uint32_t target, uint32_t index, float *data) const;
+		void Get(uint32_t target, uint32_t index, int32_t *data) const;
+		void Get(uint32_t target, uint32_t index, int64_t *data) const;
 
 		void Flush();
 		void Finish();
@@ -430,7 +435,7 @@ namespace Game
 
 	private:
 		template <typename T>
-		T GetV(uint32_t name)
+		T GetV(uint32_t name) const
 		{
 			T val;
 
@@ -440,7 +445,7 @@ namespace Game
 		}
 
 		template <typename T>
-		T GetV(uint32_t name, uint32_t index)
+		T GetV(uint32_t name, uint32_t index) const
 		{
 			T val;
 			Get(name, index, &val);

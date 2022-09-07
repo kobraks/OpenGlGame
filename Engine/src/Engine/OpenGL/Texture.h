@@ -26,7 +26,6 @@ namespace Game
 		{
 			Game::Wrapping S = Game::Wrapping::Repeat;
 			Game::Wrapping T = Game::Wrapping::Repeat;
-			Game::Wrapping R = Game::Wrapping::Repeat;
 		};
 
 		struct InternalFilter
@@ -68,15 +67,12 @@ namespace Game
 
 		void SetWrapping(Wrapping s);
 		void SetWrapping(Wrapping s, Wrapping t);
-		void SetWrapping(Wrapping s, Wrapping t, Wrapping r);
 
 		Wrapping GetWrappingS() const { return m_Internals->Wrapping.S; }
 		Wrapping GetWrappingT() const { return m_Internals->Wrapping.T; }
-		Wrapping GetWrappingR() const { return m_Internals->Wrapping.R; }
 
 		void SetWrappingS(Wrapping wrapping);
 		void SetWrappingT(Wrapping wrapping);
-		void SetWrappingR(Wrapping wrapping);
 
 		Filter GetMagFilter() const {return m_Internals->Filter.Mag; }
 		Filter GetMinFilter() const {return m_Internals->Filter.Min; }

@@ -31,20 +31,14 @@ namespace Game
 		m_Internals = functions.m_Internals;
 	}
 
-	OpenGlFunctions::OpenGlFunctions(OpenGlFunctions &&functions) : m_Context(functions.m_Context)
+	OpenGlFunctions::OpenGlFunctions(OpenGlFunctions &&functions) noexcept : m_Context(functions.m_Context)
 	{
 		std::swap(m_Internals, functions.m_Internals);
 	}
 
-	OpenGlFunctions& OpenGlFunctions::operator=(const OpenGlFunctions &functions)
-	{
-		m_Context   = functions.m_Context;
-		m_Internals = functions.m_Internals;
+	OpenGlFunctions& OpenGlFunctions::operator=(const OpenGlFunctions &functions) = default;
 
-		return *this;
-	}
-
-	OpenGlFunctions& OpenGlFunctions::operator=(OpenGlFunctions &&functions)
+	OpenGlFunctions& OpenGlFunctions::operator=(OpenGlFunctions &&functions) noexcept
 	{
 		std::swap(m_Context, functions.m_Context);
 		std::swap(m_Internals, functions.m_Internals);
@@ -489,7 +483,7 @@ namespace Game
 		                   );
 	}
 
-	void OpenGlFunctions::BindTexture(TextureTarget target, uint32_t texture)
+	void OpenGlFunctions::BindTexture(TextureTarget target, uint32_t texture) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
@@ -497,14 +491,14 @@ namespace Game
 		glBindTexture(static_cast<GLenum>(target), texture);
 	}
 
-	void OpenGlFunctions::BindRenderBuffer(uint32_t buffer)
+	void OpenGlFunctions::BindRenderBuffer(uint32_t buffer) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glBindRenderbuffer(GL_RENDERBUFFER, buffer);
 	}
 
-	void OpenGlFunctions::BindFrameBuffer(uint32_t buffer, bool read)
+	void OpenGlFunctions::BindFrameBuffer(uint32_t buffer, bool read) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
@@ -521,11 +515,11 @@ namespace Game
 		DataType type,
 		uint32_t bufferSize,
 		void *pixels
-		)
+		) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
-		glGetTextureImage(texture, level, static_cast<GLenum>(format), static_cast<GLenum>(type), bufferSize, pixels);
+		glGetTextureImage(texture, level, static_cast<GLenum>(format), static_cast<GLenum>(type), static_cast<GLsizei>(bufferSize), pixels);
 	}
 
 	uint32_t OpenGlFunctions::GenRenderBuffer()
@@ -770,14 +764,14 @@ namespace Game
 		glCompileShader(shader);
 	}
 
-	void OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name, int32_t *params)
+	void OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name, int32_t *params) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT()
 
 		glGetShaderiv(shader, static_cast<GLenum>(name), params);
 	}
 
-	int32_t OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name)
+	int32_t OpenGlFunctions::GetShader(uint32_t shader, ShaderParameterName name) const
 	{
 		int32_t v = 0;
 
@@ -802,57 +796,27 @@ namespace Game
 		return "";
 	}
 
-	bool OpenGlFunctions::GetBoolean(uint32_t name)
+	std::string OpenGlFunctions::GetString(uint32_t name) const
 	{
-		return GetV<bool>(name);
+		return std::string(reinterpret_cast<const char*>(glGetString(name)));
 	}
 
-	double OpenGlFunctions::GetDouble(uint32_t name)
+	std::string OpenGlFunctions::GetString(uint32_t name, uint32_t index) const
 	{
-		return GetV<double>(name);
+		return std::string(reinterpret_cast<const char*>(glGetStringi(name, index)));
 	}
 
-	float OpenGlFunctions::GetFloat(uint32_t name)
+	std::string_view OpenGlFunctions::GetStringView(uint32_t name) const
 	{
-		return GetV<float>(name);
+		return std::string_view(reinterpret_cast<const char*>(glGetString(name)));
 	}
 
-	int32_t OpenGlFunctions::GetInteger(uint32_t name)
+	std::string_view OpenGlFunctions::GetStringView(uint32_t name, uint32_t index) const
 	{
-		return GetV<int32_t>(name);
+		return std::string_view(reinterpret_cast<const char*>(glGetStringi(name, index)));
 	}
 
-	int64_t OpenGlFunctions::GetInteger64(uint32_t name)
-	{
-		return GetV<int64_t>(name);
-	}
-
-	bool OpenGlFunctions::GetBoolean(uint32_t name, uint32_t index)
-	{
-		return GetV<bool>(name, index);
-	}
-
-	double OpenGlFunctions::GetDouble(uint32_t name, uint32_t index)
-	{
-		return GetV<double>(name, index);
-	}
-
-	float OpenGlFunctions::GetFloat(uint32_t name, uint32_t index)
-	{
-		return GetV<float>(name, index);
-	}
-
-	int32_t OpenGlFunctions::GetInteger(uint32_t name, uint32_t index)
-	{
-		return GetV<int32_t>(name, index);
-	}
-
-	int64_t OpenGlFunctions::GetInteger64(uint32_t name, uint32_t index)
-	{
-		return GetV<int64_t>(name, index);
-	}
-
-	void OpenGlFunctions::Get(uint32_t name, bool *data)
+	void OpenGlFunctions::Get(uint32_t name, bool *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
@@ -862,35 +826,35 @@ namespace Game
 		*data = b == GL_TRUE ? true : false;
 	}
 
-	void OpenGlFunctions::Get(uint32_t name, double *data)
+	void OpenGlFunctions::Get(uint32_t name, double *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetDoublev(name, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t name, float *data)
+	void OpenGlFunctions::Get(uint32_t name, float *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetFloatv(name, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t name, int32_t *data)
+	void OpenGlFunctions::Get(uint32_t name, int32_t *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetIntegerv(name, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t name, int64_t *data)
+	void OpenGlFunctions::Get(uint32_t name, int64_t *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetInteger64v(name, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t target, uint32_t index, bool *data)
+	void OpenGlFunctions::Get(uint32_t target, uint32_t index, bool *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
@@ -900,28 +864,28 @@ namespace Game
 		*data = b == GL_TRUE ? true : false;
 	}
 
-	void OpenGlFunctions::Get(uint32_t target, uint32_t index, double *data)
+	void OpenGlFunctions::Get(uint32_t target, uint32_t index, double *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetDoublei_v(target, index, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t target, uint32_t index, float *data)
+	void OpenGlFunctions::Get(uint32_t target, uint32_t index, float *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetFloati_v(target, index, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t target, uint32_t index, int32_t *data)
+	void OpenGlFunctions::Get(uint32_t target, uint32_t index, int32_t *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glGetIntegeri_v(target, index, data);
 	}
 
-	void OpenGlFunctions::Get(uint32_t target, uint32_t index, int64_t *data)
+	void OpenGlFunctions::Get(uint32_t target, uint32_t index, int64_t *data) const
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 

@@ -19,7 +19,7 @@ namespace Game
 	public:
 		using IDType = uint32_t;
 
-		enum class Orientation
+		enum class Orientation : uint32_t
 		{
 			Right = 0,
 			Left,
@@ -61,6 +61,10 @@ namespace Game
 
 			Internals();
 			~Internals();
+
+			void Create(Vector2u size);
+
+			void Swap(Internals& internals);
 		};
 
 		Pointer<Internals> m_Internals;
@@ -107,21 +111,26 @@ namespace Game
 		friend CubeMap;
 
 		const CubeMap::Orientation m_Face;
-		CubeMap *m_Owner;
+		OpenGlFunctions* m_Functions; 
+		mutable const CubeMap *m_Owner;
 
 		InternalFormat m_Format = InternalFormat::RGBA8;
 
 		Vector2u m_Size;
 
 	protected:
-		CubeTexture(CubeMap *owner, CubeMap::Orientation orientation);
+		CubeTexture(OpenGlFunctions* functions, CubeMap::Orientation orientation);
+
+		CubeTexture& SetOwner(const CubeMap &owner) const;
 
 		void Image2D(const void* pixels, DataType type, Format format, const Vector2u &size, InternalFormat internalFormat);
 		void SubImage2D(const void* pixels, DataType type, Format format, const Vector2i &offset, const Vector2u &size);
 
 		void Create(const Vector2u& size);
 	public:
-		CubeMap& GetOwner() const { return *m_Owner; }
+		CubeTexture() = delete;
+
+		CubeMap& Owner() const { return *const_cast<CubeMap *>(m_Owner); }
 
 		Vector2u Size() const { return m_Size; }
 		uint32_t Width() const { return m_Size.Width; }

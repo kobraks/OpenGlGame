@@ -32,6 +32,9 @@ namespace Game
 		Functions = Context::GetContext()->GetFunctions();
 
 		ID = Functions.GenTexture();
+
+		for(size_t i = 0; i < Textures.size(); ++i)
+			Textures[i] = new CubeTexture(&Functions, static_cast<Orientation>(i));
 	}
 
 	CubeMap::Internals::~Internals()
@@ -42,18 +45,28 @@ namespace Game
 		Functions.DeleteTexture(ID);
 	}
 
+	void CubeMap::Internals::Create(Vector2u size)
+	{
+		Size = size;
+
+		for (auto &texture : Textures)
+		{
+			texture->Create(size);
+		}
+	}
+
+	void CubeMap::Internals::Swap(Internals &internals)
+	{
+		for (size_t i = 0; i < Textures.size(); ++i)
+		{
+			internals.Textures[i]->m_Functions = &Functions;
+			Textures[i]->m_Functions = &internals.Functions;
+		}
+	}
+
 	CubeMap::CubeMap()
 	{
 		m_Internals = MakePointer<Internals>();
-
-		auto &textures = m_Internals->Textures;
-
-		textures[0] = new CubeTexture(this, Orientation::Right);
-		textures[1] = new CubeTexture(this, Orientation::Left);
-		textures[2] = new CubeTexture(this, Orientation::Top);
-		textures[3] = new CubeTexture(this, Orientation::Bottom);
-		textures[4] = new CubeTexture(this, Orientation::Front);
-		textures[5] = new CubeTexture(this, Orientation::Back);
 	}
 
 	CubeMap::CubeMap(uint32_t width, uint32_t height) : CubeMap(Vector2u(width, height)) {}
@@ -71,10 +84,7 @@ namespace Game
 		if(size.Width >= maxSize || size.Height >= maxSize)
 			throw std::runtime_error("Requested cube map size is to big");
 
-		m_Internals->Size = size;
-
-		for(auto &texture : m_Internals->Textures)
-			texture->Create(size);
+		m_Internals->Create(size);
 	}
 
 	void CubeMap::SetWrapping(Wrapping s)
@@ -144,23 +154,17 @@ namespace Game
 
 	CubeTexture& CubeMap::GetTexture(Orientation orientation)
 	{
-		return *m_Internals->Textures[static_cast<uint32_t>(orientation)];
+		return m_Internals->Textures[static_cast<uint32_t>(orientation)]->SetOwner(*this);
 	}
 
 	const CubeTexture& CubeMap::GetTexture(Orientation orientation) const
 	{
-		return *m_Internals->Textures[static_cast<uint32_t>(orientation)];
+		return m_Internals->Textures[static_cast<uint32_t>(orientation)]->SetOwner(*this);
 	}
 
 	void CubeMap::Swap(CubeMap &cubeMap)
 	{
 		std::swap(m_Internals, cubeMap.m_Internals);
-
-		for(size_t i = 0; i < m_Internals->Textures.size(); ++i)
-		{
-			m_Internals->Textures[i]->m_Owner         = this;
-			cubeMap.m_Internals->Textures[i]->m_Owner = &cubeMap;
-		}
 	}
 
 	void CubeMap::SetParameter(TextureParamName name, int32_t param)
@@ -168,8 +172,15 @@ namespace Game
 		m_Internals->Functions.TextureParameter(m_Internals->ID, name, param);
 	}
 
-	CubeTexture::CubeTexture(CubeMap *owner, CubeMap::Orientation orientation) : m_Face(orientation),
-		m_Owner(owner) { }
+	CubeTexture::CubeTexture(OpenGlFunctions *functions, CubeMap::Orientation orientation) : m_Owner(nullptr), m_Functions(functions), m_Face(orientation)
+	{}
+
+	CubeTexture& CubeTexture::SetOwner(const CubeMap &owner) const
+	{
+		m_Owner = &owner;
+
+		return *const_cast<CubeTexture *>(this);
+	}
 
 	void CubeTexture::Image2D(
 		const void *pixels,
@@ -239,7 +250,14 @@ namespace Game
 		std::vector<Color> pixels;
 		pixels.resize(size);
 
-		m_Owner->m_Internals->Functions.GetTextureImage(*m_Owner, static_cast<int32_t>(m_Face), Format::Rgba, DataType::UnsignedByte, static_cast<uint32_t>(size), &pixels[0]);
+		m_Owner->m_Internals->Functions.GetTextureImage(
+		                                                *m_Owner,
+		                                                static_cast<int32_t>(m_Face),
+		                                                Format::Rgba,
+		                                                DataType::UnsignedByte,
+		                                                static_cast<uint32_t>(size),
+		                                                &pixels[0]
+		                                               );
 
 		return Image(m_Size, pixels.data());
 	}
@@ -251,10 +269,10 @@ namespace Game
 
 	void CubeTexture::Update(const uint8_t *pixels, uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		if (pixels)
+		if(pixels)
 		{
 			ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
-			if (x + width >= m_Size.X && y + height >= m_Size.Y)
+			if(x + width >= m_Size.X && y + height >= m_Size.Y)
 				throw std::out_of_range("Out of range");
 
 			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, Vector2i(x, y), Vector2u{width, height});
@@ -273,10 +291,10 @@ namespace Game
 
 	void CubeTexture::Update(const Color *pixels, uint32_t width, uint32_t height, int32_t x, int32_t y)
 	{
-		if (pixels)
+		if(pixels)
 		{
 			ASSERT(x + width < m_Size.X && y + height < m_Size.Y, "Out of range");
-			if (x + width >= m_Size.X && y + height >= m_Size.Y)
+			if(x + width >= m_Size.X && y + height >= m_Size.Y)
 				throw std::out_of_range("Out of range");
 
 			SubImage2D(pixels, DataType::UnsignedByte, Format::Rgba, Vector2i(x, y), Vector2u{width, height});
@@ -322,13 +340,14 @@ namespace Game
 	{
 		Update(image.GetPixels(), image.Width(), image.Height(), 0, 0);
 	}
+
 	void CubeTexture::Update(const Image &image, int32_t x, int32_t y)
 	{
 		Update(image.GetPixels(), image.Width(), image.Height(), x, y);
 	}
+
 	void CubeTexture::Update(const Image &image, const Vector2i &offset)
 	{
 		Update(image.GetPixels(), image.Width(), image.Height(), offset.X, offset.Y);
-		
 	}
 }
