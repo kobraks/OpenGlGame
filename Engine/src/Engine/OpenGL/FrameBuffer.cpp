@@ -172,7 +172,7 @@ namespace Game
 		m_Internals->ColorAttachments++;
 		auto attachment = MakeRef<Texture>();
 
-		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, width, height, GetColorFormat(depth));
+		attachment->TextureObject::Create({width, height}, 1, GetColorFormat(depth));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Linear, Filter::Linear);
 
@@ -186,7 +186,7 @@ namespace Game
 		m_Internals->ColorAttachments++;
 		auto attachment = MakeRef<Texture>();
 
-		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::Rgba, size, GetColorFormat(depth));
+		attachment->TextureObject::Create(size, 1, GetColorFormat(depth));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Linear, Filter::Linear);
 
@@ -238,7 +238,7 @@ namespace Game
 
 		auto attachment = MakeRef<Texture>();
 
-		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::DepthComponent, width, height, GetDepthFormat(depth, stencil));
+		attachment->TextureObject::Create({width, height}, 1, GetDepthFormat(depth, stencil));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Nearest, Filter::Nearest);
 		Attach(GL_DEPTH_COMPONENT, attachment);
@@ -253,7 +253,7 @@ namespace Game
 
 		auto attachment = MakeRef<Texture>();
 
-		attachment->Image2D(nullptr, DataType::UnsignedByte, Format::DepthComponent, size, GetDepthFormat(depth, stencil));
+		attachment->TextureObject::Create(size, 1, GetDepthFormat(depth, stencil));
 		attachment->SetWrapping(Wrapping::ClampEdge, Wrapping::ClampEdge);
 		attachment->SetFilters(Filter::Nearest, Filter::Nearest);
 		Attach(GL_DEPTH_COMPONENT, attachment);

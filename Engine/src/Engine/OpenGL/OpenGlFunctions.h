@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Engine/OpenGL/GLEnums.h"
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Rect.h"
+#include "Engine/OpenGL/GLEnums.h"
 
 #include <unordered_map>
 #include <glad/glad.h>
@@ -321,6 +321,16 @@ namespace Game
 			DataType type,
 			const void *data
 			);
+
+		void TexStorage2D(
+			uint32_t texture,
+			uint32_t levels,
+			InternalFormat internalFormat,
+			uint32_t width,
+			uint32_t height
+			);
+		void TexStorage2D(uint32_t texture, uint32_t levels, InternalFormat internalFormat, const Vector2u &size);
+
 		void SubImage2D(
 			uint32_t texture,
 			int32_t level,
@@ -352,36 +362,52 @@ namespace Game
 		void DeleteRenderBuffers(uint32_t size, uint32_t *buffers);
 
 		void RenderBufferStorage(uint32_t renderBuffer, InternalFormat internalFormat, uint32_t width, uint32_t height);
-		void RenderBufferStorage(uint32_t renderBuffer, InternalFormat internalFormat, const Vector2u& size);
+		void RenderBufferStorage(uint32_t renderBuffer, InternalFormat internalFormat, const Vector2u &size);
 
-		void RenderBufferStorage(uint32_t renderBuffer, uint32_t samples, InternalFormat internalFormat, uint32_t width, uint32_t height);
-		void RenderBufferStorage(uint32_t renderBuffer, uint32_t samples, InternalFormat internalFormat, const Vector2u& size);
+		void RenderBufferStorage(
+			uint32_t renderBuffer,
+			uint32_t samples,
+			InternalFormat internalFormat,
+			uint32_t width,
+			uint32_t height
+			);
+		void RenderBufferStorage(
+			uint32_t renderBuffer,
+			uint32_t samples,
+			InternalFormat internalFormat,
+			const Vector2u &size
+			);
 
 		uint32_t GenFrameBuffer();
-		uint32_t *GenFrameBuffers(uint32_t size);
+		uint32_t* GenFrameBuffers(uint32_t size);
 		void GenFrameBuffers(uint32_t size, uint32_t *buffers);
 
 		void DeleteFrameBuffer(uint32_t buffer);
-		void DeleteFrameBuffers(uint32_t size, const uint32_t* buffers);
+		void DeleteFrameBuffers(uint32_t size, const uint32_t *buffers);
 
 		uint32_t CheckFrameBufferStatus(uint32_t frameBuffer, uint32_t target = GL_DRAW_FRAMEBUFFER);
 		void FrameBufferTexture(uint32_t frameBuffer, uint32_t attachment, uint32_t texture, int32_t level);
-		void FrameBufferRenderBuffer(uint32_t frameBuffer, uint32_t attachment, uint32_t renderBufferTarget, uint32_t renderBuffer);
+		void FrameBufferRenderBuffer(
+			uint32_t frameBuffer,
+			uint32_t attachment,
+			uint32_t renderBufferTarget,
+			uint32_t renderBuffer
+			);
 
 		uint32_t CreateShader(uint32_t shaderType);
 		void DeleteShader(uint32_t shader);
 
-		void ShaderSource(uint32_t shader, uint32_t count, const char* const* string, const int32_t* length);
-		void ShaderSource(uint32_t shader, uint32_t count, const std::string* string, const int32_t* length);
-		void ShaderSource(uint32_t shader, uint32_t count, const std::string_view* string);
-		void ShaderSource(uint32_t shader, const std::string_view& string);
-		void ShaderSource(uint32_t shader, const std::string& string);
-		void ShaderSource(uint32_t shader, const char* string, int32_t length);
-		void ShaderSource(uint32_t shader, const char* string);
+		void ShaderSource(uint32_t shader, uint32_t count, const char *const*string, const int32_t *length);
+		void ShaderSource(uint32_t shader, uint32_t count, const std::string *string, const int32_t *length);
+		void ShaderSource(uint32_t shader, uint32_t count, const std::string_view *string);
+		void ShaderSource(uint32_t shader, const std::string_view &string);
+		void ShaderSource(uint32_t shader, const std::string &string);
+		void ShaderSource(uint32_t shader, const char *string, int32_t length);
+		void ShaderSource(uint32_t shader, const char *string);
 
 		void CompileShader(uint32_t shader);
 
-		void GetShader(uint32_t shader, ShaderParameterName name, int32_t* params) const;
+		void GetShader(uint32_t shader, ShaderParameterName name, int32_t *params) const;
 		int32_t GetShader(uint32_t shader, ShaderParameterName name) const;
 
 		std::string ShaderInfoLog(uint32_t shader);

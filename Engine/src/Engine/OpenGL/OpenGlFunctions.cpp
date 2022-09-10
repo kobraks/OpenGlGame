@@ -458,6 +458,27 @@ namespace Game
 		            );
 	}
 
+	void OpenGlFunctions::TexStorage2D(
+		uint32_t texture,
+		uint32_t levels,
+		InternalFormat internalFormat,
+		uint32_t width,
+		uint32_t height
+		)
+	{
+		glTextureStorage2D(texture, static_cast<GLsizei>(levels), static_cast<GLenum>(internalFormat), static_cast<GLsizei>(width), static_cast<GLsizei>(height));
+	}
+
+	void OpenGlFunctions::TexStorage2D(
+		uint32_t texture,
+		uint32_t levels,
+		InternalFormat internalFormat,
+		const Vector2u &size
+		)
+	{
+		glTextureStorage2D(texture, static_cast<GLsizei>(levels), static_cast<GLenum>(internalFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+	}
+
 	void OpenGlFunctions::SubImage2D(
 		uint32_t texture,
 		int32_t level,
