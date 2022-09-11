@@ -84,31 +84,35 @@ namespace Game
 
 	void TextureObject::Internals::SetFilter(const TextureFilter &filter)
 	{
+		ASSERT(filter.Mag == Filter::Nearest || filter.Mag == Filter::Linear);
+
 		Filter = filter;
 
-		Functions.TextureParameter(Texture, TextureParamName::MagFilter, static_cast<int32_t>(filter.Mag));
-		Functions.TextureParameter(Texture, TextureParamName::MinFilter, static_cast<int32_t>(filter.Min));
+		Functions.TextureParameter(Texture, TextureParameterName::MagFilter, static_cast<int32_t>(filter.Mag));
+		Functions.TextureParameter(Texture, TextureParameterName::MinFilter, static_cast<int32_t>(filter.Min));
 	}
 
 	void TextureObject::Internals::SetFilterMag(Game::Filter mag)
 	{
+		ASSERT(mag == Filter::Nearest || mag == Filter::Linear);
+
 		Filter.Mag = mag;
-		Functions.TextureParameter(Texture, TextureParamName::MagFilter, static_cast<int32_t>(mag));
+		Functions.TextureParameter(Texture, TextureParameterName::MagFilter, static_cast<int32_t>(mag));
 	}
 
 	void TextureObject::Internals::SetFilterMin(Game::Filter min)
 	{
 		Filter.Min = min;
-		Functions.TextureParameter(Texture, TextureParamName::MinFilter, static_cast<int32_t>(min));
+		Functions.TextureParameter(Texture, TextureParameterName::MinFilter, static_cast<int32_t>(min));
 	}
 
 	void TextureObject::Internals::SetWrapping(const TextureWrapping &wrapping)
 	{
 		Wrapping = wrapping;
 
-		Functions.TextureParameter(Texture, TextureParamName::WrapS, static_cast<int32_t>(wrapping.S));
-		Functions.TextureParameter(Texture, TextureParamName::WrapT, static_cast<int32_t>(wrapping.T));
-		Functions.TextureParameter(Texture, TextureParamName::WrapR, static_cast<int32_t>(wrapping.R));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapS, static_cast<int32_t>(wrapping.S));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapT, static_cast<int32_t>(wrapping.T));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapR, static_cast<int32_t>(wrapping.R));
 	}
 
 	void TextureObject::Internals::SetWrapping(Game::Wrapping s, Game::Wrapping t)
@@ -116,29 +120,43 @@ namespace Game
 		Wrapping.S = s;
 		Wrapping.T = t;
 
-		Functions.TextureParameter(Texture, TextureParamName::WrapS, static_cast<int32_t>(s));
-		Functions.TextureParameter(Texture, TextureParamName::WrapT, static_cast<int32_t>(t));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapS, static_cast<int32_t>(s));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapT, static_cast<int32_t>(t));
 	}
 
 	void TextureObject::Internals::SetWrappingS(Game::Wrapping s)
 	{
 		Wrapping.S = s;
 
-		Functions.TextureParameter(Texture, TextureParamName::WrapS, static_cast<int32_t>(s));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapS, static_cast<int32_t>(s));
 	}
 
 	void TextureObject::Internals::SetWrappingT(Game::Wrapping t)
 	{
 		Wrapping.T = t;
 
-		Functions.TextureParameter(Texture, TextureParamName::WrapT, static_cast<int32_t>(t));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapT, static_cast<int32_t>(t));
 	}
 
 	void TextureObject::Internals::SetWrappingR(Game::Wrapping r)
 	{
 		Wrapping.R = r;
 
-		Functions.TextureParameter(Texture, TextureParamName::WrapR, static_cast<int32_t>(r));
+		Functions.TextureParameter(Texture, TextureParameterName::WrapR, static_cast<int32_t>(r));
+	}
+
+	void TextureObject::Internals::SetLod(float lod)
+	{
+		Functions.TextureParameter(Texture, TextureParameterName::LodBias, lod);
+	}
+
+	void TextureObject::Internals::SetMaxLod(float lod)
+	{
+		Functions.TextureParameter(Texture, TextureParameterName::MaxLod, lod);
+	}
+	void TextureObject::Internals::SetMinLod(float lod)
+	{
+		Functions.TextureParameter(Texture, TextureParameterName::MinLod, lod);
 	}
 
 	void TextureObject::Internals::Generate()
@@ -228,6 +246,20 @@ namespace Game
 		m_Internals->SetWrapping(wrapping);
 	}
 
+	void TextureObject::SetLod(float lod)
+	{
+		m_Internals->SetLod(lod);
+	}
+
+	void TextureObject::SetMaxLod(float lod)
+	{
+		m_Internals->SetMaxLod(lod);
+	}
+	void TextureObject::SetMinLod(float lod)
+	{
+		m_Internals->SetMinLod(lod);
+	}
+
 	void TextureObject::SetWrappingS(Wrapping s)
 	{
 		m_Internals->SetWrappingS(s);
@@ -242,7 +274,7 @@ namespace Game
 		m_Internals->SetWrappingR(r);
 	}
 
-	void TextureObject::SetParameter(TextureParamName name, int parameter)
+	void TextureObject::SetParameter(TextureParameterName name, int parameter)
 	{
 		m_Internals->Functions.TextureParameter(*this, name, parameter);
 	}
@@ -320,10 +352,46 @@ namespace Game
 		Update(image.GetPixels(), level, image.Size(), offset);
 	}
 
-	uint32_t TextureObject::CalculateLevels(const Vector2u &size)
-	{
+	uint32_t TextureObject::CalculateLevels(const Vector2u &size) {
 		return static_cast<uint32_t>(std::floor(
-		                                        std::log2(static_cast<long double>(std::max(size.Width, size.Height)))
-		                                       ));
+		                                        std::log2(
+		                                                  static_cast<long double>(
+			                                                  std::max(size.Width, size.Height))
+		                                                 )
+		                                       )) + 1;
+	}
+
+	uint64_t TextureObject::MaxBufferSize()
+	{
+		static bool s_Checked = false;
+		static uint32_t s_Size = 0;
+
+		if (s_Checked)
+			return s_Size;
+
+		ASSERT(Context::GetContext(), "No active openGL context");
+
+		if (!Context::GetContext())
+			throw std::runtime_error("No active openGL context");
+
+		s_Checked = true;
+		return s_Size = static_cast<uint32_t>(Context::GetContext()->GetFunctions().GetInteger64(GL_MAX_TEXTURE_BUFFER_SIZE));
+	}
+
+	uint64_t TextureObject::MaxImageUnits()
+	{
+		static bool s_Checked = false;
+		static uint32_t s_Units = 0;
+
+		if (s_Checked)
+			return s_Units;
+
+		ASSERT(Context::GetContext(), "No active openGL context");
+
+		if (!Context::GetContext())
+			throw std::runtime_error("No active openGL context");
+
+		s_Checked = true;
+		return s_Units = static_cast<uint32_t>(Context::GetContext()->GetFunctions().GetInteger64(GL_MAX_TEXTURE_IMAGE_UNITS));
 	}
 }

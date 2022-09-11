@@ -43,6 +43,10 @@ namespace Game
 			Vector2u Size;
 			InternalFormat Format = InternalFormat::RGB8;
 
+			float Lod    = 0.0;
+			float MinLod = -1000;
+			float MaxLod = 1000;
+
 			uint32_t Levels = 1;
 
 			TextureFilter Filter;
@@ -85,6 +89,10 @@ namespace Game
 			void SetWrappingS(Game::Wrapping s);
 			void SetWrappingT(Game::Wrapping t);
 			void SetWrappingR(Game::Wrapping r);
+
+			void SetLod(float lod);
+			void SetMaxLod(float lod);
+			void SetMinLod(float lod);
 
 		private:
 			void Generate();
@@ -130,13 +138,21 @@ namespace Game
 		void SetWrapping(const TextureWrapping &wrapping);
 
 		[[nodiscard]] TextureWrapping GetWrapping() const { return m_Internals->Wrapping; }
+
+		void SetLod(float lod);
+		void SetMaxLod(float lod);
+		void SetMinLod(float lod);
+
+		float GetLog() const { return m_Internals->Lod; }
+		float GetMaxLod() const { return m_Internals->MaxLod; }
+		float GetMinLod() const { return m_Internals->MinLod; }
 	protected:
 		void Create(const Vector2u &size, uint32_t levels = 1, InternalFormat format = InternalFormat::RGBA8);
 		void Create(const Image &image, uint32_t levels = 1, InternalFormat format = InternalFormat::RGBA8);
 
 		void GenerateMipMaps();
 
-		bool HasGeneratedMipMaps() const { m_Internals->MipMapGenerated; }
+		bool HasGeneratedMipMaps() const { return m_Internals->MipMapGenerated; }
 
 		void SetWrapping(Wrapping s, Wrapping t, Wrapping r);
 		void SetWrapping(Wrapping s, Wrapping t);
@@ -149,7 +165,7 @@ namespace Game
 		[[nodiscard]] Wrapping GetWrappingT() const { return m_Internals->Wrapping.T; }
 		[[nodiscard]] Wrapping GetWrappingR() const { return m_Internals->Wrapping.R; }
 
-		void SetParameter(TextureParamName name, int parameter);
+		virtual void SetParameter(TextureParameterName name, int parameter);
 
 		void Update(const uint8_t *pixels, uint32_t level);
 		void Update(const uint8_t *pixels, uint32_t level, uint32_t width, uint32_t height, int32_t x, int32_t y);
@@ -169,5 +185,9 @@ namespace Game
 
 	protected:
 		static uint32_t CalculateLevels(const Vector2u &size);
+
+	public:
+		static uint64_t MaxBufferSize();
+		static uint64_t MaxImageUnits();
 	};
 }

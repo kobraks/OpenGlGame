@@ -10,7 +10,6 @@ namespace Game
 	{
 		friend FrameBufferObject;
 
-
 	public:
 		using TextureObject::SetWrapping;
 		using TextureObject::SetWrappingS;
@@ -48,6 +47,7 @@ namespace Game
 		void Update(const Image &image, int32_t x, int32_t y);
 		void Update(const Image &image, const Vector2i &offset);
 
-		static uint32_t GetMaxSize();
+		static uint64_t GetMaxSize();
+		static float GetMaxLod();
 	};
 }

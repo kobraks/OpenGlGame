@@ -253,10 +253,10 @@ namespace Game
 		void DeleteTexture(uint32_t texture);
 		void DeleteTextures(uint32_t account, uint32_t *textures);
 
-		void TextureParameter(uint32_t texture, TextureParamName name, float param);
-		void TextureParameter(uint32_t texture, TextureParamName name, int32_t param);
-		void TextureParameter(uint32_t texture, TextureParamName name, const float *param);
-		void TextureParameter(uint32_t texture, TextureParamName name, const int32_t *param);
+		void TextureParameter(uint32_t texture, TextureParameterName name, float param);
+		void TextureParameter(uint32_t texture, TextureParameterName name, int32_t param);
+		void TextureParameter(uint32_t texture, TextureParameterName name, const float *param);
+		void TextureParameter(uint32_t texture, TextureParameterName name, const int32_t *param);
 
 		void GenerateMipMap(uint32_t texture);
 		void GenerateMipMap(TextureTarget target, uint32_t texture);

@@ -261,32 +261,32 @@ namespace Game
 		glDeleteTextures(static_cast<GLsizei>(account), textures);
 	}
 
-	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParamName name, float param)
+	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParameterName name, float param)
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
-		ASSERT(name != TextureParamName::SwizzleRGBA || name != TextureParamName::BorderColor);
+		ASSERT(name != TextureParameterName::SwizzleRGBA || name != TextureParameterName::BorderColor);
 
 		glTextureParameterf(texture, static_cast<GLenum>(name), param);
 	}
 
-	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParamName name, int32_t param)
+	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParameterName name, int32_t param)
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
-		ASSERT(name != TextureParamName::SwizzleRGBA || name != TextureParamName::BorderColor);
+		ASSERT(name != TextureParameterName::SwizzleRGBA || name != TextureParameterName::BorderColor);
 
 		glTextureParameteri(texture, static_cast<GLenum>(name), param);
 	}
 
-	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParamName name, const float *param)
+	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParameterName name, const float *param)
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 
 		glTextureParameterfv(texture, static_cast<GLenum>(name), param);
 	}
 
-	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParamName name, const int32_t *param)
+	void OpenGlFunctions::TextureParameter(uint32_t texture, TextureParameterName name, const int32_t *param)
 	{
 		CHECK_FOR_CURRENT_CONTEXT();
 

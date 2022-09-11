@@ -2,6 +2,8 @@
 #include "Engine/OpenGL/Texture.h"
 
 #include "Engine/OpenGL/CubeMap.h"
+#include "Engine/Core/Image.h"
+#include "Engine/Renderer/Context.h"
 
 
 namespace Game
@@ -108,22 +110,37 @@ namespace Game
 		TextureObject::Update(image, 0, offset);
 	}
 
-	uint32_t Texture::GetMaxSize()
+	uint64_t Texture::GetMaxSize()
 	{
-		static bool checked = false;
-		static uint32_t size = 0;
+		static bool s_Checked = false;
+		static uint64_t s_Size = 0;
 
-		if (checked)
-			return size;
+		if (s_Checked)
+			return s_Size;
 
 		ASSERT(Context::GetContext(), "No active openGL context");
 
 		if (!Context::GetContext())
 			throw std::runtime_error("No active openGL context");
 
-		size = Context::GetContext()->GetFunctions().GetInteger(GL_MAX_TEXTURE_SIZE);
-		checked = true;
+		s_Checked = true;
+		return s_Size = static_cast<uint64_t>(Context::GetContext()->GetFunctions().GetInteger64(GL_MAX_TEXTURE_SIZE));
+	}
 
-		return size;
+	float Texture::GetMaxLod()
+	{
+		static bool s_Checked = false;
+		static float s_Lod = 0;
+
+		if (s_Checked)
+			return s_Lod;
+
+		ASSERT(Context::GetContext(), "No active openGL context");
+
+		if (!Context::GetContext())
+			throw std::runtime_error("No active openGL context");
+
+		s_Checked = true;
+		return s_Lod = Context::GetContext()->GetFunctions().GetFloat(GL_MAX_TEXTURE_LOD_BIAS);
 	}
 }

@@ -325,7 +325,7 @@ namespace Game
 		ReadWrite = GL_READ_WRITE
 	};
 
-	enum class TextureParamName : uint32_t
+	enum class TextureParameterName : uint32_t
 	{
 		DepthStencilMode = GL_DEPTH_STENCIL_TEXTURE_MODE,
 		BaseLevel = GL_TEXTURE_BASE_LEVEL,

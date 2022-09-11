@@ -1,24 +1,17 @@
 #pragma once
 #include "Engine/Core/Base.h"
-
-#include "Engine/Core/Image.h"
-#include "Engine/Core/Color.h"
-#include "Engine/OpenGL/GLEnums.h"
-#include "Engine/Renderer/Context.h"
-
+#include "Engine/OpenGl/TextureObject.h"
 
 namespace Game
 {
 	class Texture;
 	class CubeTexture;
 
-	class CubeMap
+	class CubeMap : public TextureObject
 	{
 		friend CubeTexture;
 
 	public:
-		using IDType = uint32_t;
-
 		enum class Orientation : uint32_t
 		{
 			Right = 0,
@@ -26,84 +19,45 @@ namespace Game
 			Top,
 			Bottom,
 			Back,
-			Front
+			Front,
+			Count
 		};
 
 	private:
-		class Internals
-		{
-		public:
-			struct Wrapping
-			{
-				Game::Wrapping S = Game::Wrapping::Repeat;
-				Game::Wrapping T = Game::Wrapping::Repeat;
-				Game::Wrapping R = Game::Wrapping::Repeat;
-			};
+		std::array<CubeTexture*, static_cast<size_t>(Orientation::Count)> m_Textures = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
-			struct Filter
-			{
-				Game::Filter Mag = Game::Filter::Linear;
-				Game::Filter Min = Game::Filter::NearestMipmapLinear;
-			};
-
-			IDType ID;
-			Vector2u Size;
-			InternalFormat Format;
-
-			Wrapping Wrapping;
-			Filter Filter;
-
-			OpenGlFunctions Functions;
-
-			bool MipMapGenerated = false;
-
-			std::array<CubeTexture*, 8> Textures = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-
-			Internals();
-			~Internals();
-
-			void Create(Vector2u size);
-
-			void Swap(Internals& internals);
-		};
-
-		Pointer<Internals> m_Internals;
 		CubeMap();
-
 	public:
+		using TextureObject::GetWrappingS;
+		using TextureObject::GetWrappingT;
+		using TextureObject::GetWrappingR;
+
+		using TextureObject::SetWrappingS;
+		using TextureObject::SetWrappingT;
+		using TextureObject::SetWrappingR;
+		using TextureObject::SetWrapping;
+
 		CubeMap(uint32_t width, uint32_t height);
-		CubeMap(const Vector2u& size);
+		explicit CubeMap(const Vector2u& size);
 
-		operator IDType() const { return m_Internals->ID; }
-		IDType ID() const { return m_Internals->ID; }
+		CubeMap(const CubeMap& map);
+		CubeMap(CubeMap&& map);
 
-		void SetWrapping(Wrapping s);
-		void SetWrapping(Wrapping s, Wrapping t);
-		void SetWrapping(Wrapping s, Wrapping t, Wrapping r);
+		~CubeMap();
 
-		void SetWrappingS(Wrapping wrap);
-		void SetWrappingT(Wrapping wrap);
-		void SetWrappingR(Wrapping wrap);
-
-		Wrapping GetWrappingS() const { return m_Internals->Wrapping.S; }
-		Wrapping GetWrappingT() const { return m_Internals->Wrapping.T; }
-		Wrapping GetWrappingR() const { return m_Internals->Wrapping.R; }
-
-		Filter GetMagFiler() const { return m_Internals->Filter.Mag; }
-		Filter GetMinFiler() const { return m_Internals->Filter.Min; }
-
-		void SetMagFiler(Filter mag);
-		void SetMinFiler(Filter min);
-
-		void Bind() const;
+		CubeMap& operator=(const CubeMap& map);
+		CubeMap& operator=(CubeMap&& map);
 
 		CubeTexture& GetTexture(Orientation orientation);
 		const CubeTexture& GetTexture(Orientation orientation) const;
 
-		void Swap(CubeMap& cubeMap);
-
+		static uint64_t GetMaxSize();
 	protected:
-		void SetParameter(TextureParamName name, int32_t param);
+		using TextureObject::Update;
+		using TextureObject::ToImage;
+		using TextureObject::SetParameter;
+
+		void Create(const Vector2u& size);
 	};
 
 	class CubeTexture
@@ -111,22 +65,16 @@ namespace Game
 		friend CubeMap;
 
 		const CubeMap::Orientation m_Face;
-		OpenGlFunctions* m_Functions; 
 		mutable const CubeMap *m_Owner;
-
-		InternalFormat m_Format = InternalFormat::RGBA8;
 
 		Vector2u m_Size;
 
 	protected:
-		CubeTexture(OpenGlFunctions* functions, CubeMap::Orientation orientation);
+		CubeTexture(CubeMap::Orientation orientation);
 
+		void SetSize(const Vector2u &size);
 		CubeTexture& SetOwner(const CubeMap &owner) const;
 
-		void Image2D(const void* pixels, DataType type, Format format, const Vector2u &size, InternalFormat internalFormat);
-		void SubImage2D(const void* pixels, DataType type, Format format, const Vector2i &offset, const Vector2u &size);
-
-		void Create(const Vector2u& size);
 	public:
 		CubeTexture() = delete;
 
@@ -135,8 +83,6 @@ namespace Game
 		Vector2u Size() const { return m_Size; }
 		uint32_t Width() const { return m_Size.Width; }
 		uint32_t Height() const { return m_Size.Height; }
-
-		InternalFormat GetInternalFormat() const { return m_Format; }
 
 		Image ToImage() const;
 
@@ -148,13 +94,9 @@ namespace Game
 		void Update(const Color *pixels, uint32_t width, uint32_t height, int32_t x, int32_t y);
 		void Update(const Color *pixels, const Vector2u &size, const Vector2i &offset);
 
-		void Update(const Texture& texture);
-		void Update(const Texture& texture, int32_t x, int32_t y);
-		void Update(const Texture& texture, const Vector2i &offset);
-
-		void Update(const CubeTexture& texture);
-		void Update(const CubeTexture& texture, int32_t x, int32_t y);
-		void Update(const CubeTexture& texture, const Vector2i &offset);
+		void Update(const TextureObject& texture);
+		void Update(const TextureObject& texture, int32_t x, int32_t y);
+		void Update(const TextureObject& texture, const Vector2i &offset);
 
 		void Update(const Image& image);
 		void Update(const Image& image, int32_t x, int32_t y);
