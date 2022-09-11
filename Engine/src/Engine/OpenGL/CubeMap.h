@@ -41,12 +41,12 @@ namespace Game
 		explicit CubeMap(const Vector2u& size);
 
 		CubeMap(const CubeMap& map);
-		CubeMap(CubeMap&& map);
+		CubeMap(CubeMap&& map) noexcept;
 
 		~CubeMap();
 
 		CubeMap& operator=(const CubeMap& map);
-		CubeMap& operator=(CubeMap&& map);
+		CubeMap& operator=(CubeMap&& map) noexcept;
 
 		CubeTexture& GetTexture(Orientation orientation);
 		const CubeTexture& GetTexture(Orientation orientation) const;

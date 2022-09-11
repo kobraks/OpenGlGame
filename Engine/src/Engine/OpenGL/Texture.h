@@ -22,11 +22,11 @@ namespace Game
 		Texture();
 		Texture(const Vector2u &size, uint32_t levels = -1);
 		Texture(uint32_t width, uint32_t height, uint32_t levels = -1);
-		explicit Texture(Image image, uint32_t levels = -1);
+		explicit Texture(const Image &image, uint32_t levels = -1);
 
 		void Create(uint32_t width, uint32_t height, uint32_t levels = -1);
 		void Create(const Vector2u &size, uint32_t levels = -1);
-		void Create(Image image, uint32_t levels = -1);
+		void Create(const Image &image, uint32_t levels = -1);
 
 		void Resize(uint32_t width, uint32_t height);
 		void Resize(const Vector2u &size);

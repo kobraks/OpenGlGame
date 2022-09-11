@@ -54,7 +54,7 @@ namespace Game
 		}
 	}
 
-	CubeMap::CubeMap(CubeMap &&map) : TextureObject(map)
+	CubeMap::CubeMap(CubeMap &&map) noexcept : TextureObject(map)
 	{
 		std::swap(map.m_Textures, m_Textures);
 	}
@@ -78,7 +78,7 @@ namespace Game
 		return *this;
 	}
 
-	CubeMap& CubeMap::operator=(CubeMap &&map)
+	CubeMap& CubeMap::operator=(CubeMap &&map) noexcept
 	{
 		TextureObject::operator=(map);
 

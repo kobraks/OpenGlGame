@@ -18,7 +18,7 @@ namespace Game
 	{
 		Create(Vector2u{width, height}, levels);
 	}
-	Texture::Texture(Image image, uint32_t levels) : Texture()
+	Texture::Texture(const Image &image, uint32_t levels) : Texture()
 	{
 		Create(image, levels);
 	}
@@ -35,7 +35,7 @@ namespace Game
 		TextureObject::Create(size, static_cast<int32_t>(levels) < 0 ? CalculateLevels(size) : levels);
 	}
 
-	void Texture::Create(Image image, uint32_t levels)
+	void Texture::Create(const Image &image, uint32_t levels)
 	{
 		ASSERT(image.Width() < GetMaxSize() && image.Height() < GetMaxSize());
 		TextureObject::Create(image, static_cast<int32_t>(levels) < 0 ? CalculateLevels(image.Size()) : levels);
