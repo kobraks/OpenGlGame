@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Engine/OpenGL/ShaderProgram.h"
 
-#include "Engine/OpenGL/Buffer.h"
+#include "Engine/OpenGL/UniformBuffer.h"
 #include "Engine/OpenGL/Texture.h"
 
 #include "Engine/Core/Assert.h"

@@ -147,6 +147,8 @@ namespace Game
 		float GetMaxLod() const { return m_Internals->MaxLod; }
 		float GetMinLod() const { return m_Internals->MinLod; }
 	protected:
+		OpenGlFunctions& GetFunctions() const { return m_Internals->Functions; }
+
 		void Create(const Vector2u &size, uint32_t levels = 1, InternalFormat format = InternalFormat::RGBA8);
 		void Create(const Image &image, uint32_t levels = 1, InternalFormat format = InternalFormat::RGBA8);
 

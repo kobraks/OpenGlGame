@@ -817,6 +817,74 @@ namespace Game
 		return "";
 	}
 
+	uint32_t OpenGlFunctions::CreateBuffer()
+	{
+		uint32_t id = 0;
+		CreateBuffers(1, &id);
+
+		return id;
+	}
+
+	uint32_t * OpenGlFunctions::CreateBuffers(uint32_t count)
+	{
+		uint32_t* buffers = new uint32_t[count];
+
+		CreateBuffers(count, buffers);
+
+		return buffers;
+	}
+
+	void OpenGlFunctions::CreateBuffers(uint32_t count, uint32_t *buffers)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glCreateBuffers(static_cast<GLsizei>(count), buffers);
+	}
+
+	void OpenGlFunctions::DeleteBuffer(uint32_t buffer)
+	{
+		DeleteBuffers(1, &buffer);
+	}
+	void OpenGlFunctions::DeleteBuffers(uint32_t count, uint32_t *buffers)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glDeleteBuffers(static_cast<GLsizei>(count), buffers);
+	}
+
+	void OpenGlFunctions::BufferData(uint32_t buffer, BufferUsage usage, size_t size, const void *data)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glNamedBufferData(buffer, static_cast<GLsizeiptr>(size), data, static_cast<GLenum>(usage));
+	}
+	void OpenGlFunctions::BufferSubData(uint32_t buffer, size_t offset, size_t size, const void *data)
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glNamedBufferSubData(buffer, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
+	}
+
+	void OpenGlFunctions::BindBuffer(uint32_t buffer, BufferType type) const
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glBindBuffer(static_cast<GLenum>(type), buffer);
+	}
+
+	void * OpenGlFunctions::MapBuffer(uint32_t buffer, BufferAccess access) const
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		return glMapNamedBuffer(buffer, static_cast<GLenum>(access));
+	}
+	void OpenGlFunctions::UnMapBuffer(uint32_t buffer) const
+	{
+		CHECK_FOR_CURRENT_CONTEXT()
+
+		glUnmapNamedBuffer(buffer);
+	}
+
 	std::string OpenGlFunctions::GetString(uint32_t name) const
 	{
 		return std::string(reinterpret_cast<const char*>(glGetString(name)));

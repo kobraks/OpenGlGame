@@ -418,6 +418,21 @@ namespace Game
 		int32_t GetInteger(uint32_t name) const { return GetV<int32_t>(name); }
 		int64_t GetInteger64(uint32_t name) const { return GetV<int64_t>(name); }
 
+		uint32_t CreateBuffer();
+		uint32_t* CreateBuffers(uint32_t count);
+		void CreateBuffers(uint32_t count, uint32_t* buffers);
+
+		void DeleteBuffer(uint32_t buffer);
+		void DeleteBuffers(uint32_t count, uint32_t* buffers);
+
+		void BufferData(uint32_t buffer, BufferUsage usage, size_t size, const void *data);
+		void BufferSubData(uint32_t buffer, size_t offset, size_t size, const void *data);
+
+		void BindBuffer(uint32_t buffer, BufferType type) const;
+
+		void* MapBuffer(uint32_t buffer, BufferAccess access) const;
+		void UnMapBuffer(uint32_t buffer) const;
+
 		std::string GetString(uint32_t name) const;
 		std::string GetString(uint32_t name, uint32_t index) const;
 
