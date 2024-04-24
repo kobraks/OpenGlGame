@@ -91,6 +91,8 @@ namespace Game
 
 			serializer.BeginTable("Entities");
 
+			/*
+			m_Scene->m_Registry.
 			m_Scene->m_Registry.each(
 			                         [&](auto entityId)
 			                         {
@@ -100,7 +102,7 @@ namespace Game
 
 				                         SerializeEntity(serializer, entity);
 			                         }
-			                        );
+			                        );*/
 
 			serializer.EndTable().EndTable();
 		}

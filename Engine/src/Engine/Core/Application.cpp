@@ -325,14 +325,12 @@ namespace Game
 
 	void Application::ProcessArgs(const ApplicationCommandLineArgs &args)
 	{
-		GAME_PROFILE_FUNCTION();
 		for(int i = 0; i < args.Count; ++i)
 			m_Arguments.emplace_back(args[i]);
 	}
 
 	void Application::SetUpdateRate(float rate)
 	{
-		GAME_PROFILE_FUNCTION();
 		if(200 >= rate && 1 <= rate)
 		{
 			m_UpdateRate = static_cast<uint32_t>(1000.f / rate);
@@ -341,7 +339,6 @@ namespace Game
 
 	void Application::SetMaxUpdates(uint64_t maxUpdates)
 	{
-		GAME_PROFILE_FUNCTION();
 		if(200 >= maxUpdates && 1 <= maxUpdates)
 		{
 			m_MaxUpdates = maxUpdates;
@@ -350,13 +347,11 @@ namespace Game
 
 	void Application::LuaRegister(Game::LuaRegister &luaObject)
 	{
-		GAME_PROFILE_FUNCTION();
 		luaObject.Register(*m_Lua);
 	}
 
 	void Application::Initialize()
 	{
-		GAME_PROFILE_FUNCTION();
 		auto logLayer = MakePointer<LogLayer>();
 
 		Log::GetScriptLogger()->sinks().push_back(logLayer);
@@ -417,8 +412,6 @@ namespace Game
 
 	void Application::InitializeLua()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		LOG_INFO("Starting Lua machine");
 		m_Lua     = MakeScope<sol::state>();
 		auto &lua = *m_Lua;
@@ -512,8 +505,6 @@ namespace Game
 
 	void Application::InitializeSettings()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		m_Properties->Add<float>(
 		                         "UpdateRate",
 		                         [this]()->float { return this->GetUpdateRate(); },

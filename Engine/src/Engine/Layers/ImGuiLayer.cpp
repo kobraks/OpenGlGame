@@ -18,8 +18,6 @@ namespace Game
 
 	void ImGuiLayer::OnAttach()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		IMGUI_CHECKVERSION();
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
@@ -48,8 +46,6 @@ namespace Game
 
 	void ImGuiLayer::OnDetach()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		ImGui_ImplOpenGL3_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
@@ -57,8 +53,6 @@ namespace Game
 
 	void ImGuiLayer::OnEvent(Event &e)
 	{
-		GAME_PROFILE_FUNCTION();
-
 		if(m_BlockEvents)
 		{
 			ImGuiIO &io = ImGui::GetIO();
@@ -69,8 +63,6 @@ namespace Game
 
 	void ImGuiLayer::Begin()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -79,8 +71,6 @@ namespace Game
 
 	void ImGuiLayer::End()
 	{
-		GAME_PROFILE_FUNCTION();
-
 		ImGuiIO &io      = ImGui::GetIO();
 		Application &app = Application::Get();
 		io.DisplaySize   = ImVec2(

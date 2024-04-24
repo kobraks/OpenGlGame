@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Debug/Instrumentor.h"
 #include "Engine/Core/Base.h"
 
 #include <functional>
