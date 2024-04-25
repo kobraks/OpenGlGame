@@ -15,7 +15,7 @@
 namespace Engine {
 	template <typename It>
 	static std::shared_ptr<spdlog::logger> SetUpLogger(const std::string &name, It begin, It end) {
-		auto logger = std::make_shared<spdlog::logger>(name, begin, end);
+		auto logger = MakePointer<spdlog::logger>(name, begin, end);
 
 		logger->set_level(spdlog::level::trace);
 		logger->flush_on(spdlog::level::trace);
@@ -25,11 +25,10 @@ namespace Engine {
 		return logger;
 	}
 
-	std::shared_ptr<spdlog::logger> Log::s_AssertionLogger = nullptr;
-	std::shared_ptr<spdlog::logger> Log::s_ScriptLogger = nullptr;
-	std::shared_ptr<spdlog::logger> Log::s_ApplicationLogger = nullptr;
-	std::shared_ptr<spdlog::logger> Log::s_GLLogger = nullptr;
-	std::shared_ptr<spdlog::logger> Log::s_EngineLogger = nullptr;
+	Pointer<spdlog::logger> Log::s_ScriptLogger = nullptr;
+	Pointer<spdlog::logger> Log::s_ApplicationLogger = nullptr;
+	Pointer<spdlog::logger> Log::s_GLLogger = nullptr;
+	Pointer<spdlog::logger> Log::s_EngineLogger = nullptr;
 
 	void Log::Init(bool consoleOut, bool fileOut) {
 		const auto logPath = std::filesystem::current_path() / "Logs";
@@ -55,7 +54,6 @@ namespace Engine {
 		}
 
 		s_ApplicationLogger = SetUpLogger(APPLICATION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
-		s_AssertionLogger = SetUpLogger(ASSERTION_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 		s_EngineLogger = SetUpLogger(ENGINE_LOGGER_NAME, std::begin(sinks), std::end(sinks));
 
 		if (fileOut) {
