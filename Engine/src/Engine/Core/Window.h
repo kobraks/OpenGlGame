@@ -1,146 +1,139 @@
 #pragma once
+
 #include "Engine/Core/Base.h"
-#include "Engine/Events/Event.h"
 #include "Engine/Core/Vector2.h"
-#include "Engine/Renderer/Context.h"
-#include "Engine/Devices/Monitor.h"
-#include "Engine/Devices/Cursor.h"
 
-#include <String>
-#include <vector>
-#include <functional>
-#include <GLFW/glfw3.h>
+#include "Engine/Devices/Mouse.h"
+
+#include <string>
 #include <string_view>
+#include <functional>
 
-namespace Game
-{
-	enum class InputMode
-	{
-		StickyKeys = GLFW_STICKY_KEYS,
-		StickyMouseButtons = GLFW_STICKY_MOUSE_BUTTONS,
-		LockKeyModes = GLFW_LOCK_KEY_MODS,
-		RawMouseMotion = GLFW_RAW_MOUSE_MOTION
+#include <GLFW/glfw3.h>
+
+namespace Engine {
+	class Event;
+	class Cursor;
+
+	enum class InputMode {
+		//From GLFW
+		StickyKeys = 0x00033002,
+		StickyMouseButtons = 0x00033003,
+		LockKeyModes = 0x00033004,
+		RawMouseMotion = 0x00033005
 	};
 
-	enum class CursorMode
-	{
-		Normal = GLFW_CURSOR_NORMAL,
-		Hidden = GLFW_CURSOR_HIDDEN,
-		Disabled = GLFW_CURSOR_DISABLED
+	enum class CursorMode {
+		//From GLFW
+		Normal = 0x00034001,
+		Hidden  = 0x00034002,
+		Disabled = 0x00034003
 	};
-	
-	struct WindowProperties
-	{
+
+	struct WindowProperties {
 		std::string Title;
 		uint32_t Width;
 		uint32_t Height;
 
-		WindowProperties(const std::string title, uint32_t width, uint32_t height) : Title(title),
-		                                                                             Width(width),
-		                                                                             Height(height) { }
+		WindowProperties(std::string title, uint32_t width, uint32_t height) : Title(std::move(title)), Width(width), Height(height) {}
 	};
 
-	class Window
-	{
+	class Window {
 		friend class Monitor;
 
 	public:
 		using EventCallbackFunction = std::function<void(Event &)>;
 
-	private:
-		struct WindowData
-		{
-			std::string Title;
-			uint32_t Width = 0;
-			uint32_t Height = 0;
-
-			uint32_t X = 0;
-			uint32_t Y = 0;
-
-			bool VSync = false;
-			EventCallbackFunction EventCallback;
-		};
-
-		Vector2u m_BackupPosition;
-		Vector2u m_BackupSize;
-
-		bool m_Fullscreen = false;
-
-		GLFWwindow *m_Window;
-		GLFWwindow *m_WindowContext;
-		Scope<Context> m_Context;
-
-		WindowData m_Data;
-
-		Scope<Monitor> m_Monitor = nullptr;
-		Scope<Cursor> m_Cursor   = nullptr;
-	public:
-		explicit Window(const WindowProperties &properties);
+		explicit Window(const WindowProperties &props);
 		virtual ~Window();
 
 		void OnUpdate();
 
-		void SetInputMode(bool enabled, InputMode mode);
-		bool GetInputMode(InputMode mode) const;
-		
+		void SetInputMode(InputMode mode, bool enabled = true);
 		void SetCursorMode(CursorMode mode);
-		bool GetCursorMode(CursorMode mode);
-		CursorMode GetCursorMode();
-		
-		static bool IsRawMouseInputSupported();
+
+		void SetSize(const Vector2u &size);
+		void SetSize(uint32_t width, uint32_t height);
+
+		void SetPos(int32_t x, int32_t y);
+		void SetPos(const Vector2i &pos);
+
+		void SetEventCallback(const EventCallbackFunction &callback) { m_Data.EventCallback = callback; }
+		void SetVSync(bool enabled = true);
+
+		void SetTitle(std::string title);
+
+		void Visible(bool visible = true);
+
+		void* GetNativeWindow() const { return m_Window; }
+
+		std::string_view GetTitle() const { return m_Data.Title; }
 
 		uint32_t GetWidth() const { return m_Data.Width; }
 		uint32_t GetHeight() const { return m_Data.Height; }
-		std::string_view GetTitle() const { return m_Data.Title; }
+		Vector2u GetSize() const { return Vector2u{m_Data.Height, m_Data.Height}; }
 
-		Vector2<uint32_t> GetSize() const { return Vector2u{GetWidth(), GetHeight()}; }
-		void SetSize(Vector2u size);
-		void SetSize(uint32_t width, uint32_t height);
+		int32_t GetX() const { return m_Data.X; }
+		int32_t GetY() const { return m_Data.Y; }
+		Vector2i GetPos() const { return {m_Data.X, m_Data.Y}; }
 
-		void SetEventCallback(const EventCallbackFunction &callback) { m_Data.EventCallback = callback; }
-		void SetVSync(bool enabled);
-		bool IsVSync() const { return m_Data.VSync; };
+		CursorMode GetCursorMode() const;
+		bool GetInputMode(InputMode mode) const;
 
-		void* GetNativeWindow() const { return m_Window; };
-
-		OpenGlFunctions GetFunctions() const;
-
-		void SetPosition(uint32_t x, uint32_t y);
-		void SetPosition(const Vector2u &position) { return SetPosition(position.X, position.Y); }
-
-		Vector2u GetPosition() const { return {m_Data.X, m_Data.Y}; }
-
-		void SetTitle(const std::string &title);
-
-		void Visible(bool visible);
-
-		bool IsVisible() const;
-
-		void AttentionRequest();
-
-		Vector2u GetRelativePosition(const Vector2u &position) const;
+		Vector2i GetRelativePos(const Vector2i &pos) const;
 
 		Monitor GetMonitor() const { return *m_Monitor; }
-		VideoMode GetVideoMode() const { return m_Monitor->GetVideoMode(); }
+
+		bool IsVSync() const;
+		bool IsVisible() const;
+		bool IsFullscreen() const;
+
+		void AttentionRequest();
 
 		void ToggleFullscreen();
 		void ToggleFullscreen(const Monitor &monitor);
 		void ToggleFullscreen(const Monitor &monitor, const VideoMode &mode);
 
 		Cursor* GetCursor() const;
-		void SetCursor(std::unique_ptr<Cursor> &&cursor);
+		void SetCursor(Scope<Cursor> &cursor);
 
 		void Invalidate();
-
-		bool IsFullscreen() const;
 
 		void Minimalize();
 		void Restore();
 		void Maximalize();
+
+		static bool IsRawMouseInputSupported();
 	protected:
 		static void InitializeGlfw();
 
 		void Init(const WindowProperties &props);
 		void Shutdown();
+
+	private:
+		struct WindowData {
+			std::string Title;
+
+			uint32_t Width;
+			uint32_t Height;
+
+			int32_t X;
+			int32_t Y;
+
+			bool VSync = false;
+			EventCallbackFunction EventCallback;
+		};
+
+		Vector2u m_BackupPos;
+		Vector2u m_BackupSize;
+
+		bool m_Fullscreen = false;
+
+		void *m_Window;
+		void *m_WindowContext;
+
+		WindowData m_Data;
+		Scope<Monitor> m_Monitor = nullptr;
+		Scope<Cursor> m_Cursor = nullptr;
 	};
 }

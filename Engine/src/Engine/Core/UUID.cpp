@@ -3,29 +3,39 @@
 
 #include <random>
 
-namespace Game
-{
+namespace Engine {
 	static std::random_device s_RandomDevice;
 	static std::mt19937_64 s_Engine(s_RandomDevice());
-	static std::uniform_int_distribution<uint64_t> s_UniformDistribution;
+	static std::uniform_int_distribution<uint64_t> s_Uniform;
 
-	static uint64_t Random()
-	{
-		return s_UniformDistribution(s_RandomDevice);
+	static uint32_t Random() noexcept {
+		return s_Uniform(s_RandomDevice);
 	}
 
-	static constexpr auto Combine(const uint64_t &lth, const uint64_t &rth)
-	{
-		return (boost::multiprecision::uint128_t(lth) << 64) | rth;
+	template<typename R, typename Arg>
+	static constexpr R Combine(const Arg lth) noexcept {
+		return lth;
 	}
 
-	UUID::UUID() : m_UUID(Combine(Random(), Random())) {}
+	template <typename R, typename Arg, typename ...Args>
+	static constexpr R Combine(const Arg lth, const Args &&... args) noexcept {
+		return (R(lth) << 64) + Combine<R, Args...>(std::forward<Args>(args)...);
+	}
 
-	std::istream& operator>>(std::istream &in, UUID &right)
-	{
+	template<typename T>
+	static T GetRandom();
+
+	template<>
+	static UUID::Type GetRandom() {
+		return Combine<UUID::Type>(Random(), Random());
+	}
+
+	UUID::UUID() : m_ID(GetRandom<UUID::Type>()){}
+
+	std::istream &operator>>(std::istream &in, UUID &rth) {
 		std::string number;
 		in >> number;
-		right.m_UUID = boost::multiprecision::uint128_t(number);
+		rth.m_ID = UUID::Type(number);
 
 		return in;
 	}

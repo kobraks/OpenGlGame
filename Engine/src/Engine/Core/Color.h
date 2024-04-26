@@ -1,102 +1,121 @@
 #pragma once
-
-#include "Engine/Core/Base.h"
 #include "Engine/Core/Assert.h"
+#include "Engine/Core/Base.h"
 
+#include <fmt/format.h>
 #include <glm/vec4.hpp>
 
-namespace Game
-{
-	class Color
-	{
+#include <algorithm>
+#include <cstdint>
+
+namespace Engine {
+	class Color {
 	public:
-		union
-		{
-			union
-			{
-				struct
-				{
-					uint8_t R;
-					uint8_t G;
-					uint8_t B;
-					uint8_t A;
+		union {
+			union {
+				union {
+					struct {
+						uint8_t A;
+						uint8_t B;
+						uint8_t G;
+						uint8_t R;
+					};
+
+					uint8_t Table[4];
 				};
-
-
-				uint8_t Table[4];
 			};
 
-			int32_t Value;
+			uint32_t Value;
 		};
 
 		constexpr static size_t Size() { return 4; }
 
-		constexpr Color() : Color(0.f, 0.f, 0.f, 0.f) {}
+		constexpr Color() : Color(0x000000ff) {}
 
-		constexpr Color(float red, float green, float blue, float alpha = 1.f) : R(static_cast<uint8_t>(red * 255)),
-		                                                                         G(static_cast<uint8_t>(green * 255)),
-		                                                                         B(static_cast<uint8_t>(blue * 255)),
-		                                                                         A(static_cast<uint8_t>(alpha * 255)) {}
+		constexpr Color(float red, float green, float blue, float alpha = 1.f) : A(
+				 static_cast<uint8_t>(std::clamp(alpha, 0.f, 1.f) * 255)
+				),
+			B(static_cast<uint8_t>(std::clamp(blue, 0.f, 1.f) * 255)),
+			G(static_cast<uint8_t>(std::clamp(green, 0.f, 1.f) * 255)),
+			R(static_cast<uint8_t>(std::clamp(red, 0.f, 1.f) * 255)) {}
 
-		constexpr Color(uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) : R(red),
-		                                                                                 G(green),
-		                                                                                 B(blue),
-		                                                                                 A(alpha) {}
+		constexpr Color(int red, int green, int blue, int alpha = 255) : A(
+		                                                                   static_cast<uint8_t>(std::clamp(
+			                                                                    alpha,
+			                                                                    0,
+			                                                                    255
+			                                                                   ))
+		                                                                  ),
+		                                                                 B(
+		                                                                   static_cast<uint8_t>(
+			                                                                   std::clamp(blue, 0, 255))
+		                                                                  ),
+		                                                                 G(
+		                                                                   static_cast<uint8_t>(std::clamp(
+			                                                                    green,
+			                                                                    0,
+			                                                                    255
+			                                                                   ))
+		                                                                  ),
+		                                                                 R(
+		                                                                   static_cast<uint8_t>(std::clamp(red, 0, 255))
+		                                                                  ) {}
 
-		constexpr Color(int red, int green, int blue, int alpha = 255) : R(static_cast<uint8_t>(red)),
-		                                                                 G(static_cast<uint8_t>(green)),
-		                                                                 B(static_cast<uint8_t>(blue)),
-		                                                                 A(static_cast<uint8_t>(alpha)) {}
+		constexpr Color(uint32_t color) : Value(color) {}
 
-		constexpr Color(uint32_t color) : R((color & 0xff000000) >> 24),
-		                                  G((color & 0x00ff0000) >> 16),
-		                                  B((color & 0x0000ff00) >> 8),
-		                                  A((color & 0x000000ff) >> 0) {}
-
-		Color(glm::vec4 color) : Color(color.x, color.y, color.z, color.w) {}
+		explicit Color(glm::vec4 color) : Color(color.r, color.g, color.b, color.a) {}
 
 		operator glm::vec4() const { return glm::vec4(R / 255.f, G / 255.f, B / 255.f, A / 255.f); }
 
-		uint8_t& operator[](const size_t index)
-		{
-			ASSERT(index < Size(), "Out of range");
+		constexpr uint8_t &operator[](const size_t index) {
+			ENGINE_ASSERT(index < Size());
 
-			if(index >= Size())
+			if (index >= Size())
 				throw std::out_of_range("Out of range");
 
 			return Table[index];
 		}
 
-		uint8_t operator[](const size_t index) const
-		{
-			ASSERT(index < Size(), "Out of range");
+		constexpr uint8_t operator[](const size_t index) const {
+			ENGINE_ASSERT(index < Size());
 
-			if(index >= Size())
+			if (index >= Size())
 				throw std::out_of_range("Out of range");
 
 			return Table[index];
 		}
-
-		uint32_t ToInteger() const;
 
 		static const Color Black;
 		static const Color White;
+
 		static const Color Red;
 		static const Color Green;
 		static const Color Blue;
-		static const Color Yellow;
+
 		static const Color Magenta;
 		static const Color Cyan;
+		static const Color Yellow;
+
 		static const Color Transparent;
 	};
 
-	constexpr bool operator ==(const Color &left, const Color &right)
-	{
-		return left.R == right.R && left.G == right.G && left.B == right.B && left.A == right.A;
+	constexpr bool operator==(const Color &lth, const Color &rth) {
+		return lth.Value == rth.Value;
 	}
 
-	constexpr bool operator !=(const Color &left, const Color &right)
-	{
-		return !(left == right);
+	constexpr bool operator!=(const Color &lth, const Color &rth) {
+		return !(lth == rth);
 	}
 }
+
+
+template<>
+struct fmt::formatter<Engine::Color>: public formatter<uint32_t> {
+	auto format(const Engine::Color &c, format_context &ctx) const {
+		return format_to(ctx.out(), "{:#08X}", c.Value);
+	}
+
+	constexpr auto parse(format_parse_context &ctx) {
+		return ctx.begin();
+	}
+};

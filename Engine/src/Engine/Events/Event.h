@@ -3,31 +3,35 @@
 
 #include <functional>
 #include <sstream>
+#include <string_view>
 
-namespace Game
-{
-	enum class EventType
-	{
+#include <fmt/format.h>
+
+namespace Engine {
+	enum class EventType {
 		None = 0,
+
 		WindowClose,
 		WindowResize,
 		WindowFocus,
 		WindowLostFocus,
 		WindowMoved,
+
 		AppTick,
 		AppUpdate,
 		AppRender,
+
 		KeyPressed,
 		KeyReleased,
 		KeyTyped,
+
 		MouseButtonPressed,
 		MouseButtonReleased,
 		MouseMoved,
 		MouseScrolled
 	};
 
-	enum EventCategory
-	{
+	enum EventCategory {
 		None = 0,
 		EventCategoryApplication = BIT(0),
 		EventCategoryInput = BIT(1),
@@ -38,49 +42,53 @@ namespace Game
 
 #define EVENT_CLASS_TYPE(type) static EventType GetStaticType() { return EventType::type; }\
 								virtual EventType GetEventType() const override { return GetStaticType(); }\
-								virtual const char* GetName() const override { return #type; }
+								virtual std::string_view GetName() const override { return #type; }
 
 #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; }
 
-	class Event
-	{
+	class Event {
 	public:
-		virtual ~Event() = default;
+		virtual ~Event();
 
 		bool Handled = false;
 
 		virtual EventType GetEventType() const = 0;
-		virtual const char* GetName() const = 0;
+		virtual std::string_view GetName() const = 0;
 		virtual int GetCategoryFlags() const = 0;
-		virtual std::string ToString() const { return GetName(); }
 
-		bool IsInCategory(EventCategory category) const
-		{
-			return GetCategoryFlags() & category;
+		virtual std::string ToString() const { return std::string(GetName()); }
+
+		bool IsInCategory(EventCategory cat) const {
+			return GetCategoryFlags() & cat;
 		}
 	};
 
-	class EventDispatcher
-	{
-		Event& m_Event;
+	class EventDispatcher {
 	public:
-		
-		EventDispatcher(Event& event) : m_Event(event) {}
+		EventDispatcher(Event &event) : m_Event(event) {}
 
-		template<typename T, typename F>
-		bool Dispatch(const F& func)
-		{
-			if (m_Event.GetEventType() == T::GetStaticType())
-			{
+		template <typename T, typename F>
+		bool Dispatch(const F &func) {
+			if(m_Event.GetEventType() == T::GetStaticType()) {
 				m_Event.Handled |= func(static_cast<T&>(m_Event));
 				return true;
 			}
 			return false;
 		}
-	};
 
-	inline std::ostream& operator<<(std::ostream& out, const Event& event)
-	{
-		return out << event.ToString();
-	}
+	private:
+		Event &m_Event;
+	};
 }
+
+template <class Out>
+Out operator<<(Out &out, const Engine::Event &event) {
+	return Out << event.ToString();
+}
+
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Engine::Event, T>, char>>: formatter<std::string> {
+	auto format(const Engine::Event &e, format_context &ctx) const {
+		return formatter<std::string>::format(e.ToString(), ctx);
+	}
+};

@@ -1,31 +1,24 @@
 #pragma once
+#include "Engine/Core/Base.h"
 #include "Engine/Layers/Layer.h"
 
-#include "Engine/Events/ApplicationEvent.h"
-#include "Engine/Events/KeyEvent.h"
-#include "Engine/Events/MouseEvent.h"
-
-namespace Game
-{
-	class ImGuiLayer : public Layer
-	{
-		bool m_BlockEvents = true;
-		float m_Time = 0.f;
-		
+namespace Engine {
+	class ImGuiLayer: public Layer {
 	public:
-		
 		ImGuiLayer();
-		~ImGuiLayer() = default;
+		~ImGuiLayer() override = default;
 
-		virtual void OnAttach() override;
-		virtual void OnDetach() override;
-		virtual void OnEvent(Event& e) override;
+		void OnAttach() final;
+		void OnDetach() final;
+		void OnEvent(Event &e) final;
 
 		void Begin();
 		void End();
 
 		void BlockEvents(bool block) { m_BlockEvents = block; }
+		void SetDarkThemeMode();
 
-		void SetDarkThemeColors();
+	private:
+		bool m_BlockEvents = true;
 	};
 }

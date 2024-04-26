@@ -1,74 +1,69 @@
 #pragma once
-
 #include "Engine/Core/Base.h"
 
-#include <istream>
-#include <ostream>
 #include <boost/multiprecision/cpp_int.hpp>
+#include <boost/container_hash/hash.hpp>
 #include <fmt/format.h>
 
-
-namespace Game
-{
-	class UUID
-	{
+namespace Engine {
+	class UUID {
 	public:
-		using NumericType = boost::multiprecision::uint128_t;
+		using Type = boost::multiprecision::uint128_t;
 
-	private:
-		NumericType m_UUID;
-
-	public:
 		UUID();
-		explicit UUID(NumericType uuid);
+		explicit UUID(Type id);
 
-		operator NumericType() const { return m_UUID; }
+		operator Type() const { return m_ID; }
 
-		constexpr bool operator==(const UUID &right) const { return m_UUID == right.m_UUID; }
+		constexpr bool operator==(const UUID &rth) const { return m_ID == rth.m_ID; }
 
-		constexpr std::strong_ordering operator<=>(const UUID &right) const
-		{
-			if(m_UUID == right.m_UUID)
+		constexpr auto operator<=>(const UUID &rth) const {
+			if (m_ID == rth.m_ID)
 				return std::strong_ordering::equal;
-			if(m_UUID > right.m_UUID)
+			if (m_ID > rth.m_ID)
 				return std::strong_ordering::greater;
 			return std::strong_ordering::less;
 		}
 
-		template <typename OStream>
-		friend OStream& operator<<(OStream &out, const UUID &right);
-		friend std::istream& operator>>(std::istream &in, UUID &right);
-
-		template <typename T, typename Char, typename Enabled>
-		friend struct fmt::formatter;
+		friend std::istream &operator>>(std::istream &in, UUID &rth);
+	private:
+		Type m_ID;
 	};
-
-	template <typename OStream>
-	OStream& operator<<(OStream &out, const UUID &right)
-	{
-		out << right.m_UUID.str();
-		return out;
-	}
 }
 
-template <>
-struct fmt::formatter<Game::UUID>: formatter<std::size_t>
-{
-	template <typename FormatContext>
-	auto format(const Game::UUID &input, FormatContext &ctx)->decltype(ctx.out())
-	{
-		return fmt::format_to(ctx.out(), "{}", input.m_UUID.str());
+template<>
+struct fmt::formatter<Engine::UUID> {
+	uint8_t ShowBase : 1 = 0, Hex : 1 = 0, Upper : 1 = 0;
+
+	auto constexpr parse(auto &ctx) {
+		auto e = std::find(ctx.begin(), ctx.end(), '}');
+		if (std::string_view f{ctx.begin(), e}; f == "#x")
+			ShowBase = Hex = true;
+		else if (f == "#X")
+			ShowBase = Hex = Upper = true;
+		else {
+			Hex = (f == "x") || (f == "X");
+			Upper = (f == "X");
+		}
+
+		return e;
+	}
+
+	auto format(const Engine::UUID &i, auto &ctx) const {
+		auto f = Hex ? std::ios::hex : std::ios::dec;
+		if (ShowBase)
+			f |= std::ios::showbase;
+		if (Upper)
+			f |= std::ios::uppercase;
+
+		auto s = static_cast<Engine::UUID::Type>(i).str(0, f);
+		return std::copy(s.begin(), s.end(), ctx.out());
 	}
 };
 
-namespace std
-{
-	template <>
-	struct hash<Game::UUID>
-	{
-		size_t operator()(const Game::UUID &uuid) const noexcept
-		{
-			return boost::multiprecision::hash_value(static_cast<boost::multiprecision::uint128_t>(uuid));
-		}
-	};
-}
+template<>
+struct std::hash<Engine::UUID> {
+	size_t operator()(const Engine::UUID &i) const noexcept {
+		return boost::multiprecision::hash_value(static_cast<Engine::UUID::Type>(i));
+	}
+};

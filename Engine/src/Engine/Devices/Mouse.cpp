@@ -1,156 +1,115 @@
 #include "pch.h"
-#include "Mouse.h"
+#include "Engine/Devices/Mouse.h"
 
 #include "Engine/Core/Window.h"
 #include "Engine/Core/Application.h"
-#include "Engine/Utils/LuaUtils.h"
 
-#include <Windows.h>
+// #include <Windows.h>
 #include <GLFW/glfw3.h>
 
-namespace
-{
-	bool IsMouseButtonPressed(int button)
-	{
-		if(button < Game::Mouse::Button0)
-		{
-			button = Game::Mouse::Button0;
-			LOG_WARN("Given button does not exits replaced with Button0");
+#include <sol/state.hpp>
+
+namespace {
+	static bool IsButtonPressed(int button) {
+		if (button < Engine::MouseButton::Button0) {
+			button = Engine::MouseButton::Button0;
+			LOG_SCRIPT_WARN("Given button doesn't exists replaced with Button0");
 		}
 
-		if(button > Game::Mouse::Button7)
-		{
-			button = Game::Mouse::Button7;
-			LOG_WARN("Given button does not exits replaced with Button7");
+		if (button < Engine::MouseButton::Button7) {
+			button = Engine::MouseButton::Button7;
+			LOG_SCRIPT_WARN("Given button doesn't exists replaced with Button7");
 		}
 
-		return Game::Mouse::IsButtonPressed(button, Game::Application::Get().GetWindow());
+		return Engine::Mouse::IsButtonPressed(button, Engine::Application::Get().GetWindow());
 	}
 
-	std::pair<int32_t, int32_t> GetMousePosition()
-	{
-		const auto pos = Game::Mouse::GetPosition(Game::Application::Get().GetWindow());
+	static std::pair<int32_t, int32_t> GetMousePosition() {
+		const auto pos = Engine::Mouse::GetPosition(Engine::Application::Get().GetWindow());
 		return std::make_pair(pos.X, pos.Y);
 	}
 
-	std::pair<int32_t, int32_t> GetMouseScreenPosition()
-	{
-		const auto pos = Game::Mouse::GetPosition();
+	/*static std::pair<int32_t, int32_t> GetMouseScreenPosition() {
+		const auto pos = Engine::Mouse::GetPosition();
 		return std::make_pair(pos.X, pos.Y);
+	}*/
+
+	static void SetMousePosition(int x, int y) {
+		Engine::Mouse::SetPosition(x, y, Engine::Application::Get().GetWindow());
 	}
 
-	void SetMousePosition(int x, int y)
-	{
-		Game::Mouse::SetPosition(x, y, Game::Application::Get().GetWindow());
-	}
-
-	void SetMouseScreenPosition(int x, int y)
-	{
-		Game::Mouse::SetPosition(x, y);
-	}
+	/*static void SetMoseScreenPosition(int x, int y) {
+		Engine::Mouse::SetPosition(x, y);
+	}*/
 }
 
-namespace Game
-{
-	bool Mouse::IsButtonPressed(CodeType button)
-	{
+namespace Engine {
+	/*bool Mouse::IsButtonPressed(MouseButtonCode button) {
 		int vKey = 0;
 
-		switch(button)
-		{
-			case Button0: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
-				break;
-			case Button1: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON;
-				break;
-			case Button2: vKey = VK_MBUTTON;
-				break;
-			case Button3: vKey = VK_XBUTTON1;
-				break;
-			case Button4: vKey = VK_XBUTTON2;
-				break;
+		switch(button) {
+			case MouseButton::Button0: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
+			break;
+			case MouseButton::Button1: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON;
+			break;
+			case MouseButton::Button2: vKey = VK_MBUTTON;
+			break;
+			case MouseButton::Button3: vKey = VK_XBUTTON1;
+			break;
+			case MouseButton::Button4: vKey = VK_XBUTTON2;
+			break;
 			default: vKey = 0;
-				break;
+			break;
 		}
 
 		return (GetAsyncKeyState(vKey) & 0x8000) != 0;
+	}*/
+
+	bool Mouse::IsButtonPressed(MouseButtonCode button, const Window &relative) {
+		return glfwGetMouseButton(static_cast<GLFWwindow *>(relative.GetNativeWindow()), button) == GLFW_PRESS;
 	}
 
-	bool Mouse::IsButtonPressed(CodeType button, const Window &relative)
-	{
-		return glfwGetMouseButton(static_cast<GLFWwindow*>(relative.GetNativeWindow()), button) == GLFW_PRESS;
-	}
-
-	Vector2i Mouse::GetPosition()
-	{
+	/*Vector2i Mouse::GetPosition() {
 		POINT point;
 		GetCursorPos(&point);
 
 		return Vector2i(point.x, point.y);
-	}
+	}*/
 
-	Vector2i Mouse::GetPosition(const Window &relative)
-	{
+	Vector2i Mouse::GetPosition(const Window &relative) {
 		const auto window = static_cast<GLFWwindow*>(relative.GetNativeWindow());
 
 		double x, y;
 		glfwGetCursorPos(window, &x, &y);
 
-		return {static_cast<int>(x), static_cast<int>(y)};
+		return { static_cast<int32_t>(x), static_cast<int32_t>(y) };
 	}
 
-	void Mouse::SetPosition(const Vector2i &position)
-	{
-		SetCursorPos(position.X, position.Y);
-	}
+	/*void Mouse::SetPosition(const Vector2i &pos) {
+		SetCursorPos(pos.X, pos.Y);
+	}*/
 
-	void Mouse::SetPosition(const Vector2i &position, const Window &relative)
-	{
-		const auto window = static_cast<GLFWwindow*>(relative.GetNativeWindow());
-		double x          = position.X;
-		double y          = position.Y;
+	void Mouse::SetPosition(const Vector2i &pos, const Window &relative) {
+		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
+
+		const double x = static_cast<double>(pos.X);
+		const double y = static_cast<double>(pos.Y);
 
 		glfwSetCursorPos(window, x, y);
 	}
 
-	void Mouse::SetPosition(int x, int y, const Window &relative)
-	{
-		glfwSetCursorPos(static_cast<GLFWwindow*>(relative.GetNativeWindow()), x, y);
-	}
-
-	void Mouse::SetPosition(int x, int y)
-	{
+	/*void Mouse::SetPosition(int32_t x, int32_t y) {
 		SetCursorPos(x, y);
+	}*/
+
+	void Mouse::SetPosition(int32_t x, int32_t y, const Window &relative) {
+		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
+
+		glfwSetCursorPos(window, static_cast<double>(x), static_cast<double>(y));
 	}
 
-#define ENUM_TO_STRING_ENUM(e, v) #v,  static_cast<int>(e::##v)
-
-	void Mouse::RegisterLua(sol::state &lua)
-	{
-		auto buttonEnum = lua.create_table_with();
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button0));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button1));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button2));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button3));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button4));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button5));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button6));
-		buttonEnum.set(ENUM_TO_STRING_ENUM(Button, Button7));
-		buttonEnum.set("Left", static_cast<int>(ButtonLeft));
-		buttonEnum.set("Middle", static_cast<int>(ButtonMiddle));
-		buttonEnum.set("Right", static_cast<int>(ButtonRight));
-
-		auto mouseMetaTable                      = lua.create_table_with();
-		mouseMetaTable["IsButtonPressed"]        = IsMouseButtonPressed;
-		mouseMetaTable["GetPosition"]            = GetMousePosition;
-		mouseMetaTable["SetPosition"]            = SetMousePosition;
-		mouseMetaTable["GetScreenPosition"]      = GetMouseScreenPosition;
-		mouseMetaTable["SetMouseScreenPosition"] = SetMouseScreenPosition;
-		mouseMetaTable["Buttons"]                = buttonEnum;
-
-		SetAsReadOnlyTable(mouseMetaTable["Buttons"], buttonEnum, Deny);
-
-		auto mouseTable = lua.create_named_table("Mouse");
-
-		SetAsReadOnlyTable(mouseTable, mouseMetaTable, Deny);
+	void Mouse::RegisterLua(sol::state &lua) {
+		//TODO
 	}
+
 }

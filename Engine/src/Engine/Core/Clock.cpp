@@ -1,50 +1,57 @@
 #include "pch.h"
-#include "Clock.h"
+#include "Engine/Core/Clock.h"
 
-#include <windows.h>
 #include <mutex>
 
-namespace
-{
-	LARGE_INTEGER GetFrequency()
-    {
-        LARGE_INTEGER frequency;
-        QueryPerformanceFrequency(&frequency);
-        return frequency;
-    }
+#ifdef GAME_WINDOWS_PLATFORM
+#include <Windows.h>
+
+namespace {
+	LARGE_INTEGER GetFrequency() {
+		LARGE_INTEGER frequency;
+		auto err = QueryPerformanceFrequency(&frequency);
+
+		ENGINE_ASSERT(err == 0)
+		if (err != 0) {
+			
+		}
+		return frequency;
+	}
 }
 
-namespace Game
-{
-	namespace Priv
-	{
-		class ClockImpl
-		{
+#endif
+
+namespace Engine {
+	namespace Priv {
+		class ClockImpl {
 		public:
-			static Time GetTime()
-			{
+			static Time GetTime() {
+#ifdef GAME_WINDOWS_PLATFORM
 				static LARGE_INTEGER frequency = GetFrequency();
 
 				LARGE_INTEGER time;
-				QueryPerformanceCounter(&time);
+				QueryPerformanceFrequency(&time);
 
 				return Microseconds(1000000 * time.QuadPart / frequency.QuadPart);
+#else
+				return Microseconds(0)
+#endif
 			}
 		};
 	}
-	
+
 	Clock::Clock() : m_StartTime(Priv::ClockImpl::GetTime()) {}
-	Time Clock::GetElapsedTime() const
-	{
+
+	Time Clock::GetElapsedTime() const {
 		return Priv::ClockImpl::GetTime() - m_StartTime;
 	}
-	
-	Time Clock::Restart()
-	{
-		Time now = Priv::ClockImpl::GetTime() ;
-		const Time elapesed = now - m_StartTime;
+
+	Time Clock::Restart() {
+		const Time now = Priv::ClockImpl::GetTime();
+		const Time elapsed = now - m_StartTime;
+
 		m_StartTime = now;
 
-		return elapesed;
+		return elapsed;
 	}
 }

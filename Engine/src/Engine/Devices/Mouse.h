@@ -1,48 +1,30 @@
 #pragma once
+
+#include "Engine/Core/Base.h"
+#include "Engine/Core/MouseButton.h"
 #include "Engine/Core/Vector2.h"
 
-#include <sol/state.hpp>
+namespace sol {
+	class state;
+}
 
-namespace Game
-{
+namespace Engine {
 	class Window;
 
-	class Mouse
-	{
+	class Mouse {
 	public:
-		using CodeType = uint16_t;
+		// static bool IsButtonPressed(MouseButtonCode button);
+		static bool IsButtonPressed(MouseButtonCode button, const Window &relative);
 
-		enum Button : CodeType
-		{
-			// From glfw3.h
-			Button0 = 0,
-			Button1 = 1,
-			Button2 = 2,
-			Button3 = 3,
-			Button4 = 4,
-			Button5 = 5,
-			Button6 = 6,
-			Button7 = 7,
-
-			ButtonLeft = Button0,
-			ButtonRight = Button1,
-			ButtonMiddle = Button2,
-
-			ButtonLast = Button7
-		};;
-
-		static bool IsButtonPressed(CodeType button);
-		static bool IsButtonPressed(CodeType button, const Window &relative);
-
-		static Vector2i GetPosition();
+		// static Vector2i GetPosition();
 		static Vector2i GetPosition(const Window &relative);
 
-		static void SetPosition(const Vector2i &position);
-		static void SetPosition(const Vector2i &position, const Window &relative);
+		// static void SetPosition(const Vector2i &pos);
+		static void SetPosition(const Vector2i &pos, const Window &relative);
 
-		static void SetPosition(int x, int y, const Window &relative);
-		static void SetPosition(int x, int y);
+		// static void SetPosition(int32_t x, int32_t y);
+		static void SetPosition(int32_t x, int32_t y, const Window &relative);
 
-		static void RegisterLua(sol::state& lua);
+		static void RegisterLua(sol::state &lua);
 	};
 }

@@ -143,13 +143,13 @@ namespace Game
 
 		if(m_Context)
 		{
-			m_Context->m_Registry.each(
+			/*m_Context->m_Registry.each(
 			                           [&](auto entityId)
 			                           {
 				                           Entity entity{entityId, m_Context.get()};
 				                           DrawEntityNode(entity);
 			                           }
-			                          );
+			                          );*/
 
 			if(ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
 				m_SelectionContext = {};
