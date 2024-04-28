@@ -1,56 +1,42 @@
 #include "pch.h"
 #include "Engine/Core/Clock.h"
-
-#include <mutex>
-
-#ifdef GAME_WINDOWS_PLATFORM
-#include <Windows.h>
-
-namespace {
-	LARGE_INTEGER GetFrequency() {
-		LARGE_INTEGER frequency;
-		auto err = QueryPerformanceFrequency(&frequency);
-
-		ENGINE_ASSERT(err == 0)
-		if (err != 0) {
-			
-		}
-		return frequency;
-	}
-}
-
-#endif
+#include "Engine/Core/Time.h"
 
 namespace Engine {
-	namespace Priv {
-		class ClockImpl {
-		public:
-			static Time GetTime() {
-#ifdef GAME_WINDOWS_PLATFORM
-				static LARGE_INTEGER frequency = GetFrequency();
-
-				LARGE_INTEGER time;
-				QueryPerformanceFrequency(&time);
-
-				return Microseconds(1000000 * time.QuadPart / frequency.QuadPart);
-#else
-				return Microseconds(0)
-#endif
-			}
-		};
+	Time Clock::GetElapsedTime() const {
+		if(IsRunning())
+			return std::chrono::duration_cast<std::chrono::nanoseconds>(ClockImpl::now() - m_StartPoint);
+		return std::chrono::duration_cast<std::chrono::microseconds>(m_StopPoint - m_StartPoint);
 	}
 
-	Clock::Clock() : m_StartTime(Priv::ClockImpl::GetTime()) {}
+	bool Clock::IsRunning() const {
+		return m_StopPoint == ClockImpl::time_point();
+	}
 
-	Time Clock::GetElapsedTime() const {
-		return Priv::ClockImpl::GetTime() - m_StartTime;
+	void Clock::Start() {
+		if(!IsRunning()) {
+			m_StartPoint += ClockImpl::now() - m_StopPoint;
+			m_StopPoint = {};
+		}
+	}
+
+	void Clock::Stop() {
+		if(IsRunning())
+			m_StopPoint = ClockImpl::now();
 	}
 
 	Time Clock::Restart() {
-		const Time now = Priv::ClockImpl::GetTime();
-		const Time elapsed = now - m_StartTime;
+		const Time elapsed = GetElapsedTime();
+		m_StartPoint       = ClockImpl::now();
+		m_StopPoint        = {};
 
-		m_StartTime = now;
+		return elapsed;
+	}
+
+	Time Clock::Reset() {
+		const Time elapsed = GetElapsedTime();
+		m_StartPoint       = ClockImpl::now();
+		m_StopPoint        = m_StartPoint;
 
 		return elapsed;
 	}

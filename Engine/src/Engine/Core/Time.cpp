@@ -7,123 +7,134 @@ namespace Engine {
 	Time::Time(uint64_t microseconds) : m_Microseconds(microseconds) {}
 	Time::Time() : m_Microseconds(0) {}
 
-	float Time::AsSeconds() const {
-		return static_cast<float>(m_Microseconds) / 1000000.f;
+	constexpr float Time::AsSeconds() const {
+		return std::chrono::duration<float>(m_Microseconds).count();
 	}
 
-	uint32_t Time::AsMilliseconds() const {
-		return static_cast<uint32_t>(m_Microseconds / 1000);
+	constexpr int32_t Time::AsMilliseconds() const {
+		return std::chrono::duration_cast<std::chrono::duration<int32_t, std::milli>>(m_Microseconds).count();
 	}
 
-	uint64_t Time::AsMicroseconds() const {
+	constexpr int64_t Time::AsMicroseconds() const {
+		return m_Microseconds.count();
+	}
+
+	constexpr std::chrono::microseconds Time::ToDuration() const {
 		return m_Microseconds;
 	}
 
-	Time Seconds(const float amount) {
-		return Time(amount * 1000000);
+	constexpr Time Seconds(const float amount) {
+		return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<float>(amount));
 	}
 
-	Time Milliseconds(const int32_t amount) {
-		return Time(static_cast<int64_t>(amount) * 1000);
+	constexpr Time Milliseconds(const int32_t amount) {
+		return std::chrono::milliseconds(amount);
 	}
 
-	Time Microseconds(const int64_t amount) {
-		return Time(amount);
+	constexpr Time Microseconds(const int64_t amount) {
+		return std::chrono::microseconds(amount);
 	}
 
-	bool operator==(const Time &left, const Time &right) {
+	constexpr bool operator==(const Time &left, const Time &right) {
 		return left.AsMicroseconds() == right.AsMicroseconds();
 	}
 
-	bool operator!=(const Time &left, const Time &right) {
+	constexpr bool operator!=(const Time &left, const Time &right) {
 		return left.AsMicroseconds() != right.AsMicroseconds();
 	}
 
-	bool operator<(const Time &left, const Time &right) {
+	constexpr bool operator<(const Time &left, const Time &right) {
 		return left.AsMicroseconds() < right.AsMicroseconds();
 	}
 
-	bool operator>(const Time &left, const Time &right) {
+	constexpr bool operator>(const Time &left, const Time &right) {
 		return left.AsMicroseconds() > right.AsMicroseconds();
 	}
 
-	bool operator<=(const Time &left, const Time &right) {
+	constexpr bool operator<=(const Time &left, const Time &right) {
 		return left.AsMicroseconds() <= right.AsMicroseconds();
 	}
 
-	bool operator>=(const Time &left, const Time &right) {
+	constexpr bool operator>=(const Time &left, const Time &right) {
 		return left.AsMicroseconds() >= right.AsMicroseconds();
 	}
 
-	Time operator-(const Time &right) {
+	constexpr Time operator-(const Time &right) {
 		return Microseconds(-right.AsMicroseconds());
 	}
 
-	Time operator-(const Time &left, const Time &right) {
+	constexpr Time operator-(const Time &left, const Time &right) {
 		return Microseconds(left.AsMicroseconds() - right.AsMicroseconds());
 	}
 
-	Time operator+(const Time &left, const Time &right) {
+	constexpr Time operator+(const Time &left, const Time &right) {
 		return Microseconds(left.AsMicroseconds() + right.AsMicroseconds());
 	}
 
-	Time& operator-=(Time &left, const Time &right) {
+	constexpr Time& operator-=(Time &left, const Time &right) {
 		return left = left - right;
 	}
 
-	Time& operator+=(Time &left, const Time &right) {
+	constexpr Time& operator+=(Time &left, const Time &right) {
 		return left = left + right;
 	}
 
-	Time operator*(const Time &left, const float &right) {
+	constexpr Time operator*(const Time &left, const float &right) {
 		return Seconds(left.AsSeconds() * right);
 	}
 
-	Time operator*(const Time &left, const int64_t &right) {
+	constexpr Time operator*(const Time &left, const int64_t &right) {
 		return Microseconds(left.AsMicroseconds() * right);
 	}
 
-	Time operator*(const float &left, const Time &right) {
+	constexpr Time operator*(const float &left, const Time &right) {
 		return right * left;
 	}
 
-	Time operator*(const int64_t &left, const Time &right) {
+	constexpr Time operator*(const int64_t &left, const Time &right) {
 		return right * left;
 	}
 
-	Time& operator*=(Time &left, const int64_t &right) {
+	constexpr Time& operator*=(Time &left, const int64_t &right) {
 		return left = left * right;
 	}
 
-	Time& operator*=(Time &left, const float &right) {
+	constexpr Time& operator*=(Time &left, const float &right) {
 		return left = left * right;
 	}
 
-	Time operator/(const Time &left, const float &right) {
+	constexpr Time operator/(const Time &left, const float &right) {
+		ENGINE_ASSERT(right != 0);
 		return Seconds(left.AsSeconds() / right);
 	}
 
-	Time operator/(const Time &left, const int64_t &right) {
+	constexpr Time operator/(const Time &left, const int64_t &right) {
+		ENGINE_ASSERT(right != 0);
 		return Microseconds(left.AsMicroseconds() / right);
 	}
 
-	Time& operator/=(Time &left, const float &right) {
+	constexpr Time& operator/=(Time &left, const float &right) {
+		ENGINE_ASSERT(right != 0);
 		return left = left / right;
 	}
 
-	Time& operator/=(Time &left, const int64_t &right) {
+	constexpr Time& operator/=(Time &left, const int64_t &right) {
+		ENGINE_ASSERT(right != 0);
 		return left = left / right;
 	}
 
-	float operator/(const Time &left, const Time &right) {
+	constexpr float operator/(const Time &left, const Time &right) {
+		ENGINE_ASSERT(right.AsMicroseconds() != 0);
 		return left.AsSeconds() / right.AsSeconds();
 	}
 
-	Time operator%(const Time &left, const Time &right) {
+	constexpr Time operator%(const Time &left, const Time &right) {
+		ENGINE_ASSERT(right.AsMicroseconds() != 0);
 		return Microseconds(left.AsMicroseconds() % right.AsMicroseconds());
 	}
 
-	Time& operator%=(Time &left, const Time &right) {
+	constexpr Time& operator%=(Time &left, const Time &right) {
+		ENGINE_ASSERT(right != 0);
 		return left = left % right;
 	}
 }
