@@ -5,6 +5,7 @@
 #include "Engine/Core/Vector2.h"
 
 #include <filesystem>
+#include <vector>
 
 namespace Engine {
 	enum class ImageType {
@@ -37,10 +38,10 @@ namespace Engine {
 		Image(const Vector2u &size, const glm::vec4 *pixels);
 		Image(const Vector2u &size, const float *pixels);
 
-		Image(const Image &img);
-		Image(Image &&img);
+		Image(const Image &img) noexcept;
+		Image(Image &&img) noexcept;
 
-		~Image();
+		~Image() = default;
 
 		void Create(uint32_t width, uint32_t height, const Color &background = Color::White);
 		void Create(const Vector2u &size, const Color &background = Color::White);
@@ -56,7 +57,7 @@ namespace Engine {
 		uint32_t Height() const { return m_Height; }
 		Vector2u Size() const { return {m_Width, m_Height }; }
 
-		const Color *GetPixels() const { return m_Pixels; }
+		const auto GetPixels() const { return m_Pixels; }
 		Color& GetPixel(const Vector2u &pos) { return GetPixel(pos.X, pos.Y); }
 		const Color &GetPixel(const Vector2u &pos) const { return GetPixel(pos.X, pos.Y); }
 
@@ -67,17 +68,16 @@ namespace Engine {
 		void SetPixel(uint32_t x, uint32_t y, const Color &color);
 
 		Image& operator=(Image&& img) noexcept;
-		Image& operator=(const Image &img);
+		Image& operator=(const Image &img) noexcept;
 
 	private:
-		void LoadToMemory(void *ImageFile);
+		void LoadToMemory(void *buffer);
 		void Prepare(uint32_t width, uint32_t height);
 
 	private:
-		Color *m_Pixels = nullptr;
+		std::vector<Color> m_Pixels;
 
 		uint32_t m_Width = 0;
 		uint32_t m_Height = 0;
-		size_t m_Size = 0;
 	};
 }
