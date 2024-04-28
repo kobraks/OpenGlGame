@@ -12,13 +12,13 @@
 
 namespace Engine {
 	template <typename T>
-	using Pointer = std::shared_ptr<T>;
+	using Ref = std::shared_ptr<T>;
 
 	template <typename T>
 	using Scope = std::unique_ptr<T>;
 
 	template <typename T, typename ... Args>
-	constexpr Pointer<T> MakePointer(Args &&...  args) {
+	constexpr Ref<T> MakeRef(Args &&...  args) {
 		return std::make_shared<T>(std::forward<Args>(args)...);
 	}
 

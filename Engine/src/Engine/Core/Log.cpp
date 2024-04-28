@@ -15,7 +15,7 @@
 namespace Engine {
 	template <typename It>
 	static std::shared_ptr<spdlog::logger> SetUpLogger(const std::string &name, It begin, It end) {
-		auto logger = MakePointer<spdlog::logger>(name, begin, end);
+		auto logger = MakeRef<spdlog::logger>(name, begin, end);
 
 		logger->set_level(spdlog::level::trace);
 		logger->flush_on(spdlog::level::trace);
@@ -25,10 +25,10 @@ namespace Engine {
 		return logger;
 	}
 
-	Pointer<spdlog::logger> Log::s_ScriptLogger = nullptr;
-	Pointer<spdlog::logger> Log::s_ApplicationLogger = nullptr;
-	Pointer<spdlog::logger> Log::s_GLLogger = nullptr;
-	Pointer<spdlog::logger> Log::s_EngineLogger = nullptr;
+	Ref<spdlog::logger> Log::s_ScriptLogger = nullptr;
+	Ref<spdlog::logger> Log::s_ApplicationLogger = nullptr;
+	Ref<spdlog::logger> Log::s_GLLogger = nullptr;
+	Ref<spdlog::logger> Log::s_EngineLogger = nullptr;
 
 	void Log::Init(bool consoleOut, bool fileOut) {
 		const auto logPath = std::filesystem::current_path() / "Logs";

@@ -8,17 +8,17 @@
 namespace Engine {
 	class LayerStack {
 	public:
-		using LayerPointer = Pointer<Layer>;
-		using LayerList = std::vector<LayerPointer>;
+		using LayerPtr = Ref<Layer>;
+		using LayerList = std::vector<LayerPtr>;
 
 		LayerStack() = default;
 		~LayerStack();
 
-		void PushLayer(LayerPointer layer);
-		void PushOverlay(LayerPointer overlay);
+		void PushLayer(LayerPtr layer);
+		void PushOverlay(LayerPtr overlay);
 
-		void PopLayer(LayerPointer layer);
-		void PopOverlay(LayerPointer overlay);
+		void PopLayer(LayerPtr layer);
+		void PopOverlay(LayerPtr overlay);
 
 		LayerList::iterator begin() { return m_Layers.begin(); }
 		LayerList::iterator end() { return m_Layers.begin(); }

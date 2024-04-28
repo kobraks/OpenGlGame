@@ -34,14 +34,26 @@ namespace Engine {
 
 	protected:
 		Cursor(CursorType type);
-		Cursor(Pointer<Image> image, const Vector2i &hotspot);
+		Cursor(Ref<Image> image, const Vector2i &hotspot);
 
-		void *GetNativePointer() const { return m_NativePointer.get(); }
+		void *GetNativePointer() const { return m_NativePointer.get()->Ptr; }
 
 		virtual void Attach(Window * window);
 		virtual void Invalidate();
 	private:
-		Pointer<void> m_NativePointer = nullptr;
+		void Create(CursorType type);
+		void Create(void *img, const Vector2i &hotspot);
+
+		class NativePtr {
+		public:
+			NativePtr(CursorType type);
+			NativePtr(const void *img, const Vector2i &hot);
+			~NativePtr();
+
+			void *Ptr;
+		};
+
+		Scope<NativePtr> m_NativePointer = nullptr;
 
 		Window *m_Window = nullptr;
 
@@ -50,15 +62,15 @@ namespace Engine {
 
 	class CustomCursor : public Cursor {
 	public:
-		explicit CustomCursor(Pointer<Image> image, const Vector2i &hotspot = {0});
+		explicit CustomCursor(Ref<Image> image, const Vector2i &hotspot = {0});
 
 		~CustomCursor() override = default;
 
-		Pointer<Image> GetImage() const { return m_Image; }
+		Ref<Image> GetImage() const { return m_Image; }
 		Vector2i GetHotspot() const { return m_Hotspot; }
 
 	private:
-		Pointer<Image> m_Image;
+		Ref<Image> m_Image;
 		Vector2i m_Hotspot;
 
 	};

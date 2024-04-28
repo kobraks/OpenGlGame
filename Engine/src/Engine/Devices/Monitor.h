@@ -29,7 +29,11 @@ namespace Engine {
 
 	class Monitor {
 	public:
-		Monitor() = default;
+		Monitor(const Monitor &) = delete;
+		Monitor(Monitor &&) = delete;
+
+		Monitor& operator=(const Monitor &) = delete;
+		Monitor& operator=(Monitor &&) = delete;
 
 		std::string_view GetName() const { return m_Name; }
 
@@ -41,8 +45,8 @@ namespace Engine {
 		void *GetUserData() const { return m_UserData; }
 		void *GetNativePointer() const { return m_NativePointer; }
 
-		VideoMode GetVideoMode() const { return m_VideoMode; }
-		const std::vector<Pointer<VideoMode>> &GetVideoModes() const { return m_VideoModes; }
+		VideoMode* GetVideoMode() const { return m_VideoMode; }
+		const std::vector<Scope<VideoMode>> &GetVideoModes() const;
 
 		void SetUserData(void *userData);
 		void SetGamma(float gamma);
@@ -50,12 +54,14 @@ namespace Engine {
 
 		GammaRamp GetGammaRamp() const;
 
-		static Pointer<Monitor> GetPrimary();
-		static Pointer<Monitor> Get(const size_t monitor);
-		static const std::vector<Pointer<Monitor>> &GetAll();
+		static Monitor* GetPrimary();
+		static Monitor* Get(const size_t monitor);
+		static const std::vector<Scope<Monitor>> &GetAll();
 
 	private:
-		static Pointer<Monitor> Create(void *pointer);
+		Monitor() = default;
+
+		static Scope<Monitor> Create(void *pointer);
 		static void Populate();
 
 		std::string m_Name;
@@ -68,11 +74,11 @@ namespace Engine {
 		void *m_NativePointer = nullptr;
 		void *m_UserData = nullptr;
 
-		Pointer<VideoMode> m_VideoMode;
-		std::vector<Pointer<VideoMode>> m_VideoModes;
+		VideoMode* m_VideoMode;
+		std::vector<Scope<VideoMode>> m_VideoModes;
 
-		static std::vector<Pointer<Monitor>> s_Monitors;
-		static Pointer<Monitor> s_PrimaryMonitor;
+		static std::vector<Scope<Monitor>> s_Monitors;
+		static Monitor* s_PrimaryMonitor;
 		static bool s_Initialized;
 	};
 }

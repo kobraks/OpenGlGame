@@ -13,16 +13,16 @@ namespace Engine {
 	public:
 		static void Init(bool consoleOuput = true, bool FileOutput= true);
 
-		static Pointer<spdlog::logger> GetScriptLogger() { return s_ScriptLogger; }
-		static Pointer<spdlog::logger> GetApplicationLogger() { return s_ApplicationLogger; }
-		static Pointer<spdlog::logger> GetGLLogger() { return s_GLLogger; }
-		static Pointer<spdlog::logger> GetEngineLogger() { return s_EngineLogger; }
+		static Ref<spdlog::logger> GetScriptLogger() { return s_ScriptLogger; }
+		static Ref<spdlog::logger> GetApplicationLogger() { return s_ApplicationLogger; }
+		static Ref<spdlog::logger> GetGLLogger() { return s_GLLogger; }
+		static Ref<spdlog::logger> GetEngineLogger() { return s_EngineLogger; }
 
 	private:
-		static Pointer<spdlog::logger> s_EngineLogger;
-		static Pointer<spdlog::logger> s_ApplicationLogger;
-		static Pointer<spdlog::logger> s_ScriptLogger;
-		static Pointer<spdlog::logger> s_GLLogger;
+		static Ref<spdlog::logger> s_EngineLogger;
+		static Ref<spdlog::logger> s_ApplicationLogger;
+		static Ref<spdlog::logger> s_ScriptLogger;
+		static Ref<spdlog::logger> s_GLLogger;
 	};
 }
 

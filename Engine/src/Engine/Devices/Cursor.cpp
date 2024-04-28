@@ -6,7 +6,7 @@
 #include <glm/vec4.hpp>
 
 namespace Engine {
-	static consteval int Translate(Cursor::CursorType cursor) {
+	static constexpr int Translate(Cursor::CursorType cursor) {
 		switch(cursor) {
 			case Cursor::Arrow:
 				return GLFW_ARROW_CURSOR;
@@ -51,15 +51,10 @@ namespace Engine {
 	}
 
 	Cursor::Cursor(CursorType type) {
-		m_NativePointer = Pointer<void>(
-		                                glfwCreateStandardCursor(type),
-		                                [](void *c) { glfwDestroyCursor(static_cast<GLFWcursor*>(c)); }
-		                               );
-
-		ENGINE_ASSERT(m_NativePointer);
+		Create(type);
 	}
 
-	Cursor::Cursor(Pointer<Image> image, const Vector2i &hotspot) {
+	Cursor::Cursor(Ref<Image> image, const Vector2i &hotspot) {
 		auto pixels = MakeScope<uint8_t[]>(image->Width() * image->Height() * 4);
 
 		size_t index = 0;
@@ -73,13 +68,7 @@ namespace Engine {
 		}
 
 		GLFWimage gImage{static_cast<int>(image->Width()), static_cast<int>(image->Height()), pixels.get()};
-
-		m_NativePointer = Pointer<void>(
-		                                glfwCreateCursor(&gImage, hotspot.X, hotspot.Y),
-		                                [](void *c) { glfwDestroyCursor(c); }
-		                               );
-
-		ENGINE_ASSERT(m_NativePointer);
+		Create(&gImage, hotspot);
 	}
 
 	void Cursor::Attach(Window *window) {
@@ -90,7 +79,30 @@ namespace Engine {
 		m_Window = nullptr;
 	}
 
-	CustomCursor::CustomCursor(Pointer<Image> image, const Vector2i &hotspot) : Cursor(image, hotspot), m_Image(image), m_Hotspot(hotspot) {}
+	void Cursor::Create(CursorType type) {
+		m_NativePointer = MakeScope<NativePtr>(type);
+
+		ENGINE_ASSERT(m_NativePointer);
+	}
+	void Cursor::Create(void *img, const Vector2i &hotspot) {
+		m_NativePointer = MakeScope<NativePtr>(img, hotspot);
+
+		ENGINE_ASSERT(m_NativePointer);
+	}
+
+	Cursor::NativePtr::NativePtr(CursorType type) {
+		Ptr = glfwCreateStandardCursor(Translate(type));
+	}
+
+	Cursor::NativePtr::NativePtr(const void *img, const Vector2i &hot) {
+		Ptr = glfwCreateCursor(static_cast<const GLFWimage *>(img), hot.X, hot.Y);
+	}
+
+	Cursor::NativePtr::~NativePtr() {
+		glfwDestroyCursor(static_cast<GLFWcursor *>(Ptr));
+	}
+
+	CustomCursor::CustomCursor(Ref<Image> image, const Vector2i &hotspot) : Cursor(image, hotspot), m_Image(image), m_Hotspot(hotspot) {}
 
 	SystemCursor::SystemCursor(CursorType type) : Cursor(type),
 	                                              m_Type(type) {}

@@ -6,12 +6,12 @@
 #include <GLFW/glfw3.h>
 
 namespace Engine {
-	std::vector<Pointer<Monitor>> Monitor::s_Monitors;
-	Pointer<Monitor> Monitor::s_PrimaryMonitor;
+	std::vector<Scope<Monitor>> Monitor::s_Monitors;
+	Monitor *Monitor::s_PrimaryMonitor;
 	bool Monitor::s_Initialized = false;
 
-	static Pointer<VideoMode> CreateVideMode(GLFWvidmode mode) {
-		auto result = MakePointer<VideoMode>();
+	static Scope<VideoMode> CreateVideMode(GLFWvidmode mode) {
+		auto result = MakeScope<VideoMode>();
 
 		result->BlueBits = mode.blueBits;
 		result->GreenBits = mode.greenBits;
@@ -23,8 +23,8 @@ namespace Engine {
 		return result;
 	}
 
-	static std::vector<Pointer<VideoMode>> CreateVideoModes(GLFWmonitor *monitor) {
-		std::vector<Pointer<VideoMode>> modes;
+	static std::vector<Scope<VideoMode>> CreateVideoModes(GLFWmonitor *monitor) {
+		std::vector<Scope<VideoMode>> modes;
 
 		int count = 0;
 		const GLFWvidmode *vModes = glfwGetVideoModes(monitor, &count);
@@ -48,6 +48,10 @@ namespace Engine {
 		delete[] Blue;
 
 		Red = Green = Blue = nullptr;
+	}
+
+	const std::vector<Scope<VideoMode>> &Monitor::GetVideoModes() const {
+		return m_VideoModes;
 	}
 
 	void Monitor::SetUserData(void *userData) {
@@ -91,26 +95,26 @@ namespace Engine {
 		return gammaRamp;
 	}
 
-	Pointer<Monitor> Monitor::GetPrimary() {
+	Monitor* Monitor::GetPrimary() {
 		Populate();
 
 		return s_PrimaryMonitor;
 	}
 
-	Pointer<Monitor> Monitor::Get(const size_t monitor) {
+	Monitor* Monitor::Get(const size_t monitor) {
 		Populate();
 
-		return s_Monitors[monitor];
+		return s_Monitors[monitor].get();
 	}
 
-	const std::vector<Pointer<Monitor>> &Monitor::GetAll() {
+	const std::vector<Scope<Monitor>> &Monitor::GetAll() {
 		Populate();
 
 		return s_Monitors;
 	}
 
-	Pointer<Monitor> Monitor::Create(void *pointer) {
-		auto monitor = MakePointer<Monitor>();
+	Scope<Monitor> Monitor::Create(void *pointer) {
+		auto monitor = MakeScope<Monitor>();
 
 		if (!pointer)
 			return monitor;
@@ -147,7 +151,7 @@ namespace Engine {
 		for (int i = 0; i < count; ++i) {
 			s_Monitors.emplace_back(Create(monitors[i]));
 			if (monitors[i] == PriMonitor)
-				s_PrimaryMonitor = s_Monitors[s_Monitors.size() - 1];
+				s_PrimaryMonitor = s_Monitors[s_Monitors.size() - 1].get();
 		}
 	}
 
