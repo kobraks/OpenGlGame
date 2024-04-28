@@ -4,8 +4,7 @@
 namespace Engine {
 	const Time Time::Zero;
 
-	Time::Time(uint64_t microseconds) : m_Microseconds(microseconds) {}
-	Time::Time() : m_Microseconds(0) {}
+	constexpr Time::Time() = default;
 
 	constexpr float Time::AsSeconds() const {
 		return std::chrono::duration<float>(m_Microseconds).count();
@@ -134,7 +133,7 @@ namespace Engine {
 	}
 
 	constexpr Time& operator%=(Time &left, const Time &right) {
-		ENGINE_ASSERT(right != 0);
+		ENGINE_ASSERT(right.AsMicroseconds() != 0);
 		return left = left % right;
 	}
 }

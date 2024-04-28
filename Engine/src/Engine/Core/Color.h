@@ -63,9 +63,13 @@ namespace Engine {
 
 		constexpr Color(uint32_t color) : Value(color) {}
 
-		explicit Color(glm::vec4 color) : Color(color.r, color.g, color.b, color.a) {}
+		explicit constexpr Color(glm::vec4 color) : Color(color.r, color.g, color.b, color.a) {}
 
-		operator glm::vec4() const { return glm::vec4(R / 255.f, G / 255.f, B / 255.f, A / 255.f); }
+		constexpr operator glm::vec4() const { return glm::vec4(R / 255.f, G / 255.f, B / 255.f, A / 255.f); }
+
+		constexpr Color& operator=(const glm::vec4 &vec) {
+			return (*this) = Color(vec);
+		}
 
 		constexpr uint8_t &operator[](const size_t index) {
 			ENGINE_ASSERT(index < Size());

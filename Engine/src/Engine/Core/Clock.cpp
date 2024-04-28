@@ -5,7 +5,7 @@
 namespace Engine {
 	Time Clock::GetElapsedTime() const {
 		if(IsRunning())
-			return std::chrono::duration_cast<std::chrono::nanoseconds>(ClockImpl::now() - m_StartPoint);
+			return std::chrono::duration_cast<std::chrono::microseconds>(ClockImpl::now() - m_StartPoint);
 		return std::chrono::duration_cast<std::chrono::microseconds>(m_StopPoint - m_StartPoint);
 	}
 

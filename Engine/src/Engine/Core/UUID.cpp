@@ -19,7 +19,7 @@ namespace Engine {
 
 	template <typename R, typename Arg, typename ...Args>
 	static constexpr R Combine(const Arg lth, const Args &&... args) noexcept {
-		return (R(lth) << 64) + Combine<R, Args...>(std::forward<Args>(args)...);
+		return (R(lth) << 64) + Combine<R, Args...>(args...);
 	}
 
 	template<typename T>

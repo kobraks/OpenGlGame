@@ -7,7 +7,7 @@
 #include <FreeImage.h>
 
 namespace Engine {
-	static consteval FREE_IMAGE_FORMAT ConvertType(const ImageType type) {
+	static constexpr FREE_IMAGE_FORMAT ConvertType(const ImageType type) {
 		switch(type) {
 			case ImageType::BMP:
 				return FIF_BMP;

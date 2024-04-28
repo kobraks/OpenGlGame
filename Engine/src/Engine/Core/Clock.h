@@ -22,6 +22,9 @@ namespace Engine {
 	private:
 		using ClockImpl = std::conditional_t<std::chrono::high_resolution_clock::is_steady, std::chrono::high_resolution_clock, std::chrono::steady_clock>;
 
+		static_assert(ClockImpl::is_steady);
+		static_assert(std::ratio_less_equal_v<ClockImpl::period, std::micro>);
+
 		ClockImpl::time_point m_StartPoint{ClockImpl::now()};
 		ClockImpl::time_point m_StopPoint;
 	};
