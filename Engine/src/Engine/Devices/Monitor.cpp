@@ -114,7 +114,7 @@ namespace Engine {
 	}
 
 	Scope<Monitor> Monitor::Create(void *pointer) {
-		auto monitor = MakeScope<Monitor>();
+		auto monitor = Scope<Monitor>(new Monitor());
 
 		if (!pointer)
 			return monitor;

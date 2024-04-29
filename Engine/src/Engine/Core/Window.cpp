@@ -21,7 +21,7 @@ namespace Engine {
 	}
 
 	Scope<Window> Window::Create(const WindowProperties &props) {
-		return MakeScope<Window>(props);
+		return Scope<Window>(new Window(props));
 	}
 
 	Window::~Window() {
