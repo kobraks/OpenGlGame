@@ -231,6 +231,7 @@ namespace Engine {
 		++s_GLFWWindowCount;
 
 		m_Monitor = nullptr;
+		m_Context = Context::Create(this);
 
 		Vector2i pos;
 		glfwGetWindowPos(static_cast<GLFWwindow*>(m_Window), &pos.X, &pos.Y);

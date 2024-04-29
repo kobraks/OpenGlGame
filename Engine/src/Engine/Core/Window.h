@@ -138,7 +138,6 @@ namespace Engine {
 		WindowData m_Data;
 
 		void *m_Window;
-		void *m_WindowContext;
 
 		Monitor *m_Monitor;
 
