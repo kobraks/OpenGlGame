@@ -3,17 +3,17 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Vector2.h"
 
-#include "Engine/Devices/Mouse.h"
-
 #include <string>
 #include <string_view>
 #include <functional>
 
-#include <GLFW/glfw3.h>
-
 namespace Engine {
+	struct VideoMode;
+
 	class Event;
 	class Cursor;
+	class Context;
+	class Monitor;
 
 	enum class InputMode {
 		//From GLFW
@@ -44,7 +44,7 @@ namespace Engine {
 	public:
 		using EventCallbackFunction = std::function<void(Event &)>;
 
-		explicit Window(const WindowProperties &props);
+		static Scope<Window> Create(const WindowProperties &props);
 		virtual ~Window();
 
 		void OnUpdate();
@@ -82,7 +82,7 @@ namespace Engine {
 
 		Vector2i GetRelativePos(const Vector2i &pos) const;
 
-		Monitor GetMonitor() const { return *m_Monitor; }
+		Monitor *GetMonitor() const { return m_Monitor; }
 
 		bool IsVSync() const;
 		bool IsVisible() const;
@@ -91,8 +91,8 @@ namespace Engine {
 		void AttentionRequest();
 
 		void ToggleFullscreen();
-		void ToggleFullscreen(const Monitor &monitor);
-		void ToggleFullscreen(const Monitor &monitor, const VideoMode &mode);
+		void ToggleFullscreen(Monitor *monitor);
+		void ToggleFullscreen(Monitor *monitor, const VideoMode *mode);
 
 		Cursor* GetCursor() const;
 		void SetCursor(Scope<Cursor> &cursor);
@@ -111,6 +111,10 @@ namespace Engine {
 		void Shutdown();
 
 	private:
+		explicit Window(const WindowProperties &props);
+
+		void InstallCallbacks();
+
 		struct WindowData {
 			std::string Title;
 
@@ -124,16 +128,21 @@ namespace Engine {
 			EventCallbackFunction EventCallback;
 		};
 
-		Vector2u m_BackupPos;
+		static WindowData *GetData(void *window);
+
+		Vector2i m_BackupPos;
 		Vector2u m_BackupSize;
 
 		bool m_Fullscreen = false;
 
+		WindowData m_Data;
+
 		void *m_Window;
 		void *m_WindowContext;
 
-		WindowData m_Data;
-		Scope<Monitor> m_Monitor = nullptr;
+		Monitor *m_Monitor;
+
 		Scope<Cursor> m_Cursor = nullptr;
+		Scope<Context> m_Context = nullptr;
 	};
 }
