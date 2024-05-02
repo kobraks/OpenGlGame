@@ -36,6 +36,7 @@ namespace Engine {
 		uint32_t Height;
 
 		WindowProperties(std::string title, uint32_t width, uint32_t height) : Title(std::move(title)), Width(width), Height(height) {}
+		WindowProperties(std::string title, const Vector2u &size) : Title(std::move(title)), Width(size.Width), Height(size.Height) {}
 	};
 
 	class Window {
