@@ -65,7 +65,8 @@ project "Engine"
 		flags { "NoPCH" }
 		
 	filter "action:vs*"
-		buildoptions { "/external:anglebrackets" }
+		externalanglebrackets "On"
+		buildoptions { "/external:W0" }
 
 	filter "system:windows"
 		systemversion "latest"

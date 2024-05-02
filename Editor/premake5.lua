@@ -15,7 +15,8 @@ project "Editor"
 	
 	defines 
 	{
-		"SPDLOG_FMT_EXTERNAL"
+		"SPDLOG_FMT_EXTERNAL",
+		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE"
 	}
 	
 	includedirs
@@ -44,7 +45,8 @@ project "Editor"
 		systemversion "latest"
 		
 	filter "action:vs*"
-		buildoptions { "/external:anglebrackets" }
+		externalanglebrackets "On"
+		buildoptions { "/external:W0" }
 
 	filter "configurations:Debug"
 		defines "GAME_DEBUG"
