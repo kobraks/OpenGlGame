@@ -1,6 +1,3 @@
-[submodule "vendor/spdlog"]
-	path = vendor/spdlog
-	url = https://github.com/gabime/spdlog
 [submodule "vendor/glm"]
 	path = vendor/glm
 	url = https://github.com/g-truc/glm
@@ -22,3 +19,6 @@
 [submodule "vendor/ImGuizmo"]
 	path = vendor/ImGuizmo
 	url = https://github.com/kobraks/ImGuizmo
+[submodule "vendor/spdlog"]
+	path = vendor/spdlog
+	url = https://github.com/kobraks/spdlog.git
