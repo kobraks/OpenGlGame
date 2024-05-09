@@ -28,6 +28,7 @@ project "Engine"
 		"_CRT_SECURE_NO_WARNINGS",
 		"GLFW_INCLUDE_NONE",
 		"SPDLOG_FMT_EXTERNAL",
+        "SPDLOG_COMPILED_LIB",
 		"FREEIMAGE_LIB",
 	}
 
@@ -61,12 +62,17 @@ project "Engine"
 		"opengl32.lib",
 	}
 
+	filter "files:src/**.cpp"
+		flags { "FatalWarnings" }
+
 	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
 		flags { "NoPCH" }
 		
 	filter "action:vs*"
-		externalanglebrackets "On"
-		buildoptions { "/external:W0" }
+		externalanglebrackets "On" --Enable treating <> as external
+		externalwarnings "Off" --Disable external warnings /external:W0
+		warnings "Everything"
+		-- buildoptions { "/external:W0" }
 
 	filter "system:windows"
 		systemversion "latest"

@@ -9,6 +9,8 @@
 #include "Engine/Devices/Keyboard.h"
 
 #include <chrono>
+#include <fmt/format.h>
+#include <fmt/chrono.h>
 
 #include "Imgui.h"
 #include "Engine/ImGui/ImGuiUtils.h"
@@ -174,18 +176,8 @@ namespace Engine {
 		BeginTable();
 
 		SetUpTable();
-		ImGui::TableHeadersRow();
 
-		for (size_t i = 0; i < m_Messages.size(); ++i) {
-			auto &message = m_Messages[i];
-
-			if (!m_Filter->PassFilter(message.Message.Text.c_str()))
-				continue;
-
-			PrintMessage(i, message);
-			if (message.Selected)
-				PrintSelectedMessage(i, message);
-		}
+		PrintTable();
 
 		EndTable();
 		ImGui::PopID();
@@ -196,6 +188,20 @@ namespace Engine {
 		m_ScrollToBottom = false;
 
 		ImGui::EndChild();
+	}
+
+	void LogLayer::PrintTable() {
+		ImGui::TableHeadersRow();
+		for (size_t i = 0; i < m_Messages.size(); ++i) {
+			auto &message = m_Messages[i];
+
+			if (!m_Filter->PassFilter(message.Message.Text.c_str()))
+				continue;
+
+			PrintMessage(i, message);
+			if (message.Selected)
+				PrintSelectedMessage(i, message);
+		}
 	}
 
 	void LogLayer::PrintMessage(size_t i, MessageEntry &message) {
@@ -215,7 +221,7 @@ namespace Engine {
 			message.Selected = !message.Selected;
 
 		ImGui::SameLine();
-		ImGui::Text("%i", i);
+		ImGui::Text("%i", static_cast<int32_t>(i));
 		ImGui::TableNextColumn();
 		ImGui::TextUnformatted(message.Message.Time.c_str());
 
@@ -236,7 +242,7 @@ namespace Engine {
 	void LogLayer::PrintSelectedMessage(size_t i, MessageEntry &message) {
 		EndTable();
 
-		ImGui::PushID(message.IdSelectedHash);
+		ImGui::PushID(static_cast<int>(message.IdSelectedHash));
 		ImGui::BeginGroup();
 
 		message.Source.Print();
@@ -246,7 +252,7 @@ namespace Engine {
 		Text("Name: {}", message.Message.Name);
 		Text("Level: {}", spdlog::level::to_string_view(message.Message.Level));
 
-		ImGui::PushID(message.IdTextMultiline);
+		ImGui::PushID(static_cast<int>(message.IdTextMultiline));
 		InputTextMultiline("", message.Message.Desc, ImVec2{0, 0}, ImGuiInputTextFlags_ReadOnly);
 		ImGui::PopID();
 
@@ -265,7 +271,7 @@ namespace Engine {
 	}
 
 	std::string LogLayer::GetTimeAsString(const spdlog::log_clock::time_point &time) {
-		return fmt::format("{:%H:%M:%S}", time);
+		return fmt::format("{:%T}", std::chrono::round<std::chrono::seconds>(time));
 	}
 
 	LogLayer::Source::Source(const spdlog::source_loc &loc) {

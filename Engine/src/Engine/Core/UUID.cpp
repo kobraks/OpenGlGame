@@ -8,7 +8,7 @@ namespace Engine {
 	static std::mt19937_64 s_Engine(s_RandomDevice());
 	static std::uniform_int_distribution<uint64_t> s_Uniform;
 
-	static uint32_t Random() noexcept {
+	static uint64_t Random() noexcept {
 		return s_Uniform(s_RandomDevice);
 	}
 

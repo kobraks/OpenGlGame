@@ -62,6 +62,7 @@ namespace Engine {
 		void EndTable();
 
 		void PrintMessagesTable();
+		void PrintTable();
 		void PrintMessage(size_t i, MessageEntry &message);
 		void PrintSelectedMessage(size_t i, MessageEntry &message);
 
