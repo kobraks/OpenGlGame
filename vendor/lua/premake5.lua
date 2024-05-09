@@ -11,6 +11,8 @@ project "Lua54"
 		"src/**.h",
 		"src/**.c"
     }
+
+    removefiles{ "src/luac.c", "src/lua.c" }
 	
 	defines
 	{
