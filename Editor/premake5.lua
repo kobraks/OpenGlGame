@@ -16,6 +16,7 @@ project "Editor"
 	defines 
 	{
 		"SPDLOG_FMT_EXTERNAL",
+        "SPDLOG_COMPILED_LIB",
 		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE"
 	}
 	
