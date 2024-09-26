@@ -211,7 +211,7 @@ namespace Engine {
 		ImGui::BeginGroup();
 
 		ImGui::TableNextColumn();
-		ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, static_cast<ImU32>(message.Color.Value));
+		ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, static_cast<ImU32>(message.Color.Code));
 		ImGui::Selectable("", false, ImGuiSelectableFlags_SpanAllColumns);
 
 		if(ImGui::IsItemHovered())

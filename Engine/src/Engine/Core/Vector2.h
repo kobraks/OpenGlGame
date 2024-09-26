@@ -13,15 +13,13 @@ namespace Engine {
 		using ValueType = T;
 
 		union {
-			struct {
-				ValueType X;
-				ValueType Y;
-			};
+			ValueType X;
+			ValueType Width;
+		};
 
-			struct {
-				ValueType Width;
-				ValueType Height;
-			};
+		union {
+			ValueType Y;
+			ValueType Height;
 		};
 
 
@@ -47,6 +45,22 @@ namespace Engine {
 
 			return *this;
 		}
+
+		constexpr auto operator[](std::ptrdiff_t i) -> ValueType& {
+			switch(i) {
+				case 0: return X;
+				case 1: return Y;
+				default: throw std::out_of_range("");
+			}
+		}
+
+		constexpr auto operator[](std::ptrdiff_t i) const -> ValueType const& {
+			switch(i) {
+				case 0: return X;
+				case 1: return Y;
+				default: throw std::out_of_range("");
+			}
+		}
 	};
 
 	typedef Vector2<uint32_t> Vector2u;
@@ -63,7 +77,7 @@ namespace Engine {
 template<>\
 struct fmt::formatter<Engine::type>: public fmt::nested_formatter<Engine::type::ValueType> { \
 	auto format(const Engine::type &vec, format_context& ctx) const { \
-		return write_padded(ctx, [=](auto out) { \
+		return write_padded(ctx, [=, this](auto out) { \
 			return format_to(out, "({}, {})", nested(vec.X), nested(vec.Y)); \
 		}); \
 	} \
