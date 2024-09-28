@@ -20,13 +20,14 @@ namespace Engine {
 
 		static Scope<Context> Create(const Window* window);
 
-		[[nodiscard]] OpenGLVersion GetVersion() const;
+		[[nodiscard]] OpenGLVersion GetVersion() const { return m_Version; }
 
 		void SwapBuffers();
 
 		bool IsCurrent() const;
 
 		void MakeCurrent();
+		void Detach();
 
 	private:
 		Context(void *windowHandler);

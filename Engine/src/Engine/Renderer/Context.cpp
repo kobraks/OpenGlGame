@@ -7,6 +7,8 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 
+#include <fmt/std.h>
+
 
 namespace Engine {
 	Scope<Context> Context::Create(const Window *window) {
@@ -26,8 +28,21 @@ namespace Engine {
 
 
 	void Context::MakeCurrent() {
+		ENGINE_ASSERT(m_Thread == std::thread::id());
+
+		if (m_Thread != std::thread::id()) {
+			throw std::runtime_error(fmt::format("Context cannot be attached to current thread({}), context attached at: {}", std::this_thread::get_id(), m_Thread));
+		}
+
 		glfwMakeContextCurrent(static_cast<GLFWwindow *>(m_Window));
 		m_Thread = std::this_thread::get_id();
+	}
+
+	void Context::Detach() {
+		if (IsCurrent()) {
+			glfwMakeContextCurrent(nullptr);
+			m_Thread = std::thread::id();
+		}
 	}
 
 	Context::Context(void *windowHandler) {
