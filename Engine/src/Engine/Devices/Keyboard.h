@@ -13,6 +13,7 @@ namespace Engine {
 	public:
 		// static bool IsKeyPressed(KeyCode key);
 		static bool IsKeyPressed(KeyCode key, const Window &window);
+		static bool IsKeyPressed(KeyCode key);
 
 		static void RegisterLua(sol::state &lua);
 	};

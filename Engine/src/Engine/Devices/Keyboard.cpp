@@ -21,6 +21,10 @@ namespace Engine {
 		return glfwGetKey(static_cast<GLFWwindow *>(window.GetNativeWindow()), key) == GLFW_PRESS;
 	}
 
+	bool Keyboard::IsKeyPressed(KeyCode key) {
+		return IsKeyPressed(key, Application::Get().GetWindow());
+	}
+
 
 	void Keyboard::RegisterLua(sol::state &lua) {
 		//TODO
