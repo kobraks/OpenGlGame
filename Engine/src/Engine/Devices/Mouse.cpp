@@ -4,10 +4,12 @@
 #include "Engine/Core/Window.h"
 #include "Engine/Core/Application.h"
 
-// #include <Windows.h>
+
 #include <GLFW/glfw3.h>
 
 #include <sol/state.hpp>
+
+#define ENUM_TO_STRING_ENUM(e, v) #e, static_cast<int>(e::##v)
 
 namespace {
 	static bool IsButtonPressed(int button) {
@@ -29,52 +31,31 @@ namespace {
 		return std::make_pair(pos.X, pos.Y);
 	}
 
-	/*static std::pair<int32_t, int32_t> GetMouseScreenPosition() {
-		const auto pos = Engine::Mouse::GetPosition();
-		return std::make_pair(pos.X, pos.Y);
-	}*/
-
 	static void SetMousePosition(int x, int y) {
 		Engine::Mouse::SetPosition(x, y, Engine::Application::Get().GetWindow());
 	}
-
-	/*static void SetMoseScreenPosition(int x, int y) {
-		Engine::Mouse::SetPosition(x, y);
-	}*/
 }
 
 namespace Engine {
-	/*bool Mouse::IsButtonPressed(MouseButtonCode button) {
-		int vKey = 0;
-
-		switch(button) {
-			case MouseButton::Button0: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_RBUTTON : VK_LBUTTON;
-			break;
-			case MouseButton::Button1: vKey = GetSystemMetrics(SM_SWAPBUTTON) ? VK_LBUTTON : VK_RBUTTON;
-			break;
-			case MouseButton::Button2: vKey = VK_MBUTTON;
-			break;
-			case MouseButton::Button3: vKey = VK_XBUTTON1;
-			break;
-			case MouseButton::Button4: vKey = VK_XBUTTON2;
-			break;
-			default: vKey = 0;
-			break;
-		}
-
-		return (GetAsyncKeyState(vKey) & 0x8000) != 0;
-	}*/
-
-	bool Mouse::IsButtonPressed(MouseButtonCode button, const Window &relative) {
+	bool Mouse::IsButtonPressed(MouseCode button, const Window &relative) {
 		return glfwGetMouseButton(static_cast<GLFWwindow *>(relative.GetNativeWindow()), button) == GLFW_PRESS;
 	}
 
-	/*Vector2i Mouse::GetPosition() {
-		POINT point;
-		GetCursorPos(&point);
+	bool Mouse::IsButtonPressed(MouseCode button) {
+		return IsButtonPressed(button, Application::Get().GetWindow());
+	}
 
-		return Vector2i(point.x, point.y);
-	}*/
+	Vector2i Mouse::GetPosition() {
+		return GetPosition(Application::Get().GetWindow());
+	}
+
+	void Mouse::SetPosition(const Vector2i &pos) {
+		SetPosition(pos, Application::Get().GetWindow());
+	}
+
+	void Mouse::SetPosition(int32_t x, int32_t y) {
+		SetPosition(x, y, Application::Get().GetWindow());
+	}
 
 	Vector2i Mouse::GetPosition(const Window &relative) {
 		const auto window = static_cast<GLFWwindow*>(relative.GetNativeWindow());
@@ -85,10 +66,6 @@ namespace Engine {
 		return { static_cast<int32_t>(x), static_cast<int32_t>(y) };
 	}
 
-	/*void Mouse::SetPosition(const Vector2i &pos) {
-		SetCursorPos(pos.X, pos.Y);
-	}*/
-
 	void Mouse::SetPosition(const Vector2i &pos, const Window &relative) {
 		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
 
@@ -98,10 +75,6 @@ namespace Engine {
 		glfwSetCursorPos(window, x, y);
 	}
 
-	/*void Mouse::SetPosition(int32_t x, int32_t y) {
-		SetCursorPos(x, y);
-	}*/
-
 	void Mouse::SetPosition(int32_t x, int32_t y, const Window &relative) {
 		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
 
@@ -109,6 +82,25 @@ namespace Engine {
 	}
 
 	void Mouse::RegisterLua(sol::state &lua) {
+		auto buttonEnum = lua.create_table_with();
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button0));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button1));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button2));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button3));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button4));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button5));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button6));
+		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button7));
+		buttonEnum.set("Left", static_cast<int>(MouseButton::ButtonLeft));
+		buttonEnum.set("Middle", static_cast<int>(MouseButton::ButtonMiddle));
+		buttonEnum.set("Right", static_cast<int>(MouseButton::ButtonRight));
+
+		auto mouseMetaTable = lua.create_table_with();
+		mouseMetaTable.set("IsButtonPressed", ::IsButtonPressed);
+		mouseMetaTable.set("GetPosition", ::GetMousePosition);
+		mouseMetaTable.set("SetPosition", ::SetMousePosition);
+		mouseMetaTable.set("Buttons", buttonEnum);
+
 		//TODO
 	}
 
