@@ -8,24 +8,24 @@ namespace Game
 {
 	class SceneHierarchyPanel
 	{
-		Ref<Scene> m_Context;
-		Entity m_SelectionContext;
+		Engine::Ref<Engine::Scene> m_Context;
+		Engine::Entity m_SelectionContext;
 
 	public:
 		SceneHierarchyPanel() = default;
-		SceneHierarchyPanel(const Ref<Scene> &context);
+		SceneHierarchyPanel(const Engine::Ref<Engine::Scene> &context);
 
-		void SetContext(const Ref<Scene> &context);
+		void SetContext(const Engine::Ref<Engine::Scene> &context);
 
 		void OnImGuiRender();
 
-		Entity GetSelectedEntity() const { return m_SelectionContext; }
-		void SetSelectedEntity(Entity entity);
+		Engine::Entity GetSelectedEntity() const { return m_SelectionContext; }
+		void SetSelectedEntity(Engine::Entity entity);
 
 
 	private:
-		void DrawEntityNode(Entity entity);
-		void DrawComponents(Entity entity);
+		void DrawEntityNode(Engine::Entity entity);
+		void DrawComponents(Engine::Entity entity);
 
 	private:
 		template <typename T>

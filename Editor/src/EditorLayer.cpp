@@ -34,36 +34,36 @@ namespace Game
 		Layer::OnImGuiRender();
 	}
 
-	void EditorLayer::OnEvent(Event &e)
+	void EditorLayer::OnEvent(Engine::Event &e)
 	{
 		Layer::OnEvent(e);
 
-		EventDispatcher dispacher(e);
-		dispacher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(EditorLayer::OnKeyPressed));
-		dispacher.Dispatch<MouseButtonPressedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
+		Engine::EventDispatcher dispacher(e);
+		dispacher.Dispatch<Engine::KeyPressedEvent>(BIND_EVENT_FN(EditorLayer::OnKeyPressed));
+		dispacher.Dispatch<Engine::MouseButtonPressedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
 
-	bool EditorLayer::OnKeyPressed(KeyPressedEvent &e)
+	bool EditorLayer::OnKeyPressed(Engine::KeyPressedEvent &e)
 	{
 		if (e.IsRepeat())
 			return false;
 
-		const bool shift = Keyboard::IsKeyPressed(Key::LeftShift) || Keyboard::IsKeyPressed(Key::RightShift);
-		const bool control = Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl);
+		const bool shift   = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftShift) || Engine::Keyboard::IsKeyPressed(Engine::Key::RightShift);
+		const bool control = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftControl) || Engine::Keyboard::IsKeyPressed(Engine::Key::RightControl);
 
 		switch(e.GetKeyCode())
 		{
-			case Key::N:
+			case Engine::Key::N:
 				if (control)
 					NewScene();
 			break;
 
-			case Key::O:
+			case Engine::Key::O:
 				if (control)
 					OpenScene();
 			break;
 
-			case Key::S:
+			case Engine::Key::S:
 				if (control)
 				{
 					if (shift)
@@ -73,27 +73,27 @@ namespace Game
 				}
 			break;
 
-			case Key::D:
+			case Engine::Key::D:
 				if (control)
 					OnDuplicateEntity();
 			break;
 
-			case Key::Q:
+			case Engine::Key::Q:
 				if (!ImGuizmo::IsUsing())
 					m_GuizmoType = -1;
 			break;
 
-			case Key::W:
+			case Engine::Key::W:
 				if(!ImGuizmo::IsUsing())
 					m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 
-			case Key::E:
+			case Engine::Key::E:
 				if(!ImGuizmo::IsUsing())
 					m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
 			break;
 
-			case Key::R:
+			case Engine::Key::R:
 				if(!ImGuizmo::IsUsing())
 					m_GuizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
@@ -102,14 +102,14 @@ namespace Game
 		return false;
 	}
 
-	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent &e)
+	bool EditorLayer::OnMouseButtonPressed(Engine::MouseButtonPressedEvent &e)
 	{
 		return false;
 	}
 
 	void EditorLayer::NewScene()
 	{
-		m_ActiveScene = CreateRef<Scene>();
+		m_ActiveScene = Engine::MakeRef<Engine::Scene>();
 		// m_ActiveScene->OnComponentAdded();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
 	}
@@ -118,7 +118,7 @@ namespace Game
 	void EditorLayer::OpenScene(const std::filesystem::path &path) {}
 	void EditorLayer::SaveScene() {}
 	void EditorLayer::SaveSceneAs() {}
-	void EditorLayer::SeralizeScene(Ref<Scene> scene, const std::filesystem::path &path) {}
+	void EditorLayer::SeralizeScene(Engine::Ref<Engine::Scene> scene, const std::filesystem::path &path) {}
 	void EditorLayer::OnDuplicateEntity() {}
 	void EditorLayer::UiToolbar() {}
 }

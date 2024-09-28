@@ -40,6 +40,7 @@ project "Editor"
 	links
 	{
 		"Engine",
+		"Fmt"
 	}
 
 	filter "system:windows"
@@ -47,19 +48,24 @@ project "Editor"
 		
 	filter "action:vs*"
 		externalanglebrackets "On"
-		buildoptions { "/external:W0" }
+		externalwarnings "Off" --/external:W0
+		-- buildoptions { "/external:W0" }
 
 	filter "configurations:Debug"
-		defines "GAME_DEBUG"
 		runtime "Debug"
 		symbols "on"
 
+		defines { "GAME_DEBUG", "DEBUG" }
+
 	filter "configurations:Release"
-		defines "GAME_RELEASE"
 		runtime "Release"
 		optimize "on"
 
+		defines { "GAME_RELEASE", "NDEBUG" }
+
 	filter "configurations:Dist"
-		defines "GAME_DIST"
 		runtime "Release"
 		optimize "on"
+
+		defines { "GAME_Dist", "NDEBUG" }
+

@@ -3,29 +3,25 @@
 
 #include "EditorLayer.h"
 
-namespace Game
-{
-	class Editor: public Application
-	{
+namespace Game {
+	class Editor: public Engine::Application {
 	public:
-		Editor(const ApplicationSpecification &spec) : Application(spec)
-		{
-		}
+		Editor(const Engine::ApplicationSpecification &spec) : Application(spec) {}
 
-		void Initialize() override
-		{
+		void Initialize() override {
 			Application::Initialize();
 
-			PushLayer(MakePointer<EditorLayer>());
+			PushLayer(Engine::MakeRef<EditorLayer>());
 		}
 	};
+}
 
-	Application* CreateApplication(ApplicationCommandLineArgs args)
-	{
+namespace Engine {
+	Application* Engine::CreateApplication(const ApplicationCommandLineArgs &args) {
 		ApplicationSpecification spec;
 		spec.Name            = "Editor";
 		spec.CommandLineArgs = args;
 
-		return new Editor(spec);
+		return new Game::Editor(spec);
 	}
 }

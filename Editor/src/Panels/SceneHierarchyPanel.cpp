@@ -86,7 +86,7 @@ namespace Game
 	}
 
 	template <typename T, typename UIFunction>
-	static void DrawComponent(const std::string &name, Entity entity, UIFunction uiFunction)
+	static void DrawComponent(const std::string &name, Engine::Entity entity, UIFunction uiFunction)
 	{
 		const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
 			ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
@@ -126,12 +126,12 @@ namespace Game
 		}
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(const Ref<Scene> &context)
+	SceneHierarchyPanel::SceneHierarchyPanel(const Engine::Ref<Engine::Scene> &context)
 	{
 		SetContext(context);
 	}
 
-	void SceneHierarchyPanel::SetContext(const Ref<Scene> &context)
+	void SceneHierarchyPanel::SetContext(const Engine::Ref<Engine::Scene> &context)
 	{
 		m_Context          = context;
 		m_SelectionContext = {};
@@ -177,14 +177,14 @@ namespace Game
 		ImGui::End();
 	}
 
-	void SceneHierarchyPanel::SetSelectedEntity(Entity entity)
+	void SceneHierarchyPanel::SetSelectedEntity(Engine::Entity entity)
 	{
 		m_SelectionContext = entity;
 	}
 
-	void SceneHierarchyPanel::DrawEntityNode(Entity entity)
+	void SceneHierarchyPanel::DrawEntityNode(Engine::Entity entity)
 	{
-		auto &tag = entity.GetComponent<TagComponent>().Tag;
+		auto &tag = entity.GetComponent<Engine::TagComponent>().Tag;
 
 		ImGuiTreeNodeFlags flags = ((m_SelectionContext == entity) ? ImGuiTreeNodeFlags_Selected : 0) |
 			ImGuiTreeNodeFlags_OpenOnArrow;
@@ -226,13 +226,13 @@ namespace Game
 		}
 	}
 
-	void SceneHierarchyPanel::DrawComponents(Entity entity)
+	void SceneHierarchyPanel::DrawComponents(Engine::Entity entity)
 	{
-		if(entity.HasComponent<TagComponent>())
+		if(entity.HasComponent<Engine::TagComponent>())
 		{
-			auto &tag = entity.GetComponent<TagComponent>().Tag;
+			auto &tag = entity.GetComponent<Engine::TagComponent>().Tag;
 
-			InputText("##Tag", tag);
+			Engine::InputText("##Tag", tag);
 		}
 
 		ImGui::SameLine();
@@ -243,7 +243,7 @@ namespace Game
 
 		if(ImGui::BeginPopup("AddComponent"))
 		{
-			DisplayAddComponentEntry<CameraComponent>("Camera");
+			DisplayAddComponentEntry<Engine::CameraComponent>("Camera");
 
 			ImGui::EndPopup();
 		}
@@ -251,101 +251,101 @@ namespace Game
 		ImGui::PopItemWidth();
 
 
-		DrawComponent<TransformComponent>(
-		                                  "Transform",
-		                                  entity,
-		                                  [](auto &component)
-		                                  {
-			                                  DrawVec3Control("Translation", component.Translation);
-			                                  glm::vec3 rotation = glm::degrees(component.Rotation);
-			                                  DrawVec3Control("Rotation", rotation);
-			                                  component.Rotation = radians(rotation);
-			                                  DrawVec3Control("Scale", component.Scale, 1.f);
-		                                  }
-		                                 );
+		DrawComponent<Engine::TransformComponent>(
+		                                          "Transform",
+		                                          entity,
+		                                          [](auto &component)
+		                                          {
+			                                          DrawVec3Control("Translation", component.Translation);
+			                                          glm::vec3 rotation = glm::degrees(component.Rotation);
+			                                          DrawVec3Control("Rotation", rotation);
+			                                          component.Rotation = radians(rotation);
+			                                          DrawVec3Control("Scale", component.Scale, 1.f);
+		                                          }
+		                                         );
 
-		DrawComponent<CameraComponent>(
-		                               "Camera",
-		                               entity,
-		                               [](auto &component)
-		                               {
-			                               auto &camera = component.Camera;
+		DrawComponent<Engine::CameraComponent>(
+		                                       "Camera",
+		                                       entity,
+		                                       [](auto &component)
+		                                       {
+			                                       auto &camera = component.Camera;
 
-			                               ToggleButton("Primary", &component.Primary);
+			                                       Engine::ToggleButton("Primary", &component.Primary);
 
-			                               const char *projectionTypeString[]      = {"Perspective", "Orthographic"};
-			                               const char *currentProjectionTypeString = projectionTypeString[static_cast<
-				                               int>(camera.GetProjectionType())];
+			                                       const char *projectionTypeString[]      = {"Perspective", "Orthographic"};
+			                                       const char *currentProjectionTypeString = projectionTypeString[static_cast<
+				                                       int>(camera.GetProjectionType())];
 
-			                               if(ImGui::BeginCombo("Projection", currentProjectionTypeString))
-			                               {
-				                               for(int i = 0; i < 2; ++i)
-				                               {
-					                               bool isSelected = currentProjectionTypeString == projectionTypeString
-						                               [i];
-					                               if(ImGui::Selectable(projectionTypeString[i], isSelected))
-					                               {
-						                               currentProjectionTypeString = projectionTypeString[i];
-						                               camera.SetProjectionType(
-						                                                        static_cast<SceneCamera::ProjectionType>
-						                                                        (i)
-						                                                       );
-					                               }
+			                                       if(ImGui::BeginCombo("Projection", currentProjectionTypeString))
+			                                       {
+				                                       for(int i = 0; i < 2; ++i)
+				                                       {
+					                                       bool isSelected = currentProjectionTypeString == projectionTypeString
+						                                       [i];
+					                                       if(ImGui::Selectable(projectionTypeString[i], isSelected))
+					                                       {
+						                                       currentProjectionTypeString = projectionTypeString[i];
+						                                       camera.SetProjectionType(
+						                                                                static_cast<Engine::SceneCamera::ProjectionType>
+						                                                                (i)
+						                                                               );
+					                                       }
 
-					                               if(isSelected)
-						                               ImGui::SetItemDefaultFocus();
-				                               }
+					                                       if(isSelected)
+						                                       ImGui::SetItemDefaultFocus();
+				                                       }
 
-				                               ImGui::EndCombo();
-			                               }
+				                                       ImGui::EndCombo();
+			                                       }
 
-			                               if(camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
-			                               {
-				                               float perspectiveVerticalFov = glm::degrees(
-					                                camera.GetPerspectiveVerticalFOV()
-					                               );
-				                               if(ImGui::DragFloat("Vertical Fov", &perspectiveVerticalFov))
-					                               camera.SetPerspectiveVerticalFOV(perspectiveVerticalFov);
+			                                       if(camera.GetProjectionType() == Engine::SceneCamera::ProjectionType::Perspective)
+			                                       {
+				                                       float perspectiveVerticalFov = glm::degrees(
+				                                                                                   camera.GetPerspectiveVerticalFOV()
+				                                                                                  );
+				                                       if(ImGui::DragFloat("Vertical Fov", &perspectiveVerticalFov))
+					                                       camera.SetPerspectiveVerticalFOV(perspectiveVerticalFov);
 
-				                               float perspectiveNear = camera.GetPerspectiveNearClip();
-				                               if(ImGui::DragFloat("Near", &perspectiveNear))
-					                               camera.SetPerspectiveNearClip(perspectiveNear);
+				                                       float perspectiveNear = camera.GetPerspectiveNearClip();
+				                                       if(ImGui::DragFloat("Near", &perspectiveNear))
+					                                       camera.SetPerspectiveNearClip(perspectiveNear);
 
-				                               float perspectiveFar = camera.GetPerspectiveFarClip();
-				                               if(ImGui::DragFloat("Far", &perspectiveFar))
-					                               camera.SetPerspectiveFarClip(perspectiveFar);
-			                               }
+				                                       float perspectiveFar = camera.GetPerspectiveFarClip();
+				                                       if(ImGui::DragFloat("Far", &perspectiveFar))
+					                                       camera.SetPerspectiveFarClip(perspectiveFar);
+			                                       }
 
-			                               if(camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
-			                               {
-				                               float orthoSize = camera.GetOrthographicSize();
-				                               if(ImGui::DragFloat("Size", &orthoSize))
-					                               camera.SetOrthographicSize(orthoSize);
+			                                       if(camera.GetProjectionType() == Engine::SceneCamera::ProjectionType::Orthographic)
+			                                       {
+				                                       float orthoSize = camera.GetOrthographicSize();
+				                                       if(ImGui::DragFloat("Size", &orthoSize))
+					                                       camera.SetOrthographicSize(orthoSize);
 
-				                               float orthoNear = camera.GetOrthographicNearClip();
-				                               if(ImGui::DragFloat("Near", &orthoNear))
-					                               camera.SetOrthographicNearClip(orthoNear);
+				                                       float orthoNear = camera.GetOrthographicNearClip();
+				                                       if(ImGui::DragFloat("Near", &orthoNear))
+					                                       camera.SetOrthographicNearClip(orthoNear);
 
-				                               float orthoFar = camera.GetOrthographicFarClip();
-				                               if(ImGui::DragFloat("Far", &orthoFar))
-					                               camera.SetOrthographicNearClip(orthoFar);
+				                                       float orthoFar = camera.GetOrthographicFarClip();
+				                                       if(ImGui::DragFloat("Far", &orthoFar))
+					                                       camera.SetOrthographicNearClip(orthoFar);
 
-				                               ToggleButton("Fixed Aspect Ratio", &component.FixedAspectRatio);
+				                                       Engine::ToggleButton("Fixed Aspect Ratio", &component.FixedAspectRatio);
 
-				                               float aspectRatio = camera.GetAspectRatio();
-				                               if(ImGui::DragFloat(
-				                                                   "AspectRatio",
-				                                                   &aspectRatio,
-				                                                   1,
-				                                                   0,
-				                                                   0,
-				                                                   "%.3f",
-				                                                   ImGuiSliderFlags_ReadOnly
-				                                                  ))
-					                               camera.SetAspectRatio(aspectRatio);
-			                               }
-		                               }
-		                              );
+				                                       float aspectRatio = camera.GetAspectRatio();
+				                                       if(ImGui::DragFloat(
+				                                                           "AspectRatio",
+				                                                           &aspectRatio,
+				                                                           1,
+				                                                           0,
+				                                                           0,
+				                                                           "%.3f",
+				                                                           ImGuiSliderFlags_ReadOnly
+				                                                          ))
+					                                       camera.SetAspectRatio(aspectRatio);
+			                                       }
+		                                       }
+		                                      );
 	}
 
 	template <typename T>

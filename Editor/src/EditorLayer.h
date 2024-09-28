@@ -6,7 +6,7 @@
 
 namespace Game
 {
-	class EditorLayer : public Layer
+	class EditorLayer : public Engine::Layer
 	{
 	private:
 		enum class SceneState
@@ -16,8 +16,8 @@ namespace Game
 			Simulate = 2
 		};
 
-		Ref<Scene> m_ActiveScene;
-		Ref<Scene> m_EditorScene;
+		Engine::Ref<Engine::Scene> m_ActiveScene;
+		Engine::Ref<Engine::Scene> m_EditorScene;
 
 		int m_GuizmoType = -1;
 
@@ -26,7 +26,7 @@ namespace Game
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 	public:
 		EditorLayer();
-		virtual ~EditorLayer() = default;
+		~EditorLayer() override = default;
 
 		void OnAttach() override;
 		void OnDetach() override;
@@ -34,11 +34,11 @@ namespace Game
 		void OnUpdate() override;
 
 		void OnImGuiRender() override;
-		void OnEvent(Event &e) override;
+		void OnEvent(Engine::Event &e) override;
 
 	private:
-		bool OnKeyPressed(KeyPressedEvent &e);
-		bool OnMouseButtonPressed(MouseButtonPressedEvent &e);
+		bool OnKeyPressed(Engine::KeyPressedEvent &e);
+		bool OnMouseButtonPressed(Engine::MouseButtonPressedEvent &e);
 
 		void NewScene();
 		void OpenScene();
@@ -46,7 +46,7 @@ namespace Game
 		void SaveScene();;
 		void SaveSceneAs();
 
-		void SeralizeScene(Ref<Scene> scene, const std::filesystem::path &path);
+		void SeralizeScene(Engine::Ref<Engine::Scene> scene, const std::filesystem::path &path);
 
 		void OnDuplicateEntity();
 
