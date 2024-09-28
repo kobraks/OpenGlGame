@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Base.h"
-#include "Engine/Core/MouseButton.h"
+#include "Engine/Core/MouseCodes.h"
 #include "Engine/Core/Vector2.h"
 
 #include "Engine/Events/Event.h"
@@ -47,19 +47,19 @@ namespace Engine{
 
 	class MouseButtonEvent: public Event {
 	public:
-		MouseButtonCode GetMouseButton() const { return m_Button; }
+		MouseCode GetMouseButton() const { return m_Button; }
 
 		EVENT_CLASS_CATEGORY(EventCategoryMouse | EventCategoryInput | EventCategoryMouseButton)
 
 	protected:
-		MouseButtonEvent(const MouseButtonCode button) : m_Button(button) {}
+		MouseButtonEvent(const MouseCode button) : m_Button(button) {}
 
-		MouseButtonCode m_Button;
+		MouseCode m_Button;
 	};
 
 	class MouseButtonPressedEvent: public MouseButtonEvent {
 	public:
-		MouseButtonPressedEvent(const MouseButtonCode button): MouseButtonEvent(button) {}
+		MouseButtonPressedEvent(const MouseCode button): MouseButtonEvent(button) {}
 
 		std::string ToString() const override {
 			return fmt::format("MouseButtonPressedEvent: {}", static_cast<uint16_t>(m_Button));
@@ -70,7 +70,7 @@ namespace Engine{
 
 	class MouseButtonReleasedEvent: public MouseButtonEvent {
 	public:
-		MouseButtonReleasedEvent(const MouseButtonCode button): MouseButtonEvent(button) {}
+		MouseButtonReleasedEvent(const MouseCode button): MouseButtonEvent(button) {}
 
 		std::string ToString() const override {
 			return fmt::format("MouseButtonReleasedEvent: {}", static_cast<uint16_t>(m_Button));
