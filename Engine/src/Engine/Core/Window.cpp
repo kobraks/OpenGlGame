@@ -239,6 +239,7 @@ namespace Engine {
 		m_Data.X = pos.X;
 		m_Data.Y = pos.Y;
 
+		glfwSetWindowUserPointer(static_cast<GLFWwindow *>(m_Window), &m_Data);
 		SetVSync(true);
 
 		InstallCallbacks();

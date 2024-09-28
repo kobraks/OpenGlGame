@@ -91,10 +91,10 @@ namespace Engine {
 				}
 
 				m_ImGuiLayer->Begin();
-
+				
 				for(auto &layer : m_LayerStack)
 					layer->OnImGuiRender();
-
+				
 				m_ImGuiLayer->End();
 			}
 

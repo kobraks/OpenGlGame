@@ -46,6 +46,7 @@ namespace Engine {
 	}
 
 	Context::Context(void *windowHandler) {
+		m_Window = windowHandler;
 		MakeCurrent();
 
 		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);

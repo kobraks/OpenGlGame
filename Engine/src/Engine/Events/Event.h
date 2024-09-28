@@ -48,7 +48,7 @@ namespace Engine {
 
 	class Event {
 	public:
-		virtual ~Event();
+		virtual ~Event() {}
 
 		bool Handled = false;
 

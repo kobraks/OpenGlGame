@@ -11,7 +11,7 @@ namespace Engine {
 	class Layer {
 	public:
 		explicit Layer(std::string name = "Layer") : m_DebugName(std::move(name)) {}
-		virtual ~Layer();
+		virtual ~Layer() {}
 
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}

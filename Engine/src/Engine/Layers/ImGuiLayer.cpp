@@ -4,6 +4,8 @@
 #include "Engine/Core/Application.h"
 
 #include <imgui.h>
+#include <imgui_internal.h>
+
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
@@ -42,7 +44,8 @@ namespace Engine {
 
 	void ImGuiLayer::OnDetach() {
 		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
 	}
 
 	void ImGuiLayer::OnEvent(Event &e) {

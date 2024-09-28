@@ -5,9 +5,10 @@
 #include <memory>
 
 #ifdef GAME_DEFINE_DISCRETE_GPU_PREFERENCE
-extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
-extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+extern "C" __declspec(dllexport) inline unsigned long NvOptimusEnablement = 0x00000001;
+extern "C" __declspec(dllexport) inline int AmdPowerXpressRequestHighPerformance = 1;
 #endif
+
 
 #define GAME_EXPAND_MACRO(x) x
 #define GAME_STRINGIFY_MACRO(x) #x

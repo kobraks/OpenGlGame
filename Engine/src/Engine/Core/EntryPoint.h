@@ -16,11 +16,11 @@ int main(int argc, char **argv) {
 		app->Initialize();
 	}
 	catch(std::exception &ex) {
-		LOG_ENGINE_CRITICAL("Uncatched exception during initialization: {}", ex.what());
+		LOG_ENGINE_CRITICAL("Uncaught exception during initialization: {}", ex.what());
 		app->Exit(-1);
 	}
 	catch(...) {
-		LOG_ENGINE_CRITICAL("Unknown exception catched during initialization");
+		LOG_ENGINE_CRITICAL("Unknown exception caught during initialization");
 		app->Exit(-1);
 	}
 
@@ -28,13 +28,21 @@ int main(int argc, char **argv) {
 		exitCode = app->Run();
 	}
 	catch(std::exception &ex) {
-		LOG_ENGINE_CRITICAL("Uncatched exception: {}", ex.what());
+		LOG_ENGINE_CRITICAL("Uncaught exception: {}", ex.what());
 	}
 	catch(...) {
-		LOG_ENGINE_CRITICAL("Unknown exception catched");
+		LOG_ENGINE_CRITICAL("Unknown exception caught");
 	}
 
-	delete app;
+	try {
+		delete app;
+	}
+	catch (std::exception &ex) {
+		LOG_ENGINE_CRITICAL("Uncaught exception during freeing up memory: {}", ex.what());
+	}
+	catch (...) {
+		LOG_ENGINE_CRITICAL("Unknown exception caught");
+	}
 
 	return exitCode;
 }

@@ -6,8 +6,8 @@ namespace Engine {
 	class Window;
 
 	struct OpenGLVersion {
-		int32_t Major;
-		int32_t Minor;
+		int32_t Major = 0;
+		int32_t Minor = 0;
 	};
 
 	class Context {
@@ -33,7 +33,7 @@ namespace Engine {
 		Context(void *windowHandler);
 
 		OpenGLVersion m_Version;
-		void *m_Window;
+		void *m_Window = nullptr;
 		std::thread::id m_Thread;
 	};
 }
