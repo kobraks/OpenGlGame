@@ -14,6 +14,7 @@ namespace Engine {
 
 		static Buffer Copy(const Buffer &other) {
 			Buffer buffer;
+
 			buffer.Allocate(other.Size);
 			memcpy(buffer.Data, other.Data, other.Size);
 
@@ -22,6 +23,7 @@ namespace Engine {
 
 		static Buffer Copy(const void *data, size_t size) {
 			Buffer buffer;
+
 			buffer.Allocate(size);
 			memcpy(buffer.Data, data, size);
 
@@ -39,6 +41,13 @@ namespace Engine {
 			Size = size;
 		}
 
+		void Release() {
+			delete[] static_cast<uint8_t*>(Data);
+
+			Data = nullptr;
+			Size = 0;
+		}
+
 		void ZeroInitialize() {
 			if (Data)
 				memset(Data, 0, Size);
@@ -46,12 +55,27 @@ namespace Engine {
 
 		template<typename T>
 		T &Read(size_t offset = 0) {
-			return std::bit_cast<T, uint8_t*>(static_cast<uint8_t *>(Data) + offset);
+			return *static_cast<T*>(static_cast<uint8_t*>(Data) + offset);
 		}
 
 		template<typename T>
-		T Read(size_t offset = 0) {
-			return std::bit_cast<T, uint8_t*>(static_cast<uint8_t *>(Data) + offset);
+		const T &Read(size_t offset = 0) {
+			return *static_cast<T*>(static_cast<uint8_t*>(Data) + offset);
+		}
+
+		uint8_t *ReadBytes(size_t size, size_t offset = 0) const {
+			ENGINE_ASSERT(offset + size <= Size, "Buffer overflow!");
+
+			uint8_t* buffer = new uint8_t[size];
+
+			memcpy(buffer, static_cast<uint8_t*>(Data) + offset, size);
+			return buffer;
+		}
+
+		void Write(const void* data, size_t size, size_t offset = 0) {
+			ENGINE_ASSERT(offset + size <= Size, "Buffer overflow!");
+
+			memcpy(static_cast<uint8_t*>(Data) + offset, data, size);
 		}
 
 		operator bool() const {
