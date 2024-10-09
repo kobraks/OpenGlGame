@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <chrono>
 
+#include <fmt/format.h>
+
 namespace Engine {
 	class Time {
 	public:
@@ -153,5 +155,37 @@ namespace Engine {
 		return lth = lth % rth;
 	}
 
-	inline constexpr Time Time::Zero;
+	inline const Time Time::Zero;
 }
+
+template<>
+struct fmt::formatter<Engine::Time> : fmt::formatter<int64_t> {
+	constexpr auto format(const Engine::Time &time, format_context &ctx) {
+		if (m_Milliseconds)
+			return fmt::format_to(ctx.out(), "{}ms", time.AsMilliseconds());
+		if (m_Seconds)
+			return fmt::format_to(ctx.out(), "{:#.4f}s", time.AsSeconds());
+
+		return fmt::format_to(ctx.out(), "{}us", time.AsMicroseconds());
+	}
+
+	constexpr auto parse(format_parse_context &ctx) {
+		const auto end = std::ranges::find(ctx, '}');
+		if (end != ctx.begin()) {
+			const char rep = *ctx.begin();
+
+			if (rep == 'm')
+				m_Milliseconds = true;
+			if (rep == 's')
+				m_Seconds = true;
+
+			ctx.advance_to(std::next(ctx.begin()));
+		}
+
+		return ctx.begin();
+	}
+
+private:
+	bool m_Milliseconds = false;
+	bool m_Seconds = false;
+};
