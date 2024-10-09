@@ -5,9 +5,9 @@
 #include <ratio>
 #include <type_traits>
 
-namespace Engine {
-	class Time;
+#include "Time.h"
 
+namespace Engine {
 	class Clock {
 	public:
 		Time GetElapsedTime() const;
