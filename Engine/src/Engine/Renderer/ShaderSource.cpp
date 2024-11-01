@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Engine/Renderer/ShaderSource.h"
 
+#include <regex>
 #include <boost/regex.hpp>
 
 namespace Engine {
@@ -49,7 +50,7 @@ namespace Engine {
 	}
 
 	std::string ShaderSource::ParseInclude(std::string_view fileName, std::unordered_set<std::string> &files) {
-		auto filePath = std::filesystem::path(fileName);
+		const auto filePath = std::filesystem::path(fileName);
 
 		if (files.contains(filePath.string())) {
 			LOG_ENGINE_WARN("File already included: \"{}\"", fileName);
@@ -61,7 +62,10 @@ namespace Engine {
 	}
 
 	bool ShaderSource::IsInclude(std::string_view string) {
-		return false;
+		//#include "file.ext"
+		const std::regex pattern("^\\s*#include\\s*\\\".*\\\"", std::regex_constants::ECMAScript | std::regex_constants::icase);
+
+		return std::regex_match(string.data(), pattern);
 	}
 
 	std::string_view ShaderSource::GetInclude(std::string_view string) {
