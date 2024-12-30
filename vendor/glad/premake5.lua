@@ -23,8 +23,13 @@ project "Glad"
 
     filter "configurations:Debug"
         runtime "Debug"
-        symbols "on"
+        symbols "On"
+
+        defines { "DEBUG" }
 
     filter "configurations:Release"
         runtime "Release"
-        optimize "on"
+        optimize "On"
+        symbols "Off"
+
+        defines { "NDEBUG" }

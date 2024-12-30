@@ -83,7 +83,7 @@ namespace Engine {
 
 template <class Out>
 Out operator<<(Out &out, const Engine::Event &event) {
-	return Out << event.ToString();
+	return out << event.ToString();
 }
 
 template <typename T>

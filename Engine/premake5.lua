@@ -48,6 +48,7 @@ project "Engine"
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.Entt}",
+		"%{IncludeDir.Yaml}",
 	}
 
 	links
@@ -57,7 +58,9 @@ project "Engine"
 		"Lua54",
 		"Fmt",
 		"ImGui",
+		"Spdlog",
 		"FreeImageLib",
+		"yaml-cpp",
 		
 		"opengl32.lib",
 	}

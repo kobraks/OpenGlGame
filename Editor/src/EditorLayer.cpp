@@ -31,7 +31,22 @@ namespace Game
 
 	void EditorLayer::OnImGuiRender()
 	{
-		Layer::OnImGuiRender();
+		if (ImGui::BeginMainMenuBar()) {
+			if (ImGui::BeginMenu("Scene")) {
+				if (ImGui::MenuItem("New", "Ctr+N"))
+					NewScene();
+				if (ImGui::MenuItem("Open", "Ctr+O")) {}
+				if (ImGui::MenuItem("Save ", "Ctr+S")) {}
+				if (ImGui::MenuItem("Save As ...", "Ctr+Shift+S")) {}
+
+
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMainMenuBar();
+		}
+
+		m_SceneHierarchyPanel.OnImGuiRender();
 	}
 
 	void EditorLayer::OnEvent(Engine::Event &e)

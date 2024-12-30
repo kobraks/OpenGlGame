@@ -21,7 +21,7 @@ namespace Engine {
 		void PopOverlay(LayerPtr overlay);
 
 		LayerList::iterator begin() { return m_Layers.begin(); }
-		LayerList::iterator end() { return m_Layers.begin(); }
+		LayerList::iterator end() { return m_Layers.end(); }
 
 		LayerList::const_iterator begin() const { return m_Layers.begin(); }
 		LayerList::const_iterator end() const { return m_Layers.end(); }

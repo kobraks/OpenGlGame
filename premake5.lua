@@ -33,7 +33,7 @@ group "Dependencies"
 	include "vendor/FreeImage"
 	include "vendor/ImGui"
     include "vendor/spdlog"
---	include "Hazel/vendor/yaml-cpp"
+    include "vendor/yaml-cpp"
 group ""
 
 group "Core"
