@@ -9,7 +9,6 @@ workspace "OpenGlGame"
 	{
 		"Debug",
 		"Release",
-		"Dist"
 	}
 
 	solution_items
@@ -23,6 +22,9 @@ workspace "OpenGlGame"
 	}
 	
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
+
+filter ("action:vs*")
+	buildoptions {"/utf-8"}
 
 group "Dependencies"
 	include "vendor/premake"
