@@ -66,7 +66,7 @@ project "Engine"
 	}
 
 	filter "files:src/**.cpp"
-		flags { "FatalWarnings" }
+		fatalwarnings { "All" }
 
 	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
 		flags { "NoPCH" }
