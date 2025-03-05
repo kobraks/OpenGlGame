@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Engine/Renderer/Context.h"
+#include "Engine/Renderer/GraphicContext.h"
 
 #include "Engine/Core/Assert.h"
 #include "Engine/Core/Window.h"
@@ -11,41 +11,41 @@
 
 
 namespace Engine {
-	Scope<Context> Context::Create(const Window *window) {
+	Scope<GraphicContext> GraphicContext::Create(const Window *window) {
 		ENGINE_ASSERT(window);
 
-		return Scope<Context>(new Context(window->GetNativeWindow()));
+		return Scope<GraphicContext>(new GraphicContext(window->GetNativeWindow()));
 	}
 
-	void Context::SwapBuffers() {
+	void GraphicContext::SwapBuffers() {
 		ENGINE_ASSERT(IsCurrent());
 		glfwSwapBuffers(static_cast<GLFWwindow *>(m_Window));
 	}
 
-	bool Context::IsCurrent() const {
+	bool GraphicContext::IsCurrent() const {
 		return std::this_thread::get_id() == m_Thread;
 	}
 
 
-	void Context::MakeCurrent() {
+	void GraphicContext::MakeCurrent() {
 		ENGINE_ASSERT(m_Thread == std::thread::id());
 
 		if (m_Thread != std::thread::id()) {
-			throw std::runtime_error(fmt::format("Context cannot be attached to current thread({}), context attached at: {}", std::this_thread::get_id(), m_Thread));
+			throw std::runtime_error(fmt::format("GraphicContext cannot be attached to current thread({}), context attached at: {}", std::this_thread::get_id(), m_Thread));
 		}
 
 		glfwMakeContextCurrent(static_cast<GLFWwindow *>(m_Window));
 		m_Thread = std::this_thread::get_id();
 	}
 
-	void Context::Detach() {
+	void GraphicContext::Detach() {
 		if (IsCurrent()) {
 			glfwMakeContextCurrent(nullptr);
 			m_Thread = std::thread::id();
 		}
 	}
 
-	Context::Context(void *windowHandler) {
+	GraphicContext::GraphicContext(void *windowHandler) {
 		m_Window = windowHandler;
 		MakeCurrent();
 

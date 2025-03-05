@@ -10,15 +10,15 @@ namespace Engine {
 		int32_t Minor = 0;
 	};
 
-	class Context {
+	class GraphicContext {
 	public:
-		Context(const Context &) = delete;
-		Context(Context &&) = delete;
+		GraphicContext(const GraphicContext &) = delete;
+		GraphicContext(GraphicContext&&) = delete;
 
-		Context& operator=(const Context &) = delete;
-		Context& operator=(Context &&) = delete;
+		GraphicContext& operator=(const GraphicContext &) = delete;
+		GraphicContext& operator=(GraphicContext &&) = delete;
 
-		static Scope<Context> Create(const Window* window);
+		static Scope<GraphicContext> Create(const Window* window);
 
 		[[nodiscard]] OpenGLVersion GetVersion() const { return m_Version; }
 
@@ -30,7 +30,7 @@ namespace Engine {
 		void Detach();
 
 	private:
-		Context(void *windowHandler);
+		GraphicContext(void *windowHandler);
 
 		OpenGLVersion m_Version;
 		void *m_Window = nullptr;
