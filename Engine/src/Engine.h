@@ -36,7 +36,7 @@
 #include "Engine/Layers/Layer.h"
 
 #include "Engine/Renderer/Camera.h"
-#include "Engine/Renderer/Context.h"
+#include "Engine/Renderer/GraphicContext.h"
 #include "Engine/Renderer/EditorCamera.h"
 
 #include "Engine/Scene/Components.h"
