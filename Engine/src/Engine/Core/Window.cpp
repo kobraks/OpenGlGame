@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Engine/Core/Window.h"
 
-#include "Engine/Renderer/Context.h"
+#include "Engine/Renderer/GraphicContext.h"
 
 #include "Engine/Devices/Cursor.h"
 #include "Engine/Devices/Monitor.h"
@@ -231,7 +231,7 @@ namespace Engine {
 		++s_GLFWWindowCount;
 
 		m_Monitor = nullptr;
-		m_Context = Context::Create(this);
+		m_Context = GraphicContext::Create(this);
 
 		Vector2i pos;
 		glfwGetWindowPos(static_cast<GLFWwindow*>(m_Window), &pos.X, &pos.Y);

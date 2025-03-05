@@ -12,7 +12,7 @@ namespace Engine {
 
 	class Event;
 	class Cursor;
-	class Context;
+	class GraphicContext;
 	class Monitor;
 
 	enum class InputMode {
@@ -143,6 +143,6 @@ namespace Engine {
 		Monitor *m_Monitor;
 
 		Scope<Cursor> m_Cursor = nullptr;
-		Scope<Context> m_Context = nullptr;
+		Scope<GraphicContext> m_Context = nullptr;
 	};
 }
