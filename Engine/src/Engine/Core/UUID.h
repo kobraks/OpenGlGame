@@ -63,7 +63,7 @@ struct fmt::formatter<Engine::UUID> {
 
 template<>
 struct std::hash<Engine::UUID> {
-	size_t operator()(const Engine::UUID &i) const noexcept {
+	std::size_t operator()(const Engine::UUID &i) const noexcept {
 		return boost::multiprecision::hash_value(static_cast<Engine::UUID::Type>(i));
 	}
 };

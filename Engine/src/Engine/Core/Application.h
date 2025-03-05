@@ -16,10 +16,20 @@ namespace Engine {
 	class ImGuiLayer;
 
 	struct ApplicationCommandLineArgs {
-		int Count = 0;
+		size_t Count = 0;
 		char **Args = nullptr;
 
 		std::string_view operator[](size_t index) const {
+			ENGINE_ASSERT(index < Count);
+
+			if (index >= Count) {
+				throw std::out_of_range("Out of range");
+			}
+
+			return Args[index];
+		}
+
+		std::string_view At(size_t index) const {
 			ENGINE_ASSERT(index < Count);
 
 			if (index >= Count) {

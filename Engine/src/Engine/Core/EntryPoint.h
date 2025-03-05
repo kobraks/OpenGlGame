@@ -8,7 +8,7 @@ extern Engine::Application* Engine::CreateApplication(const ApplicationCommandLi
 int main(int argc, char **argv) {
 	Engine::Log::Init();
 
-	auto app = Engine::CreateApplication({argc, argv});
+	auto app = Engine::CreateApplication({static_cast<size_t>(argc), argv});
 
 	int32_t exitCode = 0;
 
@@ -29,9 +29,11 @@ int main(int argc, char **argv) {
 	}
 	catch(std::exception &ex) {
 		LOG_ENGINE_CRITICAL("Uncaught exception: {}", ex.what());
+		exitCode = -1;
 	}
 	catch(...) {
 		LOG_ENGINE_CRITICAL("Unknown exception caught");
+		exitCode = -1;
 	}
 
 	try {
@@ -39,9 +41,11 @@ int main(int argc, char **argv) {
 	}
 	catch (std::exception &ex) {
 		LOG_ENGINE_CRITICAL("Uncaught exception during freeing up memory: {}", ex.what());
+		exitCode = -1;
 	}
 	catch (...) {
 		LOG_ENGINE_CRITICAL("Unknown exception caught");
+		exitCode = -1;
 	}
 
 	return exitCode;
