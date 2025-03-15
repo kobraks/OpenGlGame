@@ -3,10 +3,10 @@
 
 #include "EditorLayer.h"
 
-namespace Game {
-	class Editor: public Engine::Application {
+namespace Editor {
+	class EditorApp: public Engine::Application {
 	public:
-		Editor(const Engine::ApplicationSpecification &spec) : Application(spec) {}
+		EditorApp(const Engine::ApplicationSpecification &spec) : Application(spec) {}
 
 		void Initialize() override {
 			Application::Initialize();
@@ -22,6 +22,6 @@ namespace Engine {
 		spec.Name            = "Editor";
 		spec.CommandLineArgs = args;
 
-		return new Game::Editor(spec);
+		return new Editor::EditorApp(spec);
 	}
 }

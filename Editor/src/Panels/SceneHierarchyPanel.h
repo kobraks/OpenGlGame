@@ -4,7 +4,7 @@
 #include <Engine/Scene/Scene.h>
 #include <Engine/Scene/Entity.h>
 
-namespace Game
+namespace Editor
 {
 	class SceneHierarchyPanel
 	{
