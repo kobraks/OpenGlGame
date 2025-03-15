@@ -9,6 +9,12 @@ namespace Engine {
 		return s_ActiveProject;
 	}
 
+	Ref<Project> Project::New(const ProjectConfig& config) {
+		s_ActiveProject = MakeRef<Project>();
+		s_ActiveProject->m_Config = config;
+		return s_ActiveProject;
+	}
+
 	Ref<Project> Project::Load(const std::filesystem::path& path) {
 		Ref<Project> project = MakeRef<Project>();
 
