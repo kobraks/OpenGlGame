@@ -34,13 +34,13 @@ namespace Engine {
 		void OnSimulationStop();
 
 		void OnUpdateRuntime();
-		void OnConstUpdateRuntime(Time ts);
+		void OnConstUpdateRuntime(const Time &ts);
 
-		void OnConstUpdateSimulation(Time ts, EditorCamera& camera);
 		void OnUpdateSimulation(EditorCamera& camera);
+		void OnConstUpdateSimulation(const Time& ts, EditorCamera& camera);
 
-		void OnConstUpdateEditor(Time ts, EditorCamera& camera);
 		void OnUpdateEditor(EditorCamera& camera);
+		void OnConstUpdateEditor(const Time& ts, EditorCamera& camera);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 

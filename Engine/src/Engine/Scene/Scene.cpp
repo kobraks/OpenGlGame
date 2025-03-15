@@ -128,17 +128,17 @@ namespace Engine {
 		}
 	}
 
-	void Scene::OnConstUpdateRuntime(Time ts) {
+	void Scene::OnConstUpdateRuntime(const Time &ts) {
 
 	}
 
-	void Scene::OnConstUpdateSimulation(Time ts, EditorCamera& camera) {
+	void Scene::OnConstUpdateSimulation(const Time &ts, EditorCamera& camera) {
 	}
 
 	void Scene::OnUpdateSimulation(EditorCamera& camera) {
 	}
 
-	void Scene::OnConstUpdateEditor(Time ts, EditorCamera& camera) {
+	void Scene::OnConstUpdateEditor(const Time &ts, EditorCamera& camera) {
 	}
 
 	void Scene::OnUpdateEditor(EditorCamera& camera) {
