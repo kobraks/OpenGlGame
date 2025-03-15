@@ -110,4 +110,8 @@ namespace Engine {
 		colors[ImGuiCol_TitleBgActive]    = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
 		colors[ImGuiCol_TitleBgCollapsed] = ImVec4{0.15f, 0.1505f, 0.151f, 1.0f};
 	}
+
+	uint32_t ImGuiLayer::GetActiveWidgetID() const {
+		return GImGui->ActiveId;
+	}
 }

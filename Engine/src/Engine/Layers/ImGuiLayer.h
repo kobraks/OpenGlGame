@@ -16,8 +16,10 @@ namespace Engine {
 		void End();
 
 		void BlockEvents(bool block) { m_BlockEvents = block; }
+
 		void SetDarkThemeMode();
 
+		uint32_t GetActiveWidgetID() const;
 	private:
 		bool m_BlockEvents = true;
 	};

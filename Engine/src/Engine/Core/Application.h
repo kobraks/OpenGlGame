@@ -7,13 +7,13 @@
 #include "Engine/Core/Clock.h"
 
 #include "Engine/Layers/LayerStack.h"
+#include "Engine/Layers/ImGuiLayer.h"
 
 int main(int arc, char **argv);
 
 namespace Engine {
 	class WindowResizeEvent;
 	class WindowCloseEvent;
-	class ImGuiLayer;
 
 	struct ApplicationCommandLineArgs {
 		size_t Count = 0;
@@ -77,6 +77,8 @@ namespace Engine {
 		virtual void Initialize();
 
 		static Application& Get() { return *s_Instance; }
+
+		Ref<ImGuiLayer> GetImGuiLayer() const { return m_ImGuiLayer;  };
 
 	protected:
 		virtual void InitializeSettings();
