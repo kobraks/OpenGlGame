@@ -17,6 +17,7 @@ namespace Editor
 		void OnDetach() override;
 
 		void OnUpdate() override;
+		void OnConstUpdate(const Engine::Time& timeStep) override;
 
 		void OnImGuiRender() override;
 		void OnEvent(Engine::Event &e) override;
@@ -29,6 +30,7 @@ namespace Editor
 		bool OpenProject();
 		void OpenProject(const std::filesystem::path& path);
 		void SaveProject();
+		void SaveProjectAs();
 
 		void NewScene();
 		void OpenScene();

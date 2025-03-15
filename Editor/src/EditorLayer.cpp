@@ -13,29 +13,90 @@
 
 #include "ImGuizmo.h"
 
-namespace Editor
-{
-	EditorLayer::EditorLayer() : Layer("EditorLayer") {}
-
-	void EditorLayer::OnAttach()
-	{
-		Layer::OnAttach();
+namespace Editor {
+	EditorLayer::EditorLayer() : Layer("EditorLayer") {
 	}
 
-	void EditorLayer::OnDetach()
-	{
+	void EditorLayer::OnAttach() {
+		Layer::OnAttach();
+
+		m_EditorScene = Engine::MakeRef<Engine::Scene>();
+		m_ActiveScene = m_EditorScene;
+
+		if (Engine::Application::Get().GetCommandLineArgCount() > 1) {
+			OpenProject(Engine::Application::Get().GetCommandLineArg(1));
+		}
+		else {
+			NewProject();
+			//if (!OpenProject())
+			//	Engine::Application::Get().Close();
+		}
+
+		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
+	}
+
+	void EditorLayer::OnDetach() {
 		Layer::OnDetach();
 	}
 
-	void EditorLayer::OnUpdate()
-	{
+	void EditorLayer::OnUpdate() {
 		Layer::OnUpdate();
 
+		m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
+		                                static_cast<uint32_t>(m_ViewportSize.y));
+
+		Engine::RendererCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1.f});
 		Engine::RendererCommand::Clear();
+
+		switch (m_SceneState) {
+		case SceneState::Edit: {
+			m_EditorCamera.OnUpdate();
+			m_ActiveScene->OnUpdateEditor(m_EditorCamera);
+			break;
+		}
+		case SceneState::Simulate: {
+			m_EditorCamera.OnUpdate();
+			m_ActiveScene->OnUpdateSimulation(m_EditorCamera);
+			break;
+		}
+		case SceneState::Play: {
+			m_ActiveScene->OnUpdateRuntime();
+			break;
+		}
+		}
+
+		auto [mx, my] = ImGui::GetMousePos();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		const glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
+		my = viewportSize.y;
+
+		int mouseX = static_cast<int>(mx);
+		int mouseY = static_cast<int>(my);
+
+		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
+		}
+
 	}
 
-	void EditorLayer::OnImGuiRender()
-	{
+	void EditorLayer::OnConstUpdate(const Engine::Time& timeStep) {
+		switch (m_SceneState) {
+		case SceneState::Edit: {
+			m_ActiveScene->OnConstUpdateEditor(timeStep, m_EditorCamera);
+			break;
+		}
+		case SceneState::Simulate: {
+			m_ActiveScene->OnConstUpdateSimulation(timeStep, m_EditorCamera);
+			break;
+		}
+		case SceneState::Play: {
+			m_ActiveScene->OnConstUpdateRuntime(timeStep);
+			break;
+		}
+		}
+	}
+
+	void EditorLayer::OnImGuiRender() {
 		static bool dockspaceOpen = true;
 		static bool optFullscreenPersistant = true;
 		bool optFullscreen = optFullscreenPersistant;
@@ -52,7 +113,8 @@ namespace Editor
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 
-			windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+			windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
+				ImGuiWindowFlags_NoMove;
 			windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
 		}
 
@@ -73,7 +135,7 @@ namespace Editor
 		style.WindowMinSize.x = 370.f;
 
 		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-			const ImGuiID dockspaceID= ImGui::GetID("MyDockSpace");
+			const ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
 			ImGui::DockSpace(dockspaceID, ImVec2(0.f, 0.f), dockspaceFlags);
 		}
 
@@ -111,8 +173,8 @@ namespace Editor
 			ImGui::EndMenuBar();
 		}
 
-		//m_SceneHierarchyPanel.OnImGuiRender();
-		//m_ContentBrowserPanel->OnImGuiRender();
+		m_SceneHierarchyPanel.OnImGuiRender();
+		m_ContentBrowserPanel->OnImGuiRender();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
@@ -121,8 +183,8 @@ namespace Editor
 		const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		const auto viewportOffset = ImGui::GetWindowPos();
 
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+		m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
+		m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
 
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
@@ -130,7 +192,7 @@ namespace Editor
 		Engine::Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
 
 		const ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -138,8 +200,7 @@ namespace Editor
 		ImGui::End();
 	}
 
-	void EditorLayer::OnEvent(Engine::Event &e)
-	{
+	void EditorLayer::OnEvent(Engine::Event& e) {
 		Layer::OnEvent(e);
 
 		Engine::EventDispatcher dispacher(e);
@@ -147,72 +208,74 @@ namespace Editor
 		dispacher.Dispatch<Engine::MouseButtonPressedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
 
-	bool EditorLayer::OnKeyPressed(Engine::KeyPressedEvent &e)
-	{
+	bool EditorLayer::OnKeyPressed(Engine::KeyPressedEvent& e) {
 		if (e.IsRepeat())
 			return false;
 
-		const bool shift   = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftShift) || Engine::Keyboard::IsKeyPressed(Engine::Key::RightShift);
-		const bool control = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftControl) || Engine::Keyboard::IsKeyPressed(Engine::Key::RightControl);
+		const bool shift = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftShift) || Engine::Keyboard::IsKeyPressed(
+			Engine::Key::RightShift);
+		const bool control = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftControl) || Engine::Keyboard::IsKeyPressed(
+			Engine::Key::RightControl);
 
-		switch(e.GetKeyCode())
-		{
-			case Engine::Key::N:
-				if (control)
-					NewScene();
+		switch (e.GetKeyCode()) {
+		case Engine::Key::N:
+			if (control)
+				NewScene();
 			break;
 
-			case Engine::Key::O:
-				if (control)
-					OpenScene();
+		case Engine::Key::O:
+			if (control)
+				OpenScene();
 			break;
 
-			case Engine::Key::S:
-				if (control)
-				{
-					if (shift)
-						SaveSceneAs();
-					else
-						SaveScene();
-				}
+		case Engine::Key::S:
+			if (control) {
+				if (shift)
+					SaveSceneAs();
+				else
+					SaveScene();
+			}
 			break;
 
-			case Engine::Key::D:
-				if (control)
-					OnDuplicateEntity();
+		case Engine::Key::D:
+			if (control)
+				OnDuplicateEntity();
 			break;
 
-			case Engine::Key::Q:
-				if (!ImGuizmo::IsUsing())
-					m_GuizmoType = -1;
+		case Engine::Key::Q:
+			if (!ImGuizmo::IsUsing())
+				m_GuizmoType = -1;
 			break;
 
-			case Engine::Key::W:
-				if(!ImGuizmo::IsUsing())
-					m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
+		case Engine::Key::W:
+			if (!ImGuizmo::IsUsing())
+				m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
 			break;
 
-			case Engine::Key::E:
-				if(!ImGuizmo::IsUsing())
-					m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
+		case Engine::Key::E:
+			if (!ImGuizmo::IsUsing())
+				m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
 			break;
 
-			case Engine::Key::R:
-				if(!ImGuizmo::IsUsing())
-					m_GuizmoType = ImGuizmo::OPERATION::SCALE;
+		case Engine::Key::R:
+			if (!ImGuizmo::IsUsing())
+				m_GuizmoType = ImGuizmo::OPERATION::SCALE;
 			break;
 		}
 
 		return false;
 	}
 
-	bool EditorLayer::OnMouseButtonPressed(Engine::MouseButtonPressedEvent &e)
-	{
+	bool EditorLayer::OnMouseButtonPressed(Engine::MouseButtonPressedEvent& e) {
 		return false;
 	}
 
 	void EditorLayer::NewProject() {
-		Engine::Project::New();
+		Engine::ProjectConfig config;
+		config.AssetDirectory = std::filesystem::current_path();
+		config.ScriptModulePath = std::filesystem::current_path() / "Scripts";
+		Engine::Project::New(config);
+		m_ContentBrowserPanel = Engine::MakeScope<ContentBrowserPanel>();
 	}
 
 	bool EditorLayer::OpenProject() {
@@ -227,18 +290,22 @@ namespace Editor
 
 	void EditorLayer::OpenProject(const std::filesystem::path& path) {
 		if (Engine::Project::Load(path)) {
-
-			auto startScenePath = Engine::Project::GetAssetFileSystemPath(Engine::Project::GetActive()->GetConfig().StartScene);
+			auto startScenePath = Engine::Project::GetAssetFileSystemPath(
+				Engine::Project::GetActive()->GetConfig().StartScene);
 			OpenScene(startScenePath);
 			m_ContentBrowserPanel = Engine::MakeScope<ContentBrowserPanel>();
 		}
 	}
 
 	void EditorLayer::SaveProject() {
+		// if (Engine::Project::SaveActive())
 	}
 
-	void EditorLayer::NewScene()
-	{
+	void EditorLayer::SaveProjectAs() {
+		
+	}
+
+	void EditorLayer::NewScene() {
 		m_ActiveScene = Engine::MakeRef<Engine::Scene>();
 		// m_ActiveScene->OnComponentAdded();
 		m_SceneHierarchyPanel.SetContext(m_ActiveScene);
@@ -249,7 +316,8 @@ namespace Editor
 		if (!filePath.empty())
 			OpenScene(filePath);
 	}
-	void EditorLayer::OpenScene(const std::filesystem::path &path) {
+
+	void EditorLayer::OpenScene(const std::filesystem::path& path) {
 		if (m_SceneState != SceneState::Edit)
 			OnSceneStop();
 
@@ -284,7 +352,8 @@ namespace Editor
 		}
 	}
 
-	void EditorLayer::SerializeScene(Engine::Ref<Engine::Scene> scene, const std::filesystem::path &path) {}
+	void EditorLayer::SerializeScene(Engine::Ref<Engine::Scene> scene, const std::filesystem::path& path) {
+	}
 
 	void EditorLayer::OnScenePlay() {
 		if (m_SceneState == SceneState::Simulate)
@@ -341,6 +410,7 @@ namespace Editor
 			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
 		}
 	}
+
 	void EditorLayer::UiToolbar() {
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
@@ -354,12 +424,13 @@ namespace Editor
 		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
-		ImGui::Begin("##toolbar", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		ImGui::Begin("##toolbar", nullptr,
+		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 		{
 			const bool toolbarEnabled = static_cast<bool>(m_ActiveScene);
 
-			ImVec4 tintColor = ImVec4(1, 1, 1, 1);
+			auto tintColor = ImVec4(1, 1, 1, 1);
 			if (!toolbarEnabled)
 				tintColor.w = 0.5f;
 
