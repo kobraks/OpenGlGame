@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
+#include "Engine/Renderer/EditorCamera.h"
 #include "Engine/Renderer/RendererCommand.h"
 
 #include "glm/mat4x4.hpp"
@@ -13,7 +14,7 @@ namespace Engine {
 
 		static void OnWindowResize(uint32_t width, uint32_t height);
 
-		static void BeginScene();
+		static void BeginScene(const Camera& camera);
 		static void EndScene();
 
 		static void Submit();

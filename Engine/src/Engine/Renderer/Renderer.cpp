@@ -16,7 +16,8 @@ namespace Engine {
 		RendererCommand::SetViewPort(0, 0, width, height);
 	}
 
-	void Renderer::BeginScene() {
+	void Renderer::BeginScene(const Camera& camera) {
+		s_SceneData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
 	}
 
 	void Renderer::EndScene() {

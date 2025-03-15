@@ -4,16 +4,15 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Engine {
-	PerspectiveCamera::PerspectiveCamera(float fov, float aspectRatio) : m_ProjectionMatrix(
-		                                                                     glm::perspective(
-			                                                                     fov, aspectRatio, 0.f, 1.f)),
-	                                                                     m_ViewMatrix(1.f) {
-		m_ViewProjectionMatrix = m_ViewMatrix * m_ProjectionMatrix;
+	PerspectiveCamera::PerspectiveCamera(float fov, float aspectRatio) : Camera(
+		glm::perspective(
+			fov, aspectRatio, 0.f, 1.f)) {
+		UpdateViewProjectionMatrix();
 	}
 
 	void PerspectiveCamera::SetProjection(float fov, float aspectRatio) {
 		m_ProjectionMatrix = glm::perspective(fov, aspectRatio, 0.f, 1.f);
-		m_ViewProjectionMatrix = m_ViewMatrix * m_ProjectionMatrix;
+		UpdateViewProjectionMatrix();
 	}
 
 	void PerspectiveCamera::SetPosition(const glm::vec3& position) {
@@ -42,7 +41,7 @@ namespace Engine {
 
 	void PerspectiveCamera::RecalculateViewMatrix() {
 		m_ViewMatrix = lookAt(m_Position, m_Position + m_Front, m_UP);
-		m_ViewProjectionMatrix = m_ViewMatrix * m_ProjectionMatrix;
+		UpdateViewProjectionMatrix();
 	}
 
 	void PerspectiveCamera::UpdateCameraVectors() {

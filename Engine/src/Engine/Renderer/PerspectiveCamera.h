@@ -2,12 +2,14 @@
 
 #include "Engine/Core/Base.h"
 
+#include "Engine/Renderer/Camera.h"
+
 #include <glm/mat4x4.hpp>
 #include <glm/vec3.hpp>
 
 
 namespace Engine {
-	class PerspectiveCamera {
+	class PerspectiveCamera : public Camera {
 	public:
 		PerspectiveCamera(float fov, float aspectRatio);
 
@@ -27,10 +29,6 @@ namespace Engine {
 		void UpdateCameraVectors();
 
 	private:
-		glm::mat4 m_ProjectionMatrix;
-		glm::mat4 m_ViewMatrix;
-		glm::mat4 m_ViewProjectionMatrix;
-
 		const glm::vec3 m_WorldUp = { 0.f, 1.f, 0.f };
 
 		glm::vec3 m_Rotation = { 0.f, 0.f, 0.f };

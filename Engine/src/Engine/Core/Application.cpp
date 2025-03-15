@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "Engine/Core/Application.h"
 
+#include "Engine/Renderer/Renderer.h"
+
 #include "Engine/Layers/ImGuiLayer.h"
 #include "Engine/Layers/StatisticLayer.h"
 
@@ -10,6 +12,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include "imgui.h"
 #include "Engine/Events/KeyEvent.h"
 
 namespace Engine {
@@ -19,7 +22,9 @@ namespace Engine {
 		s_Instance = this;
 	}
 
-	Application::~Application() {}
+	Application::~Application() {
+		Renderer::Shutdown();
+	}
 
 	void Application::OnEvent(Event &event) {
 		EventDispatcher dispatcher(event);
@@ -129,6 +134,8 @@ namespace Engine {
 
 		PushOverlay(m_ImGuiLayer = MakeRef<ImGuiLayer>());
 		PushOverlay(MakeRef<StatisticLayer>());
+
+		Renderer::Init();
 	}
 
 	bool Application::OnWindowClose(const WindowCloseEvent &event) {
@@ -143,6 +150,8 @@ namespace Engine {
 		}
 
 		m_Minimalized = false;
+		Renderer::OnWindowResize(event.GetWidth(), event.GetHeight());
+
 		return false;
 	}
 
