@@ -18,16 +18,19 @@ namespace Engine {
 		static bool IsButtonPressed(MouseCode button);
 
 		// static Vector2i GetPosition();
-		static Vector2i GetPosition(const Window &relative);
-		static Vector2i GetPosition();
+		static Vector2f GetPosition(const Window &relative);
+		static Vector2f GetPosition();
 
 		// static void SetPosition(const Vector2i &pos);
-		static void SetPosition(const Vector2i &pos, const Window &relative);
-		static void SetPosition(const Vector2i &pos);
+		static void SetPosition(const Vector2f &pos, const Window &relative);
+		static void SetPosition(const Vector2f &pos);
 
 		// static void SetPosition(int32_t x, int32_t y);
-		static void SetPosition(int32_t x, int32_t y, const Window &relative);
-		static void SetPosition(int32_t x, int32_t y);
+		static void SetPosition(float x, float y, const Window &relative);
+		static void SetPosition(float x, float y);
+
+		static float GetX();
+		static float GetY();
 
 		static void RegisterLua(sol::state &lua);
 	};

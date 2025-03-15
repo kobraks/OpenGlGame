@@ -23,15 +23,15 @@ namespace {
 			LOG_SCRIPT_WARN("Given button doesn't exists replaced with Button7");
 		}
 
-		return Engine::Mouse::IsButtonPressed(button, Engine::Application::Get().GetWindow());
+		return Engine::Mouse::IsButtonPressed(static_cast<Engine::MouseCode>(button), Engine::Application::Get().GetWindow());
 	}
 
-	static std::pair<int32_t, int32_t> GetMousePosition() {
+	static std::pair<float, float> GetMousePosition() {
 		const auto pos = Engine::Mouse::GetPosition(Engine::Application::Get().GetWindow());
 		return std::make_pair(pos.X, pos.Y);
 	}
 
-	static void SetMousePosition(int x, int y) {
+	static void SetMousePosition(float x, float y) {
 		Engine::Mouse::SetPosition(x, y, Engine::Application::Get().GetWindow());
 	}
 }
@@ -45,28 +45,36 @@ namespace Engine {
 		return IsButtonPressed(button, Application::Get().GetWindow());
 	}
 
-	Vector2i Mouse::GetPosition() {
+	Vector2f Mouse::GetPosition() {
 		return GetPosition(Application::Get().GetWindow());
 	}
 
-	void Mouse::SetPosition(const Vector2i &pos) {
+	void Mouse::SetPosition(const Vector2f &pos) {
 		SetPosition(pos, Application::Get().GetWindow());
 	}
 
-	void Mouse::SetPosition(int32_t x, int32_t y) {
+	void Mouse::SetPosition(float x, float y) {
 		SetPosition(x, y, Application::Get().GetWindow());
 	}
 
-	Vector2i Mouse::GetPosition(const Window &relative) {
+	float Mouse::GetX() {
+		return GetPosition().X;
+	}
+
+	float Mouse::GetY() {
+		return GetPosition().Y;
+	}
+
+	Vector2f Mouse::GetPosition(const Window &relative) {
 		const auto window = static_cast<GLFWwindow*>(relative.GetNativeWindow());
 
 		double x, y;
 		glfwGetCursorPos(window, &x, &y);
 
-		return { static_cast<int32_t>(x), static_cast<int32_t>(y) };
+		return { static_cast<float>(x), static_cast<float>(y) };
 	}
 
-	void Mouse::SetPosition(const Vector2i &pos, const Window &relative) {
+	void Mouse::SetPosition(const Vector2f &pos, const Window &relative) {
 		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
 
 		const double x = static_cast<double>(pos.X);
@@ -75,7 +83,7 @@ namespace Engine {
 		glfwSetCursorPos(window, x, y);
 	}
 
-	void Mouse::SetPosition(int32_t x, int32_t y, const Window &relative) {
+	void Mouse::SetPosition(float x, float y, const Window &relative) {
 		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
 
 		glfwSetCursorPos(window, static_cast<double>(x), static_cast<double>(y));
