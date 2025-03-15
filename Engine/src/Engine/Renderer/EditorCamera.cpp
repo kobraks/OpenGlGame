@@ -112,7 +112,7 @@ namespace Engine {
 		return speed;
 	}
 
-	void EditorCamera::OnUpdate(Time timeStep) {
+	void EditorCamera::OnUpdate() {
 		if (Keyboard::IsKeyPressed(Key::LeftAlt)) {
 			const glm::vec2& mouse = { Mouse::GetX(), Mouse::GetY() };
 			const glm::vec2 delta = ( mouse - m_InitialMousePosition ) *0.003f;
