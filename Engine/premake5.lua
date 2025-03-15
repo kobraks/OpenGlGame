@@ -30,6 +30,7 @@ project "Engine"
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
 		"FREEIMAGE_LIB",
+		"YAML_CPP_STATIC_DEFINE",
 	}
 
 	includedirs
