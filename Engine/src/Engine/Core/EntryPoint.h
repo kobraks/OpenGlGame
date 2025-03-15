@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
 	int32_t exitCode = 0;
 
 	try {
+		app->ProcessArgs({ static_cast<size_t>(argc), argv });
 		app->Initialize();
 	}
 	catch(std::exception &ex) {

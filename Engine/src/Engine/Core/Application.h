@@ -76,6 +76,12 @@ namespace Engine {
 		virtual void ProcessArgs(const ApplicationCommandLineArgs &args);
 		virtual void Initialize();
 
+		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
+
+		std::string_view GetCommandLineArg(size_t i) const { return m_Arguments[i]; }
+		size_t GetCommandLineArgCount() const { return m_Arguments.size(); }
+		const std::vector<std::string> GetCommandLineArgs() const { return m_Arguments; }
+
 		static Application& Get() { return *s_Instance; }
 
 		Ref<ImGuiLayer> GetImGuiLayer() const { return m_ImGuiLayer;  };

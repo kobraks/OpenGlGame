@@ -110,8 +110,10 @@ namespace Engine {
 	}
 
 	void Application::ProcessArgs(const ApplicationCommandLineArgs &args) {
-		for(const auto arg : args)
+		for(const auto arg : args) {
 			m_Arguments.emplace_back(arg);
+			LOG_ENGINE_TRACE(arg);
+		}
 	}
 
 	void Application::Initialize() {
