@@ -55,7 +55,7 @@ namespace Engine {
 		std::unordered_map<UUID, entt::entity> enttMap;
 
 		auto idView = srcSceneReg.view<IDComponent>();
-		for (auto e : idView) {
+		for (const auto e : idView) {
 			UUID uuid = srcSceneReg.get<IDComponent>(e).ID;
 			const auto &name = srcSceneReg.get<TagComponent>(e).Tag;
 			Entity newEntity = newScene->CreateEntity(uuid, name);
@@ -74,22 +74,79 @@ namespace Engine {
 	Entity Scene::CreateEntity(UUID id, const std::string &name) {
 		Entity entity = CreateEmpty();
 		entity.AddComponent<IDComponent>(id);
-
-		auto& tag = entity.AddComponent<TagComponent>();
 		entity.AddComponent<TransformComponent>();
+		auto& tag = entity.AddComponent<TagComponent>();
 
 		tag.Tag = name.empty() ? "Entity" : name;
+
+		m_EntityMap[id] = entity;
 
 		return entity;
 	}
 
 	void Scene::DestroyEntity(Entity entity) {
+		m_EntityMap.erase(entity.GetUUID());
 		m_Registry.destroy(entity);
 	}
 
+	void Scene::OnRuntimeStart() {
+		m_IsRunning = true;
+
+	}
+
+	void Scene::OnRuntimeStop() {
+		m_IsRunning = false;
+	}
+
+	void Scene::OnSimulationStart() {
+	}
+
+	void Scene::OnSimulationStop() {
+	}
+
+	void Scene::OnUpdateRuntime() {
+		if (!m_IsPaused || m_StepFrames-- > 0) {
+
+			Camera* mainCamera = nullptr;
+			glm::mat4 cameraTransform;
+			{
+				auto view = m_Registry.view<TransformComponent, CameraComponent>();
+				for (auto entity : view) {
+					auto [transform, camera] = view.get<TransformComponent, CameraComponent>(entity);
+
+					if (camera.Primary) {
+						mainCamera = &camera.Camera;
+						cameraTransform = transform.GetTransform();
+						break;
+					}
+				}
+			}
+
+			if (mainCamera) {
+
+			}
+		}
+	}
+
+	void Scene::OnConstUpdateRuntime(Time ts) {
+
+	}
+
+	void Scene::OnConstUpdateSimulation(Time ts, EditorCamera& camera) {
+	}
+
+	void Scene::OnUpdateSimulation(EditorCamera& camera) {
+	}
+
+	void Scene::OnConstUpdateEditor(Time ts, EditorCamera& camera) {
+	}
+
+	void Scene::OnUpdateEditor(EditorCamera& camera) {
+	}
+
 	Entity Scene::GetPrimaryCameraEntity() {
-		auto view = m_Registry.view<CameraComponent>();
-		for (auto entity: view) {
+		const auto view = m_Registry.view<CameraComponent>();
+		for (const auto entity : view) {
 			const auto &camera = view.get<CameraComponent>(entity);
 			if (camera.Primary)
 				return Entity{entity, this};
@@ -102,17 +159,41 @@ namespace Engine {
 		m_ViewportHeight = height;
 		m_ViewportWidth = width;
 
-		auto view = m_Registry.view<CameraComponent>();
-		for (auto entity : view) {
+		const auto view = m_Registry.view<CameraComponent>();
+		for (const auto entity : view) {
 			auto &camera = view.get<CameraComponent>(entity);
 			if (!camera.FixedAspectRatio)
 				camera.Camera.SetViewportSize(width, height);
 		}
 	}
 
-	void Scene::DuplicateEntity(Entity entity) {
-		Entity newEntity = CreateEntity(entity.GetName());
+	Entity Scene::DuplicateEntity(Entity entity) {
+		const std::string name = entity.GetName();
+		Entity newEntity = CreateEntity(name);
 		CopyComponentIfExists(AllComponents{}, newEntity, entity);
+		return newEntity;
+	}
+
+	Entity Scene::FindEntityByName(std::string_view name) {
+		const auto view = m_Registry.view<TagComponent>();
+		for (const auto entity : view) {
+			const TagComponent& tc = view.get<TagComponent>(entity);
+			if (tc.Tag == name)
+				return Entity{ entity, this };
+		}
+
+		return {};
+	}
+
+	Entity Scene::GetEntityByUUID(UUID uuid) {
+		if (m_EntityMap.contains(uuid))
+			return { m_EntityMap.at(uuid), this };
+			
+		return {};
+	}
+
+	void Scene::Setp(int frames) {
+		m_StepFrames = frames;
 	}
 
 	Entity Scene::CreateEmpty() {
@@ -136,6 +217,9 @@ namespace Engine {
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, TagComponent &component) {}
+
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, FlagsComponent &component) {}
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, TransformComponent &component) {}

@@ -10,6 +10,7 @@ namespace Editor {
 }
 
 namespace Engine {
+	class EditorCamera;
 	class Entity;
 	class Camera;
 	class SceneSerializer;
@@ -25,11 +26,36 @@ namespace Engine {
 		Entity CreateEntity(UUID id, const std::string &name = "");
 
 		void DestroyEntity(Entity entity);
-		Entity GetPrimaryCameraEntity();
+
+		void OnRuntimeStart();
+		void OnRuntimeStop();
+
+		void OnSimulationStart();
+		void OnSimulationStop();
+
+		void OnUpdateRuntime();
+		void OnConstUpdateRuntime(Time ts);
+
+		void OnConstUpdateSimulation(Time ts, EditorCamera& camera);
+		void OnUpdateSimulation(EditorCamera& camera);
+
+		void OnConstUpdateEditor(Time ts, EditorCamera& camera);
+		void OnUpdateEditor(EditorCamera& camera);
 
 		void OnViewportResize(uint32_t width, uint32_t height);
 
-		void DuplicateEntity(Entity entity);
+		Entity DuplicateEntity(Entity entity);
+		Entity FindEntityByName(std::string_view name);
+		Entity GetEntityByUUID(UUID uuid);
+
+		Entity GetPrimaryCameraEntity();
+
+		bool IsRunning() const { return m_IsRunning; }
+		bool IsPaused() const { return m_IsPaused;  }
+
+		void SetPaused(bool paused) { m_IsPaused = paused; }
+
+		void Setp(int frames = 1);
 
 		std::string_view Title() const { return m_Title; }
 		void SetTitle(const std::string &title) { m_Title = title; }
@@ -46,8 +72,13 @@ namespace Engine {
 
 		uint32_t m_ViewportWidth = 0;
 		uint32_t m_ViewportHeight = 0;
+		bool m_IsRunning = false;
+		bool m_IsPaused = false;
+		int m_StepFrames = 0;
 
 		std::string m_Title = {};
+
+		std::unordered_map<UUID, entt::entity> m_EntityMap;
 
 		friend class Entity;
 		friend class SceneSerializer;

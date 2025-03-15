@@ -39,15 +39,17 @@ namespace Engine {
 
 	void SceneCamera::RecalculateProjection() {
 		if (m_ProjectionType == ProjectionType::Perspective)
-			m_Projection = glm::perspective(m_PerspectiveFov, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
+			m_ProjectionMatrix = glm::perspective(m_PerspectiveFov, m_AspectRatio, m_PerspectiveNear, m_PerspectiveFar);
 		else {
 			const float left = -m_OrthographicSize * m_AspectRatio * 0.5f;
 			const float right= m_OrthographicSize * m_AspectRatio * 0.5f;
 			const float bottom = -m_OrthographicSize * 0.5f;
 			const float top = m_OrthographicSize * 0.5f;
 
-			m_Projection = glm::ortho(left, right, bottom, top, m_OrthographicNear, m_OrthographicFar);
+			m_ProjectionMatrix = glm::ortho(left, right, bottom, top, m_OrthographicNear, m_OrthographicFar);
 		}
+
+		UpdateViewProjectionMatrix();
 	}
 
 }
