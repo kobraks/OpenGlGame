@@ -10,7 +10,6 @@ namespace Engine {
 		ClampEdge,
 		ClampBorder,
 		MirroredRepeat,
-		Default = Repeat,
 	};
 
 	enum class Filter {
@@ -36,12 +35,31 @@ namespace Engine {
 		IDType ID() const { return m_Internals->ID;  }
 
 		void GenerateMipMaps() const;
-		bool IsMipMapsGenerated() const { return m_Internals->MimpmapGenerated;  }
+		bool IsMipMapsGenerated() const { return m_Internals->MipMapGenerated;  }
 
-		void Bind();
+		void Bind() const;
 
 		void Create(const Vector2u& size);
 		void Create(const Image& image);
+
+		void SetWrapping(Wrapping s);
+		void SetWrapping(Wrapping s, Wrapping t);
+		void SetWrapping(Wrapping s, Wrapping t, Wrapping r);
+
+		void SetWrappingS(Wrapping wrapping);
+		void SetWrappingT(Wrapping wrapping);
+		void SetWrappingR(Wrapping wrapping);
+
+		Wrapping GetWrappingS() const { return m_Internals->Wrapping.S; }
+		Wrapping GetWrappingT() const { return m_Internals->Wrapping.T; }
+		Wrapping GetWrappingR() const { return m_Internals->Wrapping.R; }
+
+		void SetFilters(Filter min, Filter mag);
+		void SetMinFilter(Filter filter);
+		void SetMagFilter(Filter filter);
+
+		Filter GetMagFilter() const { return m_Internals->Filter.Mag; }
+		Filter GetMinFilter() const { return m_Internals->Filter.Min; }
 
 		Vector2u Size() const { return m_Internals->Size; }
 		uint32_t Width() const { return m_Internals->Size.Width; }
@@ -70,24 +88,40 @@ namespace Engine {
 		bool operator==(const Texture2D& texture) const {
 			return m_Internals->ID == texture.m_Internals->ID;
 		}
-	private:
+	protected:
 		bool CheckTextureSize(const Vector2u& size);
 		void CreateTexture(const Vector2u& size, const void* pixels = nullptr);
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset);
+
+	private:
+		struct InternalWrapping {
+			Wrapping S = Wrapping::Repeat;
+			Wrapping T = Wrapping::Repeat;
+			Wrapping R = Wrapping::Repeat;
+		};
+
+		struct InternalFilter {
+			Filter Mag = Filter::Linear;
+			Filter Min = Filter::NearestMipmapLinear;
+		};
 
 		struct Internals {
 			IDType ID;
 			Vector2u Size;
 
-			bool MimpmapGenerated = false;
+			bool MipMapGenerated = false;
+
+			InternalWrapping Wrapping;
+			InternalFilter Filter;
 
 			Internals();
 			~Internals();
 
 			void Bind();
 
-			void Image2D(const void* pixels, int internalFormat, const Vector2u& size, uint32_t format, uint32_t type);
-			void SubImage2D(const void *pixels, const Vector2i& offset, const Vector2u& size, uint32_t format, uint32_t type);
+			void Image2D(const void* pixels, const Vector2u& size);
+			void SubImage2D(const void* pixels, const Vector2u& size, const Vector2i& offset);
+			void GetImage(void* pixels, uint32_t size);
 
 			void SetParameter(uint32_t name, int parameter);
 		};
