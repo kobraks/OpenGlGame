@@ -57,7 +57,8 @@ namespace Engine {
 		uint32_t Height() const { return m_Height; }
 		Vector2u Size() const { return {m_Width, m_Height }; }
 
-		const auto GetPixels() const { return m_Pixels; }
+		const auto &GetPixels() const { return m_Pixels; }
+
 		Color& GetPixel(const Vector2u &pos) { return GetPixel(pos.X, pos.Y); }
 		const Color &GetPixel(const Vector2u &pos) const { return GetPixel(pos.X, pos.Y); }
 
