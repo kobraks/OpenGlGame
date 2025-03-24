@@ -2,24 +2,27 @@
 #include "ContentBrowserPanel.h"
 
 #include "Engine/Project/Project.h"
+#include "Engine/Core/Image.h"
 
 #include <ImGui/imgui.h>
 
 namespace Editor {
-	ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(Engine::Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory){		
+	ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(Engine::Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory){
+		m_BackArrowIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/BackArrow.png"));
+		m_DirectoryIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/DirectoryIcon.png"));
+		m_FileIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/FileIcon.png"));
 	}
 
 	void ContentBrowserPanel::OnImGuiRender() {
 		ImGui::Begin("Content Browser");
-
-		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory)) {
-			if (ImGui::Button("<-"))
-				m_CurrentDirectory = m_CurrentDirectory.parent_path();
-		}
-
 		static float padding = 16.f;
 		static float thumbnailSize = 128.f;
 		float cellSize = thumbnailSize + padding;
+
+		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory)) {
+			if (ImGui::ImageButton("<-", static_cast<ImTextureID>(m_BackArrowIcon->ID()), {20.f, 20.f}, { 0, 1 }, { 1, 0 }))
+				m_CurrentDirectory = m_CurrentDirectory.parent_path();
+		}
 
 		float panelWidth = ImGui::GetContentRegionAvail().x;
 		int columnCount = static_cast<int>(panelWidth / cellSize);
@@ -35,9 +38,9 @@ namespace Editor {
 
 			ImGui::PushID(fileNameString.c_str());
 			//TODO Directory
-			//Ref<Texture> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+			const Engine::Ref<Engine::Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
-			// ImGui::ImageButton(static_cast<ImTextureID>(icon->GetRendererID()), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+			ImGui::ImageButton("Button", static_cast<ImTextureID>(icon->ID()), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
 			if (ImGui::BeginDragDropSource()) {
 				const std::filesystem::path relativePath(path);
@@ -56,6 +59,8 @@ namespace Editor {
 			ImGui::NextColumn();
 			ImGui::PopID();
 		}
+
+		ImGui::Columns(1);
 
 		ImGui::SliderFloat("Thumbnail Size", &thumbnailSize, 16, 512);
 		ImGui::SliderFloat("Padding", &padding, 0, 32);
