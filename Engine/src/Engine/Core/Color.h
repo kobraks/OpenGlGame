@@ -16,10 +16,10 @@ namespace Engine {
 
 			struct {
 				//TODO Fix warning here
-				uint8_t A;
-				uint8_t B;
-				uint8_t G;
 				uint8_t R;
+				uint8_t G;
+				uint8_t B;
+				uint8_t A;
 			};
 		};
 
