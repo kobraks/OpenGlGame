@@ -76,8 +76,6 @@ namespace Engine {
 		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
 
 		while(m_Run) {
-			//TODO clear
-
 			if(!m_Minimalized) {
 				m_FrameTime = clock.Restart();
 

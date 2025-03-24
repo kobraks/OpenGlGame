@@ -82,6 +82,9 @@ namespace Engine {
 		size_t GetCommandLineArgCount() const { return m_Arguments.size(); }
 		const std::vector<std::string> GetCommandLineArgs() const { return m_Arguments; }
 
+		Time GetFrameTime() const { return m_FrameTime; }
+		Time GetElapsedTime() const { return m_Clock.GetElapsedTime(); }
+
 		static Application& Get() { return *s_Instance; }
 
 		Ref<ImGuiLayer> GetImGuiLayer() const { return m_ImGuiLayer;  };

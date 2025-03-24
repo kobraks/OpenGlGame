@@ -19,12 +19,12 @@ namespace Engine {
 		void Visible(bool visible) { m_Show = visible; }
 		bool IsVisible() const { return m_Show; }
 	private:
-		bool m_Show = true;
+		bool m_Show = false;
 		bool m_Processed = true;
 		bool m_ShowMetric = true;
 
-		uint64_t m_Updates = 0;
-		uint64_t m_LastUpdates = 0;
+		uint64_t m_ContUpdateCount = 0;
+		uint64_t m_LastConstUpdateCount = 0;
 
 		Clock m_Clock;
 	};

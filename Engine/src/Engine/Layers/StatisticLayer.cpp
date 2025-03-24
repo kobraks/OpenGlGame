@@ -6,6 +6,8 @@
 #include "Engine/Devices/Keyboard.h"
 #include "Engine/Devices/Mouse.h"
 
+#include "Engine/ImGui/ImGuiUtils.h"
+
 #include <algorithm>
 #include <array>
 #include <float.h>
@@ -39,13 +41,21 @@ namespace Engine {
 			CurrentIndex = std::min(BUFFER_SIZE, CurrentIndex + 1);
 		}
 
-		void Draw(const std::string &name) {
-			ImGui::PushID(name.c_str());
+		void Draw(std::string_view name) {
+			ImGui::PushID(name.data());
 
 			constexpr float width = 0.f;
 			const float height    = (ImGui::GetFontSize() + ImGui::GetStyle().ItemSpacing.y) * 3;
 
+			ImGui::PushID("Graph");
+			auto color = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
+			color.w = 0.125;
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, color);
+
 			ImGui::PlotLines("", History.data(), BUFFER_SIZE, 0, nullptr, FLT_MIN, FLT_MAX, {width, height});
+
+			ImGui::PopStyleColor();
+			ImGui::PopID();
 
 			MinValue = *std::ranges::min_element(History);
 			MaxValue = *std::ranges::max_element(History);
@@ -53,9 +63,9 @@ namespace Engine {
 			ImGui::SameLine();
 			ImGui::BeginGroup();
 
-			ImGui::Text(fmt::format("Min {}", MinValue).c_str());
-			ImGui::Text(fmt::format("Avg {}", GetAverage()).c_str());
-			ImGui::Text(fmt::format("Max {}", MaxValue).c_str());
+			Text("Min {}", MinValue);
+			Text("Avg {}", GetAverage());
+			Text("Max {}", MaxValue);
 
 			ImGui::EndGroup();
 			ImGui::PopID();
@@ -64,7 +74,7 @@ namespace Engine {
 
 	constexpr int s_Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground |
-		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoInputs;
+		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoFocusOnAppearing;
 
 	static Statistics s_FpsStat;
 
@@ -76,7 +86,7 @@ namespace Engine {
 
 
 	void StatisticLayer::OnConstUpdate(const Time &timeStep) {
-		m_Updates++;
+		m_ContUpdateCount++;
 	}
 
 	void StatisticLayer::OnImGuiRender() {
@@ -93,13 +103,22 @@ namespace Engine {
 		ImGui::Begin("Fixed overlay", &m_Show, s_Flags);
 
 		if (m_Clock.GetElapsedTime().AsSeconds() >= 1.f) {
-			m_LastUpdates = m_Updates;
-			m_Updates = 0;
+			m_LastConstUpdateCount = m_ContUpdateCount;
+			m_ContUpdateCount = 0;
 
 			m_Clock.Restart();
 		}
 
-		// s_FpsStat.AddValue();
+		s_FpsStat.AddValue(static_cast<float>(app.GetFrameTime().AsMilliseconds()));
+
+		Text("Elapsed Time: {:.2f}s", app.GetElapsedTime().AsSeconds());
+		Text("FPS: {:.2f}", 1.f / app.GetFrameTime().AsSeconds());
+		Text("UPS: {:.2f}", 1.f / static_cast<float>(m_LastConstUpdateCount));
+		Text("Frame Time: {}ms", app.GetFrameTime().AsMilliseconds());
+		Text("Updates: {}", m_LastConstUpdateCount);
+		Text("Mouse Position: {}", mousePos);
+		Text("Window Position: {}", windowPos);
+		Text("Window Size: {}", windowSize);
 
 		s_FpsStat.Draw("FPS");
 
@@ -107,11 +126,7 @@ namespace Engine {
 	}
 
 	void StatisticLayer::OnUpdate() {
-		if(Keyboard::IsKeyPressed(Key::F, Application::Get().GetWindow()) && (
-			Keyboard::IsKeyPressed(Key::LeftControl, Application::Get().GetWindow()) || Keyboard::IsKeyPressed(
-				 Key::RightControl,
-				 Application::Get().GetWindow()
-				))) {
+		if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl))) {
 			if(!m_Processed) {
 				m_Processed = true;
 				m_Show      = !m_Show;
