@@ -3,6 +3,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Vector2.h"
+#include "Engine/Core/Buffer.h"
 
 #include <filesystem>
 #include <vector>
@@ -48,10 +49,10 @@ namespace Engine {
 
 		void Clear();
 
-		static Ref<Image> Load(uint8_t *buffer, size_t size);
+		static Ref<Image> Load(const Buffer& buffer);
 		static Ref<Image> Load(const std::filesystem::path &path);
 
-		static void Save(Ref<Image> image, const std::filesystem::path &path, ImageType type);
+		static bool Save(Ref<Image> image, const std::filesystem::path &path, ImageType type);
 
 		uint32_t Width() const { return m_Width; }
 		uint32_t Height() const { return m_Height; }

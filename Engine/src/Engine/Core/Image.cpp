@@ -101,7 +101,38 @@ namespace Engine {
 		m_Pixels.clear();
 	}
 
-	Ref<Image> Image::Load(uint8_t *buffer, size_t size) {
+	Ref<Image> Image::Load(const Buffer& buffer) {
+		auto result = MakeRef<Image>();
+
+		ENGINE_ASSERT(buffer);
+		if (!buffer)
+			throw std::runtime_error("Uninitialized buffer");
+
+		auto stream = FreeImage_OpenMemory(static_cast<BYTE*>(buffer.Data), buffer.Size);
+		const auto format = FreeImage_GetFileTypeFromMemory(stream, 0);
+
+		ENGINE_ASSERT(format != FIF_UNKNOWN);
+		if (format == FIF_UNKNOWN) {
+			FreeImage_CloseMemory(stream);
+			throw std::runtime_error("Unknown image format");
+		}
+
+		const auto image = FreeImage_LoadFromMemory(format, stream, 0);
+
+		ENGINE_ASSERT(image);
+		if (!image) {
+			FreeImage_CloseMemory(stream);
+			throw std::runtime_error("Unable to load image from memory");
+		}
+
+		result->LoadToMemory(image);
+		FreeImage_Unload(image);
+		FreeImage_CloseMemory(stream);
+
+		return result;
+	}
+
+	/*Ref<Image> Image::Load(uint8_t *buffer, size_t size) {
 		auto result = MakeRef<Image>();
 
 		ENGINE_ASSERT(buffer);
@@ -124,21 +155,21 @@ namespace Engine {
 		FreeImage_CloseMemory(stream);
 
 		return result;
-	}
+	}*/
 
 	Ref<Image> Image::Load(const std::filesystem::path &path) {
 		auto result = MakeRef<Image>();
 
 		const std::string sPath = path.string();
 
+		ENGINE_ASSERT(std::filesystem::exists(path));
 		ENGINE_ASSERT(std::filesystem::is_regular_file(path));
+
 		if (!std::filesystem::is_regular_file(path))
 			throw std::runtime_error(fmt::format("'{}' is not regular file", sPath));
 
-		std::ifstream file;
-		file.exceptions(std::ios::failbit | std::ios::badbit);
-		file.open(path);
-		file.close();
+		if (!std::filesystem::exists(path))
+			throw std::runtime_error(fmt::format("'{}' does not exists", sPath));
 
 		const auto format = FreeImage_GetFileType(sPath.c_str());
 
@@ -159,7 +190,11 @@ namespace Engine {
 	}
 
 
-	void Image::Save(Ref<Image> image, const std::filesystem::path &path, ImageType type) {
+	bool Image::Save(Ref<Image> image, const std::filesystem::path &path, ImageType type) {
+		ENGINE_ASSERT(image);
+		if (!image)
+			throw std::runtime_error("Uninitialized memory");
+
 		const auto sPath = path.string();
 
 		const auto width = image->m_Width;
@@ -175,8 +210,8 @@ namespace Engine {
 		                                  FI_RGBA_BLUE_MASK
 		                                 );
 
-		for(size_t i = 0; i < width; ++i)
-			for(size_t j = 0; j < height; ++i) {
+		for(uint32_t i = 0; i < width; ++i)
+			for(uint32_t j = 0; j < height; ++i) {
 				RGBQUAD c;
 
 				const auto pixel = pixels[i + j * width];
@@ -186,11 +221,16 @@ namespace Engine {
 				c.rgbBlue     = static_cast<BYTE>(pixel.B);
 				c.rgbReserved = static_cast<BYTE>(pixel.A);
 
-				FreeImage_SetPixelColor(handler, static_cast<uint32_t>(i), static_cast<uint32_t>(j), &c);
+				FreeImage_SetPixelColor(handler, i, j, &c);
 			}
 
-		FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0);
+		bool result = false;
+		if (result = FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0); result) {
+			ENGINE_ASSERT(false);
+		}
+
 		FreeImage_Unload(handler);
+		return result;
 	}
 
 	Color& Image::GetPixel(uint32_t x, uint32_t y) {
