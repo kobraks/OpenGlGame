@@ -29,7 +29,6 @@ project "Engine"
 		"GLFW_INCLUDE_NONE",
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
-		"FREEIMAGE_LIB",
 		"YAML_CPP_STATIC_DEFINE",
 	}
 
@@ -60,7 +59,7 @@ project "Engine"
 		"Fmt",
 		"ImGui",
 		"Spdlog",
-		"FreeImageLib",
+		"FreeImage",
 		"yaml-cpp",
 		
 		"opengl32.lib",
