@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "ShaderPRogram.h"
+
+#include "Engine/Renderer/Texture2D.h"
+
 #include "glm/gtc/type_ptr.hpp"
 
 namespace Engine {
@@ -250,8 +253,11 @@ namespace Engine {
 		UniformMatrix(location, mat, transpose);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit) {
-		//TODO
+	void ShaderProgram::UniformValue(UniformLocationType location, Ref<Texture2D> texture, uint32_t sampleUnit) {
+		glActiveTexture(GL_TEXTURE0 + sampleUnit);
+		glUniform1i(location, sampleUnit);
+
+		texture->Bind();
 	}
 
 	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer &buffer) {}

@@ -33,7 +33,7 @@ namespace Engine {
 #define DEFAULT_SHADER_PROGRAM_NAME "Shader Program"
 
 	class UniformBuffer;
-	class Texture;
+	class Texture2D;
 
 	class ShaderProgram {
 	public:
@@ -236,6 +236,10 @@ namespace Engine {
 			UniformValue(GetUniformLocation(name), mat, transpose);
 		}
 
+		void UniformValue(std::string_view name, Ref<Texture2D> texture, uint32_t sampleUnit = 0) {
+			UniformValue(GetUniformLocation(name), texture, sampleUnit);
+		}
+
 		void UniformValue(UniformLocationType location, bool value) {
 			UniformValue(location, static_cast<int32_t>(value));
 		}
@@ -283,7 +287,7 @@ namespace Engine {
 		void UniformValue(UniformLocationType location, const glm::mat4x3 &mat, bool transpose = false);
 		void UniformValue(UniformLocationType location, const glm::mat4x4 &mat, bool transpose = false);
 
-		void UniformValue(UniformLocationType location, const Texture &texture, int32_t sampleUnit = 0);
+		void UniformValue(UniformLocationType location, Ref<Texture2D> texture, uint32_t sampleUnit = 0);
 
 		void BindUniformBuffer(UniformLocationType location, const UniformBuffer &buffer);
 		void BindUniformBuffer(UniformLocationType location, const UniformBuffer &buffer, size_t size, size_t offset);
