@@ -101,8 +101,10 @@ namespace Engine {
 		m_Pixels.clear();
 	}
 
-	void Image::Load(uint8_t *buffer, size_t size) {
-		Clear();
+	Ref<Image> Image::Load(uint8_t *buffer, size_t size) {
+		auto result = MakeRef<Image>();
+
+		ENGINE_ASSERT(buffer);
 
 		auto stream       = FreeImage_OpenMemory(buffer, size);
 		const auto format = FreeImage_GetFileTypeFromMemory(stream, 0);
@@ -117,19 +119,25 @@ namespace Engine {
 		if(!image)
 			throw std::runtime_error("Unable to load image from memory");
 
-		LoadToMemory(image);
+		result->LoadToMemory(image);
 		FreeImage_Unload(image);
 		FreeImage_CloseMemory(stream);
+
+		return result;
 	}
 
-	void Image::Load(const std::filesystem::path &path) {
-		Clear();
+	Ref<Image> Image::Load(const std::filesystem::path &path) {
+		auto result = MakeRef<Image>();
 
 		const std::string sPath = path.string();
 
+		ENGINE_ASSERT(std::filesystem::is_regular_file(path));
+		if (!std::filesystem::is_regular_file(path))
+			throw std::runtime_error(fmt::format("'{}' is not regular file", sPath));
+
 		std::ifstream file;
 		file.exceptions(std::ios::failbit | std::ios::badbit);
-		file.open(sPath);
+		file.open(path);
 		file.close();
 
 		const auto format = FreeImage_GetFileType(sPath.c_str());
@@ -144,28 +152,34 @@ namespace Engine {
 		if(!image)
 			throw std::runtime_error(fmt::format("Unable to load '{}' file", sPath));
 
-		LoadToMemory(image);
+		result->LoadToMemory(image);
 		FreeImage_Unload(image);
+
+		return result;
 	}
 
 
-	void Image::Save(const std::filesystem::path &path, ImageType type) {
+	void Image::Save(Ref<Image> image, const std::filesystem::path &path, ImageType type) {
 		const auto sPath = path.string();
 
+		const auto width = image->m_Width;
+		const auto height = image->m_Height;
+		const auto& pixels = image->m_Pixels;
+
 		auto handler = FreeImage_Allocate(
-		                                  static_cast<int>(m_Width),
-		                                  static_cast<int>(m_Height),
+		                                  static_cast<int>(width),
+		                                  static_cast<int>(height),
 		                                  32,
 		                                  FI_RGBA_RED_MASK,
 		                                  FI_RGBA_GREEN_MASK,
 		                                  FI_RGBA_BLUE_MASK
 		                                 );
 
-		for(size_t i = 0; i < m_Width; ++i)
-			for(size_t j = 0; j < m_Height; ++i) {
+		for(size_t i = 0; i < width; ++i)
+			for(size_t j = 0; j < height; ++i) {
 				RGBQUAD c;
 
-				const auto pixel = m_Pixels[i + j * m_Width];
+				const auto pixel = pixels[i + j * width];
 
 				c.rgbRed      = static_cast<BYTE>(pixel.R);
 				c.rgbGreen    = static_cast<BYTE>(pixel.G);
@@ -227,8 +241,7 @@ namespace Engine {
 
 		Prepare(FreeImage_GetWidth(image), FreeImage_GetHeight(image));
 
-		auto pixels = FreeImage_GetBits(image);
-
+		const auto pixels = FreeImage_GetBits(image);
 		for(size_t i = 0; i < m_Pixels.size(); ++i) {
 			m_Pixels[i] = Color(
 			                    pixels[i * 4 + FI_RGBA_RED],

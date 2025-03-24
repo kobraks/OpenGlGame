@@ -48,10 +48,10 @@ namespace Engine {
 
 		void Clear();
 
-		void Load(uint8_t *buffer, size_t size);
-		void Load(const std::filesystem::path &path);
+		static Ref<Image> Load(uint8_t *buffer, size_t size);
+		static Ref<Image> Load(const std::filesystem::path &path);
 
-		void Save(const std::filesystem::path &path, ImageType type);
+		static void Save(Ref<Image> image, const std::filesystem::path &path, ImageType type);
 
 		uint32_t Width() const { return m_Width; }
 		uint32_t Height() const { return m_Height; }
