@@ -5,6 +5,14 @@
 #include "glad/glad.h"
 
 namespace Engine {
+	static uint32_t GenTexture() {
+		uint32_t name;
+
+		glCreateTextures(GL_TEXTURE_2D, 1, &name);
+
+		return name;
+	}
+
 	constexpr static int GetOpenWrapping(Wrapping wrapping) {
 		switch (wrapping) {
 		case Wrapping::Repeat:
@@ -35,8 +43,7 @@ namespace Engine {
 		}
 	}
 
-	Texture2D::Texture2D() {
-		m_Internals = MakeRef<Internals>();
+	Texture2D::Texture2D() : m_Internals(MakeRef<Internals>()) {
 	}
 
 	void Texture2D::GenerateMipMaps() const {
@@ -49,19 +56,23 @@ namespace Engine {
 		m_Internals->Bind();
 	}
 
-	Ref<Texture2D> Texture2D::Create(const Vector2u& size, const uint8_t* pixels) {
-		auto texture = MakeRef<Texture2D>();
+	void Texture2D::BindUnit(uint32_t sampler) const {
+		m_Internals->BindUnit(sampler);
+	}
 
-		if (CheckTextureSize(size))
+	Ref<Texture2D> Texture2D::Create(const Vector2u& size, const uint8_t* pixels) {
+		auto texture = Ref<Texture2D>(new Texture2D());
+
+		if (CheckSize(size))
 			texture->CreateTexture(size, pixels);
 
 		return texture;
 	}
 
 	Ref<Texture2D> Texture2D::Create(Ref<Image> image) {
-		auto texture = MakeRef<Texture2D>();
+		auto texture = Ref<Texture2D>(new Texture2D());
 
-		if (CheckTextureSize(image->Size()))
+		if (CheckSize(image->Size()))
 			texture->CreateTexture(image->Size(), image->GetPixels().data());
 
 		return texture;
@@ -116,6 +127,29 @@ namespace Engine {
 		return MakeRef<Image>(m_Internals->Size, pixels.data());
 	}
 
+	Ref<Image> Texture2D::GetImage(const Vector2u& size, const Vector2i& offset) const {
+		const uint64_t pixelCount = static_cast<uint64_t>(size.Width - offset.X) * static_cast<uint64_t>(size.Height - offset.Y);
+
+		std::vector<Color> pixels;
+		pixels.resize(pixelCount);
+
+		m_Internals->GetImage(pixels.data(), static_cast<uint32_t>(pixelCount), size, offset);
+		return MakeRef<Image>(size, pixels.data());
+	}
+
+	void Texture2D::GetPixels(void* pixels, uint32_t size) const {
+		ENGINE_ASSERT(pixels);
+		ENGINE_ASSERT(size != 0);
+
+		if (!pixels || size == 0)
+			throw std::runtime_error("Uninitialized memory access");
+
+		if (size >= m_Internals->Size.Width * m_Internals->Size.Height)
+			m_Internals->GetImage(pixels, size);
+		else
+			throw std::out_of_range("Specified buffer is too small");
+	}
+
 	void Texture2D::Update(const uint8_t* pixels) {
 		Update(pixels, m_Internals->Size, {0, 0});
 	}
@@ -148,22 +182,11 @@ namespace Engine {
 		Update(image->GetPixels().data(), image->Size(), offset);
 	}
 
-	void Texture2D::Resize(const Vector2u& size) {
-		if (CheckTextureSize(size)) {
-			const auto image = ToImage();
-			CreateTexture(size);
-
-			Update(image);
-			if (IsMipMapsGenerated())
-				GenerateMipMaps();
-		}
-	}
-
 	void Texture2D::Swap(Texture2D& to) {
 		std::swap(m_Internals, to.m_Internals);
 	}
 
-	Vector2u Texture2D::GetMaxSize() {
+	uint32_t Texture2D::GetMaxSize() {
 		static bool checked = false;
 		static int32_t size = 0;
 
@@ -173,32 +196,31 @@ namespace Engine {
 			glGetIntegerv(GL_MAX_TEXTURE_SIZE, &size);
 		}
 
-		return { static_cast<uint32_t>(size), static_cast<uint32_t>(size) };
+		return static_cast<uint32_t>(size);
 	}
 
-	uint32_t Texture2D::GetMaxDim() {
-		return GetMaxSize().Width;
-	}
+	bool Texture2D::CheckSize(const Vector2u& size) {
+		const uint32_t maxSize = GetMaxSize();
+		const uint32_t texSize = size.Width * size.Height;
 
-	bool Texture2D::CheckTextureSize(const Vector2u& size) {
-		const uint32_t maxSize = GetMaxDim();
-
-		ENGINE_ASSERT(size.Width != 0 && size.Height != 0);
+		ENGINE_ASSERT(texSize != 0)
 		ENGINE_ASSERT(size.Width < maxSize && size.Height < maxSize);
 
-		if (size.Width == 0 || size.Height == 0)
+		if (texSize == 0)
 			throw std::runtime_error("Texture dimensions cannot be 0");
 
 
 		if (size.Width > maxSize || size.Height > maxSize) {
-			throw std::runtime_error(fmt::format("Unable to create texture width {}, texture is too big. Maximum texture size is {}", size, GetMaxSize()));
+			throw std::out_of_range(fmt::format("Unable to create texture with size of {}, texture is too big. Maximum texture size is {}", size, maxSize));
 		}
 
 		return true;
 	}
 
 	void Texture2D::CreateTexture(const Vector2u& size, const void* pixels) {
-		m_Internals->Image(pixels, size);
+		//m_Internals->Image(pixels, size);
+		m_Internals->Storage(size);
+		m_Internals->SubImage(pixels, size);
 
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
@@ -213,19 +235,24 @@ namespace Engine {
 
 	}
 
-	Texture2D::Internals::Internals() {
-		glGenTextures(1, &ID);
+	Texture2D::Internals::Internals() : ID(GenTexture()) {
 	}
 
 	Texture2D::Internals::~Internals() {
 		glDeleteTextures(1, &ID);
 	}
 
-	void Texture2D::Internals::Bind() {
+	void Texture2D::Internals::Bind() const {
 		glBindTexture(GL_TEXTURE_2D, ID);
 	}
 
+	void Texture2D::Internals::BindUnit(uint32_t sampler) const {
+		glBindTextureUnit(sampler, ID);
+	}
+
 	void Texture2D::Internals::Storage(const Vector2u& size) {
+		Size = size;
+
 		glTextureStorage2D(ID, 1, GL_RGBA8, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
@@ -241,17 +268,40 @@ namespace Engine {
 		if (!pixels)
 			return;
 
-		ENGINE_ASSERT(((offset.X + size.Width) < Size.Width) && ((offset.Y + size.Height) < Size.Height));
-		if (size.Width < (offset.X + size.Width) || size.Height < (offset.Y + size.Height))
+		ENGINE_ASSERT(Size.Width >= size.Width + offset.X && Size.Height >= size.Height + offset.Y);
+		if (Size.Width < size.Width + offset.X || Size.Height < size.Height + offset.Y)
 			throw std::out_of_range("SubImage out of range");
 
 		glTextureSubImage2D(ID, 0, offset.X, offset.Y, static_cast<GLsizei>(size.X), static_cast<GLsizei>(size.Y), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	}
 
-	void Texture2D::Internals::GetImage(void* pixels, uint32_t size) {
+	void Texture2D::Internals::GetImage(void* pixels, uint32_t size) const {
+		ENGINE_ASSERT(pixels);
+		if (!pixels)
+			throw std::runtime_error("Recived uninitialized pointer to memory");
+
 		ENGINE_ASSERT(static_cast<uint64_t>(size) < static_cast<uint64_t>(Size.Width) * static_cast<uint64_t>(Size.Height));
 
 		glGetTextureImage(ID, 0, GL_RGBA8, GL_UNSIGNED_BYTE, static_cast<GLsizei>(size), pixels);
+	}
+
+	void Texture2D::Internals::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset) {
+		ENGINE_ASSERT(pixels);
+
+		const uint32_t gettingSize = (size.Width - offset.X) * (size.Height - offset.Y);
+
+		if (!pixels)
+			throw std::runtime_error("Recived uninitialized pointer to memory");
+
+		ENGINE_ASSERT(bufSize >= gettingSize);
+		if (bufSize < gettingSize)
+			throw std::out_of_range("Buffer is too small");
+
+		ENGINE_ASSERT(Size.Width >= size.Width + offset.X && Size.Height >= size.Height + offset.Y);
+		if (Size.Width < size.Width + offset.X || Size.Height < size.Height + offset.Y)
+			throw std::out_of_range("SubImage out of range");
+
+		glGetTextureSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE, bufSize, pixels);
 	}
 
 	void Texture2D::Internals::SetParameter(uint32_t name, int parameter) {

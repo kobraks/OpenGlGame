@@ -7,6 +7,10 @@
 namespace Engine {
 	class Image;
 
+	enum class ImageFormat {
+		
+	};
+
 	enum class Wrapping {
 		Repeat = 0,
 		ClampEdge,
@@ -35,6 +39,7 @@ namespace Engine {
 		bool IsMipMapsGenerated() const { return m_Internals->MipMapGenerated;  }
 
 		void Bind() const;
+		void BindUnit(uint32_t sampler = 0) const;
 
 		static Ref<Texture2D> Create(const Vector2u& size, const uint8_t *pixels = nullptr);
 		static Ref<Texture2D> Create(Ref<Image> image);
@@ -60,6 +65,9 @@ namespace Engine {
 		uint32_t Height() const { return m_Internals->Size.Height; }
 
 		Ref<Image> ToImage() const;
+		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
+
+		void GetPixels(void* pixels, uint32_t size) const;
 
 		void Update(const uint8_t* pixels);
 		void Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset);
@@ -73,17 +81,18 @@ namespace Engine {
 		void Update(Ref<Image> image);
 		void Update(Ref<Image> image, const Vector2i &offset);
 
-		void Resize(const Vector2u& size);
 		void Swap(Texture2D& to);
 
-		static Vector2u GetMaxSize();
-		static uint32_t GetMaxDim();
+		static Vector2u GetMaxDim() { return { GetMaxSize(), GetMaxSize() }; }
+		static uint32_t GetMaxSize();
 
 		bool operator==(const Texture2D& texture) const {
 			return m_Internals->ID == texture.m_Internals->ID;
 		}
 	protected:
-		static bool CheckTextureSize(const Vector2u& size);
+		Texture2D();
+
+		static bool CheckSize(const Vector2u& size);
 		void CreateTexture(const Vector2u& size, const void* pixels = nullptr);
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset);
 
@@ -110,20 +119,20 @@ namespace Engine {
 			Internals();
 			~Internals();
 
-			void Bind();
+			void Bind() const;
+			void BindUnit(uint32_t sampler) const;
 
 			void Storage(const Vector2u& size);
 
 			void Image(const void* pixels, const Vector2u& size);
-			void SubImage(const void* pixels, const Vector2u& size, const Vector2i& offset);
+			void SubImage(const void* pixels, const Vector2u& size, const Vector2i& offset = {0, 0});
 
-			void GetImage(void* pixels, uint32_t size);
+			void GetImage(void* pixels, uint32_t size) const;
+			void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 });
 
 			void SetParameter(uint32_t name, int parameter);
 			void GetParameter(uint32_t name, int* parameter);
 		};
-
-		Texture2D();
 
 		Ref<Internals> m_Internals;
 	};

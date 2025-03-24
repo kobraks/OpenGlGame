@@ -253,11 +253,12 @@ namespace Engine {
 		UniformMatrix(location, mat, transpose);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, Ref<Texture2D> texture, uint32_t sampleUnit) {
-		glActiveTexture(GL_TEXTURE0 + sampleUnit);
-		glUniform1i(location, sampleUnit);
+	void ShaderProgram::UniformValue(UniformLocationType location, Ref<Texture2D> texture, uint32_t samplerUnit) {
+		/*glActiveTexture(GL_TEXTURE0 + samplerUnit);
+		texture->Bind();*/
+		texture->BindUnit(samplerUnit);
 
-		texture->Bind();
+		glUniform1ui(location, samplerUnit);
 	}
 
 	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer &buffer) {}
