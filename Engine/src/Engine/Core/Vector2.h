@@ -46,6 +46,11 @@ namespace Engine {
 			return *this;
 		}
 
+		template<typename R>
+		constexpr operator Vector2<R>() const {
+			return { static_cast<R>(X), static_cast<R>(Y) };
+		}
+
 		constexpr auto operator[](std::ptrdiff_t i) -> ValueType& {
 			switch(i) {
 				case 0: return X;

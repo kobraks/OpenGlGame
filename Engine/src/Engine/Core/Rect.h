@@ -86,6 +86,11 @@ namespace Engine {
 
 			return std::nullopt;
 		}
+
+		template <typename R>
+		constexpr operator Rect<R>() const {
+			return { static_cast<R>(X), static_cast<R>(Y), static_cast<R>(Width), static_cast<R>(Height) };
+		} 
 	};
 
 	template <typename T>
