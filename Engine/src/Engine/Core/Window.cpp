@@ -110,15 +110,14 @@ namespace Engine {
 		return m_Fullscreen;
 	}
 
-	void Window::AttentionRequest() {
+	void Window::AttentionRequest() const {
 		glfwRequestWindowAttention(static_cast<GLFWwindow*>(m_Window));
 	}
 
-	void Window::ToggleFullscreen() {
-		ToggleFullscreen(Monitor::GetPrimary());
-	}
-
 	void Window::ToggleFullscreen(Monitor *monitor) {
+		if (!monitor)
+			monitor = Monitor::GetPrimary();
+
 		ToggleFullscreen(monitor, monitor->GetVideoMode());
 	}
 
@@ -184,7 +183,7 @@ namespace Engine {
 		glfwRestoreWindow(static_cast<GLFWwindow*>(m_Window));
 	}
 
-	void Window::Maximalize() {
+	void Window::Maximize() {
 		glfwMaximizeWindow(static_cast<GLFWwindow*>(m_Window));
 	}
 

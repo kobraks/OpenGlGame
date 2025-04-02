@@ -37,7 +37,7 @@ namespace Engine {
 
 		std::string_view GetName() const { return m_Name; }
 
-		Vector2u GetSize() const { return m_Size; }
+		Vector2u GetPhysicalSize() const { return m_Size; }
 		Vector2f GetScale() const { return m_Scale; }
 		Vector2i GetPosition() const { return m_Pos; }
 		IntRect GetWorkArea() const {return m_WorkArea; }

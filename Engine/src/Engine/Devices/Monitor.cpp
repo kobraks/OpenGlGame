@@ -137,20 +137,19 @@ namespace Engine {
 	}
 
 	void Monitor::Populate() {
-		if (!s_Initialized) {
-			Window::InitializeGlfw();
-			s_Initialized = true;
-		}
-		else
+		if (s_Initialized)
 			return;
+
+		s_Initialized = true;
+		Window::InitializeGlfw();
 
 		int count = 0;
 		const auto monitors = glfwGetMonitors(&count);
-		const auto PriMonitor = glfwGetPrimaryMonitor();
+		const auto primaryMonitor = glfwGetPrimaryMonitor();
 
 		for (int i = 0; i < count; ++i) {
 			s_Monitors.emplace_back(Create(monitors[i]));
-			if (monitors[i] == PriMonitor)
+			if (monitors[i] == primaryMonitor)
 				s_PrimaryMonitor = s_Monitors[s_Monitors.size() - 1].get();
 		}
 	}

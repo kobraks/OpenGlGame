@@ -125,14 +125,22 @@ namespace Engine {
 		ImGui::End();
 	}
 
-	void StatisticLayer::OnUpdate() {
-		if(Keyboard::IsKeyPressed(Key::F) && (Keyboard::IsKeyPressed(Key::LeftControl) || Keyboard::IsKeyPressed(Key::RightControl))) {
-			if(!m_Processed) {
-				m_Processed = true;
-				m_Show      = !m_Show;
-			}
+	void StatisticLayer::OnEvent(Event& event) {
+		EventDispatcher dispatcher(event);
+
+		dispatcher.Dispatch<KeyPressedEvent>(BIND_EVENT_FN(StatisticLayer::OnKeyPressEvent));
+	}
+
+	bool StatisticLayer::OnKeyPressEvent(const KeyPressedEvent& event) {
+		if (event.IsRepeat())
+			return false;
+
+		const bool control = Keyboard::IsKeyPressed(Key::LeftShift) || Keyboard::IsKeyPressed(Key::RightShift);
+
+		if (event.GetKeyCode() == Key::F) {
+			m_Show = !m_Show;
 		}
-		else
-			m_Processed = false;
+
+		return false;
 	}
 }

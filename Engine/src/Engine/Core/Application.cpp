@@ -108,10 +108,13 @@ namespace Engine {
 	}
 
 	void Application::ProcessArgs(const ApplicationCommandLineArgs &args) {
+		LOG_ENGINE_TRACE("Processing command line args");
+		size_t i = 0;
 		for(const auto arg : args) {
 			m_Arguments.emplace_back(arg);
-			LOG_ENGINE_TRACE(arg);
+			LOG_ENGINE_TRACE("{}: {}", i++, arg);
 		}
+		LOG_ENGINE_TRACE("Done");
 	}
 
 	void Application::Initialize() {
@@ -122,7 +125,7 @@ namespace Engine {
 		InitializeLua();
 
 		LOG_ENGINE_INFO(
-		                "Created window [Title: \"{}\", Widtth: {}, Height: {}, Fullscreen: {}]",
+		                "Created window [Title: \"{}\", Width: {}, Height: {}, Fullscreen: {}]",
 		                m_Window->GetTitle(),
 		                m_Window->GetWidth(),
 		                m_Window->GetHeight(),
@@ -156,7 +159,12 @@ namespace Engine {
 	}
 
 	void Application::InitializeSettings() {
-		
+		if (m_Specification.FullScreen)
+			m_Window->ToggleFullscreen();
+
+		if (!m_Specification.FullScreen && m_Specification.FullWindow) {
+			m_Window->Maximize();
+		}
 	}
 
 	void Application::InitializeLua() {

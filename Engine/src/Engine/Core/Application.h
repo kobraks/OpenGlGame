@@ -51,6 +51,8 @@ namespace Engine {
 		std::filesystem::path WorkingDirectory;
 
 		bool FullScreen = false;
+		bool FullWindow = false;
+
 		Vector2u WindowSize{1027, 768};
 
 		ApplicationCommandLineArgs CommandLineArgs;

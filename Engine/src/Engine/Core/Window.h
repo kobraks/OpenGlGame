@@ -7,6 +7,8 @@
 #include <string_view>
 #include <functional>
 
+#include "Rect.h"
+
 namespace Engine {
 	struct VideoMode;
 
@@ -89,10 +91,9 @@ namespace Engine {
 		bool IsVisible() const;
 		bool IsFullscreen() const;
 
-		void AttentionRequest();
+		void AttentionRequest() const;
 
-		void ToggleFullscreen();
-		void ToggleFullscreen(Monitor *monitor);
+		void ToggleFullscreen(Monitor *monitor = nullptr);
 		void ToggleFullscreen(Monitor *monitor, const VideoMode *mode);
 
 		Cursor* GetCursor() const;
@@ -102,7 +103,7 @@ namespace Engine {
 
 		void Minimalize();
 		void Restore();
-		void Maximalize();
+		void Maximize();
 
 		static bool IsRawMouseInputSupported();
 	protected:

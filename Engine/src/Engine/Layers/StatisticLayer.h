@@ -5,6 +5,8 @@
 
 #include "Engine/Core/Clock.h"
 
+#include "Engine/Events/KeyEvent.h"
+
 namespace Engine {
 	class StatisticLayer : public Layer {
 	public:
@@ -14,7 +16,9 @@ namespace Engine {
 		void OnConstUpdate(const Time &timeStep) override;
 		void OnImGuiRender() override;
 
-		void OnUpdate() override;
+		void OnEvent(Event& event) override;
+
+		bool OnKeyPressEvent(const KeyPressedEvent& event);
 
 		void Visible(bool visible) { m_Show = visible; }
 		bool IsVisible() const { return m_Show; }
