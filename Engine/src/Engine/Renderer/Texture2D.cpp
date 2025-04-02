@@ -5,10 +5,13 @@
 #include "glad/glad.h"
 
 namespace Engine {
-	static uint32_t GenTexture() {
+	static uint32_t GenTexture(bool multisampled) {
 		uint32_t name;
 
-		glCreateTextures(GL_TEXTURE_2D, 1, &name);
+		if (multisampled)
+			glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &name);
+		else
+			glCreateTextures(GL_TEXTURE_2D, 1, &name);
 
 		return name;
 	}
@@ -43,7 +46,7 @@ namespace Engine {
 		}
 	}
 
-	Texture2D::Texture2D() : m_Internals(MakeRef<Internals>()) {
+	Texture2D::Texture2D(bool multisampled) : m_Internals(MakeRef<Internals>(multisampled)) {
 	}
 
 	void Texture2D::GenerateMipMaps() const {
@@ -65,6 +68,15 @@ namespace Engine {
 
 		if (CheckSize(size))
 			texture->CreateTexture(size, pixels);
+
+		return texture;
+	}
+
+	Ref<Texture2D> Texture2D::Create(const Vector2u& size, uint32_t samples, const uint8_t* pixels) {
+		auto texture = Ref<Texture2D>(new Texture2D(samples > 1));
+
+		if (CheckSize(size))
+			texture->CreateTexture(samples, size, pixels);
 
 		return texture;
 	}
@@ -135,6 +147,14 @@ namespace Engine {
 
 		m_Internals->GetImage(pixels.data(), static_cast<uint32_t>(pixelCount), size, offset);
 		return MakeRef<Image>(size, pixels.data());
+	}
+
+	void Texture2D::Clear() {
+		m_Internals->Clear(nullptr);
+	}
+
+	void Texture2D::Clear(const Vector2i& offset, const Vector2u& size) {
+		m_Internals->Clear(nullptr, offset, size);
 	}
 
 	void Texture2D::GetPixels(void* pixels, uint32_t size) const {
@@ -219,23 +239,31 @@ namespace Engine {
 
 	void Texture2D::CreateTexture(const Vector2u& size, const void* pixels) {
 		//m_Internals->Image(pixels, size);
-		m_Internals->Storage(size);
-		m_Internals->SubImage(pixels, size);
+		m_Internals->Allocate(size);
+
+		if (pixels)
+			m_Internals->SendImage(pixels, size);
 
 		SetFilters(Filter::Nearest, Filter::Nearest);
 		SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
 	}
 
-	void Texture2D::Update(const void* pixels, const Vector2u& size, const Vector2i& offset) {
-		ENGINE_ASSERT(((offset.X + size.Width) < m_Internals->Size.Width) && ((offset.Y + size.Height) < m_Internals->Size.Height));
-		if ((m_Internals->Size.Width < (offset.X + size.Width)) || (m_Internals->Size.Height < (offset.Y + size.Height)))
-			throw std::out_of_range("Out of texture bounds");
+	void Texture2D::CreateTexture(uint32_t samples, const Vector2u& size, const void* pixels) {
+		if (samples > 1) {
+			m_Internals->Allocate(size, samples);
 
-		m_Internals->SubImage(pixels, size, offset);
-
+			if (pixels)
+				m_Internals->SendImage(pixels, size);
+		}
+		else
+			CreateTexture(size, pixels);
 	}
 
-	Texture2D::Internals::Internals() : ID(GenTexture()) {
+	void Texture2D::Update(const void* pixels, const Vector2u& size, const Vector2i& offset) {
+		m_Internals->SendImage(pixels, size, offset);
+	}
+
+	Texture2D::Internals::Internals(bool multisampled) : ID(GenTexture(multisampled)), Multisampled(multisampled) {
 	}
 
 	Texture2D::Internals::~Internals() {
@@ -250,27 +278,31 @@ namespace Engine {
 		glBindTextureUnit(sampler, ID);
 	}
 
-	void Texture2D::Internals::Storage(const Vector2u& size) {
+	void Texture2D::Internals::Allocate(const Vector2u& size) {
 		Size = size;
 
 		glTextureStorage2D(ID, 1, GL_RGBA8, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
-	void Texture2D::Internals::Image(const void* pixels, const Vector2u& size) {
+	void Texture2D::Internals::Allocate(const Vector2u& size, uint32_t samples) {
 		Size = size;
 
-		Bind();
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), GL_RGBA8, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), GL_FALSE);
 	}
 
-	void Texture2D::Internals::SubImage(const void* pixels, const Vector2u& size, const Vector2i& offset) {
+	// void Texture2D::Internals::Image(const void* pixels, const Vector2u& size) {
+	// 	Size = size;
+	//
+	// 	Bind();
+	// 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	// }
+
+	void Texture2D::Internals::SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset) {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			return;
 
-		ENGINE_ASSERT(Size.Width >= size.Width + offset.X && Size.Height >= size.Height + offset.Y);
-		if (Size.Width < size.Width + offset.X || Size.Height < size.Height + offset.Y)
-			throw std::out_of_range("SubImage out of range");
+		CheckSubRegionSize(offset, size);
 
 		glTextureSubImage2D(ID, 0, offset.X, offset.Y, static_cast<GLsizei>(size.X), static_cast<GLsizei>(size.Y), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 	}
@@ -297,18 +329,34 @@ namespace Engine {
 		if (bufSize < gettingSize)
 			throw std::out_of_range("Buffer is too small");
 
+		CheckSubRegionSize(offset, size);
+
+		glGetTextureSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE, bufSize, pixels);
+	}
+
+	void Texture2D::Internals::Clear(void* pixels) {
+		glClearTexImage(ID, 0, GL_RGBA8, GL_INT, pixels);
+	}
+
+	void Texture2D::Internals::Clear(void* pixels, const Vector2i& offset, const Vector2u& size) {
+		CheckSubRegionSize(offset, size);
+		
+		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_INT, nullptr);
+	}
+
+	bool Texture2D::Internals::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {
 		ENGINE_ASSERT(Size.Width >= size.Width + offset.X && Size.Height >= size.Height + offset.Y);
 		if (Size.Width < size.Width + offset.X || Size.Height < size.Height + offset.Y)
 			throw std::out_of_range("SubImage out of range");
 
-		glGetTextureSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE, bufSize, pixels);
+		return true;
 	}
 
 	void Texture2D::Internals::SetParameter(uint32_t name, int parameter) {
 		glTextureParameteri(ID, name, parameter);
 	}
 
-	void Texture2D::Internals::GetParameter(uint32_t name, int* parameter) {
+	void Texture2D::Internals::GetParameter(uint32_t name, int* parameter) const {
 		glGetTextureParameteriv(ID, name, parameter);
 	}
 }

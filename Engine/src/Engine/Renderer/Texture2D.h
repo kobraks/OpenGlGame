@@ -8,7 +8,6 @@ namespace Engine {
 	class Image;
 
 	enum class ImageFormat {
-		
 	};
 
 	enum class Wrapping {
@@ -28,20 +27,27 @@ namespace Engine {
 	};
 
 	class Texture2D {
-		friend class FrameBufferObject;
+		friend class FramebufferObject;
+		template<class ColorAttachmentType, class DepthAttachmentType>
+		friend class Framebuffer;
 	public:
 		using IDType = uint32_t;
+
+		~Texture2D() = default;
 
 		operator IDType() const { return m_Internals->ID; }
 		IDType ID() const { return m_Internals->ID;  }
 
 		void GenerateMipMaps() const;
-		bool IsMipMapsGenerated() const { return m_Internals->MipMapGenerated;  }
+		bool HasMipMapsGenerated() const { return m_Internals->MipMapGenerated;  }
+		bool IsMultisampled() const { return m_Internals->Multisampled; }
 
 		void Bind() const;
 		void BindUnit(uint32_t sampler = 0) const;
 
 		static Ref<Texture2D> Create(const Vector2u& size, const uint8_t *pixels = nullptr);
+		static Ref<Texture2D> Create(const Vector2u& size, uint32_t samples, const uint8_t* pixels = nullptr);
+
 		static Ref<Texture2D> Create(Ref<Image> image);
 
 		void SetWrapping(Wrapping s);
@@ -67,6 +73,9 @@ namespace Engine {
 		Ref<Image> ToImage() const;
 		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
 
+		void Clear();
+		void Clear(const Vector2i& offset, const Vector2u& size);
+
 		void GetPixels(void* pixels, uint32_t size) const;
 
 		void Update(const uint8_t* pixels);
@@ -90,12 +99,14 @@ namespace Engine {
 			return m_Internals->ID == texture.m_Internals->ID;
 		}
 	protected:
-		Texture2D();
+		Texture2D(bool multisampled = false);
 
 		static bool CheckSize(const Vector2u& size);
-		void CreateTexture(const Vector2u& size, const void* pixels = nullptr);
-		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset);
 
+		void CreateTexture(const Vector2u& size, const void* pixels = nullptr);
+		void CreateTexture(uint32_t samples, const Vector2u& size, const void* pixels = nullptr);
+
+		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset);
 	private:
 		struct InternalWrapping {
 			Wrapping S = Wrapping::Repeat;
@@ -112,26 +123,33 @@ namespace Engine {
 			Vector2u Size;
 
 			bool MipMapGenerated = false;
+			bool Multisampled = false;
 
 			InternalWrapping Wrapping;
 			InternalFilter Filter;
 
-			Internals();
+			Internals(bool multisampled = false);
 			~Internals();
 
 			void Bind() const;
 			void BindUnit(uint32_t sampler) const;
 
-			void Storage(const Vector2u& size);
+			void Allocate(const Vector2u& size);
+			void Allocate(const Vector2u& size, uint32_t samples);
 
-			void Image(const void* pixels, const Vector2u& size);
-			void SubImage(const void* pixels, const Vector2u& size, const Vector2i& offset = {0, 0});
+			//void Image(const void* pixels, const Vector2u& size);
+			void SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset = {0, 0});
 
 			void GetImage(void* pixels, uint32_t size) const;
 			void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 });
 
+			void Clear(void *pixels);
+			void Clear(void* pixels, const Vector2i& offset, const Vector2u& size);
+
+			bool CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const;
+
 			void SetParameter(uint32_t name, int parameter);
-			void GetParameter(uint32_t name, int* parameter);
+			void GetParameter(uint32_t name, int* parameter) const;
 		};
 
 		Ref<Internals> m_Internals;
