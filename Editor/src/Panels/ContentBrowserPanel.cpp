@@ -8,9 +8,9 @@
 
 namespace Editor {
 	ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(Engine::Project::GetAssetDirectory()), m_CurrentDirectory(m_BaseDirectory){
-		m_BackArrowIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/BackArrow.png"));
-		m_DirectoryIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/DirectoryIcon.png"));
-		m_FileIcon = Engine::Texture2D::Create(Engine::Image::Load("Resources/Icons/FileIcon.png"));
+		m_BackArrowIcon = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/BackArrow.png"));
+		m_DirectoryIcon = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/DirectoryIcon.png"));
+		m_FileIcon = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/FileIcon.png"));
 	}
 
 	void ContentBrowserPanel::OnImGuiRender() {
@@ -38,7 +38,7 @@ namespace Editor {
 
 			ImGui::PushID(fileNameString.c_str());
 			//TODO Directory
-			const Engine::Ref<Engine::Texture2D> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
+			const Engine::Ref<Engine::Texture> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
 			ImGui::ImageButton("Button", static_cast<ImTextureID>(icon->ID()), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 

@@ -29,12 +29,14 @@ namespace Editor
 		void NewProject();
 		bool OpenProject();
 		void OpenProject(const std::filesystem::path& path);
+		void SaveProject(const std::filesystem::path& path);
 		void SaveProject();
-		void SaveProjectAs();
+		bool SaveProjectAs();
 
 		void NewScene();
 		void OpenScene();
 		void OpenScene(const std::filesystem::path &path);
+		bool SaveScene(const std::filesystem::path &path);
 		void SaveScene();
 		void SaveSceneAs();
 
@@ -59,7 +61,11 @@ namespace Editor
 		Engine::Ref<Engine::Scene> m_ActiveScene;
 		Engine::Ref<Engine::Scene> m_EditorScene;
 
+		Engine::Ref<Engine::Framebuffer<Engine::Texture, Engine::Texture>> m_Framebuffer;
+
 		std::filesystem::path m_EditorScenePath;
+
+		Engine::Entity m_HoveredEntity;
 
 		bool m_PrivateCamera = true;
 

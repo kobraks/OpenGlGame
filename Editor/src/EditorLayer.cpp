@@ -33,6 +33,13 @@ namespace Editor {
 		}
 
 		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
+
+		Engine::FramebufferSpecification frameSpec;
+
+		frameSpec.Attachments = { Engine::FramebufferAttachmentFormat::RGBA8, Engine::FramebufferAttachmentFormat::RedInteger, Engine::FramebufferAttachmentFormat::Depth };
+		frameSpec.Size = { 1024, 1024 };
+
+		m_Framebuffer = Engine::Framebuffer<Engine::Texture, Engine::Texture>::Create(frameSpec);
 	}
 
 	void EditorLayer::OnDetach() {
@@ -45,8 +52,18 @@ namespace Editor {
 		m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
 		                                static_cast<uint32_t>(m_ViewportSize.y));
 
+		if (const auto size = m_Framebuffer->GetSize(); m_ViewportSize.x > 0.f && m_ViewportSize.y > 0.f && (size.Width
+			!= static_cast<uint32_t>(m_ViewportSize.x) || size.Height != static_cast<uint32_t>(m_ViewportSize.y))) {
+			m_Framebuffer->Resize({ static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) });
+			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
+		}
+
+		m_Framebuffer->Bind();
 		Engine::RendererCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1.f});
 		Engine::RendererCommand::Clear();
+
+		m_Framebuffer->GetColorAttachment()->Clear(-1);
+
 
 		switch (m_SceneState) {
 		case SceneState::Edit: {
@@ -71,12 +88,17 @@ namespace Editor {
 		const glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
 		my = viewportSize.y;
 
-		int mouseX = static_cast<int>(mx);
-		int mouseY = static_cast<int>(my);
+		const int mouseX = static_cast<int>(mx);
+		const int mouseY = static_cast<int>(my);
 
-		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(viewportSize.y)) {
+		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(
+			viewportSize.y)) {
+
+			const int pixelData = m_Framebuffer->ReadPixel(1, { mouseX, mouseY });
+			m_HoveredEntity = pixelData == -1 ? Engine::Entity() : Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
 		}
 
+		m_Framebuffer->Unbind();
 	}
 
 	void EditorLayer::OnConstUpdate(const Engine::Time& timeStep) {
@@ -194,6 +216,64 @@ namespace Editor {
 		const ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
 		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
+		const auto texture = m_Framebuffer->GetColorAttachment();
+		ImGui::Image(texture->ID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
+
+		if (ImGui::BeginDragDropTarget()) {
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
+				auto path = static_cast<const wchar_t*>(payload->Data);
+				OpenScene(path);
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+
+		Engine::Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
+
+		if (selectedEntity && m_GuizmoType != -1) {
+			ImGuizmo::SetOrthographic(false);
+			ImGuizmo::SetDrawlist();
+
+			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
+			                  m_ViewportBounds[1].x - m_ViewportBounds[0].x,
+			                  m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+
+			//Camera
+			//
+			// auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
+			// const auto& camera = cameraEntity.GetComponent<Engine::CameraComponent>().Camera;
+			// const glm::mat4& cameraProjection = camera.GetProjectionMatrix();
+			// glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<Engine::TransformComponent>().GetTransform());
+
+			//Editor Camera
+			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
+			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
+
+			auto& tc = selectedEntity.GetComponent<Engine::TransformComponent>();
+			glm::mat4 transform = tc.GetTransform();
+
+			const bool snap = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftControl);
+			float snapValue = 0.5f;
+
+			if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
+				snapValue = 45.f;
+
+			float snapValues[3] = {snapValue, snapValue, snapValue};
+
+			Manipulate(value_ptr(cameraView), value_ptr(cameraProjection),
+			           static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
+			           snap ? snapValues : nullptr);
+
+			if (ImGuizmo::IsUsing()) {
+				glm::vec3 translation, rotation, scale;
+				Engine::Math::DecomposeTransform(transform, translation, rotation, scale);
+
+				const glm::vec3 deltaRotation = rotation - tc.Rotation;
+				tc.Translation = translation;
+				tc.Rotation += deltaRotation;
+				tc.Scale = scale;
+			}
+		}
 		ImGui::End();
 		ImGui::PopStyleVar();
 
@@ -201,8 +281,6 @@ namespace Editor {
 	}
 
 	void EditorLayer::OnEvent(Engine::Event& e) {
-		Layer::OnEvent(e);
-
 		Engine::EventDispatcher dispacher(e);
 		dispacher.Dispatch<Engine::KeyPressedEvent>(BIND_EVENT_FN(EditorLayer::OnKeyPressed));
 		dispacher.Dispatch<Engine::MouseButtonPressedEvent>(BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
@@ -297,12 +375,27 @@ namespace Editor {
 		}
 	}
 
-	void EditorLayer::SaveProject() {
-		// if (Engine::Project::SaveActive())
+	void EditorLayer::SaveProject(const std::filesystem::path& path) {
+		Engine::Project::SaveActive(path);
+		Engine::ProjectConfig config;
+		config.AssetDirectory = path;
+		config.AssetDirectory = path / "Scripts";
+
+		Engine::Project::New(config);
 	}
 
-	void EditorLayer::SaveProjectAs() {
-		
+	void EditorLayer::SaveProject() {
+		Engine::Project::SaveActive(Engine::Project::GetProjectDirectory());
+	}
+
+	bool EditorLayer::SaveProjectAs() {
+		std::filesystem::path filePath = Engine::FileDialogs::SaveFile("Game Project (*.gproj)\0*.gproj\0");
+
+		if (filePath.empty())
+			return false;
+
+		SaveProject(filePath);
+		return true;
 	}
 
 	void EditorLayer::NewScene() {
@@ -337,22 +430,28 @@ namespace Editor {
 		}
 	}
 
+	bool EditorLayer::SaveScene(const std::filesystem::path& path) {
+		if (!path.empty()) {
+			m_EditorScenePath = path;
+			SerializeScene(m_ActiveScene, path);
+			return true;
+		}
+
+		return false;
+	}
+
 	void EditorLayer::SaveScene() {
-		if (!m_EditorScenePath.empty())
-			SerializeScene(m_ActiveScene, m_EditorScenePath);
-		else
+		if (!SaveScene(m_EditorScenePath))
 			SaveSceneAs();
 	}
 
 	void EditorLayer::SaveSceneAs() {
-		std::string filePath = Engine::FileDialogs::SaveFile("Game Scene (*.game)\0*.game\0");
-		if (!filePath.empty()) {
-			SerializeScene(m_ActiveScene, filePath);
-			m_EditorScenePath = filePath;
-		}
+		SaveScene(Engine::FileDialogs::SaveFile("Game Scene (*.game)\0*.game\0"));
 	}
 
 	void EditorLayer::SerializeScene(Engine::Ref<Engine::Scene> scene, const std::filesystem::path& path) {
+		Engine::SceneSerializer serializer(scene);
+		serializer.Serialize(path);
 	}
 
 	void EditorLayer::OnScenePlay() {

@@ -21,6 +21,8 @@ namespace Engine {
 		ApplicationSpecification spec;
 		spec.Name            = "Editor";
 		spec.CommandLineArgs = args;
+		spec.FullWindow = true;
+		
 
 		return new Editor::EditorApp(spec);
 	}
