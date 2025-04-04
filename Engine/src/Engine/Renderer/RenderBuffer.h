@@ -7,26 +7,6 @@ namespace Engine {
 	public:
 		using IDType = uint32_t;
 
-		enum class DataFormat : uint32_t {
-			Red,
-			RG,
-			RGB,
-			BGR,
-			RGBA,
-			BGRA,
-
-			RedInteger,
-			RGInteger,
-			RGBInteger,
-			BGRInteger,
-			RGBAInteger,
-			BGRAInteger,
-
-			StencilIndex,
-			DepthComponent,
-			DepthStencil
-		};
-
 		enum class InternalFormat : uint32_t {
 			CompressedRed, CompressedRedRGTC1, CompressedRG, CompressedRGB, CompressedRGBA, CompressedRGRGTC2,
 			CompressedSignedRedRGTC1, CompressedSignedRGRGTC2, CompressedSRGB,
@@ -38,13 +18,6 @@ namespace Engine {
 			RGB32F, RGB32I, RGB32UI, RGB4, RGB5, RGB5A1, RGB8, RGB8I, RGB8UI, RGB9E5, RGBA,
 			RGBA12, RGBA16, RGBA16F, RGBA16I, RGBA16UI, RGBA2, RGBA32F, RGBA32I, RGBA32UI, RGBA4, RGBA8,
 			RGBA8UI, SRGB8, SRGB8A8, SRGBA
-		};
-
-		enum class DataType : uint32_t {
-			Byte, UnsignedByte,
-			Short, UnsignedShort,
-			Int, UnsignedInt,
-			Float, Double
 		};
 
 		static Ref<RenderBuffer> Create(const Vector2u& size, uint32_t samples, InternalFormat internalFormat);
