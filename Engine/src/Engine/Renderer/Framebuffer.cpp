@@ -2,6 +2,7 @@
 #include "Framebuffer.h"
 #include "Engine/Renderer/Framebuffer.h"
 #include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/RenderBuffer.h"
 
 #include <glad/glad.h>
 
@@ -99,38 +100,28 @@ namespace Engine {
 			}
 		}
 
-		static Texture::InternalFormat GetColorFormat(int8_t depth) {
-			if (depth == 24)
-				return Texture::InternalFormat::RGB8;
-			if (depth == 32)
-				return Texture::InternalFormat::RGBA8;
-
-			LOG_GL_WARN("Unknown color depth {}, selected: {}", depth, depth < 24 ? "24 bit" : "32 bit");
-			return depth < 24 ? Texture::InternalFormat::RGB8 : Texture::InternalFormat::RGBA8;
-		}
-
-		static Texture::InternalFormat GetDepthFormat(int8_t depth, bool stencil) {
-			if (!stencil) {
-				if (depth == 8)
-					return Texture::InternalFormat::DepthComponent;
-				if (depth == 16)
-					return Texture::InternalFormat::DepthComponent16;
-				if (depth == 24)
-					return Texture::InternalFormat::DepthComponent24;
-				if (depth == 32)
-					return Texture::InternalFormat::DepthComponent32;
-
-				LOG_GL_WARN("Unknown depth buffer size: '{}', Setting it to 16 bits", depth);
-				return Texture::InternalFormat::DepthComponent16;
+		RenderBuffer::InternalFormat ToRenderBufferFormat(FramebufferAttachmentFormat format) {
+			switch (format) {
+			case FramebufferAttachmentFormat::None:
+				ENGINE_ASSERT(false);
+				throw std::exception();
+			case FramebufferAttachmentFormat::RGBA8:
+				return RenderBuffer::InternalFormat::RGBA8;
+			case FramebufferAttachmentFormat::RedInteger:
+				return RenderBuffer::InternalFormat::R32I;
+			case FramebufferAttachmentFormat::DepthComponent:
+				return RenderBuffer::InternalFormat::DepthComponent;
+			case FramebufferAttachmentFormat::DepthComponent16:
+				return RenderBuffer::InternalFormat::DepthComponent16;
+			case FramebufferAttachmentFormat::DepthComponent24:
+				return RenderBuffer::InternalFormat::DepthComponent24;
+			case FramebufferAttachmentFormat::DepthComponent32:
+				return RenderBuffer::InternalFormat::DepthComponent32;
+			case FramebufferAttachmentFormat::Depth24Stencil8:
+				return RenderBuffer::InternalFormat::Depth24Stencil8;
+			case FramebufferAttachmentFormat::Depth32FStencil8:
+				return RenderBuffer::InternalFormat::Depth32FStencil8;
 			}
-
-			if (depth == 24)
-				return Texture::InternalFormat::Depth24Stencil8;
-			if (depth == 32)
-				return Texture::InternalFormat::Depth32FStencil8;
-
-			LOG_GL_WARN("Unknown depth buffer size : '{}', Setting it to 24 bits and 8 Stencil bits", depth);
-			return Texture::InternalFormat::Depth24Stencil8;
 		}
 	}
 
@@ -212,9 +203,7 @@ namespace Engine {
 	}
 
 	void FramebufferObject::Attach(uint32_t attachment, Ref<RenderBuffer> renderBuffer) {
-		//not implemented
-		ENGINE_ASSERT(false, "not implemented");
-		throw std::exception("not implemented");
+		glNamedFramebufferRenderbuffer(*this, attachment, GL_RENDERBUFFER, *renderBuffer);
 	}
 
 	Ref<Texture> FramebufferObject::CreateColorTextureAttachment(FramebufferAttachmentFormat format) {
@@ -237,11 +226,16 @@ namespace Engine {
 	}
 
 	Ref<RenderBuffer> FramebufferObject::CreateColorRenderBufferAttachment(FramebufferAttachmentFormat format) {
-		//not implemented
-		ENGINE_ASSERT(false, "not implemented");
-		throw std::exception("not implemented");
+		if (format == FramebufferAttachmentFormat::None)
+			return nullptr;
 
-		return nullptr;
+		const auto index =m_Internals->ColorAttachmentCount++;
+
+		auto renderBuffer = RenderBuffer::Create(m_Internals->Specification.Size, m_Internals->Specification.Samples, Utils::ToRenderBufferFormat(format));
+
+		Attach(GL_COLOR_ATTACHMENT0 + index, renderBuffer);
+
+		return renderBuffer;
 	}
 
 	Ref<Texture> FramebufferObject::CreateDepthTextureAttachment(FramebufferAttachmentFormat format) {
@@ -268,11 +262,20 @@ namespace Engine {
 
 
 	Ref<RenderBuffer> FramebufferObject::CreateDepthRenderBufferAttachment(FramebufferAttachmentFormat format) {
-		//not implemented
-		ENGINE_ASSERT(false, "not implemented");
-		throw std::exception("not implemented");
+		if (format == FramebufferAttachmentFormat::None)
+			return nullptr;
 
-		return nullptr;
+		auto renderBuffer = RenderBuffer::Create(m_Internals->Specification.Size, m_Internals->Specification.Samples, Utils::ToRenderBufferFormat(format));
+
+		m_Internals->DepthBuffer = true;
+		if (format > FramebufferAttachmentFormat::DepthComponent32) {
+			m_Internals->Stencil = true;
+			Attach(GL_DEPTH_STENCIL_ATTACHMENT, renderBuffer);
+		}
+		else
+			Attach(GL_DEPTH_ATTACHMENT, renderBuffer);
+
+		return renderBuffer;
 	}
 
 	void FramebufferObject::CheckCompleteness() const {

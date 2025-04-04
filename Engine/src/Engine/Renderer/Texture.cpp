@@ -5,255 +5,257 @@
 #include "glad/glad.h"
 
 namespace Engine {
-	static uint32_t GenTexture(bool multisampled) {
-		uint32_t name;
+	namespace Utils {
+		Texture::IDType GenTexture(bool multisampled) {
+			Texture::IDType name;
 
-		if (multisampled)
-			glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &name);
-		else
-			glCreateTextures(GL_TEXTURE_2D, 1, &name);
+			if (multisampled)
+				glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &name);
+			else
+				glCreateTextures(GL_TEXTURE_2D, 1, &name);
 
-		return name;
-	}
-
-	constexpr static GLenum GLInternalFormat(Texture::InternalFormat format) {
-		switch (format) {
-		case Texture::InternalFormat::CompressedRed:
-			return GL_COMPRESSED_RED;
-		case Texture::InternalFormat::CompressedRedRGTC1:
-			return GL_COMPRESSED_RED_RGTC1;
-		case Texture::InternalFormat::CompressedRG:
-			return GL_COMPRESSED_RG;
-		case Texture::InternalFormat::CompressedRGB:
-			return GL_COMPRESSED_RGB;
-		case Texture::InternalFormat::CompressedRGBA:
-			return GL_COMPRESSED_RGBA;
-		case Texture::InternalFormat::CompressedRGRGTC2:
-			return GL_COMPRESSED_RG_RGTC2;
-		case Texture::InternalFormat::CompressedSignedRedRGTC1:
-			return GL_COMPRESSED_SIGNED_RED_RGTC1;
-		case Texture::InternalFormat::CompressedSignedRGRGTC2:
-			return GL_COMPRESSED_SIGNED_RG_RGTC2;
-		case Texture::InternalFormat::CompressedSRGB:
-			return GL_COMPRESSED_SRGB;
-		case Texture::InternalFormat::DepthStencil:
-			return GL_DEPTH_STENCIL;
-		case Texture::InternalFormat::Depth24Stencil8:
-			return GL_DEPTH24_STENCIL8;
-		case Texture::InternalFormat::Depth32FStencil8:
-			return GL_DEPTH32F_STENCIL8;
-		case Texture::InternalFormat::DepthComponent:
-			return GL_DEPTH_COMPONENT;
-		case Texture::InternalFormat::DepthComponent16:
-			return GL_DEPTH_COMPONENT16;
-		case Texture::InternalFormat::DepthComponent24:
-			return GL_DEPTH_COMPONENT24;
-		case Texture::InternalFormat::DepthComponent32F:
-			return GL_DEPTH_COMPONENT32F;
-		case Texture::InternalFormat::DepthComponent32:
-			return GL_DEPTH_COMPONENT32;
-		case Texture::InternalFormat::R16F:
-			return GL_R16F;
-		case Texture::InternalFormat::R16I:
-			return GL_R16I;
-		case Texture::InternalFormat::R16SNorm:
-			return GL_R16_SNORM;
-		case Texture::InternalFormat::R16UI:
-			return GL_R16UI;
-		case Texture::InternalFormat::R32F:
-			return GL_R32F;
-		case Texture::InternalFormat::R32I:
-			return GL_R32I;
-		case Texture::InternalFormat::R32UI:
-			return GL_R32UI;
-		case Texture::InternalFormat::R3G3B2:
-			return GL_R3_G3_B2;
-		case Texture::InternalFormat::R8:
-			return GL_R8;
-		case Texture::InternalFormat::R8I:
-			return GL_R8I;
-		case Texture::InternalFormat::R8SNorm:
-			return GL_R8_SNORM;
-		case Texture::InternalFormat::R8UI:
-			return GL_R8UI;
-		case Texture::InternalFormat::Red:
-			return GL_RED;
-		case Texture::InternalFormat::RG:
-			return GL_RG;
-		case Texture::InternalFormat::RG16:
-			return GL_RG16;
-		case Texture::InternalFormat::RG16F:
-			return GL_RG16F;
-		case Texture::InternalFormat::RG16SNorm:
-			return GL_RG16_SNORM;
-		case Texture::InternalFormat::RG32F:
-			return GL_RG32F;
-		case Texture::InternalFormat::RG32I:
-			return GL_RG32I;
-		case Texture::InternalFormat::RG32UI:
-			return GL_RG32UI;
-		case Texture::InternalFormat::RG8:
-			return GL_RG8;
-		case Texture::InternalFormat::RG8I:
-			return GL_RGB8I;;
-		case Texture::InternalFormat::RG8SNorm:
-			return GL_RG8_SNORM;
-		case Texture::InternalFormat::RG8UI:
-			return GL_RG8UI;
-		case Texture::InternalFormat::RGB:
-			return GL_RGB;
-		case Texture::InternalFormat::RGB10:
-			return GL_RGB10;
-		case Texture::InternalFormat::RGB10A2:
-			return GL_RGB10_A2;
-		case Texture::InternalFormat::RGB12:
-			return GL_RGB12;
-		case Texture::InternalFormat::RGB16:
-			return GL_RGB16;
-		case Texture::InternalFormat::RGB16F:
-			return GL_RGB16F;
-		case Texture::InternalFormat::RGB16I:
-			return GL_RGB16I;
-		case Texture::InternalFormat::RGB16UI:
-			return GL_RGB16UI;
-		case Texture::InternalFormat::RGB32F:
-			return GL_RGB32F;
-		case Texture::InternalFormat::RGB32I:
-			return GL_RGB32I;
-		case Texture::InternalFormat::RGB32UI:
-			return GL_RGB32UI;
-		case Texture::InternalFormat::RGB4:
-			return GL_RGB4;
-		case Texture::InternalFormat::RGB5:
-			return GL_RGB5;
-		case Texture::InternalFormat::RGB5A1:
-			return GL_RGB5_A1;
-		case Texture::InternalFormat::RGB8:
-			return GL_RGB8;
-		case Texture::InternalFormat::RGB8I:
-			return GL_RGB8I;
-		case Texture::InternalFormat::RGB8UI:
-			return GL_RGB8UI;
-		case Texture::InternalFormat::RGB9E5:
-			return GL_RGB9_E5;
-		case Texture::InternalFormat::RGBA:
-			return GL_RGBA;
-		case Texture::InternalFormat::RGBA12:
-			return GL_RGBA12;
-		case Texture::InternalFormat::RGBA16:
-			return GL_RGBA16;
-		case Texture::InternalFormat::RGBA16F:
-			return GL_RGBA16F;
-		case Texture::InternalFormat::RGBA16I:
-			return GL_RGBA16I;
-		case Texture::InternalFormat::RGBA16UI:
-			return GL_RGBA16UI;
-		case Texture::InternalFormat::RGBA2:
-			return GL_RGBA2;
-		case Texture::InternalFormat::RGBA32F:
-			return GL_RGBA32F;
-		case Texture::InternalFormat::RGBA32I:
-			return GL_RGBA32I;
-		case Texture::InternalFormat::RGBA32UI:
-			return GL_RGBA32UI;
-		case Texture::InternalFormat::RGBA4:
-			return GL_RGBA4;
-		case Texture::InternalFormat::RGBA8:
-			return GL_RGBA8;
-		case Texture::InternalFormat::RGBA8UI:
-			return GL_RGBA8I;
-		case Texture::InternalFormat::SRGB8:
-			return GL_SRGB8;
-		case Texture::InternalFormat::SRGB8A8:
-			return GL_SRGB8_ALPHA8;
-		case Texture::InternalFormat::SRGBA:
-			return GL_SRGB_ALPHA;
+			return name;
 		}
-	}
 
-	constexpr static GLenum GLDataType(Texture::DataType dataType) {
-		switch (dataType) {
-		case Texture::DataType::Byte:
-			return GL_BYTE;
-		case Texture::DataType::UnsignedByte:
-			return GL_UNSIGNED_BYTE;
-		case Texture::DataType::Short:
-			return GL_SHORT;
-		case Texture::DataType::UnsignedShort:
-			return GL_UNSIGNED_SHORT;
-		case Texture::DataType::Int:
-			return GL_INT;
-		case Texture::DataType::UnsignedInt:
-			return GL_UNSIGNED_INT;
-		case Texture::DataType::Float:
-			return GL_FLOAT;
-		case Texture::DataType::Double:
-			return GL_DOUBLE;
+		constexpr GLenum GLInternalFormat(Texture::InternalFormat format) {
+			switch (format) {
+			case Texture::InternalFormat::CompressedRed:
+				return GL_COMPRESSED_RED;
+			case Texture::InternalFormat::CompressedRedRGTC1:
+				return GL_COMPRESSED_RED_RGTC1;
+			case Texture::InternalFormat::CompressedRG:
+				return GL_COMPRESSED_RG;
+			case Texture::InternalFormat::CompressedRGB:
+				return GL_COMPRESSED_RGB;
+			case Texture::InternalFormat::CompressedRGBA:
+				return GL_COMPRESSED_RGBA;
+			case Texture::InternalFormat::CompressedRGRGTC2:
+				return GL_COMPRESSED_RG_RGTC2;
+			case Texture::InternalFormat::CompressedSignedRedRGTC1:
+				return GL_COMPRESSED_SIGNED_RED_RGTC1;
+			case Texture::InternalFormat::CompressedSignedRGRGTC2:
+				return GL_COMPRESSED_SIGNED_RG_RGTC2;
+			case Texture::InternalFormat::CompressedSRGB:
+				return GL_COMPRESSED_SRGB;
+			case Texture::InternalFormat::DepthStencil:
+				return GL_DEPTH_STENCIL;
+			case Texture::InternalFormat::Depth24Stencil8:
+				return GL_DEPTH24_STENCIL8;
+			case Texture::InternalFormat::Depth32FStencil8:
+				return GL_DEPTH32F_STENCIL8;
+			case Texture::InternalFormat::DepthComponent:
+				return GL_DEPTH_COMPONENT;
+			case Texture::InternalFormat::DepthComponent16:
+				return GL_DEPTH_COMPONENT16;
+			case Texture::InternalFormat::DepthComponent24:
+				return GL_DEPTH_COMPONENT24;
+			case Texture::InternalFormat::DepthComponent32F:
+				return GL_DEPTH_COMPONENT32F;
+			case Texture::InternalFormat::DepthComponent32:
+				return GL_DEPTH_COMPONENT32;
+			case Texture::InternalFormat::R16F:
+				return GL_R16F;
+			case Texture::InternalFormat::R16I:
+				return GL_R16I;
+			case Texture::InternalFormat::R16SNorm:
+				return GL_R16_SNORM;
+			case Texture::InternalFormat::R16UI:
+				return GL_R16UI;
+			case Texture::InternalFormat::R32F:
+				return GL_R32F;
+			case Texture::InternalFormat::R32I:
+				return GL_R32I;
+			case Texture::InternalFormat::R32UI:
+				return GL_R32UI;
+			case Texture::InternalFormat::R3G3B2:
+				return GL_R3_G3_B2;
+			case Texture::InternalFormat::R8:
+				return GL_R8;
+			case Texture::InternalFormat::R8I:
+				return GL_R8I;
+			case Texture::InternalFormat::R8SNorm:
+				return GL_R8_SNORM;
+			case Texture::InternalFormat::R8UI:
+				return GL_R8UI;
+			case Texture::InternalFormat::Red:
+				return GL_RED;
+			case Texture::InternalFormat::RG:
+				return GL_RG;
+			case Texture::InternalFormat::RG16:
+				return GL_RG16;
+			case Texture::InternalFormat::RG16F:
+				return GL_RG16F;
+			case Texture::InternalFormat::RG16SNorm:
+				return GL_RG16_SNORM;
+			case Texture::InternalFormat::RG32F:
+				return GL_RG32F;
+			case Texture::InternalFormat::RG32I:
+				return GL_RG32I;
+			case Texture::InternalFormat::RG32UI:
+				return GL_RG32UI;
+			case Texture::InternalFormat::RG8:
+				return GL_RG8;
+			case Texture::InternalFormat::RG8I:
+				return GL_RGB8I;
+			case Texture::InternalFormat::RG8SNorm:
+				return GL_RG8_SNORM;
+			case Texture::InternalFormat::RG8UI:
+				return GL_RG8UI;
+			case Texture::InternalFormat::RGB:
+				return GL_RGB;
+			case Texture::InternalFormat::RGB10:
+				return GL_RGB10;
+			case Texture::InternalFormat::RGB10A2:
+				return GL_RGB10_A2;
+			case Texture::InternalFormat::RGB12:
+				return GL_RGB12;
+			case Texture::InternalFormat::RGB16:
+				return GL_RGB16;
+			case Texture::InternalFormat::RGB16F:
+				return GL_RGB16F;
+			case Texture::InternalFormat::RGB16I:
+				return GL_RGB16I;
+			case Texture::InternalFormat::RGB16UI:
+				return GL_RGB16UI;
+			case Texture::InternalFormat::RGB32F:
+				return GL_RGB32F;
+			case Texture::InternalFormat::RGB32I:
+				return GL_RGB32I;
+			case Texture::InternalFormat::RGB32UI:
+				return GL_RGB32UI;
+			case Texture::InternalFormat::RGB4:
+				return GL_RGB4;
+			case Texture::InternalFormat::RGB5:
+				return GL_RGB5;
+			case Texture::InternalFormat::RGB5A1:
+				return GL_RGB5_A1;
+			case Texture::InternalFormat::RGB8:
+				return GL_RGB8;
+			case Texture::InternalFormat::RGB8I:
+				return GL_RGB8I;
+			case Texture::InternalFormat::RGB8UI:
+				return GL_RGB8UI;
+			case Texture::InternalFormat::RGB9E5:
+				return GL_RGB9_E5;
+			case Texture::InternalFormat::RGBA:
+				return GL_RGBA;
+			case Texture::InternalFormat::RGBA12:
+				return GL_RGBA12;
+			case Texture::InternalFormat::RGBA16:
+				return GL_RGBA16;
+			case Texture::InternalFormat::RGBA16F:
+				return GL_RGBA16F;
+			case Texture::InternalFormat::RGBA16I:
+				return GL_RGBA16I;
+			case Texture::InternalFormat::RGBA16UI:
+				return GL_RGBA16UI;
+			case Texture::InternalFormat::RGBA2:
+				return GL_RGBA2;
+			case Texture::InternalFormat::RGBA32F:
+				return GL_RGBA32F;
+			case Texture::InternalFormat::RGBA32I:
+				return GL_RGBA32I;
+			case Texture::InternalFormat::RGBA32UI:
+				return GL_RGBA32UI;
+			case Texture::InternalFormat::RGBA4:
+				return GL_RGBA4;
+			case Texture::InternalFormat::RGBA8:
+				return GL_RGBA8;
+			case Texture::InternalFormat::RGBA8UI:
+				return GL_RGBA8I;
+			case Texture::InternalFormat::SRGB8:
+				return GL_SRGB8;
+			case Texture::InternalFormat::SRGB8A8:
+				return GL_SRGB8_ALPHA8;
+			case Texture::InternalFormat::SRGBA:
+				return GL_SRGB_ALPHA;
+			}
 		}
-	}
 
-	constexpr static GLenum GLFormat(Texture::DataFormat format) {
-		switch (format) {
-		case Texture::DataFormat::Red:
-			return GL_RED;
-		case Texture::DataFormat::RG:
-			return GL_RG;
-		case Texture::DataFormat::RGB:
-			return GL_RGB;
-		case Texture::DataFormat::BGR:
-			return GL_BGR;
-		case Texture::DataFormat::RGBA:
-			return GL_RGBA;
-		case Texture::DataFormat::BGRA:
-			return GL_BGRA;
-		case Texture::DataFormat::RedInteger:
-			return GL_RED_INTEGER;
-		case Texture::DataFormat::RGInteger:
-			return GL_RG_INTEGER;
-		case Texture::DataFormat::RGBInteger:
-			return GL_RGB_INTEGER;
-		case Texture::DataFormat::BGRInteger:
-			return GL_BGR_INTEGER;
-		case Texture::DataFormat::RGBAInteger:
-			return GL_RGBA_INTEGER;
-		case Texture::DataFormat::BGRAInteger:
-			return GL_BGRA_INTEGER;
-		case Texture::DataFormat::StencilIndex:
-			return GL_STENCIL_INDEX;
-		case Texture::DataFormat::DepthComponent:
-			return GL_DEPTH_COMPONENT;
-		case Texture::DataFormat::DepthStencil:
-			return GL_DEPTH_STENCIL;
+		constexpr static GLenum GLDataType(Texture::DataType dataType) {
+			switch (dataType) {
+			case Texture::DataType::Byte:
+				return GL_BYTE;
+			case Texture::DataType::UnsignedByte:
+				return GL_UNSIGNED_BYTE;
+			case Texture::DataType::Short:
+				return GL_SHORT;
+			case Texture::DataType::UnsignedShort:
+				return GL_UNSIGNED_SHORT;
+			case Texture::DataType::Int:
+				return GL_INT;
+			case Texture::DataType::UnsignedInt:
+				return GL_UNSIGNED_INT;
+			case Texture::DataType::Float:
+				return GL_FLOAT;
+			case Texture::DataType::Double:
+				return GL_DOUBLE;
+			}
 		}
-	}
 
-	constexpr static int GetOpenWrapping(Wrapping wrapping) {
-		switch (wrapping) {
-		case Wrapping::Repeat:
-			return GL_REPEAT;
-		case Wrapping::MirroredRepeat:
-			return GL_MIRRORED_REPEAT;
-		case Wrapping::ClampEdge:
-			return GL_CLAMP_TO_EDGE;
-		case Wrapping::ClampBorder:
-			return GL_CLAMP_TO_BORDER;
+		constexpr GLenum GLFormat(Texture::DataFormat format) {
+			switch (format) {
+			case Texture::DataFormat::Red:
+				return GL_RED;
+			case Texture::DataFormat::RG:
+				return GL_RG;
+			case Texture::DataFormat::RGB:
+				return GL_RGB;
+			case Texture::DataFormat::BGR:
+				return GL_BGR;
+			case Texture::DataFormat::RGBA:
+				return GL_RGBA;
+			case Texture::DataFormat::BGRA:
+				return GL_BGRA;
+			case Texture::DataFormat::RedInteger:
+				return GL_RED_INTEGER;
+			case Texture::DataFormat::RGInteger:
+				return GL_RG_INTEGER;
+			case Texture::DataFormat::RGBInteger:
+				return GL_RGB_INTEGER;
+			case Texture::DataFormat::BGRInteger:
+				return GL_BGR_INTEGER;
+			case Texture::DataFormat::RGBAInteger:
+				return GL_RGBA_INTEGER;
+			case Texture::DataFormat::BGRAInteger:
+				return GL_BGRA_INTEGER;
+			case Texture::DataFormat::StencilIndex:
+				return GL_STENCIL_INDEX;
+			case Texture::DataFormat::DepthComponent:
+				return GL_DEPTH_COMPONENT;
+			case Texture::DataFormat::DepthStencil:
+				return GL_DEPTH_STENCIL;
+			}
 		}
-	}
 
-	constexpr static int GetOpenFilter(Filter filter) {
-		switch (filter) {
-		case Filter::Nearest:
-			return GL_NEAREST;
-		case Filter::Linear:
-			return GL_LINEAR;
-		case Filter::NearestMipmapNearest:
-			return GL_NEAREST_MIPMAP_NEAREST;
-		case Filter::LinearMipmapNearest:
-			return GL_LINEAR_MIPMAP_NEAREST;
-		case Filter::NearestMipmapLinear:
-			return GL_NEAREST_MIPMAP_LINEAR;
-		case Filter::LinearMipmapLinear:
-			return GL_LINEAR_MIPMAP_LINEAR;
+		constexpr static int GetOpenWrapping(Wrapping wrapping) {
+			switch (wrapping) {
+			case Wrapping::Repeat:
+				return GL_REPEAT;
+			case Wrapping::MirroredRepeat:
+				return GL_MIRRORED_REPEAT;
+			case Wrapping::ClampEdge:
+				return GL_CLAMP_TO_EDGE;
+			case Wrapping::ClampBorder:
+				return GL_CLAMP_TO_BORDER;
+			}
+		}
+
+		constexpr int GetOpenFilter(Filter filter) {
+			switch (filter) {
+			case Filter::Nearest:
+				return GL_NEAREST;
+			case Filter::Linear:
+				return GL_LINEAR;
+			case Filter::NearestMipmapNearest:
+				return GL_NEAREST_MIPMAP_NEAREST;
+			case Filter::LinearMipmapNearest:
+				return GL_LINEAR_MIPMAP_NEAREST;
+			case Filter::NearestMipmapLinear:
+				return GL_NEAREST_MIPMAP_LINEAR;
+			case Filter::LinearMipmapLinear:
+				return GL_LINEAR_MIPMAP_LINEAR;
+			}
 		}
 	}
 
@@ -286,7 +288,7 @@ namespace Engine {
 	}
 
 	Ref<Texture> Texture::Create(const Vector2u& size, InternalFormat internalFormat, const uint8_t* pixels,
-	                                 DataType dataType, DataFormat dataFormat) {
+	                             DataType dataType, DataFormat dataFormat) {
 		auto texture = Ref<Texture>(new Texture());
 
 		if (CheckSize(size))
@@ -296,7 +298,7 @@ namespace Engine {
 	}
 
 	Ref<Texture> Texture::Create(const Vector2u& size, uint32_t samples, InternalFormat internalFormat,
-	                                 const uint8_t* pixels, DataType dataType, DataFormat dataFormat) {
+	                             const uint8_t* pixels, DataType dataType, DataFormat dataFormat) {
 		auto texture = Ref<Texture>(new Texture(samples > 1));
 
 		if (CheckSize(size))
@@ -326,12 +328,12 @@ namespace Engine {
 
 	void Texture::SetWrappingS(Wrapping wrapping) {
 		m_Internals->Wrapping.S = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_S, GetOpenWrapping(wrapping));
+		m_Internals->SetParameter(GL_TEXTURE_WRAP_S, Utils::GetOpenWrapping(wrapping));
 	}
 
 	void Texture::SetWrappingT(Wrapping wrapping) {
 		m_Internals->Wrapping.T = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_T, GetOpenWrapping(wrapping));
+		m_Internals->SetParameter(GL_TEXTURE_WRAP_T, Utils::GetOpenWrapping(wrapping));
 	}
 
 	void Texture::SetFilters(Filter min, Filter mag) {
@@ -341,7 +343,7 @@ namespace Engine {
 
 	void Texture::SetMinFilter(Filter filter) {
 		m_Internals->Filter.Min = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MIN_FILTER, GetOpenFilter(filter));
+		m_Internals->SetParameter(GL_TEXTURE_MIN_FILTER, Utils::GetOpenFilter(filter));
 	}
 
 	void Texture::SetMagFilter(Filter filter) {
@@ -351,7 +353,7 @@ namespace Engine {
 		}
 
 		m_Internals->Filter.Mag = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MAG_FILTER, GetOpenFilter(filter));
+		m_Internals->SetParameter(GL_TEXTURE_MAG_FILTER, Utils::GetOpenFilter(filter));
 	}
 
 	Ref<Image> Texture::ToImage() const {
@@ -384,7 +386,8 @@ namespace Engine {
 		m_Internals->Clear(pixels, dataFormat, dataType);
 	}
 
-	void Texture::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType) {
+	void Texture::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
+	                    DataType dataType) {
 		m_Internals->Clear(pixels, offset, size, dataFormat, dataType);
 	}
 
@@ -402,7 +405,7 @@ namespace Engine {
 	}
 
 	void Texture::Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
-	                       DataType dataType) {
+	                     DataType dataType) {
 		Update(static_cast<const void*>(pixels), size, offset, format, dataType);
 	}
 
@@ -464,7 +467,7 @@ namespace Engine {
 	}
 
 	void Texture::CreateTexture(uint32_t samples, const Vector2u& size, InternalFormat internalFormat,
-	                              const void* pixels, DataType dataType, DataFormat dataFormat) {
+	                            const void* pixels, DataType dataType, DataFormat dataFormat) {
 		if (samples > 1)
 			m_Internals->Allocate(size, samples, internalFormat);
 		else {
@@ -479,11 +482,11 @@ namespace Engine {
 	}
 
 	void Texture::Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat,
-	                       DataType dataType) {
+	                     DataType dataType) {
 		m_Internals->SendImage(pixels, size, offset, dataFormat, dataType);
 	}
 
-	Texture::Internals::Internals(bool multisampled) : ID(GenTexture(multisampled)), Multisampled(multisampled) {
+	Texture::Internals::Internals(bool multisampled) : ID(Utils::GenTexture(multisampled)), Multisampled(multisampled) {
 	}
 
 	Texture::Internals::~Internals() {
@@ -503,7 +506,7 @@ namespace Engine {
 		InternalFormat = internalFormat;
 		Samples = 1;
 
-		glTextureStorage2D(ID, 1, GLInternalFormat(internalFormat), static_cast<GLsizei>(size.Width),
+		glTextureStorage2D(ID, 1, Utils::GLInternalFormat(internalFormat), static_cast<GLsizei>(size.Width),
 		                   static_cast<GLsizei>(size.Height));
 	}
 
@@ -512,12 +515,12 @@ namespace Engine {
 		InternalFormat = internalFormat;
 		Samples = samples;
 
-		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), GLInternalFormat(internalFormat),
+		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), Utils::GLInternalFormat(internalFormat),
 		                              static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), GL_FALSE);
 	}
 
 	void Texture::Internals::SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset,
-	                                     DataFormat format, DataType dataType) {
+	                                   DataFormat format, DataType dataType) {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			return;
@@ -525,7 +528,7 @@ namespace Engine {
 		CheckSubRegionSize(offset, size);
 
 		glTextureSubImage2D(ID, 0, offset.X, offset.Y, static_cast<GLsizei>(size.X), static_cast<GLsizei>(size.Y),
-		                    GLFormat(format), GLDataType(dataType), pixels);
+		                    Utils::GLFormat(format), Utils::GLDataType(dataType), pixels);
 	}
 
 	void Texture::Internals::GetImage(void* pixels, uint32_t size) const {
@@ -558,13 +561,15 @@ namespace Engine {
 	}
 
 	void Texture::Internals::Clear(void* pixels, DataFormat dataFormat, DataType dataType) {
-		glClearTexImage(ID, 0, GLFormat(dataFormat), GLDataType(dataType), pixels);
+		glClearTexImage(ID, 0, Utils::GLFormat(dataFormat), Utils::GLDataType(dataType), pixels);
 	}
 
-	void Texture::Internals::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType) {
+	void Texture::Internals::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
+	                               DataType dataType) {
 		CheckSubRegionSize(offset, size);
 
-		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GLFormat(dataFormat), GLDataType(dataType), nullptr);
+		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::GLFormat(dataFormat),
+		                   Utils::GLDataType(dataType), nullptr);
 	}
 
 	void Texture::Internals::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {
@@ -583,6 +588,6 @@ namespace Engine {
 
 	void Texture::Internals::Invalidate() {
 		glDeleteTextures(1, &ID);
-		ID = GenTexture(Multisampled);
+		ID = Utils::GenTexture(Multisampled);
 	}
 }

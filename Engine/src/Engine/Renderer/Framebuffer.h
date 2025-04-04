@@ -40,7 +40,7 @@ namespace Engine {
 
 	class FramebufferObject {
 	public:
-		using IdType = uint32_t;
+		using IDType = uint32_t;
 
 		enum class Status : uint32_t {
 			Complete = 0,
@@ -55,7 +55,7 @@ namespace Engine {
 		};
 
 		virtual ~FramebufferObject() = default;
-		operator IdType() const { return m_Internals->Id; }
+		operator IDType() const { return m_Internals->Id; }
 
 		void Bind(const Vector2i& position, const Vector2u& size) const;
 		void Bind(const Vector2u& size) const { Bind({ 0, 0 }, size); }
@@ -87,7 +87,7 @@ namespace Engine {
 		FramebufferSpecification GetSpecification() const { return m_Internals->Specification; }
 	private:
 		struct Internals {
-			IdType Id = 0;
+			IDType Id = 0;
 			uint32_t ColorAttachmentCount = 0;
 			FramebufferSpecification Specification;
 
