@@ -36,10 +36,19 @@ namespace Editor {
 
 		Engine::FramebufferSpecification frameSpec;
 
-		frameSpec.Attachments = { Engine::FramebufferAttachmentFormat::RGBA8, Engine::FramebufferAttachmentFormat::RedInteger, Engine::FramebufferAttachmentFormat::Depth };
+		frameSpec.Attachments = {
+			Engine::FramebufferAttachmentFormat::RGBA8, Engine::FramebufferAttachmentFormat::RedInteger,
+			Engine::FramebufferAttachmentFormat::Depth
+		};
 		frameSpec.Size = { 1024, 1024 };
 
-		m_Framebuffer = Engine::Framebuffer<Engine::Texture, Engine::Texture>::Create(frameSpec);
+		m_Framebuffer = Engine::Framebuffer::Create(frameSpec);
+
+		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));
+		m_IconPause = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PauseButton.png"));
+		m_IconStep = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/StepButton.png"));
+		m_IconSimulate = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/SimulateButton.png"));
+		m_IconStop = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/StopButton.png"));
 	}
 
 	void EditorLayer::OnDetach() {
@@ -50,19 +59,19 @@ namespace Editor {
 		Layer::OnUpdate();
 
 		m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
-		                                static_cast<uint32_t>(m_ViewportSize.y));
+			static_cast<uint32_t>(m_ViewportSize.y));
 
-		if (const auto size = m_Framebuffer->GetSize(); m_ViewportSize.x > 0.f && m_ViewportSize.y > 0.f && (size.Width
+		if (const auto size = m_Framebuffer->Size(); m_ViewportSize.x > 0.f && m_ViewportSize.y > 0.f && (size.Width
 			!= static_cast<uint32_t>(m_ViewportSize.x) || size.Height != static_cast<uint32_t>(m_ViewportSize.y))) {
 			m_Framebuffer->Resize({ static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) });
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 		}
 
 		m_Framebuffer->Bind();
-		Engine::RendererCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1.f});
+		Engine::RendererCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.f });
 		Engine::RendererCommand::Clear();
 
-		m_Framebuffer->GetColorAttachment()->Clear(-1);
+		m_Framebuffer->GetColorTextureAttachment()->Clear(-1);
 
 
 		switch (m_SceneState) {
@@ -93,9 +102,10 @@ namespace Editor {
 
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(
 			viewportSize.y)) {
-
 			const int pixelData = m_Framebuffer->ReadPixel(1, { mouseX, mouseY });
-			m_HoveredEntity = pixelData == -1 ? Engine::Entity() : Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
+			m_HoveredEntity = pixelData == -1
+				? Engine::Entity()
+				: Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
 		}
 
 		m_Framebuffer->Unbind();
@@ -205,8 +215,8 @@ namespace Editor {
 		const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		const auto viewportOffset = ImGui::GetWindowPos();
 
-		m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-		m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
+		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
+		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
 
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
@@ -214,10 +224,10 @@ namespace Editor {
 		Engine::Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
 
 		const ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
+		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
 
-		const auto texture = m_Framebuffer->GetColorAttachment();
-		ImGui::Image(texture->ID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
+		const auto texture = m_Framebuffer->GetColorTextureAttachment();
+		ImGui::Image(texture->ID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
@@ -235,8 +245,8 @@ namespace Editor {
 			ImGuizmo::SetDrawlist();
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
-			                  m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-			                  m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+				m_ViewportBounds[1].x - m_ViewportBounds[0].x,
+				m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
 			//Camera
 			//
@@ -258,11 +268,11 @@ namespace Editor {
 			if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
 				snapValue = 45.f;
 
-			float snapValues[3] = {snapValue, snapValue, snapValue};
+			float snapValues[3] = { snapValue, snapValue, snapValue };
 
 			Manipulate(value_ptr(cameraView), value_ptr(cameraProjection),
-			           static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
-			           snap ? snapValues : nullptr);
+				static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
+				snap ? snapValues : nullptr);
 
 			if (ImGuizmo::IsUsing()) {
 				glm::vec3 translation, rotation, scale;
@@ -276,6 +286,8 @@ namespace Editor {
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
+
+		UiToolbar();
 
 		ImGui::End();
 	}
@@ -515,7 +527,7 @@ namespace Editor {
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 
-		auto& colors = ImGui::GetStyle().Colors;
+		const auto& colors = ImGui::GetStyle().Colors;
 
 		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
@@ -524,28 +536,73 @@ namespace Editor {
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
 		ImGui::Begin("##toolbar", nullptr,
-		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		{
-			const bool toolbarEnabled = static_cast<bool>(m_ActiveScene);
+		bool toolbarEnabled = static_cast<bool>(m_ActiveScene);
 
-			auto tintColor = ImVec4(1, 1, 1, 1);
-			if (!toolbarEnabled)
-				tintColor.w = 0.5f;
+		auto tintColor = ImVec4(1, 1, 1,  1.f);
 
-			const float size = ImGui::GetWindowHeight() - 4.f;
-			ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+		if (!toolbarEnabled)
+			tintColor.w = 0.5f;
 
-			const bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
-			const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
-			const bool hasPauseButton = m_SceneState != SceneState::Edit;
+		const float size = ImGui::GetWindowHeight() - 4.f;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
 
-			if (hasPlayButton) {
+		const bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
+		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
+		const bool hasPauseButton = m_SceneState != SceneState::Edit;
+
+		if (hasPlayButton) {
+			Engine::Ref<Engine::Texture> icon = (m_SceneState == SceneState::Edit || m_SceneState ==
+				SceneState::Simulate)
+				? m_IconPlay
+				: m_IconStop;
+			if (ImGui::ImageButton("##PlayButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0, 0, 0, 0 }, tintColor) &&
+				toolbarEnabled) {
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+					OnScenePlay();
+				else if (m_SceneState == SceneState::Play)
+					OnSceneStop();
+			}
+		}
+
+		if (hasSimulateButton) {
+			Engine::Ref<Engine::Texture> icon = (m_SceneState == SceneState::Edit || m_SceneState ==
+				SceneState::Play)
+				? m_IconPlay
+				: m_IconStop;
+			if (ImGui::ImageButton("##SimulateButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0, 0, 0, 0 }, tintColor) &&
+				toolbarEnabled) {
+				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+					OnSceneSimulate();
+				else if (m_SceneState == SceneState::Simulate)
+					OnSceneStop();
+			}
+		}
+
+		if (hasPauseButton) {
+			const bool isPaused = m_ActiveScene->IsPaused();
+			ImGui::SameLine();
+			{
+				Engine::Ref<Engine::Texture> icon = m_IconPause;
+				if (ImGui::ImageButton("##PauseButton", icon->ID(), {size, size}, {0, 0}, {1, 1}, {0.f, 0.f, 0.f, 0.f}, tintColor) && toolbarEnabled) {
+					m_ActiveScene->SetPaused(!isPaused);
+				}
 			}
 
-			ImGui::PopStyleVar(2);
-			ImGui::PopStyleColor(3);
+			if (isPaused) {
+				ImGui::SameLine();
+				{
+					Engine::Ref<Engine::Texture> icon = m_IconStep;
+					if (ImGui::ImageButton("##StepButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0.f, 0.f, 0.f, 0.f }, tintColor) && toolbarEnabled) {
+						m_ActiveScene->Step();
+					}
+				}
+			}
 		}
+
+		ImGui::PopStyleVar(2);
+		ImGui::PopStyleColor(3);
 
 		ImGui::End();
 	}

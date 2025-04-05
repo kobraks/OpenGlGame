@@ -210,4 +210,13 @@ namespace Engine {
 
 		glNamedRenderbufferStorage(ID, Utils::GLInternalFormat(internalFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
+
+	void RenderBuffer::CreateBuffer(uint32_t samples, const Vector2u& size, enum InternalFormat internalFormat) {
+		if (samples > 1) {
+			m_Internals->Allocate(samples, size, internalFormat);
+		}
+		else {
+			m_Internals->Allocate(size, internalFormat);
+		}
+	}
 }

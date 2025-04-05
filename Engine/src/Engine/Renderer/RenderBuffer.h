@@ -5,6 +5,8 @@
 namespace Engine {
 	class RenderBuffer {
 	public:
+		friend class Framebuffer;
+
 		using IDType = uint32_t;
 
 		enum class InternalFormat : uint32_t {
@@ -61,12 +63,4 @@ namespace Engine {
 
 		Ref<Internals> m_Internals;
 	};
-
-	inline void RenderBuffer::CreateBuffer(uint32_t samples, const Vector2u& size, enum InternalFormat internalFormat) {
-		if (samples > 1) {
-			m_Internals->Allocate(samples, size, internalFormat);
-		} else {
-			m_Internals->Allocate(size, internalFormat);
-		}
-	}
 }

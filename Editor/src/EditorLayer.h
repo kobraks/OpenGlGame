@@ -61,7 +61,7 @@ namespace Editor
 		Engine::Ref<Engine::Scene> m_ActiveScene;
 		Engine::Ref<Engine::Scene> m_EditorScene;
 
-		Engine::Ref<Engine::Framebuffer<Engine::Texture, Engine::Texture>> m_Framebuffer;
+		Engine::Ref<Engine::Framebuffer> m_Framebuffer;
 
 		std::filesystem::path m_EditorScenePath;
 
@@ -81,5 +81,7 @@ namespace Editor
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Engine::Scope<ContentBrowserPanel> m_ContentBrowserPanel;
+
+		Engine::Ref<Engine::Texture> m_IconPlay, m_IconPause, m_IconStep, m_IconSimulate, m_IconStop;
 	};
 }

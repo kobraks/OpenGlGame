@@ -39,6 +39,7 @@
 #include "Engine/Renderer/GraphicContext.h"
 #include "Engine/Renderer/EditorCamera.h"
 #include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/RenderBuffer.h"
 #include "Engine/Renderer/Framebuffer.h"
 #include "Engine/Renderer/OrthographicCamera.h"
 #include "Engine/Renderer/PerspectiveCamera.h"

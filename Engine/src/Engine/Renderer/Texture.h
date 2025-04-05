@@ -7,28 +7,26 @@
 namespace Engine {
 	class Image;
 
-	enum class Wrapping {
-		Repeat = 0,
-		ClampEdge,
-		ClampBorder,
-		MirroredRepeat,
-	};
-
-	enum class Filter {
-		Nearest = 0,
-		Linear,
-		NearestMipmapNearest,
-		LinearMipmapNearest,
-		NearestMipmapLinear,
-		LinearMipmapLinear
-	};
-
 	class Texture {
-		friend class FramebufferObject;
-		template <class ColorAttachmentType, class DepthAttachmentType>
 		friend class Framebuffer;
 
 	public:
+		enum class Wrapping {
+			Repeat = 0,
+			ClampEdge,
+			ClampBorder,
+			MirroredRepeat,
+		};
+
+		enum class Filter {
+			Nearest = 0,
+			Linear,
+			NearestMipmapNearest,
+			LinearMipmapNearest,
+			NearestMipmapLinear,
+			LinearMipmapLinear
+		};
+
 		enum class DataFormat : uint32_t {
 			Red,
 			RG,
@@ -82,6 +80,9 @@ namespace Engine {
 
 		void Bind() const;
 		void BindUnit(uint32_t sampler = 0) const;
+
+		void Unbind() const;
+		void UnbindUnit(uint32_t sampler = 0) const;
 
 		static Ref<Texture> Create(const Vector2u& size, InternalFormat internalFormat = InternalFormat::RGBA8,
 		                             const uint8_t* pixels = nullptr, DataType dataType = DataType::UnsignedByte,
@@ -178,9 +179,6 @@ namespace Engine {
 
 			Internals(bool multisampled = false);
 			~Internals();
-
-			void Bind() const;
-			void BindUnit(uint32_t sampler) const;
 
 			void Allocate(const Vector2u& size, enum InternalFormat internalFormat);
 			void Allocate(const Vector2u& size, uint32_t samples, enum InternalFormat internalFormat);

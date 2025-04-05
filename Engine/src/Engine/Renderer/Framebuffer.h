@@ -1,9 +1,8 @@
 #pragma once
-#include "Engine/Core/Base.h"
-#include "Engine/Core/Vector2.h"
+#include <Engine/Core/Base.h>
+#include <Engine/Core/Vector2.h>
 
-#include <vector>
-#include <initializer_list>
+#include <variant>
 
 namespace Engine {
 	class Texture;
@@ -19,28 +18,62 @@ namespace Engine {
 		DepthComponent16,
 		DepthComponent24,
 		DepthComponent32,
+
 		Depth24Stencil8,
 		Depth32FStencil8,
 
 		Depth = Depth24Stencil8
 	};
 
-	struct FramebufferAttachmentSpecification {
-		FramebufferAttachmentSpecification() = default;
-		FramebufferAttachmentSpecification(std::initializer_list<FramebufferAttachmentFormat> attachments) : Attachments(attachments) {}
+	enum class FramebufferTextureFiltering {
+		Default = 0,
+		Nearest,
+		Linear,
+		NearestMipmapNearest,
+		LinearMipmapNearest,
+		NearestMipmapLinear,
+		LinearMipmapLinear
+	};
 
-		std::vector<FramebufferAttachmentFormat> Attachments;
+	enum class FramebufferTextureWrapping {
+		Default = 0,
+		Repeat,
+		ClampEdge,
+		ClampBorder,
+		MirroredRepeat,
+	};
+
+	enum class FramebufferAttachmentType {
+		Texture,
+		RenderBuffer,
+		Default = Texture
+	};
+
+	struct FramebufferAttachmentSpecification {
+		FramebufferAttachmentSpecification(FramebufferAttachmentFormat format) : Format(format) {}
+		FramebufferAttachmentSpecification() = default;
+
+		FramebufferAttachmentFormat Format;
+
+		FramebufferTextureFiltering TextureFilterMin = FramebufferTextureFiltering::Default;
+		FramebufferTextureFiltering TextureFilterMag = FramebufferTextureFiltering::Default;
+
+		FramebufferTextureWrapping TextureWrappingS = FramebufferTextureWrapping::Default;
+		FramebufferTextureWrapping TextureWrappingT = FramebufferTextureWrapping::Default;
+
+		FramebufferAttachmentType Type = FramebufferAttachmentType::Default;
 	};
 
 	struct FramebufferSpecification {
-		Vector2u Size;
-		FramebufferAttachmentSpecification Attachments;
+		Vector2u Size = {0, 0};
+		std::vector<FramebufferAttachmentSpecification> Attachments;
 		uint32_t Samples = 1;
 	};
 
-	class FramebufferObject {
+	class Framebuffer {
 	public:
 		using IDType = uint32_t;
+		using AttachmentType = std::variant<Ref<RenderBuffer>, Ref<Texture>>;
 
 		enum class Status : uint32_t {
 			Complete = 0,
@@ -54,12 +87,15 @@ namespace Engine {
 			Undefined
 		};
 
-		virtual ~FramebufferObject() = default;
-		operator IDType() const { return m_Internals->Id; }
+		static Ref<Framebuffer> Create(const FramebufferSpecification specification);
 
-		void Bind(const Vector2i& position, const Vector2u& size) const;
-		void Bind(const Vector2u& size) const { Bind({ 0, 0 }, size); }
-		void Bind() const;
+		operator IDType() const { return m_Internals->ID; }
+		uint32_t ID() const { return m_Internals->ID;  }
+
+		void Bind(bool adjustViewport = true) const;
+
+		void SetViewport(const Vector2u& size) const;
+		void SetViewport(const Vector2i& position, const Vector2u& size) const;
 
 		void Unbind() const;
 
@@ -67,16 +103,14 @@ namespace Engine {
 
 		int ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const;
 
-		const Vector2u& GetSize() const { return m_Internals->Specification.Size; }
+		const Vector2u& Size() const { return m_Internals->Specification.Size;  }
 		uint32_t Width() const { return m_Internals->Specification.Size.Width; }
 		uint32_t Height() const { return m_Internals->Specification.Size.Height; }
 
-		virtual void Invalidate();
+		void Invalidate();
 		void Resize(const Vector2u& size);
 
 		[[nodiscard]] Status GetStatus() const;
-
-		static Vector2u MaxViewportSize();
 
 		uint32_t SamplesCount() const { return m_Internals->Specification.Samples; }
 
@@ -84,123 +118,70 @@ namespace Engine {
 		bool HasDepthBuffer() const { return m_Internals->DepthBuffer; }
 		bool HasColorAttachment() const { return m_Internals->ColorAttachmentCount > 0; }
 
-		FramebufferSpecification GetSpecification() const { return m_Internals->Specification; }
+		const FramebufferSpecification& GetSpecification() const { return m_Internals->Specification; }
+
+		void SetDrawBuffers(uint32_t drawBuffers);
+
+		Ref<Texture> GetColorTextureAttachment(uint32_t attachmentIndex = 0) const;
+		Ref<RenderBuffer> GetColorRenderBufferAttachment(uint32_t attachmentIndex = 0) const;
+
+		AttachmentType GetColorAttachment(uint32_t attachmentIndex = 0) const;
+
+		Ref<Texture> GetDepthTextureAttachment() const;
+		Ref<RenderBuffer> GetDepthRenderBufferAttachment() const;
+
+		AttachmentType GetDepthAttachment() const;
+
+		static Vector2u MaxViewportSize();
+		static uint32_t GetMaxColorAttachments();
+		static uint32_t	GetMaxDrawBuffers();
+	protected:
+		Framebuffer(const FramebufferSpecification& specification);
+
+		void CheckCompleteness() const;
+		void SetUpAttachments();
 	private:
-		struct Internals {
-			IDType Id = 0;
+		class Internals {
+		public:
+			IDType ID;
+
 			uint32_t ColorAttachmentCount = 0;
+			uint32_t DrawBuffers = 0;
+
 			FramebufferSpecification Specification;
 
 			bool Stencil = false;
 			bool DepthBuffer = false;
 
+			std::vector<AttachmentType> ColorAttachments;
+			AttachmentType DepthAttachment;
+
+			Status Status;
+
 			Internals(const FramebufferSpecification& specification);
 			~Internals();
 
 			void Invalidate();
+
+			void CheckStatus() const;
+
+			void Attach(uint32_t attachmentPoint, Ref<Texture> attachment);
+			void Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment);
+
+			void CreateColorAttachment(const FramebufferAttachmentSpecification& attachmentSpecification);
+			void CreateDepthAttachment(const FramebufferAttachmentSpecification& attachmentSpecification);
+		private:
+			uint32_t DepthAttachmentPoint(FramebufferAttachmentFormat format);
+			void AttachDepth(FramebufferAttachmentFormat format, Ref<Texture> attachment);
+			void AttachDepth(FramebufferAttachmentFormat format, Ref<RenderBuffer> attachment);
+
+			Ref<Texture> CreateColorTextureAttachment(const FramebufferAttachmentSpecification& TextureSpecification) const;
+			Ref<RenderBuffer> CreateColorRenderBufferAttachment(const FramebufferAttachmentSpecification& renderBufferSpecification) const;
+
+			Ref<Texture> CreateDepthTextureAttachment(const FramebufferAttachmentSpecification& textureSpecification) const;
+			Ref<RenderBuffer> CreateDepthRenderBufferAttachment(const FramebufferAttachmentSpecification& renderBufferSpecification) const;
 		};
 
-	protected:
-		FramebufferObject(const FramebufferSpecification& specification);
-
-		void Attach(uint32_t index, Ref<Texture> texture);
-		void Attach(uint32_t attachment, Ref<RenderBuffer> renderBuffer);
-
-		Ref<Texture> CreateColorTextureAttachment(FramebufferAttachmentFormat format);
-		Ref<RenderBuffer> CreateColorRenderBufferAttachment(FramebufferAttachmentFormat format);
-
-		Ref<Texture> CreateDepthTextureAttachment(FramebufferAttachmentFormat format);
-		Ref<RenderBuffer> CreateDepthRenderBufferAttachment(FramebufferAttachmentFormat format);
-
-		void CheckCompleteness() const;
-
-		void SetUpBuffers(uint32_t num);
-	private:
-
-		Ref<Internals> m_Internals = nullptr;
+		Ref<Internals> m_Internals;
 	};
-
-	template<class ColorBufferType = Texture, class DepthBufferType = Texture>
-	class Framebuffer : public FramebufferObject {
-	public:
-		static Ref<Framebuffer<ColorBufferType, DepthBufferType>> Create(const FramebufferSpecification& specification);
-
-		void Invalidate() override;
-
-		Ref<ColorBufferType> GetColorAttachment(uint32_t index = 0) const;
-
-		const std::vector<Ref<ColorBufferType>>& GetColorAttachments() const { return m_ColorAttachments; }
-		std::vector<Ref<ColorBufferType>>& GetColorAttachments() { return m_ColorAttachments; }
-
-		Ref<DepthBufferType> GetDepthBuffer() const { return m_DepthBuffer;  }
-
-	protected:
-		Framebuffer(const FramebufferSpecification& specification) : FramebufferObject(specification) {}
-
-		void SetUpAttachments();
-	private:
-		
-		std::vector<Ref<ColorBufferType>> m_ColorAttachments;
-		Ref<DepthBufferType> m_DepthBuffer = nullptr;
-	};
-
-	template <class ColorBufferType, class DepthBufferType>
-	Ref<Framebuffer<ColorBufferType, DepthBufferType>> Framebuffer<ColorBufferType, DepthBufferType>::Create(
-		const FramebufferSpecification& specification) {
-		auto framebuffer = Ref<Framebuffer<ColorBufferType, DepthBufferType>>(new Framebuffer<ColorBufferType, DepthBufferType>(specification));
-
-		framebuffer->SetUpAttachments();
-
-		return framebuffer;
-	}
-
-	template <class ColorBufferType, class DepthBufferType>
-	void Framebuffer<ColorBufferType, DepthBufferType>::Invalidate() {
-		FramebufferObject::Invalidate();
-		m_DepthBuffer = nullptr;
-		m_ColorAttachments.clear();
-
-		FramebufferObject::Invalidate();
-
-		SetUpAttachments();
-		SetUpBuffers(m_ColorAttachments.size());
-	}
-
-	template <class ColorBufferType, class DepthBufferType>
-	Ref<ColorBufferType> Framebuffer<ColorBufferType, DepthBufferType>::GetColorAttachment(uint32_t index) const {
-		ENGINE_ASSERT(index < m_ColorAttachments.size());
-
-		if (index < m_ColorAttachments.size())
-			return m_ColorAttachments[index];
-
-		throw std::out_of_range("Out of range");
-	}
-
-	template <class ColorBufferType, class DepthBufferType>
-	void Framebuffer<ColorBufferType, DepthBufferType>::SetUpAttachments() {
-		const auto& attachmentFormat = GetSpecification().Attachments.Attachments;
-
-		for (const auto& format : attachmentFormat) {
-			if (format > FramebufferAttachmentFormat::RedInteger) {
-				if constexpr (!std::is_same_v<DepthBufferType, nullptr_t>) {
-					if constexpr (std::is_same_v<DepthBufferType, Texture>)
-						m_DepthBuffer = CreateDepthTextureAttachment(format);
-					else if constexpr (std::is_same_v<DepthBufferType, RenderBuffer>)
-						m_DepthBuffer = CreateDepthRenderBufferAttachment(format);
-					else
-						ENGINE_ASSERT(false);
-				}
-			}
-			else {
-				if constexpr (!std::is_same_v<DepthBufferType, nullptr_t>) {
-					if constexpr (std::is_same_v<DepthBufferType, Texture>)
-						m_ColorAttachments.emplace_back(CreateColorTextureAttachment(format));
-					else if constexpr (std::is_same_v<DepthBufferType, RenderBuffer>)
-						m_ColorAttachments.emplace_back(CreateColorRenderBufferAttachment(format));
-					else
-						ENGINE_ASSERT(false);
-				}
-			}
-		}
-	}
 }

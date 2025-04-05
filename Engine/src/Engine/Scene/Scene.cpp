@@ -192,7 +192,7 @@ namespace Engine {
 		return {};
 	}
 
-	void Scene::Setp(int frames) {
+	void Scene::Step(int frames) {
 		m_StepFrames = frames;
 	}
 

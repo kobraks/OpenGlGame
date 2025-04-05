@@ -6,6 +6,10 @@
 
 namespace Engine {
 	namespace Utils {
+		constexpr GLenum GetTextureTarget(bool multisampled) {
+			return multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
+		}
+
 		Texture::IDType GenTexture(bool multisampled) {
 			Texture::IDType name;
 
@@ -228,32 +232,32 @@ namespace Engine {
 			}
 		}
 
-		constexpr static int GetOpenWrapping(Wrapping wrapping) {
+		constexpr static int GetOpenWrapping(Texture::Wrapping wrapping) {
 			switch (wrapping) {
-			case Wrapping::Repeat:
+			case Texture::Wrapping::Repeat:
 				return GL_REPEAT;
-			case Wrapping::MirroredRepeat:
+			case Texture::Wrapping::MirroredRepeat:
 				return GL_MIRRORED_REPEAT;
-			case Wrapping::ClampEdge:
+			case Texture::Wrapping::ClampEdge:
 				return GL_CLAMP_TO_EDGE;
-			case Wrapping::ClampBorder:
+			case Texture::Wrapping::ClampBorder:
 				return GL_CLAMP_TO_BORDER;
 			}
 		}
 
-		constexpr int GetOpenFilter(Filter filter) {
+		constexpr int GetOpenFilter(Texture::Filter filter) {
 			switch (filter) {
-			case Filter::Nearest:
+			case Texture::Filter::Nearest:
 				return GL_NEAREST;
-			case Filter::Linear:
+			case Texture::Filter::Linear:
 				return GL_LINEAR;
-			case Filter::NearestMipmapNearest:
+			case Texture::Filter::NearestMipmapNearest:
 				return GL_NEAREST_MIPMAP_NEAREST;
-			case Filter::LinearMipmapNearest:
+			case Texture::Filter::LinearMipmapNearest:
 				return GL_LINEAR_MIPMAP_NEAREST;
-			case Filter::NearestMipmapLinear:
+			case Texture::Filter::NearestMipmapLinear:
 				return GL_NEAREST_MIPMAP_LINEAR;
-			case Filter::LinearMipmapLinear:
+			case Texture::Filter::LinearMipmapLinear:
 				return GL_LINEAR_MIPMAP_LINEAR;
 			}
 		}
@@ -280,11 +284,19 @@ namespace Engine {
 	}
 
 	void Texture::Bind() const {
-		m_Internals->Bind();
+		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), *this);
 	}
 
 	void Texture::BindUnit(uint32_t sampler) const {
-		m_Internals->BindUnit(sampler);
+		glBindTextureUnit(sampler, *this);
+	}
+
+	void Texture::Unbind() const {
+		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), *this);
+	}
+
+	void Texture::UnbindUnit(uint32_t sampler) const {
+		glBindTextureUnit(sampler, *this);
 	}
 
 	Ref<Texture> Texture::Create(const Vector2u& size, InternalFormat internalFormat, const uint8_t* pixels,
@@ -491,14 +503,6 @@ namespace Engine {
 
 	Texture::Internals::~Internals() {
 		glDeleteTextures(1, &ID);
-	}
-
-	void Texture::Internals::Bind() const {
-		glBindTexture(GL_TEXTURE_2D, ID);
-	}
-
-	void Texture::Internals::BindUnit(uint32_t sampler) const {
-		glBindTextureUnit(sampler, ID);
 	}
 
 	void Texture::Internals::Allocate(const Vector2u& size, enum InternalFormat internalFormat) {
