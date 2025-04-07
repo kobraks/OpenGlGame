@@ -3,6 +3,7 @@
 
 #include "Engine/Renderer/Texture.h"
 #include "Engine/Renderer/RenderBuffer.h"
+#include "Engine/Utils/OpenGlUtils.h"
 
 #include "glad/glad.h"
 
@@ -16,39 +17,39 @@ namespace Engine {
 
 		constexpr Error GetErrorMessage(Framebuffer::Status status) {
 			switch (status) {
-			default: return { "", "", 0 };
+			default: return {"", "", 0};
 
 			case Framebuffer::Status::Undefined: return {
 					"GL_FRAMEBUFFER_UNDEFINED", "Default framebuffer does not exists.", GL_FRAMEBUFFER_UNDEFINED
-			};
+				};
 			case Framebuffer::Status::IncompleteAttachment: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT", "Framebuffer attachment points are incomplete.",
 					GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT
-			};
+				};
 			case Framebuffer::Status::MissingAttachment: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT",
 					"Framebuffer does not have any image attached.",
 					GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT
-			};
+				};
 			case Framebuffer::Status::IncompleteDrawBuffer: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER", "No color attachments for any attached buffer.",
 					GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER
-			};
+				};
 			case Framebuffer::Status::IncompleteReadBuffer: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER", "No color attachments for any attached buffer.",
 					GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER
-			};
+				};
 			case Framebuffer::Status::Unsupported: return {
 					"GL_FRAMEBUFFER_UNSUPPORTED", "Unsupported framebuffer type.",GL_FRAMEBUFFER_UNSUPPORTED
-			};
+				};
 			case Framebuffer::Status::IncompleteMultisample: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE", "Not same samples set.",
 					GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE
-			};
+				};
 			case Framebuffer::Status::IncompleteLayerTargets: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS", "Any of attachment is layerd.",
 					GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS
-			};
+				};
 			}
 		}
 
@@ -80,7 +81,8 @@ namespace Engine {
 			static std::vector<uint32_t> buffers;
 
 			if (buffers.empty()) {
-				const auto maxElements = std::min(Framebuffer::GetMaxDrawBuffers(), Framebuffer::GetMaxColorAttachments());
+				const auto maxElements = std::min(Framebuffer::MaxDrawBuffersCount(),
+				                                  Framebuffer::MaxColorAttachmentsCount());
 
 				buffers.resize(maxElements);
 
@@ -92,109 +94,29 @@ namespace Engine {
 			return buffers;
 		}
 
-		constexpr Texture::InternalFormat ToTextureFormat(FramebufferAttachmentFormat format) {
-			switch (format) {
-			case FramebufferAttachmentFormat::None:
-				ENGINE_ASSERT(false);
-				throw std::exception();
-			case FramebufferAttachmentFormat::RGBA8:
-				return Texture::InternalFormat::RGBA8;
-			case FramebufferAttachmentFormat::RedInteger:
-				return Texture::InternalFormat::R32I;
-			case FramebufferAttachmentFormat::DepthComponent:
-				return Texture::InternalFormat::DepthComponent;
-			case FramebufferAttachmentFormat::DepthComponent16:
-				return Texture::InternalFormat::DepthComponent16;
-			case FramebufferAttachmentFormat::DepthComponent24:
-				return Texture::InternalFormat::DepthComponent24;
-			case FramebufferAttachmentFormat::DepthComponent32:
-				return Texture::InternalFormat::DepthComponent32;
-			case FramebufferAttachmentFormat::Depth24Stencil8:
-				return Texture::InternalFormat::Depth24Stencil8;
-			case FramebufferAttachmentFormat::Depth32FStencil8:
-				return Texture::InternalFormat::Depth32FStencil8;
-			}
-		}
-
-		constexpr RenderBuffer::InternalFormat ToRenderBufferFormat(FramebufferAttachmentFormat format) {
-			switch (format) {
-			case FramebufferAttachmentFormat::None:
-				ENGINE_ASSERT(false);
-				throw std::exception();
-			case FramebufferAttachmentFormat::RGBA8:
-				return RenderBuffer::InternalFormat::RGBA8;
-			case FramebufferAttachmentFormat::RedInteger:
-				return RenderBuffer::InternalFormat::R32I;
-			case FramebufferAttachmentFormat::DepthComponent:
-				return RenderBuffer::InternalFormat::DepthComponent;
-			case FramebufferAttachmentFormat::DepthComponent16:
-				return RenderBuffer::InternalFormat::DepthComponent16;
-			case FramebufferAttachmentFormat::DepthComponent24:
-				return RenderBuffer::InternalFormat::DepthComponent24;
-			case FramebufferAttachmentFormat::DepthComponent32:
-				return RenderBuffer::InternalFormat::DepthComponent32;
-			case FramebufferAttachmentFormat::Depth24Stencil8:
-				return RenderBuffer::InternalFormat::Depth24Stencil8;
-			case FramebufferAttachmentFormat::Depth32FStencil8:
-				return RenderBuffer::InternalFormat::Depth32FStencil8;
-			}
-		}
-
-		constexpr Texture::Filter ToTextureFilter(FramebufferTextureFiltering filter, bool Depth = false) {
-			switch (filter) {
-			case FramebufferTextureFiltering::Default:
-				return Depth ? Texture::Filter::Nearest : Texture::Filter::Linear;
-			case FramebufferTextureFiltering::Nearest:
-				return Texture::Filter::Nearest;
-			case FramebufferTextureFiltering::Linear:
-				return Texture::Filter::Linear;
-			case FramebufferTextureFiltering::NearestMipmapNearest:
-				return Texture::Filter::NearestMipmapNearest;
-			case FramebufferTextureFiltering::LinearMipmapNearest:
-				return Texture::Filter::LinearMipmapNearest;
-			case FramebufferTextureFiltering::NearestMipmapLinear:
-				return Texture::Filter::NearestMipmapLinear;
-			case FramebufferTextureFiltering::LinearMipmapLinear:
-				return Texture::Filter::LinearMipmapLinear;
-			}
-		}
-
-		constexpr Texture::Wrapping ToTextureWrapping(FramebufferTextureWrapping wrapping) {
-			switch (wrapping) {
-			case FramebufferTextureWrapping::Default:
-				return Texture::Wrapping::ClampEdge;
-			case FramebufferTextureWrapping::Repeat:
-				return Texture::Wrapping::Repeat;
-			case FramebufferTextureWrapping::ClampEdge:
-				return Texture::Wrapping::ClampEdge;
-			case FramebufferTextureWrapping::ClampBorder:
-				return Texture::Wrapping::ClampBorder;
-			case FramebufferTextureWrapping::MirroredRepeat:
-				return Texture::Wrapping::MirroredRepeat;
-			}
+		constexpr bool IsDepthFormat(ImageFormat format) {
+			return format >= ImageFormat::DepthComponent && format <= ImageFormat::StencilIndex16;
 		}
 	}
 
-	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification specification) {
-		Ref<Framebuffer> framebuffer = Ref<Framebuffer>(new Framebuffer(specification));
+	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& specification) {
+		auto framebuffer = Ref<Framebuffer>(new Framebuffer(specification));
 
-		framebuffer->SetUpAttachments();
-		framebuffer->CheckCompleteness();
-		framebuffer->SetDrawBuffers(framebuffer->GetColorAttachmentCount() - 1);
+		framebuffer->CreateFramebuffer();
 
 		return framebuffer;
 	}
 
 	void Framebuffer::Bind(bool adjustViewport) const {
-		glBindFramebuffer(GL_FRAMEBUFFER, *this);
+		glBindFramebuffer(GL_FRAMEBUFFER, m_Internals->Specification.SwapchainTarget ? 0u : *this);
 
 		if (adjustViewport) {
-			SetViewport({ 0, 0 }, m_Internals->Specification.Size);
+			SetViewport({0, 0}, m_Internals->Specification.Size);
 		}
 	}
 
 	void Framebuffer::SetViewport(const Vector2u& size) const {
-		SetViewport({ 0, 0 }, m_Internals->Specification.Size);
+		SetViewport({0, 0}, m_Internals->Specification.Size);
 	}
 
 	void Framebuffer::SetViewport(const Vector2i& position, const Vector2u& size) const {
@@ -216,8 +138,7 @@ namespace Engine {
 
 	void Framebuffer::Invalidate() {
 		m_Internals->Invalidate();
-		SetUpAttachments();
-		SetDrawBuffers(m_Internals->ColorAttachmentCount - 1);
+		CreateFramebuffer();
 	}
 
 	void Framebuffer::Resize(const Vector2u& size) {
@@ -232,12 +153,12 @@ namespace Engine {
 	}
 
 	Framebuffer::Status Framebuffer::GetStatus() const {
-		return Utils::GlGetStatus(*this);
+		return m_Internals->Status;
 	}
 
 	void Framebuffer::SetDrawBuffers(uint32_t drawBuffers) {
 		if (drawBuffers > 1) {
-			ENGINE_ASSERT(drawBuffers <= GetMaxDrawBuffers());
+			ENGINE_ASSERT(drawBuffers <= MaxDrawBuffersCount());
 
 			const auto buffers = Utils::PrepareBuffersTable();
 			ENGINE_ASSERT(drawBuffers < buffers.size());
@@ -251,10 +172,14 @@ namespace Engine {
 			}
 
 			if (drawBuffers >= buffers.size())
-				throw std::runtime_error(fmt::format("SetDrawBuffers failed: Number of draw buffers ({}) exceeds available draw buffers count ({})", drawBuffers, buffers.size()).c_str());
+				throw std::runtime_error(
+					fmt::format(
+						"SetDrawBuffers failed: Number of draw buffers ({}) exceeds available draw buffers count ({})",
+						drawBuffers, buffers.size()).c_str());
 
 			glNamedFramebufferDrawBuffers(*this, static_cast<GLsizei>(drawBuffers), buffers.data());
-		} else {
+		}
+		else {
 			if (m_Internals->ColorAttachmentCount > 0)
 				glNamedFramebufferDrawBuffer(*this, GL_COLOR_ATTACHMENT0);
 			else
@@ -319,6 +244,26 @@ namespace Engine {
 		throw std::runtime_error("No depth buffer attachment");
 	}
 
+	void Framebuffer::Present(const Ref<Framebuffer>& source, BlitMask mask, BlitFilter filter) {
+		ENGINE_ASSERT(m_Internals->Specification.SwapchainTarget,
+		              "Present() must be called on a swapchain framebuffer");
+		ENGINE_ASSERT(source->GetSpecification().AllowBlit, "Source framebuffer must have AllowBlit = true");
+
+		glBlitNamedFramebuffer(*source, 0, 0, 0, static_cast<GLint>(source->Width()),
+		                       static_cast<GLint>(source->Height()), 0, 0, static_cast<GLint>(Width()),
+		                       static_cast<GLint>(Height()), Utils::ToGLMask(mask), Utils::ToGLFilter(filter));
+	}
+
+	void Framebuffer::BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter) {
+		ENGINE_ASSERT(m_Internals->Specification.AllowBlit, "Source framebuffer must allow blit!");
+		ENGINE_ASSERT(target->GetSpecification().AllowBlit, "target framebuffer must allow blit!");
+		ENGINE_ASSERT(target->GetSpecification().SwapchainTarget, "Use Present() for blitting to swapchain!");
+
+		glBlitNamedFramebuffer(*this, *target, 0, 0, static_cast<GLint>(target->Width()),
+		                       static_cast<GLint>(target->Height()), 0, 0, static_cast<GLint>(Width()),
+		                       static_cast<GLint>(Height()), Utils::ToGLMask(mask), Utils::ToGLFilter(filter));
+	}
+
 	Vector2u Framebuffer::MaxViewportSize() {
 		static Vector2u viewportSize;
 
@@ -327,13 +272,13 @@ namespace Engine {
 
 			glGetIntegerv(GL_MAX_VIEWPORT_DIMS, value);
 
-			viewportSize = { static_cast<uint32_t>(value[0]), static_cast<uint32_t>(value[1]) };
+			viewportSize = {static_cast<uint32_t>(value[0]), static_cast<uint32_t>(value[1])};
 		}
 
 		return viewportSize;
 	}
 
-	uint32_t Framebuffer::GetMaxColorAttachments() {
+	uint32_t Framebuffer::MaxColorAttachmentsCount() {
 		uint32_t maxAttachmentCount = 0;
 
 		if (maxAttachmentCount == 0) {
@@ -346,7 +291,7 @@ namespace Engine {
 		return maxAttachmentCount;
 	}
 
-	uint32_t Framebuffer::GetMaxDrawBuffers() {
+	uint32_t Framebuffer::MaxDrawBuffersCount() {
 		uint32_t maxDrawBuffers = 0;
 
 		if (maxDrawBuffers == 0) {
@@ -359,16 +304,32 @@ namespace Engine {
 		return maxDrawBuffers;
 	}
 
-	Framebuffer::Framebuffer(const FramebufferSpecification& specification) : m_Internals(MakeRef<Internals>(specification)) {}
+	Framebuffer::Framebuffer(const FramebufferSpecification& specification) : m_Internals(
+		MakeRef<Internals>(specification)) {
+	}
+
+	void Framebuffer::CreateFramebuffer() {
+		const auto& specs = m_Internals->Specification;
+
+		if (specs.SwapchainTarget)
+			return;
+
+		if (!specs.Label.empty())
+			glObjectLabel(GL_FRAMEBUFFER, *this, -1, specs.Label.c_str());
+
+		SetUpAttachments();
+		SetDrawBuffers(m_Internals->ColorAttachmentCount - 1);
+		CheckCompleteness();
+	}
 
 	void Framebuffer::CheckCompleteness() const {
-		const auto status = GetStatus();
+		const auto status = m_Internals->CheckStatus();
 
 		if (status != Status::Complete) {
 			const auto error = Utils::GetErrorMessage(status);
 
 			fmt::memory_buffer buffer;
-			fmt::format_to(std::back_inserter(buffer), "{:#x}: '{}'->{}", error.Code, error.Name, error.Desc);
+			fmt::format_to(std::back_inserter(buffer), "{:#x}: '{}'->{}\0", error.Code, error.Name, error.Desc);
 
 			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", buffer.data()));
 			throw std::exception(fmt::format("Unable to create framebuffer: {}", buffer.data()).c_str());
@@ -376,20 +337,147 @@ namespace Engine {
 	}
 
 	void Framebuffer::SetUpAttachments() {
-		const auto& attachmentSpecifications = GetSpecification().Attachments;
+		const auto& specs = GetSpecification();
+		const auto& colorSpecs = specs.ColorAttachments;
 
-		for (const auto& spec : attachmentSpecifications) {
-			if (spec.Format != FramebufferAttachmentFormat::None) {
-				if (spec.Format > FramebufferAttachmentFormat::RedInteger)
-					m_Internals->CreateDepthAttachment(spec);
-				else
-					m_Internals->CreateColorAttachment(spec);
+		for (const auto& colorAttachment : colorSpecs) {
+			CreateColorAttachment(colorAttachment);
+		}
+
+		if (specs.DepthAttachment)
+			CreateDepthAttachment(specs.DepthAttachment.value());
+	}
+
+	void Framebuffer::CreateColorAttachment(const FramebufferAttachmentSpecification& specification) {
+		const auto attachmentPoint = m_Internals->ColorAttachmentCount++;
+		ENGINE_ASSERT(attachmentPoint < MaxColorAttachmentsCount());
+		if (attachmentPoint >= MaxColorAttachmentsCount())
+			throw std::runtime_error(
+				fmt::format("Failed to create next color attachment ({}) exceeded available attachment points ({})",
+				            attachmentPoint, MaxColorAttachmentsCount()).c_str());
+
+		if (std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification)) {
+			const auto& specs = *std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification);
+			auto attachment = CreateAttachment(specs);
+			Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment);
+
+			m_Internals->ColorAttachments.emplace_back(attachment);
+		}
+		else { //if its not RenderBuffer its must be Texture
+			auto& specs = const_cast<FramebufferTextureAttachmentSpecification&>(*std::get_if<
+				FramebufferTextureAttachmentSpecification>(&specification));
+			if (specs.UseSRGB && specs.Format == ImageFormat::RGBA8)
+				specs.Format = ImageFormat::SRGB8A8;
+
+			auto attachment = CreateAttachment(specs);
+
+			if (m_Internals->Specification.Layered) {
+				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment, specs.MipLevel, specs.Layer);
+			}
+			else {
+				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment, specs.MipLevel);
+			}
+
+			m_Internals->ColorAttachments.emplace_back(attachment);
+		}
+	}
+
+	void Framebuffer::CreateDepthAttachment(const FramebufferAttachmentSpecification& specification) {
+		if (std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification)) {
+			const auto& specs = *std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification);
+			auto attachment = CreateAttachment(specs);
+
+			AttachDepth(specs.Format, attachment);
+		}
+		else {
+			const auto& specs = *std::get_if<FramebufferTextureAttachmentSpecification>(&specification);
+			auto attachment = CreateAttachment(specs);
+
+			if (m_Internals->Specification.Layered) {
+				AttachDepth(specs.Format, attachment, specs.MipLevel, specs.Layer);
+			}
+			else {
+				AttachDepth(specs.Format, attachment, specs.MipLevel);
 			}
 		}
 	}
 
+	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel) {
+		glNamedFramebufferTexture(*this, attachmentPoint, *attachment, static_cast<GLint>(mipLevel));
+	}
+
+	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
+		glNamedFramebufferTextureLayer(*this, attachmentPoint, *attachment, static_cast<GLint>(mipLevel),
+		                               static_cast<GLint>(layer));
+	}
+
+	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment) {
+		glNamedFramebufferRenderbuffer(*this, attachmentPoint, GL_RENDERBUFFER, *attachment);
+	}
+
+	uint32_t Framebuffer::DepthAttachmentPoint(ImageFormat format) const {
+		if (Utils::IsDepthFormat(format)) {
+			m_Internals->DepthBuffer = format < ImageFormat::StencilIndex;
+
+			if (format <= ImageFormat::Depth32FStencil8) {
+				m_Internals->Stencil = true;
+				return GL_DEPTH_STENCIL_ATTACHMENT;
+			}
+
+			if (format <= ImageFormat::StencilIndex16) {
+				m_Internals->Stencil = true;
+				return GL_STENCIL_ATTACHMENT;
+			}
+
+			return GL_DEPTH_ATTACHMENT;
+		}
+
+		ENGINE_ASSERT(false);
+		throw std::runtime_error("Invalid depth attachment format");
+		return 0;
+	}
+
+	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel) {
+		Attach(DepthAttachmentPoint(format), attachment, mipLevel);
+		m_Internals->DepthAttachment = attachment;
+	}
+
+	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
+		Attach(DepthAttachmentPoint(format), attachment, mipLevel, layer);
+		m_Internals->DepthAttachment = attachment;
+	}
+
+	void Framebuffer::AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment) {
+		Attach(DepthAttachmentPoint(format), attachment);
+		m_Internals->DepthAttachment = attachment;
+	}
+
+	Ref<Texture> Framebuffer::CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const {
+		const auto& specification = GetSpecification();
+
+		auto texture = Texture::Create(specification.Size, specs.Format, specification.Samples, specs.Label);
+
+		if (!texture->IsMultisampled()) {
+			if (specs.MipLevel > 0)
+				texture->GenerateMipMaps();
+
+			texture->SetWrapping(specs.WrapS, specs.WrapT);
+			texture->SetFilters(specs.MinFilter, specs.MagFilter);
+		}
+
+		return texture;
+	}
+
+	Ref<RenderBuffer> Framebuffer::CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const {
+		const auto& specification = GetSpecification();
+		return RenderBuffer::Create(specification.Size, specification.Samples, specs.Format);
+	}
+
 	Framebuffer::Internals::Internals(const FramebufferSpecification& specification) : Specification(specification) {
-		glCreateFramebuffers(1, &ID);
+		if (!specification.SwapchainTarget)
+			glCreateFramebuffers(1, &ID);
+		else
+			ID = 0;
 	}
 
 	Framebuffer::Internals::~Internals() {
@@ -399,104 +487,13 @@ namespace Engine {
 	void Framebuffer::Internals::Invalidate() {
 		glDeleteFramebuffers(1, &ID);
 		ColorAttachmentCount = 0;
-		glCreateFramebuffers(1, &ID);
+		if (!Specification.SwapchainTarget)
+			glCreateFramebuffers(1, &ID);
+		else
+			ID = 0;
 	}
 
-	void Framebuffer::Internals::CheckStatus() const {
-	}
-
-	void Framebuffer::Internals::Attach(uint32_t attachmentPoint, Ref<Texture> attachment) {
-		glNamedFramebufferTexture(ID, attachmentPoint, *attachment, 0);
-		ColorAttachments.push_back(attachment);
-	}
-
-	void Framebuffer::Internals::Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment) {
-		glNamedFramebufferRenderbuffer(ID, attachmentPoint, GL_RENDERBUFFER, *attachment);
-		ColorAttachments.push_back(attachment);
-	}
-
-	void Framebuffer::Internals::CreateColorAttachment(
-		const FramebufferAttachmentSpecification& attachmentSpecification) {
-		if (attachmentSpecification.Format == FramebufferAttachmentFormat::None)
-			return;
-
-		const auto attachmentPoint = ColorAttachmentCount++;
-		ENGINE_ASSERT(attachmentPoint < GetMaxColorAttachments());
-
-		if (attachmentSpecification.Type == FramebufferAttachmentType::RenderBuffer) {
-			Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, CreateColorRenderBufferAttachment(attachmentSpecification));
-		}
-		else {
-			Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, CreateColorTextureAttachment(attachmentSpecification));
-		}
-	}
-
-	void Framebuffer::Internals::CreateDepthAttachment(
-		const FramebufferAttachmentSpecification& attachmentSpecification) {
-		if (attachmentSpecification.Format == FramebufferAttachmentFormat::None)
-			return;
-
-		if (attachmentSpecification.Type == FramebufferAttachmentType::RenderBuffer) {
-			AttachDepth(attachmentSpecification.Format, CreateDepthRenderBufferAttachment(attachmentSpecification));
-		}
-		else {
-			AttachDepth(attachmentSpecification.Format, CreateDepthTextureAttachment(attachmentSpecification));
-		}
-	}
-
-	Ref<Texture> Framebuffer::Internals::CreateColorTextureAttachment(
-		const FramebufferAttachmentSpecification& TextureSpecification) const {
-
-		auto texture = Texture::Create(Specification.Size, Specification.Samples, Utils::ToTextureFormat(TextureSpecification.Format));
-
-		if (!texture->IsMultisampled()) {
-			texture->SetWrapping(Utils::ToTextureWrapping(TextureSpecification.TextureWrappingS), Utils::ToTextureWrapping(TextureSpecification.TextureWrappingT));
-			texture->SetFilters(Utils::ToTextureFilter(TextureSpecification.TextureFilterMin), Utils::ToTextureFilter(TextureSpecification.TextureFilterMag));
-		}
-
-		return texture;
-	}
-
-	Ref<RenderBuffer> Framebuffer::Internals::CreateColorRenderBufferAttachment(
-		const FramebufferAttachmentSpecification& renderBufferSpecification) const {
-		return RenderBuffer::Create(Specification.Size, Specification.Samples, Utils::ToRenderBufferFormat(renderBufferSpecification.Format));
-	}
-
-	Ref<Texture> Framebuffer::Internals::CreateDepthTextureAttachment(
-		const FramebufferAttachmentSpecification& textureSpecification) const {
-
-		auto texture = Texture::Create(Specification.Size, Specification.Samples, Utils::ToTextureFormat(textureSpecification.Format));
-
-		if (!texture->IsMultisampled()) {
-			texture->SetWrapping(Utils::ToTextureWrapping(textureSpecification.TextureWrappingS), Utils::ToTextureWrapping(textureSpecification.TextureWrappingT));
-			texture->SetFilters(Utils::ToTextureFilter(textureSpecification.TextureFilterMin, true), Utils::ToTextureFilter(textureSpecification.TextureFilterMag, true));
-		}
-
-		return texture;
-	}
-
-	Ref<RenderBuffer> Framebuffer::Internals::CreateDepthRenderBufferAttachment(
-		const FramebufferAttachmentSpecification& renderBufferSpecification) const {
-		return RenderBuffer::Create(Specification.Size, Specification.Samples, Utils::ToRenderBufferFormat(renderBufferSpecification.Format));
-	}
-
-	uint32_t Framebuffer::Internals::DepthAttachmentPoint(FramebufferAttachmentFormat format) {
-		DepthBuffer = true;
-		if (format > FramebufferAttachmentFormat::DepthComponent32) {
-			Stencil = true;
-			return GL_DEPTH_STENCIL_ATTACHMENT;
-		}
-
-		return GL_DEPTH_ATTACHMENT;
-	}
-
-	void Framebuffer::Internals::AttachDepth(FramebufferAttachmentFormat format, Ref<Texture> attachment) {
-		Attach(DepthAttachmentPoint(format), attachment);
-		DepthAttachment = attachment;
-	}
-
-	void Framebuffer::Internals::AttachDepth(FramebufferAttachmentFormat format, Ref<RenderBuffer> attachment) {
-		Attach(DepthAttachmentPoint(format), attachment);
-		DepthAttachment = attachment;
+	Framebuffer::Status Framebuffer::Internals::CheckStatus() {
+		return Status = Utils::GlGetStatus(ID);
 	}
 }

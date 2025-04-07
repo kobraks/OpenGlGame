@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Engine/Renderer/Texture.h"
 #include "Engine/Core/Image.h"
+#include "Engine/Utils/OpenGlUtils.h"
 
 #include "glad/glad.h"
 
@@ -20,247 +21,6 @@ namespace Engine {
 
 			return name;
 		}
-
-		constexpr GLenum GLInternalFormat(Texture::InternalFormat format) {
-			switch (format) {
-			case Texture::InternalFormat::CompressedRed:
-				return GL_COMPRESSED_RED;
-			case Texture::InternalFormat::CompressedRedRGTC1:
-				return GL_COMPRESSED_RED_RGTC1;
-			case Texture::InternalFormat::CompressedRG:
-				return GL_COMPRESSED_RG;
-			case Texture::InternalFormat::CompressedRGB:
-				return GL_COMPRESSED_RGB;
-			case Texture::InternalFormat::CompressedRGBA:
-				return GL_COMPRESSED_RGBA;
-			case Texture::InternalFormat::CompressedRGRGTC2:
-				return GL_COMPRESSED_RG_RGTC2;
-			case Texture::InternalFormat::CompressedSignedRedRGTC1:
-				return GL_COMPRESSED_SIGNED_RED_RGTC1;
-			case Texture::InternalFormat::CompressedSignedRGRGTC2:
-				return GL_COMPRESSED_SIGNED_RG_RGTC2;
-			case Texture::InternalFormat::CompressedSRGB:
-				return GL_COMPRESSED_SRGB;
-			case Texture::InternalFormat::DepthStencil:
-				return GL_DEPTH_STENCIL;
-			case Texture::InternalFormat::Depth24Stencil8:
-				return GL_DEPTH24_STENCIL8;
-			case Texture::InternalFormat::Depth32FStencil8:
-				return GL_DEPTH32F_STENCIL8;
-			case Texture::InternalFormat::DepthComponent:
-				return GL_DEPTH_COMPONENT;
-			case Texture::InternalFormat::DepthComponent16:
-				return GL_DEPTH_COMPONENT16;
-			case Texture::InternalFormat::DepthComponent24:
-				return GL_DEPTH_COMPONENT24;
-			case Texture::InternalFormat::DepthComponent32F:
-				return GL_DEPTH_COMPONENT32F;
-			case Texture::InternalFormat::DepthComponent32:
-				return GL_DEPTH_COMPONENT32;
-			case Texture::InternalFormat::R16F:
-				return GL_R16F;
-			case Texture::InternalFormat::R16I:
-				return GL_R16I;
-			case Texture::InternalFormat::R16SNorm:
-				return GL_R16_SNORM;
-			case Texture::InternalFormat::R16UI:
-				return GL_R16UI;
-			case Texture::InternalFormat::R32F:
-				return GL_R32F;
-			case Texture::InternalFormat::R32I:
-				return GL_R32I;
-			case Texture::InternalFormat::R32UI:
-				return GL_R32UI;
-			case Texture::InternalFormat::R3G3B2:
-				return GL_R3_G3_B2;
-			case Texture::InternalFormat::R8:
-				return GL_R8;
-			case Texture::InternalFormat::R8I:
-				return GL_R8I;
-			case Texture::InternalFormat::R8SNorm:
-				return GL_R8_SNORM;
-			case Texture::InternalFormat::R8UI:
-				return GL_R8UI;
-			case Texture::InternalFormat::Red:
-				return GL_RED;
-			case Texture::InternalFormat::RG:
-				return GL_RG;
-			case Texture::InternalFormat::RG16:
-				return GL_RG16;
-			case Texture::InternalFormat::RG16F:
-				return GL_RG16F;
-			case Texture::InternalFormat::RG16SNorm:
-				return GL_RG16_SNORM;
-			case Texture::InternalFormat::RG32F:
-				return GL_RG32F;
-			case Texture::InternalFormat::RG32I:
-				return GL_RG32I;
-			case Texture::InternalFormat::RG32UI:
-				return GL_RG32UI;
-			case Texture::InternalFormat::RG8:
-				return GL_RG8;
-			case Texture::InternalFormat::RG8I:
-				return GL_RGB8I;
-			case Texture::InternalFormat::RG8SNorm:
-				return GL_RG8_SNORM;
-			case Texture::InternalFormat::RG8UI:
-				return GL_RG8UI;
-			case Texture::InternalFormat::RGB:
-				return GL_RGB;
-			case Texture::InternalFormat::RGB10:
-				return GL_RGB10;
-			case Texture::InternalFormat::RGB10A2:
-				return GL_RGB10_A2;
-			case Texture::InternalFormat::RGB12:
-				return GL_RGB12;
-			case Texture::InternalFormat::RGB16:
-				return GL_RGB16;
-			case Texture::InternalFormat::RGB16F:
-				return GL_RGB16F;
-			case Texture::InternalFormat::RGB16I:
-				return GL_RGB16I;
-			case Texture::InternalFormat::RGB16UI:
-				return GL_RGB16UI;
-			case Texture::InternalFormat::RGB32F:
-				return GL_RGB32F;
-			case Texture::InternalFormat::RGB32I:
-				return GL_RGB32I;
-			case Texture::InternalFormat::RGB32UI:
-				return GL_RGB32UI;
-			case Texture::InternalFormat::RGB4:
-				return GL_RGB4;
-			case Texture::InternalFormat::RGB5:
-				return GL_RGB5;
-			case Texture::InternalFormat::RGB5A1:
-				return GL_RGB5_A1;
-			case Texture::InternalFormat::RGB8:
-				return GL_RGB8;
-			case Texture::InternalFormat::RGB8I:
-				return GL_RGB8I;
-			case Texture::InternalFormat::RGB8UI:
-				return GL_RGB8UI;
-			case Texture::InternalFormat::RGB9E5:
-				return GL_RGB9_E5;
-			case Texture::InternalFormat::RGBA:
-				return GL_RGBA;
-			case Texture::InternalFormat::RGBA12:
-				return GL_RGBA12;
-			case Texture::InternalFormat::RGBA16:
-				return GL_RGBA16;
-			case Texture::InternalFormat::RGBA16F:
-				return GL_RGBA16F;
-			case Texture::InternalFormat::RGBA16I:
-				return GL_RGBA16I;
-			case Texture::InternalFormat::RGBA16UI:
-				return GL_RGBA16UI;
-			case Texture::InternalFormat::RGBA2:
-				return GL_RGBA2;
-			case Texture::InternalFormat::RGBA32F:
-				return GL_RGBA32F;
-			case Texture::InternalFormat::RGBA32I:
-				return GL_RGBA32I;
-			case Texture::InternalFormat::RGBA32UI:
-				return GL_RGBA32UI;
-			case Texture::InternalFormat::RGBA4:
-				return GL_RGBA4;
-			case Texture::InternalFormat::RGBA8:
-				return GL_RGBA8;
-			case Texture::InternalFormat::RGBA8UI:
-				return GL_RGBA8I;
-			case Texture::InternalFormat::SRGB8:
-				return GL_SRGB8;
-			case Texture::InternalFormat::SRGB8A8:
-				return GL_SRGB8_ALPHA8;
-			case Texture::InternalFormat::SRGBA:
-				return GL_SRGB_ALPHA;
-			}
-		}
-
-		constexpr static GLenum GLDataType(Texture::DataType dataType) {
-			switch (dataType) {
-			case Texture::DataType::Byte:
-				return GL_BYTE;
-			case Texture::DataType::UnsignedByte:
-				return GL_UNSIGNED_BYTE;
-			case Texture::DataType::Short:
-				return GL_SHORT;
-			case Texture::DataType::UnsignedShort:
-				return GL_UNSIGNED_SHORT;
-			case Texture::DataType::Int:
-				return GL_INT;
-			case Texture::DataType::UnsignedInt:
-				return GL_UNSIGNED_INT;
-			case Texture::DataType::Float:
-				return GL_FLOAT;
-			case Texture::DataType::Double:
-				return GL_DOUBLE;
-			}
-		}
-
-		constexpr GLenum GLFormat(Texture::DataFormat format) {
-			switch (format) {
-			case Texture::DataFormat::Red:
-				return GL_RED;
-			case Texture::DataFormat::RG:
-				return GL_RG;
-			case Texture::DataFormat::RGB:
-				return GL_RGB;
-			case Texture::DataFormat::BGR:
-				return GL_BGR;
-			case Texture::DataFormat::RGBA:
-				return GL_RGBA;
-			case Texture::DataFormat::BGRA:
-				return GL_BGRA;
-			case Texture::DataFormat::RedInteger:
-				return GL_RED_INTEGER;
-			case Texture::DataFormat::RGInteger:
-				return GL_RG_INTEGER;
-			case Texture::DataFormat::RGBInteger:
-				return GL_RGB_INTEGER;
-			case Texture::DataFormat::BGRInteger:
-				return GL_BGR_INTEGER;
-			case Texture::DataFormat::RGBAInteger:
-				return GL_RGBA_INTEGER;
-			case Texture::DataFormat::BGRAInteger:
-				return GL_BGRA_INTEGER;
-			case Texture::DataFormat::StencilIndex:
-				return GL_STENCIL_INDEX;
-			case Texture::DataFormat::DepthComponent:
-				return GL_DEPTH_COMPONENT;
-			case Texture::DataFormat::DepthStencil:
-				return GL_DEPTH_STENCIL;
-			}
-		}
-
-		constexpr static int GetOpenWrapping(Texture::Wrapping wrapping) {
-			switch (wrapping) {
-			case Texture::Wrapping::Repeat:
-				return GL_REPEAT;
-			case Texture::Wrapping::MirroredRepeat:
-				return GL_MIRRORED_REPEAT;
-			case Texture::Wrapping::ClampEdge:
-				return GL_CLAMP_TO_EDGE;
-			case Texture::Wrapping::ClampBorder:
-				return GL_CLAMP_TO_BORDER;
-			}
-		}
-
-		constexpr int GetOpenFilter(Texture::Filter filter) {
-			switch (filter) {
-			case Texture::Filter::Nearest:
-				return GL_NEAREST;
-			case Texture::Filter::Linear:
-				return GL_LINEAR;
-			case Texture::Filter::NearestMipmapNearest:
-				return GL_NEAREST_MIPMAP_NEAREST;
-			case Texture::Filter::LinearMipmapNearest:
-				return GL_LINEAR_MIPMAP_NEAREST;
-			case Texture::Filter::NearestMipmapLinear:
-				return GL_NEAREST_MIPMAP_LINEAR;
-			case Texture::Filter::LinearMipmapLinear:
-				return GL_LINEAR_MIPMAP_LINEAR;
-			}
-		}
 	}
 
 	void Texture::Resize(const Vector2u& size) {
@@ -268,7 +28,7 @@ namespace Engine {
 			const auto Image = ToImage();
 
 			m_Internals->Invalidate();
-			m_Internals->Allocate(size, m_Internals->Samples, m_Internals->InternalFormat);
+			m_Internals->Allocate(size, m_Internals->Samples, m_Internals->ImageFormat);
 
 			Update(Image);
 		}
@@ -278,6 +38,9 @@ namespace Engine {
 	}
 
 	void Texture::GenerateMipMaps() const {
+		if (m_Internals->Multisampled)
+			return;
+
 		m_Internals->MipMapGenerated = true;
 
 		glGenerateTextureMipmap(m_Internals->ID);
@@ -299,73 +62,87 @@ namespace Engine {
 		glBindTextureUnit(sampler, *this);
 	}
 
-	Ref<Texture> Texture::Create(const Vector2u& size, InternalFormat internalFormat, const uint8_t* pixels,
-	                             DataType dataType, DataFormat dataFormat) {
+	Ref<Texture> Texture::Create(const Vector2u& size, Engine::ImageFormat imageFormat, uint32_t samples,
+		const std::string& label, const uint8_t* pixels, std::optional<DataType> dataType,
+		std::optional<DataFormat> dataFormat) {
 		auto texture = Ref<Texture>(new Texture());
 
+		DataType typeUsed;
+		DataFormat formatUsed;
+
+		if (!dataFormat.has_value() || !dataType.has_value()) {
+			std::tie(formatUsed, typeUsed) = Utils::GetDefaultFormatAndType(imageFormat);
+		} else {
+			formatUsed = *dataFormat;
+			typeUsed = *dataType;
+		}
+
 		if (CheckSize(size))
-			texture->CreateTexture(1, size, internalFormat, pixels, dataType, dataFormat);
+			texture->CreateTexture(samples, size, imageFormat, pixels, typeUsed, formatUsed);
+
+		texture->SetLabel(label);
 
 		return texture;
 	}
 
-	Ref<Texture> Texture::Create(const Vector2u& size, uint32_t samples, InternalFormat internalFormat,
-	                             const uint8_t* pixels, DataType dataType, DataFormat dataFormat) {
-		auto texture = Ref<Texture>(new Texture(samples > 1));
-
-		if (CheckSize(size))
-			texture->CreateTexture(samples, size, internalFormat, pixels, dataType, dataFormat);
-
-		return texture;
-	}
-
-	Ref<Texture> Texture::Create(Ref<Image> image) {
+	Ref<Texture> Texture::Create(Ref<Image> image, Engine::ImageFormat imageFormat, uint32_t samples,
+		const std::string& label) {
 		auto texture = Ref<Texture>(new Texture());
 
 		if (CheckSize(image->Size()))
-			texture->CreateTexture(1, image->Size(), InternalFormat::RGBA8, image->GetPixels().data(),
-			                       DataType::UnsignedByte, DataFormat::RGBA);
+			texture->CreateTexture(samples, image->Size(), imageFormat, image->GetPixels().data());
+
+		texture->SetLabel(label);
 
 		return texture;
 	}
 
-	void Texture::SetWrapping(Wrapping s) {
+
+	void Texture::SetLabel(const std::string& label) {
+		if (label.empty())
+			return;
+
+		glObjectLabel(GL_TEXTURE, *this, -1, label.c_str());
+		m_Internals->Label = label;
+	}
+
+	void Texture::SetWrapping(WrapMode s) {
 		SetWrappingS(s);
 	}
 
-	void Texture::SetWrapping(Wrapping s, Wrapping t) {
+	void Texture::SetWrapping(WrapMode s, WrapMode t) {
 		SetWrappingS(s);
-		SetWrappingS(t);
+		SetWrappingT(t);
 	}
 
-	void Texture::SetWrappingS(Wrapping wrapping) {
+	void Texture::SetWrappingS(WrapMode wrapping) {
 		m_Internals->Wrapping.S = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_S, Utils::GetOpenWrapping(wrapping));
+		m_Internals->SetParameter(GL_TEXTURE_WRAP_S, Utils::ToGLWrapMode(wrapping));
 	}
 
-	void Texture::SetWrappingT(Wrapping wrapping) {
+	void Texture::SetWrappingT(WrapMode wrapping) {
 		m_Internals->Wrapping.T = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_T, Utils::GetOpenWrapping(wrapping));
+		m_Internals->SetParameter(GL_TEXTURE_WRAP_T, Utils::ToGLWrapMode(wrapping));
 	}
 
-	void Texture::SetFilters(Filter min, Filter mag) {
+	void Texture::SetFilters(FilterMode min, FilterMode mag) {
 		SetMinFilter(min);
 		SetMagFilter(mag);
 	}
 
-	void Texture::SetMinFilter(Filter filter) {
+	void Texture::SetMinFilter(FilterMode filter) {
 		m_Internals->Filter.Min = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MIN_FILTER, Utils::GetOpenFilter(filter));
+		m_Internals->SetParameter(GL_TEXTURE_MIN_FILTER, Utils::ToGLFilterMode(filter));
 	}
 
-	void Texture::SetMagFilter(Filter filter) {
-		if (filter > Filter::Linear) {
+	void Texture::SetMagFilter(FilterMode filter) {
+		if (filter > FilterMode::Linear) {
 			LOG_ENGINE_ERROR("Only possible values for mag filter is Nearest or Linear");
 			return;
 		}
 
 		m_Internals->Filter.Mag = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MAG_FILTER, Utils::GetOpenFilter(filter));
+		m_Internals->SetParameter(GL_TEXTURE_MAG_FILTER, Utils::ToGLFilterMode(filter));
 	}
 
 	Ref<Image> Texture::ToImage() const {
@@ -478,15 +255,15 @@ namespace Engine {
 		return true;
 	}
 
-	void Texture::CreateTexture(uint32_t samples, const Vector2u& size, InternalFormat internalFormat,
+	void Texture::CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
 	                            const void* pixels, DataType dataType, DataFormat dataFormat) {
 		if (samples > 1)
-			m_Internals->Allocate(size, samples, internalFormat);
+			m_Internals->Allocate(size, samples, ImageFormat);
 		else {
-			m_Internals->Allocate(size, internalFormat);
+			m_Internals->Allocate(size, ImageFormat);
 
-			SetFilters(Filter::Nearest, Filter::Nearest);
-			SetWrapping(Wrapping::Repeat, Wrapping::Repeat);
+			SetFilters(FilterMode::Nearest, FilterMode::Nearest);
+			SetWrapping(WrapMode::Repeat, WrapMode::Repeat);
 		}
 
 		if (pixels)
@@ -505,21 +282,25 @@ namespace Engine {
 		glDeleteTextures(1, &ID);
 	}
 
-	void Texture::Internals::Allocate(const Vector2u& size, enum InternalFormat internalFormat) {
+	void Texture::Internals::Allocate(const Vector2u& size, enum ImageFormat imageFormat) {
 		Size = size;
-		InternalFormat = internalFormat;
+		ImageFormat = imageFormat;
 		Samples = 1;
 
-		glTextureStorage2D(ID, 1, Utils::GLInternalFormat(internalFormat), static_cast<GLsizei>(size.Width),
+		glTextureStorage2D(ID, 1, Utils::ToGLImageFormat(imageFormat), static_cast<GLsizei>(size.Width),
 		                   static_cast<GLsizei>(size.Height));
 	}
 
-	void Texture::Internals::Allocate(const Vector2u& size, uint32_t samples, enum InternalFormat internalFormat) {
+	void Texture::Internals::Allocate(const Vector2u& size, uint32_t samples, enum ImageFormat imageFormat) {
 		Size = size;
-		InternalFormat = internalFormat;
+		ImageFormat = imageFormat;
 		Samples = samples;
 
-		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), Utils::GLInternalFormat(internalFormat),
+		ENGINE_ASSERT(samples > 0);
+		if (Samples == 0)
+			throw std::runtime_error("Must be at least 1 sample!");
+
+		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), Utils::ToGLImageFormat(imageFormat),
 		                              static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), GL_FALSE);
 	}
 
@@ -532,7 +313,7 @@ namespace Engine {
 		CheckSubRegionSize(offset, size);
 
 		glTextureSubImage2D(ID, 0, offset.X, offset.Y, static_cast<GLsizei>(size.X), static_cast<GLsizei>(size.Y),
-		                    Utils::GLFormat(format), Utils::GLDataType(dataType), pixels);
+		                    Utils::ToGLDataFormat(format), Utils::ToGLDataType(dataType), pixels);
 	}
 
 	void Texture::Internals::GetImage(void* pixels, uint32_t size) const {
@@ -565,15 +346,15 @@ namespace Engine {
 	}
 
 	void Texture::Internals::Clear(void* pixels, DataFormat dataFormat, DataType dataType) {
-		glClearTexImage(ID, 0, Utils::GLFormat(dataFormat), Utils::GLDataType(dataType), pixels);
+		glClearTexImage(ID, 0, Utils::ToGLDataFormat(dataFormat), Utils::ToGLDataType(dataType), pixels);
 	}
 
 	void Texture::Internals::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
 	                               DataType dataType) {
 		CheckSubRegionSize(offset, size);
 
-		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::GLFormat(dataFormat),
-		                   Utils::GLDataType(dataType), nullptr);
+		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::ToGLDataFormat(dataFormat),
+		                   Utils::ToGLDataType(dataType), nullptr);
 	}
 
 	void Texture::Internals::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {

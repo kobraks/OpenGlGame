@@ -3,6 +3,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Vector2.h"
+#include "Engine/Renderer/GraphicEnums.h"
 
 namespace Engine {
 	class Image;
@@ -11,62 +12,6 @@ namespace Engine {
 		friend class Framebuffer;
 
 	public:
-		enum class Wrapping {
-			Repeat = 0,
-			ClampEdge,
-			ClampBorder,
-			MirroredRepeat,
-		};
-
-		enum class Filter {
-			Nearest = 0,
-			Linear,
-			NearestMipmapNearest,
-			LinearMipmapNearest,
-			NearestMipmapLinear,
-			LinearMipmapLinear
-		};
-
-		enum class DataFormat : uint32_t {
-			Red,
-			RG,
-			RGB,
-			BGR,
-			RGBA,
-			BGRA,
-
-			RedInteger,
-			RGInteger,
-			RGBInteger,
-			BGRInteger,
-			RGBAInteger,
-			BGRAInteger,
-
-			StencilIndex,
-			DepthComponent,
-			DepthStencil
-		};
-
-		enum class InternalFormat : uint32_t {
-			CompressedRed, CompressedRedRGTC1, CompressedRG, CompressedRGB, CompressedRGBA, CompressedRGRGTC2,
-			CompressedSignedRedRGTC1, CompressedSignedRGRGTC2, CompressedSRGB,
-			DepthStencil, Depth24Stencil8, Depth32FStencil8, DepthComponent, DepthComponent16, DepthComponent24, DepthComponent32,
-			DepthComponent32F,
-			R16F, R16I, R16SNorm, R16UI, R32F, R32I, R32UI, R3G3B2, R8, R8I, R8SNorm, R8UI,
-			Red, RG, RG16, RG16F, RG16SNorm, RG32F, RG32I, RG32UI, RG8, RG8I, RG8SNorm, RG8UI,
-			RGB, RGB10, RGB10A2, RGB12, RGB16, RGB16F, RGB16I, RGB16UI,
-			RGB32F, RGB32I, RGB32UI, RGB4, RGB5, RGB5A1, RGB8, RGB8I, RGB8UI, RGB9E5, RGBA,
-			RGBA12, RGBA16, RGBA16F, RGBA16I, RGBA16UI, RGBA2, RGBA32F, RGBA32I, RGBA32UI, RGBA4, RGBA8,
-			RGBA8UI, SRGB8, SRGB8A8, SRGBA
-		};
-
-		enum class DataType : uint32_t {
-			Byte, UnsignedByte,
-			Short, UnsignedShort,
-			Int, UnsignedInt,
-			Float, Double
-		};
-
 		using IDType = uint32_t;
 
 		~Texture() = default;
@@ -75,6 +20,7 @@ namespace Engine {
 		IDType ID() const { return m_Internals->ID; }
 
 		void GenerateMipMaps() const;
+
 		bool HasMipMapsGenerated() const { return m_Internals->MipMapGenerated; }
 		bool IsMultisampled() const { return m_Internals->Multisampled; }
 
@@ -84,31 +30,26 @@ namespace Engine {
 		void Unbind() const;
 		void UnbindUnit(uint32_t sampler = 0) const;
 
-		static Ref<Texture> Create(const Vector2u& size, InternalFormat internalFormat = InternalFormat::RGBA8,
-		                             const uint8_t* pixels = nullptr, DataType dataType = DataType::UnsignedByte,
-		                             DataFormat dataFormat = DataFormat::RGBA);
-		static Ref<Texture> Create(const Vector2u& size, uint32_t samples,
-		                             InternalFormat internalFormat = InternalFormat::RGBA8,
-		                             const uint8_t* pixels = nullptr, DataType dataType = DataType::UnsignedByte,
-		                             DataFormat dataFormat = DataFormat::RGBA);
+		static Ref<Texture> Create(const Vector2u& size, ImageFormat imageFormat, uint32_t samples = 1, const std::string& label = {}, const uint8_t* pixels = nullptr, std::optional<DataType> dataType = std::nullopt, std::optional<DataFormat> dataFormat = std::nullopt);
+		static Ref<Texture> Create(Ref<Image> image, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t samples = 1, const std::string& label = {});
 
-		static Ref<Texture> Create(Ref<Image> image);
+		void SetLabel(const std::string& label);
 
-		void SetWrapping(Wrapping s);
-		void SetWrapping(Wrapping s, Wrapping t);
+		void SetWrapping(WrapMode s);
+		void SetWrapping(WrapMode s, WrapMode t);
 
-		void SetWrappingS(Wrapping wrapping);
-		void SetWrappingT(Wrapping wrapping);
+		void SetWrappingS(WrapMode wrapping);
+		void SetWrappingT(WrapMode wrapping);
 
-		Wrapping GetWrappingS() const { return m_Internals->Wrapping.S; }
-		Wrapping GetWrappingT() const { return m_Internals->Wrapping.T; }
+		WrapMode GetWrappingS() const { return m_Internals->Wrapping.S; }
+		WrapMode GetWrappingT() const { return m_Internals->Wrapping.T; }
 
-		void SetFilters(Filter min, Filter mag);
-		void SetMinFilter(Filter filter);
-		void SetMagFilter(Filter filter);
+		void SetFilters(FilterMode min, FilterMode mag);
+		void SetMinFilter(FilterMode filter);
+		void SetMagFilter(FilterMode filter);
 
-		Filter GetMagFilter() const { return m_Internals->Filter.Mag; }
-		Filter GetMinFilter() const { return m_Internals->Filter.Min; }
+		FilterMode GetMagFilter() const { return m_Internals->Filter.Mag; }
+		FilterMode GetMinFilter() const { return m_Internals->Filter.Min; }
 
 		Vector2u Size() const { return m_Internals->Size; }
 		uint32_t Width() const { return m_Internals->Size.Width; }
@@ -136,6 +77,10 @@ namespace Engine {
 
 		void Swap(Texture& to);
 
+		bool IsSRGB() const { return m_Internals->ImageFormat == ImageFormat::SRGB8 || m_Internals->ImageFormat == ImageFormat::SRGB8A8 || m_Internals->ImageFormat == ImageFormat::SRGBA; }
+
+		std::string_view Label() const { return m_Internals->Label; }
+
 		static Vector2u GetMaxDim() { return {GetMaxSize(), GetMaxSize()}; }
 		static uint32_t GetMaxSize();
 
@@ -144,24 +89,26 @@ namespace Engine {
 		}
 
 		void Resize(const Vector2u& size);
+
+		ImageFormat ImageFormat() const { return m_Internals->ImageFormat; }
 	protected:
 		Texture(bool multisampled = false);
 
 		static bool CheckSize(const Vector2u& size);
 
-		void CreateTexture(uint32_t samples, const Vector2u& size, InternalFormat internalFormat, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
+		void CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
 
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
 
 	private:
 		struct InternalWrapping {
-			Wrapping S = Wrapping::Repeat;
-			Wrapping T = Wrapping::Repeat;
+			WrapMode S = WrapMode::Repeat;
+			WrapMode T = WrapMode::Repeat;
 		};
 
 		struct InternalFilter {
-			Filter Mag = Filter::Linear;
-			Filter Min = Filter::NearestMipmapLinear;
+			FilterMode Mag = FilterMode::Linear;
+			FilterMode Min = FilterMode::NearestMipmapLinear;
 		};
 
 		struct Internals {
@@ -175,13 +122,15 @@ namespace Engine {
 
 			InternalWrapping Wrapping;
 			InternalFilter Filter;
-			InternalFormat InternalFormat;
+			enum ImageFormat ImageFormat;
+
+			std::string Label = {};
 
 			Internals(bool multisampled = false);
 			~Internals();
 
-			void Allocate(const Vector2u& size, enum InternalFormat internalFormat);
-			void Allocate(const Vector2u& size, uint32_t samples, enum InternalFormat internalFormat);
+			void Allocate(const Vector2u& size, enum ImageFormat imageFormat);
+			void Allocate(const Vector2u& size, uint32_t samples, enum ImageFormat imageFormat);
 
 			void SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset = {0, 0}, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
 

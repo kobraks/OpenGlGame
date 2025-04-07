@@ -1,74 +1,13 @@
 #pragma once
 #include <Engine/Core/Base.h>
 #include <Engine/Core/Vector2.h>
+#include <Engine/Renderer/FramebufferSpecification.h>
 
 #include <variant>
 
 namespace Engine {
 	class Texture;
 	class RenderBuffer;
-
-	enum class FramebufferAttachmentFormat {
-		None = 0,
-
-		RGBA8,
-		RedInteger,
-
-		DepthComponent,
-		DepthComponent16,
-		DepthComponent24,
-		DepthComponent32,
-
-		Depth24Stencil8,
-		Depth32FStencil8,
-
-		Depth = Depth24Stencil8
-	};
-
-	enum class FramebufferTextureFiltering {
-		Default = 0,
-		Nearest,
-		Linear,
-		NearestMipmapNearest,
-		LinearMipmapNearest,
-		NearestMipmapLinear,
-		LinearMipmapLinear
-	};
-
-	enum class FramebufferTextureWrapping {
-		Default = 0,
-		Repeat,
-		ClampEdge,
-		ClampBorder,
-		MirroredRepeat,
-	};
-
-	enum class FramebufferAttachmentType {
-		Texture,
-		RenderBuffer,
-		Default = Texture
-	};
-
-	struct FramebufferAttachmentSpecification {
-		FramebufferAttachmentSpecification(FramebufferAttachmentFormat format) : Format(format) {}
-		FramebufferAttachmentSpecification() = default;
-
-		FramebufferAttachmentFormat Format;
-
-		FramebufferTextureFiltering TextureFilterMin = FramebufferTextureFiltering::Default;
-		FramebufferTextureFiltering TextureFilterMag = FramebufferTextureFiltering::Default;
-
-		FramebufferTextureWrapping TextureWrappingS = FramebufferTextureWrapping::Default;
-		FramebufferTextureWrapping TextureWrappingT = FramebufferTextureWrapping::Default;
-
-		FramebufferAttachmentType Type = FramebufferAttachmentType::Default;
-	};
-
-	struct FramebufferSpecification {
-		Vector2u Size = {0, 0};
-		std::vector<FramebufferAttachmentSpecification> Attachments;
-		uint32_t Samples = 1;
-	};
 
 	class Framebuffer {
 	public:
@@ -87,7 +26,7 @@ namespace Engine {
 			Undefined
 		};
 
-		static Ref<Framebuffer> Create(const FramebufferSpecification specification);
+		static Ref<Framebuffer> Create(const FramebufferSpecification& specification);
 
 		operator IDType() const { return m_Internals->ID; }
 		uint32_t ID() const { return m_Internals->ID;  }
@@ -113,9 +52,12 @@ namespace Engine {
 		[[nodiscard]] Status GetStatus() const;
 
 		uint32_t SamplesCount() const { return m_Internals->Specification.Samples; }
+		bool IsMultisampled() const { return m_Internals->Specification.Samples > 1; }
 
 		bool HasStencilTest() const { return m_Internals->Stencil; }
 		bool HasDepthBuffer() const { return m_Internals->DepthBuffer; }
+		bool HasDepthStencil() const { return m_Internals->Stencil && m_Internals->DepthBuffer; }
+
 		bool HasColorAttachment() const { return m_Internals->ColorAttachmentCount > 0; }
 
 		const FramebufferSpecification& GetSpecification() const { return m_Internals->Specification; }
@@ -132,15 +74,40 @@ namespace Engine {
 
 		AttachmentType GetDepthAttachment() const;
 
+		std::string_view Label() const { return m_Internals->Specification.Label; }
+
+		void Present(const Ref<Framebuffer>& source, BlitMask mask, BlitFilter filter);
+		void BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter);
+
 		static Vector2u MaxViewportSize();
-		static uint32_t GetMaxColorAttachments();
-		static uint32_t	GetMaxDrawBuffers();
+		static uint32_t MaxColorAttachmentsCount();
+		static uint32_t	MaxDrawBuffersCount();
 	protected:
 		Framebuffer(const FramebufferSpecification& specification);
 
+		void CreateFramebuffer();
+
 		void CheckCompleteness() const;
 		void SetUpAttachments();
+
+		void CreateColorAttachment(const FramebufferAttachmentSpecification& specification);
+		void CreateDepthAttachment(const FramebufferAttachmentSpecification& specification);
+
+		void Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel);
+		void Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
+		void Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment);
+
+		uint32_t DepthAttachmentPoint(ImageFormat format) const;
+
+		void AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel);
+		void AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
+		void AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment);
 	private:
+
+		Ref<Texture> CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const;
+		Ref<RenderBuffer> CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const;
+
+
 		class Internals {
 		public:
 			IDType ID;
@@ -156,30 +123,14 @@ namespace Engine {
 			std::vector<AttachmentType> ColorAttachments;
 			AttachmentType DepthAttachment;
 
-			Status Status;
+			Status Status = Status::Undefined;
 
 			Internals(const FramebufferSpecification& specification);
 			~Internals();
 
 			void Invalidate();
 
-			void CheckStatus() const;
-
-			void Attach(uint32_t attachmentPoint, Ref<Texture> attachment);
-			void Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment);
-
-			void CreateColorAttachment(const FramebufferAttachmentSpecification& attachmentSpecification);
-			void CreateDepthAttachment(const FramebufferAttachmentSpecification& attachmentSpecification);
-		private:
-			uint32_t DepthAttachmentPoint(FramebufferAttachmentFormat format);
-			void AttachDepth(FramebufferAttachmentFormat format, Ref<Texture> attachment);
-			void AttachDepth(FramebufferAttachmentFormat format, Ref<RenderBuffer> attachment);
-
-			Ref<Texture> CreateColorTextureAttachment(const FramebufferAttachmentSpecification& TextureSpecification) const;
-			Ref<RenderBuffer> CreateColorRenderBufferAttachment(const FramebufferAttachmentSpecification& renderBufferSpecification) const;
-
-			Ref<Texture> CreateDepthTextureAttachment(const FramebufferAttachmentSpecification& textureSpecification) const;
-			Ref<RenderBuffer> CreateDepthRenderBufferAttachment(const FramebufferAttachmentSpecification& renderBufferSpecification) const;
+			enum Status CheckStatus();
 		};
 
 		Ref<Internals> m_Internals;
