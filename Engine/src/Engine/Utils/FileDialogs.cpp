@@ -66,7 +66,7 @@ namespace Engine {
 		
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
 		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
+		ofn.hwndOwner = glfwGetWin32Window(Application::Get().GetWindow().GetNativeHandle<GLFWwindow>());
 		ofn.lpstrFile = szFile;
 		ofn.nMaxFile = sizeof(szFile);
 		ofn.lpstrFilter = filter.data();
@@ -91,7 +91,7 @@ namespace Engine {
 
 		ZeroMemory(&ofn, sizeof(OPENFILENAME));
 		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window(static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow()));
+		ofn.hwndOwner = glfwGetWin32Window(Application::Get().GetWindow().GetNativeHandle<GLFWwindow>());
 		ofn.lpstrFile = szFile;
 		ofn.nMaxFile = sizeof(szFile);
 		if (GetCurrentDirectoryA(DIR_STRING_SIZE, currentDir))
