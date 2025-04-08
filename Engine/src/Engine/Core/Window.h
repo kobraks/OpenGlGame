@@ -68,7 +68,10 @@ namespace Engine {
 
 		void Visible(bool visible = true);
 
-		void* GetNativeWindow() const { return m_Window; }
+		template<typename T>
+		T* GetNativeHandle() const { return static_cast<T*>(m_Window); }
+
+		void* GetNativeHandle() const { return m_Window; }
 
 		std::string_view GetTitle() const { return m_Data.Title; }
 

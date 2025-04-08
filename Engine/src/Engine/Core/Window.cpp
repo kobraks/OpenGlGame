@@ -131,7 +131,7 @@ namespace Engine {
 
 			glfwSetWindowMonitor(
 			                     static_cast<GLFWwindow*>(m_Window),
-			                     static_cast<GLFWmonitor*>(monitor->GetNativePointer()),
+			                     monitor->GetNativeHandle<GLFWmonitor>(),
 			                     0,
 			                     0,
 			                     static_cast<int>(mode->Size.Width),

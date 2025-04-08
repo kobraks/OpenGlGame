@@ -14,7 +14,7 @@ namespace Engine {
 	Scope<GraphicContext> GraphicContext::Create(const Window *window) {
 		ENGINE_ASSERT(window);
 
-		return Scope<GraphicContext>(new GraphicContext(window->GetNativeWindow()));
+		return Scope<GraphicContext>(new GraphicContext(window->GetNativeHandle()));
 	}
 
 	void GraphicContext::SwapBuffers() {

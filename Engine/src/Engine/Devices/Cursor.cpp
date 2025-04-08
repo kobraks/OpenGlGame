@@ -34,7 +34,7 @@ namespace Engine {
 
 		double x, y;
 
-		glfwGetCursorPos(static_cast<GLFWwindow*>(m_Window->GetNativeWindow()), &x, &y);
+		glfwGetCursorPos(m_Window->GetNativeHandle<GLFWwindow>(), &x, &y);
 		return Vector2u(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
 	}
 
@@ -43,7 +43,7 @@ namespace Engine {
 		if(!IsAttached())
 			throw std::runtime_error("Trying to access unattached cursor");
 
-		glfwSetCursorPos(static_cast<GLFWwindow*>(m_Window->GetNativeWindow()), pos.X, pos.Y);
+		glfwSetCursorPos(m_Window->GetNativeHandle<GLFWwindow>(), pos.X, pos.Y);
 	}
 
 	bool Cursor::IsAttached() const {

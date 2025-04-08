@@ -18,7 +18,7 @@ namespace Engine {
 
 
 	bool Keyboard::IsKeyPressed(KeyCode key, const Window &window) {
-		return glfwGetKey(static_cast<GLFWwindow *>(window.GetNativeWindow()), key) == GLFW_PRESS;
+		return glfwGetKey(window.GetNativeHandle<GLFWwindow>(), key) == GLFW_PRESS;
 	}
 
 	bool Keyboard::IsKeyPressed(KeyCode key) {
