@@ -268,7 +268,7 @@ namespace Engine {
 
 	Image& Image::operator=(const Image &img) noexcept {
 		Clear();
-		Prepare(img.m_Width, m_Height);
+		Prepare(img.m_Width, img.m_Height);
 
 		std::ranges::copy(img.m_Pixels, std::begin(m_Pixels));
 
@@ -277,11 +277,11 @@ namespace Engine {
 
 	void Image::LoadToMemory(void *buffer) {
 		auto image = static_cast<FIBITMAP*>(buffer);
-		image      = FreeImage_ConvertTo32Bits(image);
+		auto converted = FreeImage_ConvertTo32Bits(image);
 
-		Prepare(FreeImage_GetWidth(image), FreeImage_GetHeight(image));
+		Prepare(FreeImage_GetWidth(converted), FreeImage_GetHeight(converted));
 
-		const auto pixels = FreeImage_GetBits(image);
+		const auto pixels = FreeImage_GetBits(converted);
 		for(size_t i = 0; i < m_Pixels.size(); ++i) {
 			m_Pixels[i] = Color(
 			                    pixels[i * 4 + FI_RGBA_RED],
@@ -291,7 +291,7 @@ namespace Engine {
 			                   );
 		}
 
-		FreeImage_Unload(image);
+		FreeImage_Unload(converted);
 	}
 
 	void Image::Prepare(uint32_t width, uint32_t height) {
