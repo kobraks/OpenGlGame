@@ -38,7 +38,7 @@ namespace {
 
 namespace Engine {
 	bool Mouse::IsButtonPressed(MouseCode button, const Window &relative) {
-		return glfwGetMouseButton(static_cast<GLFWwindow *>(relative.GetNativeWindow()), button) == GLFW_PRESS;
+		return glfwGetMouseButton(relative.GetNativeHandle<GLFWwindow>(), button) == GLFW_PRESS;
 	}
 
 	bool Mouse::IsButtonPressed(MouseCode button) {
@@ -66,27 +66,21 @@ namespace Engine {
 	}
 
 	Vector2f Mouse::GetPosition(const Window &relative) {
-		const auto window = static_cast<GLFWwindow*>(relative.GetNativeWindow());
-
 		double x, y;
-		glfwGetCursorPos(window, &x, &y);
+		glfwGetCursorPos(relative.GetNativeHandle<GLFWwindow>(), &x, &y);
 
 		return { static_cast<float>(x), static_cast<float>(y) };
 	}
 
 	void Mouse::SetPosition(const Vector2f &pos, const Window &relative) {
-		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
-
 		const double x = static_cast<double>(pos.X);
 		const double y = static_cast<double>(pos.Y);
 
-		glfwSetCursorPos(window, x, y);
+		glfwSetCursorPos(relative.GetNativeHandle<GLFWwindow>(), x, y);
 	}
 
 	void Mouse::SetPosition(float x, float y, const Window &relative) {
-		const auto window = static_cast<GLFWwindow *>(relative.GetNativeWindow());
-
-		glfwSetCursorPos(window, static_cast<double>(x), static_cast<double>(y));
+		glfwSetCursorPos(relative.GetNativeHandle<GLFWwindow>(), static_cast<double>(x), static_cast<double>(y));
 	}
 
 	void Mouse::RegisterLua(sol::state &lua) {

@@ -212,22 +212,7 @@ namespace Engine {
 		m_Data.Height = props.Height;
 		m_Data.Title  = props.Title;
 
-		if(s_GLFWWindowCount == 0)
-			InitializeGlfw();
-
-		m_Window = glfwCreateWindow(
-		                            static_cast<int>(props.Width),
-		                            static_cast<int>(props.Height),
-		                            m_Data.Title.c_str(),
-		                            nullptr,
-		                            nullptr
-		                           );
-
-		ENGINE_ASSERT(m_Window);
-		if(!m_Window)
-			throw std::runtime_error("Unable to create window");
-
-		++s_GLFWWindowCount;
+		m_Window = Create(static_cast<int>(props.Width), static_cast<int>(props.Height), m_Data.Title, nullptr, nullptr);
 
 		m_Monitor = nullptr;
 		m_Context = GraphicContext::Create(this);
@@ -252,6 +237,21 @@ namespace Engine {
 			glfwTerminate();
 			s_GLFWInitialized = false;
 		}
+	}
+
+	void* Window::Create(int width, int height, std::string_view name, void* monitor, void* share) {
+		if (s_GLFWWindowCount == 0)
+			InitializeGlfw();
+
+		auto window = glfwCreateWindow(width, height, name.data(), static_cast<GLFWmonitor*>(monitor), static_cast<GLFWwindow*>(share));
+
+		ENGINE_ASSERT(window);
+		if (!window)
+			throw std::runtime_error("Unable to create window");
+
+		++s_GLFWWindowCount;
+
+		return window;
 	}
 
 	Window::Window(const WindowProperties &props) {

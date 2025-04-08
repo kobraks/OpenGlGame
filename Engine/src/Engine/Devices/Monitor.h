@@ -43,7 +43,11 @@ namespace Engine {
 		IntRect GetWorkArea() const {return m_WorkArea; }
 
 		void *GetUserData() const { return m_UserData; }
-		void *GetNativePointer() const { return m_NativePointer; }
+
+		template<typename T>
+		T* GetNativeHandle() const { return static_cast<T*>(m_NativePointer); }
+
+		void *GetNativeHandle() const { return m_NativePointer; }
 
 		VideoMode* GetVideoMode() const { return m_VideoMode; }
 		const std::vector<Scope<VideoMode>> &GetVideoModes() const;

@@ -43,6 +43,7 @@ namespace Engine {
 
 	class Window {
 		friend class Monitor;
+		friend class GraphicContext;
 
 	public:
 		using EventCallbackFunction = std::function<void(Event &)>;
@@ -77,7 +78,7 @@ namespace Engine {
 
 		uint32_t GetWidth() const { return m_Data.Width; }
 		uint32_t GetHeight() const { return m_Data.Height; }
-		Vector2u GetSize() const { return Vector2u{m_Data.Height, m_Data.Height}; }
+		Vector2u GetSize() const { return Vector2u{m_Data.Width, m_Data.Height}; }
 
 		int32_t GetX() const { return m_Data.X; }
 		int32_t GetY() const { return m_Data.Y; }
@@ -115,6 +116,7 @@ namespace Engine {
 		void Init(const WindowProperties &props);
 		void Shutdown();
 
+		static void* Create(int width, int height, std::string_view name, void* monitor, void* share);
 	private:
 		explicit Window(const WindowProperties &props);
 
