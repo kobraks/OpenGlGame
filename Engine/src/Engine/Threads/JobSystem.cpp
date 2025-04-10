@@ -2,7 +2,7 @@
 #include "JobSystem.h"
 
 namespace Engine {
-	Scope<ThreadPool> s_ThreadPool;
+	Scope<ThreadPool> s_ThreadPool = nullptr;
 
 	void JobSystem::Init(uint32_t threadCount) {
 		s_ThreadPool = MakeScope<ThreadPool>(threadCount);
@@ -26,6 +26,14 @@ namespace Engine {
 
 	bool JobSystem::Flush(const Time& timeout) {
 		return s_ThreadPool->Flush(timeout);
+	}
+
+	void JobSystem::Flush(TaskTag tag) {
+		s_ThreadPool->Flush(tag);
+	}
+
+	bool JobSystem::Flush(TaskTag tag, const Time& timeout) {
+		return s_ThreadPool->Flush(tag, timeout);
 	}
 
 	bool JobSystem::IsBusy() {

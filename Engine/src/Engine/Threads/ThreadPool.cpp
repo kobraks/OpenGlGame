@@ -14,6 +14,7 @@ namespace Engine {
 	}
 
 	ThreadPool::~ThreadPool() {
+		Flush();
 		Stop();
 	}
 
@@ -32,24 +33,46 @@ namespace Engine {
 		std::unique_lock lock(m_Mutex);
 
 		m_Condition.wait(lock, [&]() {
-			if (!m_GlobalTaskQueue.empty() || m_TasksInFlight > 0) return false;
-			return std::ranges::all_of(m_PerThreadQueue, [](const TaskQueue& queue) { return queue.empty(); });
-		});
+			const bool globalEmpty = m_GlobalTaskQueue.empty();
+			const bool inFlightDone = (m_TasksInFlight == 0);
+			const bool perThreadEmpty = std::ranges::all_of(m_PerThreadQueue, [](const TaskQueue& queue) {
+				return queue.empty();
+				});
+
+			return globalEmpty && inFlightDone && perThreadEmpty;
+			});
 	}
 
 	bool ThreadPool::Flush(const Time& timeout) {
 		std::unique_lock lock(m_Mutex);
 
 		return m_Condition.wait_for(lock, timeout.ToDuration(), [&]() {
-			if (!m_GlobalTaskQueue.empty() || m_TasksInFlight > 0) return false;
-			return std::ranges::all_of(m_PerThreadQueue, [](const TaskQueue& queue) { return queue.empty(); });
-		});
+			const bool globalEmpty = m_GlobalTaskQueue.empty();
+			const bool inFlightDone = (m_TasksInFlight == 0);
+			const bool perThreadEmpty = std::ranges::all_of(m_PerThreadQueue, [](const TaskQueue& queue) {
+				return queue.empty();
+				});
 
-		return true;
+			return globalEmpty && inFlightDone && perThreadEmpty;
+			});
+	}
+
+	void ThreadPool::Flush(TaskTag tag) {
+		std::unique_lock lock(m_Mutex);
+
+		m_Condition.wait(lock, [&]() {
+			std::lock_guard guard(m_InFlightMutex);
+			return !HasPendigTag(tag) && m_InFlightTag[tag] == 0;
+			});
 	}
 
 	bool ThreadPool::Flush(TaskTag tag, const Time& timeout) {
-		return false;
+		std::unique_lock lock(m_Mutex);
+
+		return m_Condition.wait_for(lock, timeout.ToDuration(), [&]() {
+			std::lock_guard guard(m_InFlightMutex);
+			return !HasPendigTag(tag) && m_InFlightTag[tag] == 0;
+			});
 	}
 
 	bool ThreadPool::IsBusy() const {
@@ -61,19 +84,35 @@ namespace Engine {
 		return std::ranges::any_of(m_PerThreadQueue, [](const TaskQueue& queue) { return !queue.empty(); });
 	}
 
-	uint64_t ThreadPool::CountTasksByTag(TaskTag tag) const {
+	uint32_t ThreadPool::CountTasksByTag(TaskTag tag) const {
 		std::lock_guard lock(m_Mutex);
 
 		const auto tagPre = [tag](const Task& task) { return task.Tag == tag; };
 		const auto countQueue = [tagPre](const TaskQueue& queue) { return std::ranges::count_if(queue, tagPre); };
 
-		uint64_t count = countQueue(m_GlobalTaskQueue);;
+		uint32_t count = countQueue(m_GlobalTaskQueue);;
 
 		for (const auto& queue : m_PerThreadQueue) {
 			count += countQueue(queue);
 		}
 
 		return count;
+	}
+
+	bool ThreadPool::HasPendigTag(TaskTag tag) const {
+		auto tagMatch = [tag](const Task& task) {
+			return task.Tag == tag;
+			};
+
+		if (std::ranges::any_of(m_GlobalTaskQueue, tagMatch))
+			return true;
+
+		for (const auto& queue : m_PerThreadQueue) {
+			if (std::ranges::any_of(queue, tagMatch))
+				return true;
+		}
+
+		return false;
 	}
 
 	void ThreadPool::Enqueue(TaskQueue& queue, Task&& task) {
@@ -120,9 +159,20 @@ namespace Engine {
 			}
 
 			if (found) {
+				{
+					std::lock_guard lock(m_InFlightMutex);
+					m_InFlightTag[task.Tag]++;
+				}
+
 				++m_TasksInFlight;
 				task.Job();
+
 				--m_TasksInFlight;
+
+				{
+					std::lock_guard lock(m_InFlightMutex);
+					m_InFlightTag[task.Tag]--;
+				}
 
 				m_Condition.notify_all();
 			}

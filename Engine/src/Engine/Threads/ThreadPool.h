@@ -18,21 +18,26 @@ namespace Engine {
 		ThreadPool(uint32_t threadCount = std::thread::hardware_concurrency());
 		~ThreadPool();
 
-		template<class F, class... Args>
-		auto Submit(TaskPriority priority, TaskTag tag, std::optional<uint32_t> threadAffinity, F&& function, Args&& ... args) -> std::future<std::invoke_result_t<F, Args...>>;
-
 		void Stop();
 
 		void Flush();
 		bool Flush(const Time& timeout);
 
+		void Flush(TaskTag tag);
 		bool Flush(TaskTag tag, const Time& timeout);
 
 		bool IsBusy() const;
 
-		uint64_t CountTasksByTag(TaskTag tag) const;
+		uint32_t CountTasksByTag(TaskTag tag) const;
 
+		template<class Func, class... Args>
+		auto Submit(TaskPriority priority, TaskTag tag, std::optional<uint32_t> threadAffinity, Func&& function, Args&& ... args) -> std::future<std::invoke_result_t<Func, Args...>>;
+
+		template<class Iterator, class Func, class... Args>
+		auto SubmitBatch(Iterator begin, Iterator end, TaskPriority priority, TaskTag tag, std::optional<uint32_t> threadAffinity, Func&& function, Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>>;
 	private:
+		bool HasPendigTag(TaskTag tag) const;
+
 		static void Enqueue(TaskQueue& queue, Task&& task);
 		static Task&& Dequeue(TaskQueue& queue);
 
@@ -42,14 +47,17 @@ namespace Engine {
 
 		std::vector<std::thread> m_Threads;
 		std::vector<TaskQueue> m_PerThreadQueue;
+		std::unordered_map<TaskTag, uint32_t> m_InFlightTag;
 
 		TaskQueue m_GlobalTaskQueue;
 
 		mutable std::mutex m_Mutex;
+		mutable std::mutex m_InFlightMutex;
+
 		std::condition_variable m_Condition;
 
 		std::atomic<bool> m_Run = true;
-		std::atomic<uint64_t> m_TasksInFlight = 0;
+		std::atomic<uint32_t> m_TasksInFlight = 0;
 
 	};
 
@@ -84,5 +92,36 @@ namespace Engine {
 
 		m_Condition.notify_all();
 		return taskPtr->get_future();
+	}
+
+	template <class Iterator, class Func, class ... Args>
+	auto ThreadPool::SubmitBatch(Iterator begin, Iterator end, TaskPriority priority, TaskTag tag,
+		std::optional<uint32_t> threadAffinity, Func&& function,
+		Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>> {
+
+		std::lock_guard lock(m_Mutex);
+
+		for (auto it = begin; it != end; ++it) {
+			Task task;
+
+			task.Priority = priority;
+			task.Tag = tag;
+			task.ThreadAffinity = threadAffinity;
+
+			auto item = *it;
+
+			task.Job = [item, fn = std::forward<Func>(function), ...args = std::forward<Args>(args)]() mutable {
+				fn(item, args);
+				};
+
+			if (threadAffinity && *threadAffinity < m_PerThreadQueue.size())
+				Enqueue(m_PerThreadQueue[*threadAffinity], std::move(task));
+			else {
+				LOG_WARN("Invalid thread affinity! Falling back to global queue.");
+				Enqueue(m_GlobalTaskQueue, std::move(task));
+			}
+		}
+
+		m_Condition.notify_all();
 	}
 }
