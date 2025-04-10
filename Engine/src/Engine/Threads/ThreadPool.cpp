@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ThreadPool.h"
 
+#include <algorithm>
+
 namespace Engine {
 	ThreadPool::ThreadPool(uint32_t threadCount) {
 		m_PerThreadQueue.resize(threadCount);
@@ -46,6 +48,10 @@ namespace Engine {
 		return true;
 	}
 
+	bool ThreadPool::Flush(TaskTag tag, const Time& timeout) {
+		return false;
+	}
+
 	bool ThreadPool::IsBusy() const {
 		std::unique_lock lock(m_Mutex);
 
@@ -72,37 +78,27 @@ namespace Engine {
 
 	void ThreadPool::Enqueue(TaskQueue& queue, Task&& task) {
 		queue.emplace_back(std::forward<Task>(task));
-		SortQueue(queue);
+		std::ranges::push_heap(queue, std::greater<Task>{});
+	}
+
+	Task&& ThreadPool::Dequeue(TaskQueue& queue) {
+		std::ranges::pop_heap(queue, std::greater<Task>{});
+		Task task = std::move(queue.back());
+		queue.pop_back();
+		return std::move(task);
+
 	}
 
 	std::pair<Task, bool> ThreadPool::FindTask(TaskQueue& queue) {
 		Task task;
 		bool found = false;
 
-		std::vector<TaskQueue::iterator> toRemove;
-		toRemove.reserve(queue.size());
-
-		const Time now = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::steady_clock::now().time_since_epoch());
-
-		for (auto it = queue.begin(); it != queue.end(); ++it) {
-			if (it->ReadyTime <= now) {
-				task = std::move(*it);
-				found = true;
-				toRemove.emplace_back(it);
-				break;
-			}
+		if (!queue.empty()) {
+			task = std::move(Dequeue(queue));
+			found = true;
 		}
 
-		for (auto& t : toRemove)
-			queue.erase(t);
-
-
 		return std::make_pair(task, found);
-	}
-
-	void ThreadPool::SortQueue(std::vector<Task>& queue) {
-		std::ranges::sort(queue, std::greater<Task>{});
 	}
 
 	void ThreadPool::WorkerLoop(uint32_t threadIndex) {

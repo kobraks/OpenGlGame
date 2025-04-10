@@ -23,10 +23,13 @@ namespace Engine {
 		TaskPriority Priority;
 		TaskTag Tag;
 
-		Time ReadyTime;
 		std::optional<uint32_t> ThreadAffinity;
 
 		std::function<void()> Job;
+
+		bool operator<(const Task& other) const {
+			return static_cast<int32_t>(Priority) < static_cast<int32_t>(other.Priority);
+		}
 
 		bool operator>(const Task& other) const {
 			return static_cast<int32_t>(Priority) > static_cast<int32_t>(other.Priority);

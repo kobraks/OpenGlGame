@@ -19,12 +19,14 @@ namespace Engine {
 		~ThreadPool();
 
 		template<class F, class... Args>
-		auto Submit(TaskPriority priority, TaskTag tag, const Time& delay, std::optional<uint32_t> threadAffinity, F&& function, Args&& ... args) -> std::future<std::invoke_result_t<F, Args...>>;
+		auto Submit(TaskPriority priority, TaskTag tag, std::optional<uint32_t> threadAffinity, F&& function, Args&& ... args) -> std::future<std::invoke_result_t<F, Args...>>;
 
 		void Stop();
 
 		void Flush();
 		bool Flush(const Time& timeout);
+
+		bool Flush(TaskTag tag, const Time& timeout);
 
 		bool IsBusy() const;
 
@@ -32,9 +34,9 @@ namespace Engine {
 
 	private:
 		static void Enqueue(TaskQueue& queue, Task&& task);
+		static Task&& Dequeue(TaskQueue& queue);
 
 		static std::pair<Task, bool> FindTask(TaskQueue& queue);
-		static void SortQueue(std::vector<Task>& queue);
 
 		void WorkerLoop(uint32_t threadIndex);
 
@@ -52,7 +54,7 @@ namespace Engine {
 	};
 
 	template <class Func, class ... Args>
-	auto ThreadPool::Submit(TaskPriority priority, TaskTag tag, const Time& delay,
+	auto ThreadPool::Submit(TaskPriority priority, TaskTag tag,
 		std::optional<uint32_t> threadAffinity, Func&& function,
 		Args&&... args) -> std::future<std::invoke_result_t<Func, Args...>> {
 		using ReturnType = std::invoke_result_t<Func, Args...>;
@@ -64,7 +66,6 @@ namespace Engine {
 		task.Priority = priority;
 		task.Tag = tag;
 		task.ThreadAffinity = threadAffinity;
-		task.ReadyTime = delay;
 
 		{
 			std::lock_guard lock(m_Mutex);
