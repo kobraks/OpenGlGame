@@ -11,6 +11,8 @@
 namespace Engine {
 	class Color {
 	public:
+		enum class Channel { Red, Green, Blue, Alpha };
+
 		union {
 			uint32_t Code;
 
@@ -25,7 +27,16 @@ namespace Engine {
 
 		consteval static size_t Size() { return 4; }
 
-		constexpr Color() : Color(0xff) {}
+		constexpr static Color FromRGBA(uint32_t rgba) {
+			const uint8_t r = (rgba >> 24) & 0xFF;
+			const uint8_t g = (rgba >> 16) & 0xFF;
+			const uint8_t b = (rgba >> 8) & 0xFF;
+			const uint8_t a = (rgba >> 0) & 0xFF;
+
+			return Color(r, g, b, a);
+		}
+
+		constexpr Color() : Code(0) { A = 0xff; }
 
 		constexpr Color(float red, float green, float blue, float alpha = 1.f) : A(Translate(alpha)),
 			B(Translate(blue)),
@@ -36,8 +47,6 @@ namespace Engine {
 		                                                                 B(Translate(blue)),
 		                                                                 G(Translate(green)),
 		                                                                 R(Translate(red)) {}
-
-		constexpr Color(uint32_t color) : Code(color) {}
 
 		explicit constexpr Color(glm::vec4 color) : Color(color.r, color.g, color.b, color.a) {}
 
@@ -81,6 +90,52 @@ namespace Engine {
 			}
 		}
 
+		constexpr uint8_t& operator[](Channel channel) {
+			switch (channel) {
+			case Channel::Red: return R;
+			case Channel::Green: return G;
+			case Channel::Blue: return B;
+			case Channel::Alpha: return A;
+			}
+			ENGINE_ASSERT(false);
+			throw std::out_of_range("Out of range");
+		}
+
+		constexpr const uint8_t& operator[](Channel channel) const {
+			switch (channel) {
+			case Channel::Red: return R;
+			case Channel::Green: return G;
+			case Channel::Blue: return B;
+			case Channel::Alpha: return A;
+			}
+			ENGINE_ASSERT(false);
+			throw std::out_of_range("Out of range");
+		}
+
+		uint8_t GetChannel(Channel ch) const {
+			switch (ch) {
+			case Channel::Red:   return (Code & RedFlag) >> RedBit;
+			case Channel::Green: return (Code & GreenFlag) >> GreenBit;
+			case Channel::Blue:  return (Code & BlueFlag) >> BlueBit;
+			case Channel::Alpha: return (Code & AlphaFlag) >> AlphaBit;
+			}
+			ENGINE_ASSERT(false);
+			throw std::out_of_range("Out of range");
+		}
+
+		void SetChannel(Channel ch, uint8_t value) {
+			switch (ch) {
+			case Channel::Red:
+				Code = (Code & ~RedFlag) | (value << RedBit); break;
+			case Channel::Green:
+				Code = (Code & ~GreenFlag) | (value << GreenBit); break;
+			case Channel::Blue:
+				Code = (Code & ~BlueFlag) | (value << BlueBit); break;
+			case Channel::Alpha:
+				Code = (Code & ~AlphaFlag) | (value << AlphaBit); break;
+			}
+		}
+
 		static const Color Black;
 		static const Color White;
 
@@ -113,15 +168,15 @@ namespace Engine {
 			return static_cast<uint8_t>(std::clamp(color, 0, 255));
 		}
 
-		constexpr static auto GetPart(uint32_t color, uint32_t flag, uint32_t bits) {
+		constexpr static auto ExtractChannel(uint32_t color, uint32_t flag, uint32_t bits) {
 			return (color & flag) >> bits;
 		}
 
 		constexpr static glm::vec4 TranslateToFloat(uint32_t color) {
-			constexpr auto GetR = [](uint32_t color){ return static_cast<float>(GetPart(color, RedFlag, RedBit)) / 255.f; };
-			constexpr auto GetG = [](uint32_t color){ return static_cast<float>(GetPart(color, GreenFlag, GreenBit)) / 255.f; };
-			constexpr auto GetB = [](uint32_t color){ return static_cast<float>(GetPart(color, BlueFlag, BlueBit)) / 255.f; };
-			constexpr auto GetA = [](uint32_t color){ return static_cast<float>(GetPart(color, AlphaFlag, AlphaBit)) / 255.f; };
+			constexpr auto GetR = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, RedFlag, RedBit)) / 255.f; };
+			constexpr auto GetG = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, GreenFlag, GreenBit)) / 255.f; };
+			constexpr auto GetB = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, BlueFlag, BlueBit)) / 255.f; };
+			constexpr auto GetA = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, AlphaFlag, AlphaBit)) / 255.f; };
 
 			return glm::vec4(GetR(color), GetG(color), GetB(color), GetA(color));
 		}
