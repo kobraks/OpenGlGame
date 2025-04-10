@@ -4,12 +4,11 @@
 #include <random>
 
 namespace Engine {
-	static std::random_device s_RandomDevice;
-	static std::mt19937_64 s_Engine(s_RandomDevice());
+	static std::mt19937_64 s_Engine(std::random_device{}());
 	static std::uniform_int_distribution<uint64_t> s_Uniform;
 
 	static uint64_t Random() noexcept {
-		return s_Uniform(s_RandomDevice);
+		return s_Uniform(s_Engine);
 	}
 
 	template<typename R, typename Arg>
