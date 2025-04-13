@@ -137,7 +137,7 @@ namespace Engine {
 			found = true;
 		}
 
-		return std::make_pair(task, found);
+		return std::make_pair(std::move(task), found);
 	}
 
 	void ThreadPool::WorkerLoop(uint32_t threadIndex) {
