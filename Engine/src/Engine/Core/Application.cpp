@@ -2,6 +2,7 @@
 #include "Engine/Core/Application.h"
 
 #include "Engine/Renderer/Renderer.h"
+#include "Engine/Threads/JobSystem.h"
 
 #include "Engine/Layers/ImGuiLayer.h"
 #include "Engine/Layers/StatisticLayer.h"
@@ -24,6 +25,7 @@ namespace Engine {
 
 	Application::~Application() {
 		Renderer::Shutdown();
+		JobSystem::Shutdown();
 	}
 
 	void Application::OnEvent(Event &event) {
@@ -88,7 +90,7 @@ namespace Engine {
 				int32_t updateTime = updateClock.GetElapsedTime().AsMilliseconds();
 				while((updateTime - updateNext) >= m_UpdateRate && updates++ < m_MaxUpdates) {
 					for(auto &layer : m_LayerStack)
-						layer->OnConstUpdate(Milliseconds(m_UpdateRate));
+						layer->OnConstUpdate(Milliseconds(static_cast<int32_t>(m_UpdateRate)));
 
 					updateNext += m_UpdateRate;
 				}
@@ -139,6 +141,7 @@ namespace Engine {
 		PushOverlay(MakeRef<StatisticLayer>());
 
 		Renderer::Init();
+		JobSystem::Init();
 	}
 
 	bool Application::OnWindowClose(const WindowCloseEvent &event) {

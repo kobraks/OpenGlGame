@@ -39,7 +39,7 @@ namespace Engine {
 		bool HasPendigTag(TaskTag tag) const;
 
 		static void Enqueue(TaskQueue& queue, Task&& task);
-		static Task&& Dequeue(TaskQueue& queue);
+		static Task Dequeue(TaskQueue& queue);
 
 		static std::pair<Task, bool> FindTask(TaskQueue& queue);
 

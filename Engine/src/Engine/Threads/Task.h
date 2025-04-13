@@ -20,12 +20,12 @@ namespace Engine {
 	};
 
 	struct Task {
-		TaskPriority Priority;
-		TaskTag Tag;
+		TaskPriority Priority = TaskPriority::Normal;
+		TaskTag Tag = TaskTag::None;
 
-		std::optional<uint32_t> ThreadAffinity;
+		std::optional<uint32_t> ThreadAffinity = std::nullopt;
 
-		std::function<void()> Job;
+		std::move_only_function<void()> Job;
 
 		bool operator<(const Task& other) const {
 			return static_cast<int32_t>(Priority) < static_cast<int32_t>(other.Priority);

@@ -46,7 +46,7 @@ namespace Engine {
 		friend class GraphicContext;
 
 	public:
-		using EventCallbackFunction = std::function<void(Event &)>;
+		using EventCallbackFunction = std::move_only_function<void(Event &)>;
 
 		static Scope<Window> Create(const WindowProperties &props);
 		virtual ~Window();
@@ -62,7 +62,7 @@ namespace Engine {
 		void SetPos(int32_t x, int32_t y);
 		void SetPos(const Vector2i &pos);
 
-		void SetEventCallback(const EventCallbackFunction &callback) { m_Data.EventCallback = callback; }
+		void SetEventCallback(EventCallbackFunction &&callback) { m_Data.EventCallback = std::move(callback); }
 		void SetVSync(bool enabled = true);
 
 		void SetTitle(std::string title);

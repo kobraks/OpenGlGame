@@ -46,7 +46,7 @@
 #include "Engine/Renderer/Renderer.h"
 #include "Engine/Renderer/RendererCommand.h"
 #include "Engine/Renderer/ShaderSource.h"
-#include "Engine/Renderer/Shader.h"
+#include "Engine/Renderer/ShaderStage.h"
 #include "Engine/Renderer/ShaderProgram.h"
 
 #include "Engine/Scene/Components.h"

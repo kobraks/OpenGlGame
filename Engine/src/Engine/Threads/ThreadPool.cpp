@@ -90,13 +90,13 @@ namespace Engine {
 		const auto tagPre = [tag](const Task& task) { return task.Tag == tag; };
 		const auto countQueue = [tagPre](const TaskQueue& queue) { return std::ranges::count_if(queue, tagPre); };
 
-		uint32_t count = countQueue(m_GlobalTaskQueue);;
+		uint64_t count = countQueue(m_GlobalTaskQueue);;
 
 		for (const auto& queue : m_PerThreadQueue) {
 			count += countQueue(queue);
 		}
 
-		return count;
+		return static_cast<uint32_t>(count);
 	}
 
 	bool ThreadPool::HasPendigTag(TaskTag tag) const {
@@ -120,11 +120,11 @@ namespace Engine {
 		std::ranges::push_heap(queue, std::greater<Task>{});
 	}
 
-	Task&& ThreadPool::Dequeue(TaskQueue& queue) {
+	Task ThreadPool::Dequeue(TaskQueue& queue) {
 		std::ranges::pop_heap(queue, std::greater<Task>{});
 		Task task = std::move(queue.back());
 		queue.pop_back();
-		return std::move(task);
+		return task;
 
 	}
 
