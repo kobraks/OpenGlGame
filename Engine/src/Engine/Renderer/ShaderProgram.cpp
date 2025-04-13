@@ -1,117 +1,277 @@
 #include "pch.h"
-#include "ShaderPRogram.h"
+#include "ShaderProgram.h"
 
 #include "Engine/Renderer/Texture.h"
+#include "glad/glad.h"
 
-#include "glm/gtc/type_ptr.hpp"
+#include <boost/algorithm/string.hpp>
 
 namespace Engine {
-	ShaderProgram::ShaderProgram(const std::string &name) {
-		LOG_GL_INFO("Creating shader program");
-		m_Internals = MakeRef<Internals>(name);
-		LOG_GL_INFO("New {} shader program id: {}", m_Internals->Name, m_Internals->Program);
+	Ref<ShaderProgram> ShaderProgram::Create(const std::string& label) {
+		auto program = Ref<ShaderProgram>(new ShaderProgram());
+		program->SetLabel(label);
+
+		return program;
 	}
 
-	ShaderProgram::ShaderProgram(const std::string &name, Ref<Shader> shader) : ShaderProgram(name) {
-		Attach(shader);
+	Ref<ShaderProgram> ShaderProgram::Create(std::initializer_list<Ref<ShaderStage>> stages, const std::string& label) {
+		auto program = Ref<ShaderProgram>(new ShaderProgram());
 
-		Link();
+		program->SetLabel(label);
+		program->Attach(stages);
+		program->Link();
 
-		Detach(shader);
+		return program;
 	}
 
-	ShaderProgram::operator unsigned int() const {
-		return m_Internals->Program;
+	bool ShaderProgram::SaveBinary(Ref<ShaderProgram> program, std::filesystem::path path) {
+		GLint formats = 0;
+
+		glGetIntegerv(GL_NUM_PROGRAM_BINARY_FORMATS, &formats);
+		if (formats == 0) {
+			LOG_WARN("Program binary formats not supported on this GPU");
+			return false;
+		}
+
+		const GLint length = program->GetParameter(GL_PROGRAM_BINARY_LENGTH);
+		if (length == 0) {
+			LOG_GL_WARN("Cannot save shader binary: no binary data available");
+			return false;
+		}
+
+		std::vector<std::byte> binary(length);
+		GLenum format = 0;
+
+		glGetProgramBinary(*program, length, nullptr, &format, binary.data());
+
+		std::ofstream out(path, std::ios::binary);
+		if (!out) {
+			LOG_GL_ERROR("Failed to open file for shader binary: '{}'", path.string());
+			return false;
+		}
+
+		const uint64_t labelLength = program->Label().size();
+		out.write(reinterpret_cast<const char*>(&labelLength), sizeof(labelLength));
+		out.write(program->Label().data(), labelLength);
+
+		out.write(reinterpret_cast<const char*>(&length), sizeof(length));
+		out.write(reinterpret_cast<const char*>(&format), sizeof(format));
+		out.write(reinterpret_cast<const char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
+
+		return true;
 	}
 
-	ShaderProgram::IDType ShaderProgram::ID() const {
-		return m_Internals->Program;
+	Ref<ShaderProgram> ShaderProgram::LoadBinary(std::filesystem::path path) {
+		std::ifstream in(path, std::ios::binary);
+		if (!in) {
+			LOG_GL_ERROR("Failed to open shader binary file: '{}'", path.string());
+			return nullptr;
+		}
+
+		uint64_t labelLength = 0;
+		in.read(reinterpret_cast<char*>(&labelLength), sizeof(labelLength));
+
+		std::string label(labelLength, 0);
+		in.read(label.data(), labelLength);
+
+		GLint length = 0;
+		in.read(reinterpret_cast<char*>(&length), sizeof(length));
+
+		GLenum format = 0;
+		in.read(reinterpret_cast<char*>(&format), sizeof(format));
+
+		if (length == 0) {
+			LOG_GL_ERROR("Shader binary file is empty: '{}'", path.string());
+			return nullptr;
+		}
+
+		std::vector<std::byte> binary(length);
+		in.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
+
+		Ref<ShaderProgram> program;
+		program->SetLabel(label);
+		glProgramBinary(*program, format, binary.data(), static_cast<GLsizei>(binary.size()));
+
+		if (!program->CheckIfLinked()) {
+			return nullptr;
+		}
+
+		return program;
 	}
 
-	bool ShaderProgram::IsLinked() const {
-		return m_Internals->Linked;
+	void ShaderProgram::SetLabel(const std::string& label) {
+		if (label.empty())
+			return;
+
+		m_GLState->Label = label;
+		glObjectLabel(GL_PROGRAM, *this, -1, label.c_str());
 	}
 
-	std::string_view ShaderProgram::Name() const {
-		return m_Internals->Name;
+	void ShaderProgram::Attach(Ref<ShaderStage> stage) {
+		if (m_GLState->Reflection.UsedStages.contains(stage->GetType()) || m_GLState->Stages.contains(stage)) {
+			LOG_GL_WARN("Trying to attach attached stage");
+			return;
+		}
+
+		LOG_GL_DEBUG(
+			"Attaching {} shader {} to shader program {} (id: {})",
+			stage->TypeToString(),
+			stage->ID(),
+			m_GLState->Label,
+			m_GLState->Program
+		);
+
+		glAttachShader(*this, *stage);
+		m_GLState->Stages.emplace(stage);
+		m_GLState->Reflection.UsedStages.emplace(stage->GetType());
+		FetchLog();
 	}
 
-	void ShaderProgram::Attach(Ref<Shader> shader) {
-		m_Internals->Attach(shader);
+	void ShaderProgram::Attach(std::initializer_list<Ref<ShaderStage>> stages) {
+		for (auto stage : stages) {
+			Attach(stage);
+		}
 	}
 
-	void ShaderProgram::Detach(Ref<Shader> shader) {
-		m_Internals->Detach(shader);
+	void ShaderProgram::Detach(Ref<ShaderStage> stage) {
+		auto& stages = m_GLState->Stages;
+		auto iter = stages.find(stage);
+
+		ENGINE_ASSERT(iter != stages.end());
+
+		if (iter == stages.end())
+			throw std::runtime_error("Detaching not attached shader");
+
+		LOG_GL_DEBUG(
+			"Detaching {} shader {} from shader program {} (id: {})",
+			stage->TypeToString(),
+			stage->ID(),
+			m_GLState->Label,
+			m_GLState->Program
+		);
+
+		glDetachShader(*this, *stage);
+		stages.erase(iter);
+		m_GLState->Reflection.UsedStages.erase(stage->GetType());
+		FetchLog();
 	}
 
-	bool ShaderProgram::IsAttached(Ref<Shader> shader) {
-		return m_Internals->Shaders.contains(shader);
+	void ShaderProgram::Detach(std::initializer_list<Ref<ShaderStage>> stages) {
+		for (auto stage : stages) {
+			Detach(stage);
+		}
 	}
 
-	bool ShaderProgram::IsAttached(Shader::Type shaderType) {
-		return std::ranges::find_if(
-		                            m_Internals->Shaders,
-		                            [shaderType](Ref<Shader> shader) { return shaderType == shader->GetType(); }
-		                           ) != m_Internals->Shaders.end();
+	void ShaderProgram::DetachAll() {
+		auto& stages = m_GLState->Stages;
+
+		for (auto stage : stages) {
+			LOG_GL_DEBUG(
+				"Detaching {} shader {} from shader program {} (id: {})",
+				stage->TypeToString(),
+				stage->ID(),
+				m_GLState->Label,
+				m_GLState->Program
+			);
+
+			glDetachShader(*this, *stage);
+		}
+		stages.clear();
+		
+		FetchLog();
 	}
 
-	Ref<Shader> ShaderProgram::GetShader(Shader::Type shaderType) {
-		const auto iter = std::ranges::find_if(
-		                                       m_Internals->Shaders,
-		                                       [shaderType](Ref<Shader> shader) {
-			                                       return shaderType == shader->GetType();
-		                                       }
-		                                      );
-		return (iter != std::end(m_Internals->Shaders)) ? *iter : nullptr;
+
+	bool ShaderProgram::IsAttached(Ref<ShaderStage> stage) {
+		return m_GLState->Stages.contains(stage);
 	}
 
-	bool ShaderProgram::Link() {
-		return m_Internals->Link();
+	bool ShaderProgram::IsAttached(ShaderStage::Type type) {
+		return std::ranges::find_if(m_GLState->Stages, [type](Ref<ShaderStage> stage) { return type == stage->GetType(); }) != m_GLState->Stages.end();
 	}
 
-	void ShaderProgram::Use() {
-		m_Internals->Use();
+	ShaderLinkResult ShaderProgram::Link() {
+		LOG_GL_DEBUG("Linking {} (ID: {}) shader program", m_GLState->Label, m_GLState->Program);
+		ShaderLinkResult result;
+
+		glLinkProgram(*this);
+
+		if (GetParameter(GL_LINK_STATUS) == GL_FALSE) {
+			LOG_GL_ERROR("Failed to link {} (id: {}) shader program", m_GLState->Label, m_GLState->Program);
+			result.Success = m_GLState->Linked = false;
+		} else {
+			LOG_GL_INFO("Successfully linked {} (id: {}) shader program", m_GLState->Label, m_GLState->Program);
+
+			result.Success = m_GLState->Linked = true;
+
+			Populate();
+		}
+
+		FetchLog();
+		result.LogMessage = m_GLState->LogMessage;
+
+		if (!result.LogMessage.empty())
+			LOG_GL_DEBUG("Linking program [Id: {}] '{}' returned: {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+
+		return result;
 	}
 
-	std::string ShaderProgram::GetLog() const {
-		return m_Internals->GetLog();
+	ShaderValidationResult ShaderProgram::Validate() {
+		ShaderValidationResult result;
+
+		glValidateProgram(*this);
+
+		const auto success = GetParameter(GL_VALIDATE_STATUS);
+
+		if (success == GL_TRUE) {
+			result.Valid = true;
+		} else {
+			result.Valid = false;
+		}
+
+		FetchLog();
+		result.LogMessage = m_GLState->LogMessage;
+
+		return result;
 	}
 
-	size_t ShaderProgram::GetAttachedShaderCount() const {
-		return m_Internals->Shaders.size();
+	void ShaderProgram::Use() const {
+		if (!IsLinked())
+			return;
+
+		glUseProgram(*this);
 	}
 
 	ShaderProgram::AttributeLocationType ShaderProgram::GetAttributeLocation(std::string_view name) const {
-		return m_Internals->GetAttributeLocation(name);
+		return GetLocation(name, m_GLState->Attributes, glGetAttribLocation, InvalidAttributeLocation);
 	}
 
 	ShaderProgram::UniformLocationType ShaderProgram::GetUniformLocation(std::string_view name) const {
-		return m_Internals->GetUniformLocation(name);
+		return GetLocation(name, m_GLState->Attributes, glGetUniformLocation, InvalidUniformLocation);
 	}
 
-	ShaderProgram::UniformBlockIndexType ShaderProgram::GetUniformBlockIndex(std::string_view name) {
-		return m_Internals->GetUniformBlockIndex(name);
+	ShaderProgram::UniformBlockIndexType ShaderProgram::GetUniformBlockIndex(std::string_view name) const {
+		return GetLocation(name, m_GLState->Attributes, glGetUniformBlockIndex, InvalidUniformBlockIndex);
 	}
 
-	bool ShaderProgram::HasUniform(std::string_view name) {
-		return m_Internals->GetUniformLocation(name) != InvalidUniformLocation;
+	bool ShaderProgram::HasUniform(std::string_view name) const {
+		return GetUniformLocation(name) != InvalidUniformLocation;
 	}
 
 	const std::vector<ShaderProgram::UniformInfo>& ShaderProgram::GetActiveUniforms() const {
-		return m_Internals->ActiveUniforms;
+		return m_GLState->Reflection.Uniforms;
 	}
 
 	const std::vector<ShaderProgram::UniformBlockInfo>& ShaderProgram::GetActiveUniformBlocks() const {
-		return m_Internals->ActiveUniformBlocks;
+		return m_GLState->Reflection.Blocks;
 	}
 
 	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(UniformLocationType location) const {
-		const auto iter = std::ranges::find_if(
-		                                       m_Internals->ActiveUniforms,
-		                                       [location](const UniformInfo &info) { return info.Location == location; }
-		                                      );
+		const auto& uniforms = m_GLState->Reflection.Uniforms;
 
-		if(iter != m_Internals->ActiveUniforms.end())
+		const auto iter = std::ranges::find_if(uniforms, [location](const UniformInfo& info) { return info.Location == location; });
+
+		if (iter != uniforms.end())
 			return *iter;
 
 		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform at given location, {}", location));
@@ -119,12 +279,11 @@ namespace Engine {
 	}
 
 	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(UniformBlockIndexType index) const {
-		const auto iter = std::ranges::find_if(
-		                                       m_Internals->ActiveUniformBlocks,
-		                                       [index](const UniformBlockInfo &info) { return info.Index == index; }
-		                                      );
+		const auto& blocks = m_GLState->Reflection.Blocks;
 
-		if(iter != m_Internals->ActiveUniformBlocks.end())
+		const auto iter = std::ranges::find_if(blocks, [index](const UniformBlockInfo& info) { return info.Index == index; });
+
+		if (iter != blocks.end())
 			return *iter;
 
 		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform block at given index, {}", index));
@@ -132,12 +291,11 @@ namespace Engine {
 	}
 
 	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(std::string_view name) const {
-		const auto iter = std::ranges::find_if(
-		                                       m_Internals->ActiveUniforms,
-		                                       [name](const UniformInfo &info) { return info.Name == name; }
-		                                      );
+		const auto& uniforms = m_GLState->Reflection.Uniforms;
 
-		if(iter != m_Internals->ActiveUniforms.end())
+		const auto iter = std::ranges::find_if(uniforms, [name](const UniformInfo& info) { return info.Name == name; });
+
+		if (iter != uniforms.end())
 			return *iter;
 
 		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform with given name: \"{}\"", name));
@@ -145,12 +303,11 @@ namespace Engine {
 	}
 
 	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(std::string_view name) const {
-		const auto iter = std::ranges::find_if(
-		                                       m_Internals->ActiveUniformBlocks,
-		                                       [name](const UniformBlockInfo &info) { return info.Name == name; }
-		                                      );
+		const auto& blocks = m_GLState->Reflection.Blocks;
 
-		if(iter != m_Internals->ActiveUniformBlocks.end())
+		const auto iter = std::ranges::find_if(blocks, [name](const UniformBlockInfo& info) { return info.Name == name; });
+
+		if (iter != blocks.end())
 			return *iter;
 
 		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform block with given name: \"{}\"", name));
@@ -158,330 +315,316 @@ namespace Engine {
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value) {
-		UniformValue1(location, value);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform1i(location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value1, int32_t value2) {
-		UniformValue2(location, value1, value2);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform2i(location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value1, int32_t value2, int32_t value3) {
-		UniformValue3(location, value1, value2, value3);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform3i(location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value) {
-		UniformValue1(location, value);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform1ui(location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2) {
-		UniformValue2(location, value1, value2);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform2ui(location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2, uint32_t value3) {
-		UniformValue3(location, value1, value2, value3);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform3ui(location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value) {
-		UniformValue1(location, value);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform1f(location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value1, float value2) {
-		UniformValue2(location, value1, value2);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform2f(location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value1, float value2, float value3) {
-		UniformValue3(location, value1, value2, value3);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform3f(location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value) {
-		UniformValue1(location, value);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform1d(location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value1, double value2) {
-		UniformValue2(location, value1, value2);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform2d(location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value1, double value2, double value3) {
-		UniformValue3(location, value1, value2, value3);
+		if (location == InvalidUniformLocation)
+			return;
+
+		glUniform3d(location, value1, value2, value3);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec2 &vec) {
-		UniformVector(location, vec);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec2& vec) {
+		return UniformVector(location, vec, glUniform2fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec3 &vec) {
-		UniformVector(location, vec);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec3& vec) {
+		return UniformVector(location, vec, glUniform3fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec4 &vec) {
-		UniformVector(location, vec);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec4& vec) {
+		return UniformVector(location, vec, glUniform4fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x2 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x2& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x3 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x3& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2x3fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x4 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x4& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2x4fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x2 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x2& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3x2fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x3 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x3& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x4 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x4& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3x4fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x2 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x2& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4x2fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x3 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x3& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4x3fv);
 	}
 
-	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x4 &mat, bool transpose) {
-		UniformMatrix(location, mat, transpose);
+	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x4& mat, bool transpose) {
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, Ref<Texture> texture, uint32_t samplerUnit) {
-		/*glActiveTexture(GL_TEXTURE0 + samplerUnit);
-		texture->Bind();*/
+		if (location == InvalidUniformLocation)
+			return;
+
 		texture->BindUnit(samplerUnit);
 
-		glUniform1ui(location, samplerUnit);
+		glUniform1i(location, samplerUnit);
 	}
 
-	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer &buffer) {}
+	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer) {
+		if (location == InvalidUniformLocation)
+			return;
 
-	void ShaderProgram::BindUniformBuffer(
-		UniformLocationType location,
-		const UniformBuffer &buffer,
-		size_t size,
-		size_t offset
-		) {
 		//TODO
 	}
 
-	ShaderProgram::Internals::Internals(const std::string &name) : Name(name) {
-		Program = glCreateProgram();
-	}
-
-	ShaderProgram::Internals::Internals(IDType id, const std::string &name) {}
-
-	ShaderProgram::Internals::~Internals() {
-		Shaders.clear();
-		glDeleteProgram(Program);
-	}
-
-	void ShaderProgram::Internals::Attach(Ref<Shader> shader) {
-		if(Shaders.contains(shader)) {
-			LOG_GL_WARN("Trying to attach attached shader");
-			return;
-		}
-
-		LOG_GL_INFO(
-		            "Attaching {} shader {} to shader program {} (id: {})",
-		            shader->TypeToString(),
-		            shader->ID(),
-		            Name,
-		            Program
-		           );
-		glAttachShader(Program, *shader);
-		Shaders.emplace(shader);
-	}
-
-	void ShaderProgram::Internals::Detach(Ref<Shader> shader) {
-		auto iter = Shaders.find(shader);
-
-		ENGINE_ASSERT(iter != Shaders.end());
-
-		if(iter == Shaders.end())
-			throw std::runtime_error("Detaching not attached shader");
-
-		LOG_GL_INFO(
-		            "Detaching {} shader {} from shader program {} (id: {})",
-		            shader->TypeToString(),
-		            shader->ID(),
-		            Name,
-		            Program
-		           );
-
-		glDetachShader(Program, *shader);
-		Shaders.erase(iter);
-	}
-
-	bool ShaderProgram::Internals::Link() {
-		LOG_GL_INFO("Linking {} (ID: {}) shader program", Name, Program);
-
-		glLinkProgram(Program);
-
-		if(Get(ParametersName::LinkStatus) == GL_FALSE) {
-			LOG_GL_ERROR("Unable to link {} (id: {}) shader program", Name, Program);
-			return Linked = false;
-		}
-
-		LOG_GL_INFO("Sucessfuly linked {} (id: {}) shader program", Name, Program);
-
-		Populate();
-		return Linked = true;
-	}
-
-	void ShaderProgram::Internals::Use() {
-		if(!Linked)
+	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer, size_t size,
+		size_t offset) {
+		if (location == InvalidUniformLocation)
 			return;
 
-		glUseProgram(Program);
+		//TODO
 	}
 
-	std::string ShaderProgram::Internals::GetLog() {
-		int length = Get(ParametersName::InfoLogLength);
+	ShaderProgram::ShaderProgram() : m_GLState(MakeRef<GLState>()) {
+	}
 
-		if(length > 0) {
-			std::string log(length, 0);
+	int ShaderProgram::GetParameter(uint32_t pName) {
+		int value = 0;
+		GetParameter(pName, &value);
 
-			glGetProgramInfoLog(Program, length, &length, &log[0]);
-			return log;
+		return value;
+	}
+
+	void ShaderProgram::GetParameter(uint32_t pName, int* params) {
+		glGetProgramiv(*this, pName, params);
+	}
+
+	void ShaderProgram::FetchLog() {
+		int length = GetParameter(GL_INFO_LOG_LENGTH);
+
+		if (length > 0) {
+			m_GLState->LogMessage.resize(length + 1, 0);
+
+			glGetProgramInfoLog(*this, length, nullptr, m_GLState->LogMessage.data());
+
+			boost::trim(m_GLState->LogMessage);
+		}
+		else
+			m_GLState->LogMessage.resize(1, 0);
+
+		if (!m_GLState->LogMessage.empty() && m_GLState->LogMessage.back() == '\0')
+			m_GLState->LogMessage.pop_back();
+	}
+
+	bool ShaderProgram::CheckIfLinked() {
+		const auto linked = GetParameter(GL_LINK_STATUS);
+
+		if (linked == GL_TRUE) {
+			return m_GLState->Linked = true;
 		}
 
-		return {};
+		return m_GLState->Linked = false ;
 	}
 
-	ShaderProgram::AttributeLocationType ShaderProgram::Internals::GetAttributeLocation(std::string_view name) {
-		return GetLocation(name, Attributes, glGetAttribLocation, InvalidAttributeLocation);
-	}
-
-	ShaderProgram::UniformLocationType ShaderProgram::Internals::GetUniformLocation(std::string_view name) {
-		return GetLocation(name, UniformLocations, glGetUniformLocation, InvalidUniformLocation);
-	}
-
-	ShaderProgram::UniformBlockIndexType ShaderProgram::Internals::GetUniformBlockIndex(std::string_view name) {
-		return GetLocation(name, UniformBlockIndices, glGetUniformBlockIndex, InvalidUniformBlockIndex);
-	}
-
-	int ShaderProgram::Internals::Get(ParametersName pName) {
-		int result = 0;
-		Get(pName, &result);
-
-		return result;
-	}
-
-	void ShaderProgram::Internals::Get(ParametersName pName, int *params) {
-		glGetProgramiv(Program, static_cast<GLenum>(pName), params);
-	}
-
-	void ShaderProgram::Internals::Populate() {
+	void ShaderProgram::Populate() {
 		PopulateUniforms();
 		PopulateUniformBlocks();
 	}
 
-	void ShaderProgram::Internals::PopulateUniformBlocks() {
-		const uint32_t count = static_cast<uint32_t>(Get(ParametersName::ActiveUniformBlocks));
-		LOG_GL_INFO("Shader program {} (ID: {}) has {} active uniform blocks: ", Name, Program, count);
+	void ShaderProgram::PopulateUniformBlocks() {
+		const uint32_t count = static_cast<uint32_t>(GetParameter(GL_ACTIVE_UNIFORM_BLOCKS));
+		LOG_GL_DEBUG("Shader program {} (ID: {}) has {} active uniform blocks: ", m_GLState->Label, m_GLState->Program, count);
 
-		UniformBlockIndices.reserve(count);
-		ActiveUniformBlocks.reserve(count);
+		m_GLState->UniformBlockIndices.reserve(count);
+		m_GLState->Reflection.Blocks.reserve(count);
 
-		for(uint32_t i = 0; i < count; ++i) {
+		for (uint32_t i = 0; i < count; ++i) {
 			const auto info = QueryUniformBlock(i);
 
-			ActiveUniformBlocks.emplace_back(info);
-			UniformBlockIndices[info.Name] = info.Index;
+			m_GLState->Reflection.Blocks.emplace_back(info);
+			m_GLState->UniformBlockIndices[info.Name] = info.Index;
 
 			LOG_GL_DEBUG(
-			             "UniformBlock {}, name: {}, Size: {}, Index: {}, ReferedBy: {}",
-			             i,
-			             info.Name,
-			             info.Size,
-			             info.Index,
-			             Shader::TypeToString(info.ShaderType)
-			            );
+				"UniformBlock {}, name: {}, Size: {}, Index: {}, ReferedBy: {}",
+				i,
+				info.Name,
+				info.Size,
+				info.Index,
+				ShaderStage::TypeToString(info.ShaderType)
+			);
 		}
 	}
 
-	void ShaderProgram::Internals::PopulateUniforms() {
-		const uint32_t count = static_cast<uint32_t>(Get(ParametersName::ActiveUniforms));
-		LOG_GL_INFO("Shader program {} (ID: {}) has {} active uniforms", Name, Program, count);
+	void ShaderProgram::PopulateUniforms() {
+		const uint32_t count = static_cast<uint32_t>(GetParameter(GL_ACTIVE_UNIFORMS));
+		LOG_GL_DEBUG("Shader program {} (ID: {}) has {} active uniforms", m_GLState->Label, m_GLState->Program, count);
 
-		for(uint32_t i = 0; i < count; ++i) {
+		for (uint32_t i = 0; i < count; ++i) {
 			const auto info = QueryUniform(i);
 
-			UniformLocations.emplace(info.Name, info.Location);
-			ActiveUniforms.emplace_back(info);
+			m_GLState->UniformLocations.emplace(info.Name, info.Location);
+			m_GLState->Reflection.Uniforms.emplace_back(info);
 
 			LOG_GL_DEBUG(
-			             "Uniform {}, Name: {}, Size: {}, Type: {}, Location: {}",
-			             i,
-			             info.Name,
-			             info.Size,
-			             info.Type,
-			             info.Location
-			            );
+				"Uniform {}, Name: {}, Size: {}, Type: {}, Location: {}",
+				i,
+				info.Name,
+				info.Size,
+				info.Type,
+				info.Location
+			);
 		}
 	}
 
-	int ShaderProgram::Internals::GetActiveUniformI(uint32_t index, GLenum pName) {
+	int ShaderProgram::GetActiveUniformI(uint32_t index, uint32_t pName) {
 		int value = 0;
-		glGetActiveUniformsiv(Program, 1, &index, pName, &value);
-		return value;
-	}
-
-	int ShaderProgram::Internals::GetActiveUniformBlockI(uint32_t index, GLenum pName) {
-		int value = 0;
-		glGetActiveUniformBlockiv(Program, index, pName, &value);
+		glGetActiveUniformsiv(*this, 1, &index, pName, &value);
 
 		return value;
 	}
 
-	std::string ShaderProgram::Internals::GetActiveUniformBlockName(uint32_t index) {
+	int ShaderProgram::GetActiveUniformBlockI(uint32_t index, uint32_t pName) {
+		int value = 0;
+		glGetActiveUniformBlockiv(*this, index, pName, &value);
+
+		return value;
+	}
+
+	std::string ShaderProgram::GetActiveUniformBlockName(uint32_t index) {
 		const size_t length = static_cast<size_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_NAME_LENGTH));
 		std::string name(length + 1, 0);
 
-		glGetActiveUniformName(Program, index, static_cast<GLsizei>(length), nullptr, &name[0]);
+		glGetActiveUniformName(*this, index, static_cast<GLsizei>(length), nullptr, name.data());
 		return name;
 	}
 
-	ShaderProgram::UniformBlockInfo ShaderProgram::Internals::QueryUniformBlock(uint32_t index) {
+	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(uint32_t index) {
 		UniformBlockInfo info;
 
-		info.Name  = GetActiveUniformBlockName(index);
-		info.Size  = static_cast<uint32_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_DATA_SIZE));
+		info.Name = GetActiveUniformBlockName(index);
+		info.Size = static_cast<uint32_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_DATA_SIZE));
 		info.Index = static_cast<UniformBlockIndexType>(GetActiveUniformI(index, GL_UNIFORM_BLOCK_BINDING));
 
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Vertex;
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_CONTROL_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Control;
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_EVALUATION_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Evaluation;
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Geometry;
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Fragment;
-		if(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_COMPUTE_SHADER) == GL_TRUE)
-			info.ShaderType = Shader::Type::Compute;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Vertex;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_CONTROL_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Control;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_EVALUATION_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Evaluation;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Geometry;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Fragment;
+		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_COMPUTE_SHADER) == GL_TRUE)
+			info.ShaderType = ShaderStage::Type::Compute;
 
 		return info;
 	}
 
-	ShaderProgram::UniformInfo ShaderProgram::Internals::QueryUniform(uint32_t index) {
+	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(uint32_t index) {
 		UniformInfo info;
 
 		uint32_t length = GetActiveUniformI(index, GL_UNIFORM_NAME_LENGTH);
 
 		info.Name = std::string(length, 0);
-		glGetActiveUniform(Program, index, length, nullptr, &info.Size, &info.Type, &info.Name[0]);
-		info.Location = glGetUniformLocation(Program, &info.Name[0]);
+		glGetActiveUniform(*this, index, length, nullptr, &info.Size, &info.Type, info.Name.data());
+		info.Location = glGetUniformLocation(*this, info.Name.data());
 
 		return info;
+	}
+
+	ShaderProgram::GLState::GLState() : Program(glCreateProgram()){
+		ENGINE_ASSERT(Program != 0);
+		glProgramParameteri(Program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE);
+	}
+
+	ShaderProgram::GLState::~GLState() {
+		Stages.clear();
+		glDeleteProgram(Program);
 	}
 }
