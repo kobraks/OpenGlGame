@@ -1,9 +1,8 @@
 project "Engine"
 	kind "StaticLib"
 	language "C++"
-	cppdialect "C++20"
+	cppdialect "C++23"
 	staticruntime "off"
---	warnings "Everything"
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -64,18 +63,14 @@ project "Engine"
 		
 		"opengl32.lib",
 	}
-
-	filter "files:src/**.cpp"
-		fatalwarnings { "All" }
-
+	
 	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
 		flags { "NoPCH" }
 		
 	filter "action:vs*"
 		externalanglebrackets "On" --Enable treating <> as external
 		externalwarnings "Off" --Disable external warnings /external:W0
-		warnings "Everything"
-		-- buildoptions { "/external:W0" }
+		warnings "Extra"
 
 	filter "system:windows"
 		systemversion "latest"

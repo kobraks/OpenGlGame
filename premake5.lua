@@ -1,6 +1,10 @@
 include "./vendor/premake/premake_customization/solution_items.lua"
 include "Dependencies.lua"
 
+if not BOOST then
+    error("BOOST_DIR environment variable not set!")
+end
+
 workspace "OpenGlGame"
 	architecture "x86_64"
 	startproject "Editor"
