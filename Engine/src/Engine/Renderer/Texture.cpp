@@ -354,7 +354,7 @@ namespace Engine {
 		CheckSubRegionSize(offset, size);
 
 		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::ToGLDataFormat(dataFormat),
-		                   Utils::ToGLDataType(dataType), nullptr);
+		                   Utils::ToGLDataType(dataType), pixels);
 	}
 
 	void Texture::Internals::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {

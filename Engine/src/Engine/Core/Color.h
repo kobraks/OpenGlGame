@@ -13,17 +13,20 @@ namespace Engine {
 	public:
 		enum class Channel { Red, Green, Blue, Alpha };
 
+#pragma warning(push)
+#pragma warning(disable : 4201)
+
 		union {
 			uint32_t Code;
 
 			struct {
-				//TODO Fix warning here
 				uint8_t R;
 				uint8_t G;
 				uint8_t B;
 				uint8_t A;
 			};
 		};
+#pragma warning(pop)
 
 		consteval static size_t Size() { return 4; }
 
@@ -114,10 +117,10 @@ namespace Engine {
 
 		uint8_t GetChannel(Channel ch) const {
 			switch (ch) {
-			case Channel::Red:   return (Code & RedFlag) >> RedBit;
-			case Channel::Green: return (Code & GreenFlag) >> GreenBit;
-			case Channel::Blue:  return (Code & BlueFlag) >> BlueBit;
-			case Channel::Alpha: return (Code & AlphaFlag) >> AlphaBit;
+			case Channel::Red:   return static_cast<uint8_t>((Code & RedFlag) >> RedBit);
+			case Channel::Green: return static_cast<uint8_t>((Code & GreenFlag) >> GreenBit);
+			case Channel::Blue:  return static_cast<uint8_t>((Code & BlueFlag) >> BlueBit);
+			case Channel::Alpha: return static_cast<uint8_t>((Code & AlphaFlag) >> AlphaBit);
 			}
 			ENGINE_ASSERT(false);
 			throw std::out_of_range("Out of range");

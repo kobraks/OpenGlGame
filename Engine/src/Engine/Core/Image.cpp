@@ -108,7 +108,7 @@ namespace Engine {
 		if (!buffer)
 			throw std::runtime_error("Uninitialized buffer");
 
-		auto stream = FreeImage_OpenMemory(static_cast<BYTE*>(buffer.Data), buffer.Size);
+		auto stream = FreeImage_OpenMemory(static_cast<BYTE*>(buffer.Data), static_cast<DWORD>(buffer.Size));
 		const auto format = FreeImage_GetFileTypeFromMemory(stream, 0);
 
 		ENGINE_ASSERT(format != FIF_UNKNOWN);
@@ -131,31 +131,6 @@ namespace Engine {
 
 		return result;
 	}
-
-	/*Ref<Image> Image::Load(uint8_t *buffer, size_t size) {
-		auto result = MakeRef<Image>();
-
-		ENGINE_ASSERT(buffer);
-
-		auto stream       = FreeImage_OpenMemory(buffer, size);
-		const auto format = FreeImage_GetFileTypeFromMemory(stream, 0);
-
-		ENGINE_ASSERT(format != FIF_UNKNOWN);
-		if(format == FIF_UNKNOWN)
-			throw std::runtime_error("Unknown image format");
-
-		const auto image = FreeImage_LoadFromMemory(format, stream, 0);
-
-		ENGINE_ASSERT(image);
-		if(!image)
-			throw std::runtime_error("Unable to load image from memory");
-
-		result->LoadToMemory(image);
-		FreeImage_Unload(image);
-		FreeImage_CloseMemory(stream);
-
-		return result;
-	}*/
 
 	Ref<Image> Image::Load(const std::filesystem::path &path) {
 		auto result = MakeRef<Image>();

@@ -116,7 +116,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::SetViewport(const Vector2u& size) const {
-		SetViewport({0, 0}, m_Internals->Specification.Size);
+		SetViewport({0, 0}, size);
 	}
 
 	void Framebuffer::SetViewport(const Vector2i& position, const Vector2u& size) const {
@@ -434,7 +434,6 @@ namespace Engine {
 
 		ENGINE_ASSERT(false);
 		throw std::runtime_error("Invalid depth attachment format");
-		return 0;
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel) {

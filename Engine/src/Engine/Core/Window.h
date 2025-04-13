@@ -14,8 +14,8 @@ namespace Engine {
 
 	class Event;
 	class Cursor;
-	class GraphicContext;
 	class Monitor;
+	class GraphicContext;
 
 	enum class InputMode {
 		//From GLFW
@@ -123,16 +123,16 @@ namespace Engine {
 		void InstallCallbacks();
 
 		struct WindowData {
-			std::string Title;
+			std::string Title = {};
 
-			uint32_t Width;
-			uint32_t Height;
+			uint32_t Width = 1;
+			uint32_t Height = 1;
 
-			int32_t X;
-			int32_t Y;
+			int32_t X = 0;
+			int32_t Y = 0;
 
 			bool VSync = false;
-			EventCallbackFunction EventCallback;
+			EventCallbackFunction EventCallback = {};
 		};
 
 		static WindowData *GetData(void *window);
@@ -148,7 +148,7 @@ namespace Engine {
 
 		Monitor *m_Monitor;
 
-		Scope<Cursor> m_Cursor = nullptr;
-		Scope<GraphicContext> m_Context = nullptr;
+		Scope<Cursor> m_Cursor;
+		Scope<GraphicContext> m_Context;
 	};
 }

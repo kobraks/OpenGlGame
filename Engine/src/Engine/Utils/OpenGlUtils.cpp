@@ -169,6 +169,9 @@ namespace Engine::Utils {
 		case ImageFormat::SRGBA:
 			return GL_SRGB_ALPHA;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLFilterMode(FilterMode filter) {
@@ -186,6 +189,9 @@ namespace Engine::Utils {
 		case FilterMode::LinearMipmapLinear:
 			return GL_LINEAR_MIPMAP_LINEAR;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLWrapMode(WrapMode wrapMode) {
@@ -199,6 +205,9 @@ namespace Engine::Utils {
 		case WrapMode::ClampBorder:
 			return GL_CLAMP_TO_BORDER;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLDataFormat(DataFormat format) {
@@ -234,6 +243,9 @@ namespace Engine::Utils {
 		case DataFormat::DepthStencil:
 			return GL_DEPTH_STENCIL;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLDataType(DataType type) {
@@ -255,6 +267,9 @@ namespace Engine::Utils {
 		case DataType::Double:
 			return GL_DOUBLE;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLFilter(BlitFilter filter) {
@@ -264,6 +279,9 @@ namespace Engine::Utils {
 		case BlitFilter::Linear:
 			return GL_LINEAR;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	uint32_t ToGLMask(BlitMask mask) {
@@ -275,6 +293,9 @@ namespace Engine::Utils {
 		case BlitMask::ColorAndDepth:
 			return GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
 		}
+
+		ENGINE_ASSERT(false);
+		throw std::out_of_range("");
 	}
 
 	std::pair<DataFormat, DataType> GetDefaultFormatAndType(ImageFormat format) {

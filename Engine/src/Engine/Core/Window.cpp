@@ -1,5 +1,5 @@
 #include "pch.h"
-#include "Engine/Core/Window.h"
+#include "Window.h"
 
 #include "Engine/Renderer/GraphicContext.h"
 
@@ -254,7 +254,7 @@ namespace Engine {
 		return window;
 	}
 
-	Window::Window(const WindowProperties &props) {
+	Window::Window(const WindowProperties &props) : m_Cursor(nullptr), m_Context(nullptr) {
 		Init(props);
 	}
 
@@ -319,21 +319,21 @@ namespace Engine {
 			                   switch(action) {
 				                   case GLFW_PRESS:
 				                   {
-					                   KeyPressedEvent event(key, false);
+					                   KeyPressedEvent event(static_cast<KeyCode>(key), false);
 					                   data->EventCallback(event);
 					                   break;
 				                   }
 
 				                   case GLFW_RELEASE:
 				                   {
-					                   KeyReleasedEvent event(key);
+					                   KeyReleasedEvent event(static_cast<KeyCode>(key));
 					                   data->EventCallback(event);
 					                   break;
 				                   }
 
 				                   case GLFW_REPEAT:
 				                   {
-					                   KeyPressedEvent event(key, true);
+					                   KeyPressedEvent event(static_cast<KeyCode>(key), true);
 					                   data->EventCallback(event);
 					                   break;
 				                   }
@@ -348,7 +348,7 @@ namespace Engine {
 		                    [](GLFWwindow *window, unsigned int keyCode) {
 			                    auto data = GetData(window);
 
-			                    KeyTypedEvent event(keyCode);
+			                    KeyTypedEvent event(static_cast<KeyCode>(keyCode));
 			                    data->EventCallback(event);
 		                    }
 		                   );
@@ -361,13 +361,13 @@ namespace Engine {
 			                           switch(action) {
 				                           case GLFW_PRESS:
 				                           {
-					                           MouseButtonPressedEvent event(button);
+					                           MouseButtonPressedEvent event(static_cast<MouseCode>(button));
 					                           data->EventCallback(event);
 					                           break;
 				                           }
 				                           case GLFW_RELEASE:
 				                           {
-					                           MouseButtonReleasedEvent event(button);
+					                           MouseButtonReleasedEvent event(static_cast<MouseCode>(button));
 					                           data->EventCallback(event);
 					                           break;
 				                           }

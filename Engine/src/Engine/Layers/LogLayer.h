@@ -36,7 +36,7 @@ namespace Engine {
 
 		void MinLogLevelToPopUp(const int32_t level) {
 			m_MinLogLevelToPopUp = std::clamp(
-			                                  m_MinLogLevelToPopUp,
+			                                  level,
 			                                  static_cast<int32_t>(spdlog::level::trace),
 			                                  static_cast<int32_t>(spdlog::level::critical)
 			                                 );
