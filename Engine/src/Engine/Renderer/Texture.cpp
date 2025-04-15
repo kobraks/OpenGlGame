@@ -14,10 +14,7 @@ namespace Engine {
 		Texture::IDType GenTexture(bool multisampled) {
 			Texture::IDType name;
 
-			if (multisampled)
-				glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &name);
-			else
-				glCreateTextures(GL_TEXTURE_2D, 1, &name);
+			glCreateTextures(GetTextureTarget(multisampled), 1, &name);
 
 			return name;
 		}
@@ -28,9 +25,16 @@ namespace Engine {
 			const auto Image = ToImage();
 
 			m_Internals->Invalidate();
-			m_Internals->Allocate(size, m_Internals->Samples, m_Internals->ImageFormat);
+			ReAlloc(size);
 
 			Update(Image);
+		}
+	}
+
+	void Texture::ResizeNoCopy(const Vector2u& size) {
+		if (size.Width != m_Internals->Size.Width || size.Height != m_Internals->Size.Height) {
+			m_Internals->Invalidate();
+			ReAlloc(size);
 		}
 	}
 
@@ -42,24 +46,23 @@ namespace Engine {
 			return;
 
 		m_Internals->MipMapGenerated = true;
-
 		glGenerateTextureMipmap(m_Internals->ID);
 	}
 
 	void Texture::Bind() const {
-		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), *this);
+		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), static_cast<GLuint>(*this));
 	}
 
 	void Texture::BindUnit(uint32_t sampler) const {
-		glBindTextureUnit(sampler, *this);
+		glBindTextureUnit(sampler, static_cast<GLuint>(*this));
 	}
 
 	void Texture::Unbind() const {
-		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), *this);
+		glBindTexture(Utils::GetTextureTarget(m_Internals->Multisampled), static_cast<GLuint>(*this));
 	}
 
 	void Texture::UnbindUnit(uint32_t sampler) const {
-		glBindTextureUnit(sampler, *this);
+		glBindTextureUnit(sampler, static_cast<GLuint>(*this));
 	}
 
 	Ref<Texture> Texture::Create(const Vector2u& size, Engine::ImageFormat imageFormat, uint32_t samples,
@@ -102,7 +105,7 @@ namespace Engine {
 		if (label.empty())
 			return;
 
-		glObjectLabel(GL_TEXTURE, *this, -1, label.c_str());
+		glObjectLabel(GL_TEXTURE, static_cast<GLuint>(*this), -1, label.data());
 		m_Internals->Label = label;
 	}
 
@@ -116,33 +119,58 @@ namespace Engine {
 	}
 
 	void Texture::SetWrappingS(WrapMode wrapping) {
+		if (IsMultisampled()) {
+			LOG_GL_WARN("Cannot specify wrapping T on multisampled texture");
+			return;
+		}
+
 		m_Internals->Wrapping.S = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_S, Utils::ToGLWrapMode(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_S, Utils::ToGLWrapMode(wrapping));
 	}
 
 	void Texture::SetWrappingT(WrapMode wrapping) {
+		if (IsMultisampled()) {
+			LOG_GL_WARN("Cannot specify wrapping T on multisampled texture");
+			return;
+		}
+
 		m_Internals->Wrapping.T = wrapping;
-		m_Internals->SetParameter(GL_TEXTURE_WRAP_T, Utils::ToGLWrapMode(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_T, Utils::ToGLWrapMode(wrapping));
 	}
 
 	void Texture::SetFilters(FilterMode min, FilterMode mag) {
+		if (IsMultisampled()) {
+			LOG_GL_WARN("Cannot specify filters on multisampled texture");
+			return;
+		}
+
 		SetMinFilter(min);
 		SetMagFilter(mag);
 	}
 
 	void Texture::SetMinFilter(FilterMode filter) {
+		if (IsMultisampled()) {
+			LOG_GL_WARN("Cannot specify min filter on multisampled texture");
+			return;
+		}
+
 		m_Internals->Filter.Min = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MIN_FILTER, Utils::ToGLFilterMode(filter));
+		SetParameter(GL_TEXTURE_MIN_FILTER, Utils::ToGLFilterMode(filter));
 	}
 
 	void Texture::SetMagFilter(FilterMode filter) {
+		if (IsMultisampled()) {
+			LOG_GL_WARN("Cannot specify mag filter on multisampled texture");
+			return;
+		}
+
 		if (filter > FilterMode::Linear) {
-			LOG_ENGINE_ERROR("Only possible values for mag filter is Nearest or Linear");
+			LOG_ENGINE_WARN("Only possible values for mag filter is Nearest or Linear");
 			return;
 		}
 
 		m_Internals->Filter.Mag = filter;
-		m_Internals->SetParameter(GL_TEXTURE_MAG_FILTER, Utils::ToGLFilterMode(filter));
+		SetParameter(GL_TEXTURE_MAG_FILTER, Utils::ToGLFilterMode(filter));
 	}
 
 	Ref<Image> Texture::ToImage() const {
@@ -152,7 +180,7 @@ namespace Engine {
 		std::vector<Color> pixels;
 		pixels.resize(size);
 
-		m_Internals->GetImage(pixels.data(), static_cast<uint32_t>(size));
+		GetImage(pixels.data(), static_cast<uint32_t>(size));
 		return MakeRef<Image>(m_Internals->Size, pixels.data());
 	}
 
@@ -163,21 +191,36 @@ namespace Engine {
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
 
-		m_Internals->GetImage(pixels.data(), static_cast<uint32_t>(pixelCount), size, offset);
+		GetImage(pixels.data(), static_cast<uint32_t>(pixelCount), size, offset);
 		return MakeRef<Image>(size, pixels.data());
 	}
 
+	void Texture::Clear(const Color& color) {
+		return Clear(static_cast<const void*>(&color.Code), DataFormat::RGBA, DataType::UnsignedByte);
+	}
+
 	void Texture::Clear(int value) {
-		m_Internals->Clear(&value, DataFormat::RGBA, DataType::Int);
+		return Clear(&value, DataFormat::RGBA, DataType::Int);
 	}
 
-	void Texture::Clear(void* pixels, DataFormat dataFormat, DataType dataType) {
-		m_Internals->Clear(pixels, dataFormat, dataType);
+	void Texture::Clear(const void* pixels, DataFormat dataFormat, DataType dataType) {
+		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::ToGLDataFormat(dataFormat), Utils::ToGLDataType(dataType), pixels);
 	}
 
-	void Texture::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
+	void Texture::Clear(const Color& color, const Vector2i& offset, const Vector2u& size) {
+		Clear(static_cast<const void*>(&color.Code), offset, size, DataFormat::RGBA, DataType::UnsignedByte);
+	}
+
+	void Texture::Clear(int value, const Vector2i& offset, const Vector2u& size) {
+		Clear(static_cast<const void*>(&value), offset, size, DataFormat::RGBA, DataType::UnsignedByte);
+	}
+
+	void Texture::Clear(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
 	                    DataType dataType) {
-		m_Internals->Clear(pixels, offset, size, dataFormat, dataType);
+		CheckSubRegionSize(offset, size);
+
+		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::ToGLDataFormat(dataFormat),
+			Utils::ToGLDataType(dataType), pixels);
 	}
 
 	void Texture::GetPixels(void* pixels, uint32_t size) const {
@@ -188,7 +231,7 @@ namespace Engine {
 			throw std::runtime_error("Uninitialized memory access");
 
 		if (size >= m_Internals->Size.Width * m_Internals->Size.Height)
-			m_Internals->GetImage(pixels, size);
+			GetImage(pixels, size);
 		else
 			throw std::out_of_range("Specified buffer is too small");
 	}
@@ -257,77 +300,64 @@ namespace Engine {
 
 	void Texture::CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
 	                            const void* pixels, DataType dataType, DataFormat dataFormat) {
-		if (samples > 1)
-			m_Internals->Allocate(size, samples, ImageFormat);
-		else {
-			m_Internals->Allocate(size, ImageFormat);
-
+		Allocate(samples, size, ImageFormat);
+		if (!IsMultisampled()) {
 			SetFilters(FilterMode::Nearest, FilterMode::Nearest);
 			SetWrapping(WrapMode::Repeat, WrapMode::Repeat);
 		}
 
 		if (pixels)
-			m_Internals->SendImage(pixels, size, {0, 0}, dataFormat, dataType);
+			UploadPixels(pixels, size, {0, 0}, dataFormat, dataType);
 	}
 
 	void Texture::Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat,
 	                     DataType dataType) {
-		m_Internals->SendImage(pixels, size, offset, dataFormat, dataType);
+		UploadPixels(pixels, size, offset, dataFormat, dataType);
 	}
 
-	Texture::Internals::Internals(bool multisampled) : ID(Utils::GenTexture(multisampled)), Multisampled(multisampled) {
+	void Texture::ReAlloc(const Vector2u& size) {
+		const auto& samples = m_Internals->Samples;
+		const auto& imageFormat = m_Internals->ImageFormat;
+
+		Allocate(samples, size, imageFormat);
 	}
 
-	Texture::Internals::~Internals() {
-		glDeleteTextures(1, &ID);
+	void Texture::Allocate(uint32_t samples, const Vector2u& size, enum Engine::ImageFormat imageFormat) {
+		m_Internals->Size = size;
+		m_Internals->ImageFormat = imageFormat;
+		m_Internals->Samples = samples;
+		const auto& imageFormatGL = m_Internals->ImageFormatGL = Utils::ToGLImageFormat(imageFormat);
+
+		if (samples > 1) {
+			glTextureStorage2DMultisample(static_cast<GLuint>(*this), static_cast<GLsizei>(samples), imageFormatGL, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), GL_FALSE);
+		} else {
+			glTextureStorage2D(static_cast<GLuint>(*this), 1, imageFormatGL, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+		}
 	}
 
-	void Texture::Internals::Allocate(const Vector2u& size, enum ImageFormat imageFormat) {
-		Size = size;
-		ImageFormat = imageFormat;
-		Samples = 1;
-
-		glTextureStorage2D(ID, 1, Utils::ToGLImageFormat(imageFormat), static_cast<GLsizei>(size.Width),
-		                   static_cast<GLsizei>(size.Height));
-	}
-
-	void Texture::Internals::Allocate(const Vector2u& size, uint32_t samples, enum ImageFormat imageFormat) {
-		Size = size;
-		ImageFormat = imageFormat;
-		Samples = samples;
-
-		ENGINE_ASSERT(samples > 0);
-		if (Samples == 0)
-			throw std::runtime_error("Must be at least 1 sample!");
-
-		glTextureStorage2DMultisample(ID, static_cast<GLsizei>(samples), Utils::ToGLImageFormat(imageFormat),
-		                              static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), GL_FALSE);
-	}
-
-	void Texture::Internals::SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset,
-	                                   DataFormat format, DataType dataType) {
+	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
+		DataType dataType) {
 		ENGINE_ASSERT(pixels);
+
 		if (!pixels)
 			return;
 
 		CheckSubRegionSize(offset, size);
-
-		glTextureSubImage2D(ID, 0, offset.X, offset.Y, static_cast<GLsizei>(size.X), static_cast<GLsizei>(size.Y),
-		                    Utils::ToGLDataFormat(format), Utils::ToGLDataType(dataType), pixels);
+		glTextureSubImage2D(static_cast<GLuint>(*this), 0, offset.X, offset.Y, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), Utils::ToGLDataFormat(format), Utils::ToGLDataType(dataType), pixels);
 	}
 
-	void Texture::Internals::GetImage(void* pixels, uint32_t size) const {
+	void Texture::GetImage(void* pixels, uint32_t size) const {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			throw std::runtime_error("Recived uninitialized pointer to memory");
 
 		ENGINE_ASSERT(
-			static_cast<uint64_t>(size) < static_cast<uint64_t>(Size.Width) * static_cast<uint64_t>(Size.Height));
+			static_cast<uint64_t>(size) < static_cast<uint64_t>(m_Internals->Size.Width) * static_cast<uint64_t>(m_Internals->Size.Height));
 
-		glGetTextureImage(ID, 0, GL_RGBA8, GL_UNSIGNED_BYTE, static_cast<GLsizei>(size), pixels);
+		glGetTextureImage(static_cast<GLuint>(*this), 0, GL_RGBA8, GL_UNSIGNED_BYTE, static_cast<GLsizei>(size), pixels);
 	}
 
-	void Texture::Internals::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset) {
+	void Texture::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset) const {
 		ENGINE_ASSERT(pixels);
 
 		const uint32_t gettingSize = (size.Width - offset.X) * (size.Height - offset.Y);
@@ -341,38 +371,37 @@ namespace Engine {
 
 		CheckSubRegionSize(offset, size);
 
-		glGetTextureSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE,
-		                     bufSize, pixels);
+		glGetTextureSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE,
+			static_cast<GLsizei>(bufSize), pixels);
 	}
 
-	void Texture::Internals::Clear(void* pixels, DataFormat dataFormat, DataType dataType) {
-		glClearTexImage(ID, 0, Utils::ToGLDataFormat(dataFormat), Utils::ToGLDataType(dataType), pixels);
-	}
+	void Texture::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {
+		const auto& texSize = m_Internals->Size;
 
-	void Texture::Internals::Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
-	                               DataType dataType) {
-		CheckSubRegionSize(offset, size);
-
-		glClearTexSubImage(ID, 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::ToGLDataFormat(dataFormat),
-		                   Utils::ToGLDataType(dataType), pixels);
-	}
-
-	void Texture::Internals::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {
-		ENGINE_ASSERT(Size.Width >= size.Width + offset.X && Size.Height >= size.Height + offset.Y);
-		if (Size.Width < size.Width + offset.X || Size.Height < size.Height + offset.Y)
+		ENGINE_ASSERT(texSize.Width >= size.Width + offset.X && texSize.Height >= size.Height + offset.Y);
+		if (texSize.Width < size.Width + offset.X || texSize.Height < size.Height + offset.Y)
 			throw std::out_of_range("SubImage out of range");
 	}
 
-	void Texture::Internals::SetParameter(uint32_t name, int parameter) {
-		glTextureParameteri(ID, name, parameter);
+	void Texture::SetParameter(uint32_t name, int parameter) {
+		glTextureParameteri(static_cast<GLuint>(*this), name, parameter);
 	}
 
-	void Texture::Internals::GetParameter(uint32_t name, int* parameter) const {
-		glGetTextureParameteriv(ID, name, parameter);
+	void Texture::GetParameter(uint32_t name, int* parameter) const {
+		glGetTextureParameteriv(static_cast<GLuint>(*this), name, parameter);
+	}
+
+	Texture::Internals::Internals(bool multisampled) : ID(Utils::GenTexture(multisampled)), Multisampled(multisampled) {
+	}
+
+	Texture::Internals::~Internals() {
+		if (ID != 0)
+			glDeleteTextures(1, &ID);
 	}
 
 	void Texture::Internals::Invalidate() {
-		glDeleteTextures(1, &ID);
+		if (ID != 0)
+			glDeleteTextures(1, &ID);
 		ID = Utils::GenTexture(Multisampled);
 	}
 }

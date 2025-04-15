@@ -16,7 +16,7 @@ namespace Engine {
 
 		~Texture() = default;
 
-		operator IDType() const { return m_Internals->ID; }
+		explicit operator IDType() const { return m_Internals->ID; }
 		IDType ID() const { return m_Internals->ID; }
 
 		void GenerateMipMaps() const;
@@ -60,9 +60,13 @@ namespace Engine {
 		Ref<Image> ToImage() const;
 		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
 
+		void Clear(const Color& color);
 		void Clear(int value = 0);
-		void Clear(void* pixels = nullptr, DataFormat dataFormat = DataFormat::RGBA, DataType dataType = DataType::Int);
-		void Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType);
+		void Clear(const void* pixels = nullptr, DataFormat dataFormat = DataFormat::RGBA, DataType dataType = DataType::Int);
+
+		void Clear(const Color& color, const Vector2i& offset, const Vector2u& size);
+		void Clear(int value, const Vector2i& offset, const Vector2u& size);
+		void Clear(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType);
 
 		void GetPixels(void* pixels, uint32_t size) const;
 
@@ -89,16 +93,29 @@ namespace Engine {
 		}
 
 		void Resize(const Vector2u& size);
+		void ResizeNoCopy(const Vector2u& size);
 
 		ImageFormat ImageFormat() const { return m_Internals->ImageFormat; }
 	protected:
 		Texture(bool multisampled = false);
 
-		static bool CheckSize(const Vector2u& size);
+		static inline bool CheckSize(const Vector2u& size);
 
 		void CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
-
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
+
+		void ReAlloc(const Vector2u& size);
+		void Allocate(uint32_t samples = 1, const Vector2u& size = {1, 1}, enum ImageFormat imageFormat = ImageFormat::RGBA8);
+
+		void UploadPixels(const void* pixels, const Vector2u& size = {}, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
+
+		void GetImage(void* pixels, uint32_t size) const;
+		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }) const;
+
+		void CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const;
+
+		void SetParameter(uint32_t name, int parameter);
+		void GetParameter(uint32_t name, int* parameter) const;
 
 	private:
 		struct InternalWrapping {
@@ -122,28 +139,13 @@ namespace Engine {
 
 			InternalWrapping Wrapping;
 			InternalFilter Filter;
-			enum ImageFormat ImageFormat;
+			enum ImageFormat ImageFormat = ImageFormat::RGBA8;
+			uint32_t ImageFormatGL = 0;
 
 			std::string Label = {};
 
 			Internals(bool multisampled = false);
 			~Internals();
-
-			void Allocate(const Vector2u& size, enum ImageFormat imageFormat);
-			void Allocate(const Vector2u& size, uint32_t samples, enum ImageFormat imageFormat);
-
-			void SendImage(const void* pixels, const Vector2u& size, const Vector2i& offset = {0, 0}, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
-
-			void GetImage(void* pixels, uint32_t size) const;
-			void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = {0, 0});
-
-			void Clear(void* pixels, DataFormat dataFormat, DataType dataType);
-			void Clear(void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType);
-
-			void CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const;
-
-			void SetParameter(uint32_t name, int parameter);
-			void GetParameter(uint32_t name, int* parameter) const;
 
 			void Invalidate();
 		};

@@ -403,11 +403,11 @@ namespace Engine {
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel) {
-		glNamedFramebufferTexture(*this, attachmentPoint, *attachment, static_cast<GLint>(mipLevel));
+		glNamedFramebufferTexture(*this, attachmentPoint, static_cast<GLuint>(*attachment), static_cast<GLint>(mipLevel));
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
-		glNamedFramebufferTextureLayer(*this, attachmentPoint, *attachment, static_cast<GLint>(mipLevel),
+		glNamedFramebufferTextureLayer(*this, attachmentPoint, static_cast<GLuint>(*attachment), static_cast<GLint>(mipLevel),
 		                               static_cast<GLint>(layer));
 	}
 
