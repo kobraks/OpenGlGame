@@ -18,6 +18,30 @@ namespace Engine {
 
 			return name;
 		}
+
+		void inline CheckIfValidSize(const Vector2u& size) {
+			const uint32_t maxSize = Texture::GetMaxSize();
+			const uint32_t buffSize = size.Width * size.Height;
+
+			ENGINE_ASSERT(buffSize != 0)
+			ENGINE_ASSERT(size.Width < maxSize && size.Height < maxSize);
+
+			if (buffSize == 0)
+				throw std::runtime_error("Texture dimensions cannot be 0");
+
+
+			if (size.Width > maxSize || size.Height > maxSize) {
+				throw std::out_of_range(fmt::format(
+					"Unable to create texture with size of {}, texture is too big. Maximum texture size is {}", size,
+					maxSize));
+			}
+		}
+
+		void inline CheckSubRegionSize(const Vector2i& offset, const Vector2u& size, const Vector2u& texSize) {
+			ENGINE_ASSERT(texSize.Width >= (size.Width + offset.X) && texSize.Height >= (size.Height + offset.Y));
+			if (texSize.Width < (size.Width + offset.X) || texSize.Height < (size.Height + offset.Y))
+				throw std::out_of_range("SubImage out of range");
+		}
 	}
 
 	void Texture::Resize(const Vector2u& size) {
@@ -36,6 +60,10 @@ namespace Engine {
 			m_Internals->Invalidate();
 			ReAlloc(size);
 		}
+	}
+
+	void Texture::Invalidate() {
+		m_Internals->Invalidate();
 	}
 
 	Texture::Texture(bool multisampled) : m_Internals(MakeRef<Internals>(multisampled)) {
@@ -80,8 +108,7 @@ namespace Engine {
 			typeUsed = *dataType;
 		}
 
-		if (CheckSize(size))
-			texture->CreateTexture(samples, size, imageFormat, pixels, typeUsed, formatUsed);
+		texture->CreateTexture(samples, size, imageFormat, pixels, typeUsed, formatUsed);
 
 		texture->SetLabel(label);
 
@@ -92,8 +119,7 @@ namespace Engine {
 		const std::string& label) {
 		auto texture = Ref<Texture>(new Texture());
 
-		if (CheckSize(image->Size()))
-			texture->CreateTexture(samples, image->Size(), imageFormat, image->GetPixels().data());
+		texture->CreateTexture(samples, image->Size(), imageFormat, image->GetPixels().data());
 
 		texture->SetLabel(label);
 
@@ -102,7 +128,7 @@ namespace Engine {
 
 
 	void Texture::SetLabel(const std::string& label) {
-		if (label.empty())
+		if (label.empty() && m_Internals->Label.empty())
 			return;
 
 		glObjectLabel(GL_TEXTURE, static_cast<GLuint>(*this), -1, label.data());
@@ -140,7 +166,7 @@ namespace Engine {
 
 	void Texture::SetFilters(FilterMode min, FilterMode mag) {
 		if (IsMultisampled()) {
-			LOG_GL_WARN("Cannot specify filters on multisampled texture");
+			LOG_GL_WARN("Cannot set filters on multisampled texture");
 			return;
 		}
 
@@ -150,7 +176,7 @@ namespace Engine {
 
 	void Texture::SetMinFilter(FilterMode filter) {
 		if (IsMultisampled()) {
-			LOG_GL_WARN("Cannot specify min filter on multisampled texture");
+			LOG_GL_WARN("Cannot set min filter on multisampled texture");
 			return;
 		}
 
@@ -160,12 +186,12 @@ namespace Engine {
 
 	void Texture::SetMagFilter(FilterMode filter) {
 		if (IsMultisampled()) {
-			LOG_GL_WARN("Cannot specify mag filter on multisampled texture");
+			LOG_GL_WARN("Cannot set mag filter on multisampled texture");
 			return;
 		}
 
 		if (filter > FilterMode::Linear) {
-			LOG_ENGINE_WARN("Only possible values for mag filter is Nearest or Linear");
+			LOG_ENGINE_ERROR("Only possible values for mag filter is Nearest or Linear");
 			return;
 		}
 
@@ -217,7 +243,7 @@ namespace Engine {
 
 	void Texture::Clear(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
 	                    DataType dataType) {
-		CheckSubRegionSize(offset, size);
+		Utils::CheckSubRegionSize(offset, size, Size());
 
 		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, Utils::ToGLDataFormat(dataFormat),
 			Utils::ToGLDataType(dataType), pixels);
@@ -278,28 +304,11 @@ namespace Engine {
 		return static_cast<uint32_t>(size);
 	}
 
-	bool Texture::CheckSize(const Vector2u& size) {
-		const uint32_t maxSize = GetMaxSize();
-		const uint32_t texSize = size.Width * size.Height;
-
-		ENGINE_ASSERT(texSize != 0)
-		ENGINE_ASSERT(size.Width < maxSize && size.Height < maxSize);
-
-		if (texSize == 0)
-			throw std::runtime_error("Texture dimensions cannot be 0");
-
-
-		if (size.Width > maxSize || size.Height > maxSize) {
-			throw std::out_of_range(fmt::format(
-				"Unable to create texture with size of {}, texture is too big. Maximum texture size is {}", size,
-				maxSize));
-		}
-
-		return true;
-	}
-
 	void Texture::CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
 	                            const void* pixels, DataType dataType, DataFormat dataFormat) {
+
+		Utils::CheckIfValidSize(size);
+
 		Allocate(samples, size, ImageFormat);
 		if (!IsMultisampled()) {
 			SetFilters(FilterMode::Nearest, FilterMode::Nearest);
@@ -342,7 +351,7 @@ namespace Engine {
 		if (!pixels)
 			return;
 
-		CheckSubRegionSize(offset, size);
+		Utils::CheckSubRegionSize(offset, size, Size());
 		glTextureSubImage2D(static_cast<GLuint>(*this), 0, offset.X, offset.Y, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), Utils::ToGLDataFormat(format), Utils::ToGLDataType(dataType), pixels);
 	}
 
@@ -369,18 +378,10 @@ namespace Engine {
 		if (bufSize < gettingSize)
 			throw std::out_of_range("Buffer is too small");
 
-		CheckSubRegionSize(offset, size);
+		Utils::CheckSubRegionSize(offset, size, Size());
 
 		glGetTextureSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, size.Width, size.Height, 0, GL_RGBA8, GL_UNSIGNED_BYTE,
 			static_cast<GLsizei>(bufSize), pixels);
-	}
-
-	void Texture::CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const {
-		const auto& texSize = m_Internals->Size;
-
-		ENGINE_ASSERT(texSize.Width >= size.Width + offset.X && texSize.Height >= size.Height + offset.Y);
-		if (texSize.Width < size.Width + offset.X || texSize.Height < size.Height + offset.Y)
-			throw std::out_of_range("SubImage out of range");
 	}
 
 	void Texture::SetParameter(uint32_t name, int parameter) {
@@ -403,5 +404,7 @@ namespace Engine {
 		if (ID != 0)
 			glDeleteTextures(1, &ID);
 		ID = Utils::GenTexture(Multisampled);
+		if (!Label.empty())
+			glObjectLabel(GL_TEXTURE, ID, -1, Label.data());
 	}
 }

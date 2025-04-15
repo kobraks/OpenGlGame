@@ -82,6 +82,7 @@ namespace Engine {
 		void Swap(Texture& to);
 
 		bool IsSRGB() const { return m_Internals->ImageFormat == ImageFormat::SRGB8 || m_Internals->ImageFormat == ImageFormat::SRGB8A8 || m_Internals->ImageFormat == ImageFormat::SRGBA; }
+		bool IsValid() const { return m_Internals && m_Internals->ID != 0; }
 
 		std::string_view Label() const { return m_Internals->Label; }
 
@@ -96,10 +97,10 @@ namespace Engine {
 		void ResizeNoCopy(const Vector2u& size);
 
 		ImageFormat ImageFormat() const { return m_Internals->ImageFormat; }
+
+		void Invalidate();
 	protected:
 		Texture(bool multisampled = false);
-
-		static inline bool CheckSize(const Vector2u& size);
 
 		void CreateTexture(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
@@ -111,8 +112,6 @@ namespace Engine {
 
 		void GetImage(void* pixels, uint32_t size) const;
 		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }) const;
-
-		void CheckSubRegionSize(const Vector2i& offset, const Vector2u& size) const;
 
 		void SetParameter(uint32_t name, int parameter);
 		void GetParameter(uint32_t name, int* parameter) const;

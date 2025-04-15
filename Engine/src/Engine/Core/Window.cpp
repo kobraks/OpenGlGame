@@ -25,6 +25,7 @@ namespace Engine {
 	}
 
 	Window::~Window() {
+		m_Context = nullptr;
 		Shutdown();
 		if(m_Cursor)
 			m_Cursor->Invalidate();
