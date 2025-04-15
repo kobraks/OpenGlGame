@@ -31,6 +31,9 @@ namespace Engine {
 
 	UUID::UUID() : m_ID(GetRandom<UUID::Type>()){}
 
+	UUID::UUID(Type id) : m_ID(id) {
+	}
+
 	std::istream &operator>>(std::istream &in, UUID &rth) {
 		std::string number;
 		in >> number;

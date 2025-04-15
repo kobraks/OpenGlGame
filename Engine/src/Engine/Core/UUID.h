@@ -67,3 +67,4 @@ struct std::hash<Engine::UUID> {
 		return boost::multiprecision::hash_value(static_cast<Engine::UUID::Type>(i));
 	}
 };
+
