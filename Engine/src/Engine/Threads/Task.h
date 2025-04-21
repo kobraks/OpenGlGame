@@ -1,6 +1,7 @@
 #pragma once
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Time.h"
+#include "Engine/Threads/Cancellation.h"
 
 #include <functional>
 
@@ -24,6 +25,7 @@ namespace Engine {
 		TaskTag Tag = TaskTag::None;
 
 		std::optional<uint32_t> ThreadAffinity = std::nullopt;
+		CancellationToken Token;
 
 		std::move_only_function<void()> Job;
 

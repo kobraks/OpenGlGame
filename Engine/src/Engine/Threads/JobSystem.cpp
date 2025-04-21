@@ -3,6 +3,7 @@
 
 namespace Engine {
 	Scope<ThreadPool> s_ThreadPool = nullptr;
+	thread_local std::optional<uint32_t> s_CurrentThreadAffinity = std::nullopt;
 
 	void JobSystem::Init(uint32_t threadCount) {
 		s_ThreadPool = MakeScope<ThreadPool>(threadCount);
@@ -14,6 +15,18 @@ namespace Engine {
 
 	ThreadPool& JobSystem::Get() {
 		return *s_ThreadPool;
+	}
+
+	void JobSystem::Pause() {
+		s_ThreadPool->Pause();
+	}
+
+	void JobSystem::Resume() {
+		s_ThreadPool->Resume();
+	}
+
+	bool JobSystem::IsPaused() {
+		return s_ThreadPool->IsPaused();
 	}
 
 	void JobSystem::Stop() {
@@ -42,5 +55,22 @@ namespace Engine {
 
 	uint64_t JobSystem::CountTasksByTag(TaskTag tag) {
 		return s_ThreadPool->CountTasksByTag(tag);
+	}
+
+	bool JobSystem::HasThreadAffinity() {
+		return s_CurrentThreadAffinity.has_value();
+	}
+
+	std::optional<uint32_t> JobSystem::GetCurrentAffinity() {
+		return s_CurrentThreadAffinity;
+	}
+
+	ScopedThreadAffinity::ScopedThreadAffinity(uint32_t threadIndex) {
+		Previous = s_CurrentThreadAffinity;
+		s_CurrentThreadAffinity = threadIndex;
+	}
+
+	ScopedThreadAffinity::~ScopedThreadAffinity() {
+		s_CurrentThreadAffinity = Previous;
 	}
 }

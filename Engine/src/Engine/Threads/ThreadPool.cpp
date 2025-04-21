@@ -18,6 +18,19 @@ namespace Engine {
 		Stop();
 	}
 
+	void ThreadPool::Pause() {
+		LOG_ENGINE_INFO("ThreadPool paused");
+		m_Paused = true;
+	}
+
+	void ThreadPool::Resume() {
+		if (m_Paused) {
+			m_Paused = false;
+			m_PauseCondition.notify_all();
+			LOG_ENGINE_INFO("ThreadPool resumed");
+		}
+	}
+
 	void ThreadPool::Stop() {
 		m_Run = false;
 
@@ -30,6 +43,10 @@ namespace Engine {
 	}
 
 	void ThreadPool::Flush() {
+		if (m_Paused) {
+			LOG_ENGINE_WARN("Flush called while thread pool is paused — this may hang.");
+			return;
+		}
 		std::unique_lock lock(m_Mutex);
 
 		m_Condition.wait(lock, [&]() {
@@ -44,6 +61,10 @@ namespace Engine {
 	}
 
 	bool ThreadPool::Flush(const Time& timeout) {
+		if (m_Paused) {
+			LOG_ENGINE_WARN("Flush called while thread pool is paused — this may hang.");
+			return false;
+		}
 		std::unique_lock lock(m_Mutex);
 
 		return m_Condition.wait_for(lock, timeout.ToDuration(), [&]() {
@@ -58,6 +79,11 @@ namespace Engine {
 	}
 
 	void ThreadPool::Flush(TaskTag tag) {
+		if (m_Paused) {
+			LOG_ENGINE_WARN("Flush called while thread pool is paused — this may hang.");
+			return;
+		}
+
 		std::unique_lock lock(m_Mutex);
 
 		m_Condition.wait(lock, [&]() {
@@ -67,6 +93,11 @@ namespace Engine {
 	}
 
 	bool ThreadPool::Flush(TaskTag tag, const Time& timeout) {
+		if (m_Paused) {
+			LOG_ENGINE_WARN("Flush called while thread pool is paused — this may hang.");
+			return false;
+		}
+
 		std::unique_lock lock(m_Mutex);
 
 		return m_Condition.wait_for(lock, timeout.ToDuration(), [&]() {
@@ -84,7 +115,7 @@ namespace Engine {
 		return std::ranges::any_of(m_PerThreadQueue, [](const TaskQueue& queue) { return !queue.empty(); });
 	}
 
-	uint32_t ThreadPool::CountTasksByTag(TaskTag tag) const {
+	uint64_t ThreadPool::CountTasksByTag(TaskTag tag) const {
 		std::lock_guard lock(m_Mutex);
 
 		const auto tagPre = [tag](const Task& task) { return task.Tag == tag; };
@@ -96,7 +127,7 @@ namespace Engine {
 			count += countQueue(queue);
 		}
 
-		return static_cast<uint32_t>(count);
+		return count;
 	}
 
 	bool ThreadPool::HasPendigTag(TaskTag tag) const {
@@ -125,7 +156,6 @@ namespace Engine {
 		Task task = std::move(queue.back());
 		queue.pop_back();
 		return task;
-
 	}
 
 	std::pair<Task, bool> ThreadPool::FindTask(TaskQueue& queue) {
@@ -150,6 +180,7 @@ namespace Engine {
 				std::unique_lock lock(m_Mutex);
 
 				m_Condition.wait(lock, [&]() { return !m_Run || !queue.empty() || !m_GlobalTaskQueue.empty(); });
+				m_PauseCondition.wait(lock, [&]() { return !m_Paused || !m_Run; });
 
 				if (!m_Run) break;
 
@@ -159,6 +190,12 @@ namespace Engine {
 			}
 
 			if (found) {
+				if (task.Token && task.Token.IsCancelled()) {
+					++m_TaskCancelled;
+					m_Condition.notify_all();
+					continue;
+				}
+
 				{
 					std::lock_guard lock(m_InFlightMutex);
 					m_InFlightTag[task.Tag]++;
