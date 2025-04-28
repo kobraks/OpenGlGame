@@ -15,7 +15,6 @@
 #include "Imgui.h"
 #include "Engine/ImGui/ImGuiUtils.h"
 
-
 namespace {
 	constexpr Engine::Color SelectTextColor(spdlog::level::level_enum level) {
 		switch(level) {

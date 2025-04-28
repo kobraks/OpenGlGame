@@ -12,6 +12,8 @@ namespace Engine {
 	public:
 		using ValueType = T;
 
+		static_assert(std::is_arithmetic_v<T>, "Vector2 requires an arithmetic type (int, float, etc).");
+
 		union {
 			ValueType X;
 			ValueType Width;
@@ -27,8 +29,8 @@ namespace Engine {
 		constexpr Vector2(const ValueType scalar) : Vector2(scalar, scalar) {}
 		constexpr Vector2() : X{}, Y{} {}
 
-		template <typename = std::enable_if<std::is_same_v<float, T>>>
-		Vector2(const glm::vec2 v) : Vector2(v.x, v.y) {}
+		//template <typename = std::enable_if_t<std::is_floating_point_v<T>>>
+		Vector2(const glm::vec2& v) requires std::is_floating_point_v<T> : Vector2(v.x, v.y) {}
 
 		constexpr bool operator==(const Vector2<T> &vec) const {
 			return X == vec.X && Y == vec.Y;
@@ -38,8 +40,8 @@ namespace Engine {
 			return !(*this == vec);
 		}
 
-		template<typename = std::enable_if<std::is_same_v<float, T>>>
-		Vector2& operator=(const glm::vec2 v) {
+		//template<typename = std::enable_if_t<std::is_floating_point_v<T>>>
+		Vector2& operator=(const glm::vec2& v) requires std::is_floating_point_v<T> {
 			X = v.x;
 			Y = v.y;
 
@@ -55,7 +57,7 @@ namespace Engine {
 			switch(i) {
 				case 0: return X;
 				case 1: return Y;
-				default: throw std::out_of_range("");
+				default: throw std::out_of_range("Vector2 index out of range (expected 0 or 1)");
 			}
 		}
 
@@ -63,7 +65,7 @@ namespace Engine {
 			switch(i) {
 				case 0: return X;
 				case 1: return Y;
-				default: throw std::out_of_range("");
+				default: throw std::out_of_range("Vector2 index out of range (expected 0 or 1)");
 			}
 		}
 	};
@@ -78,7 +80,42 @@ namespace Engine {
 	typedef Vector2<double> Vector2d;
 }
 
-#define ENGINE_VECTOR2_FMT(type)\
+
+//Structured binding: auto [x, y] = vec;
+namespace std {
+	template<typename T>
+	struct tuple_size<Engine::Vector2<T>> : std::integral_constant<std::size_t, 2> {};
+
+	template<typename T>
+	struct tuple_element<0, Engine::Vector2<T>> {
+		using type = T;
+	};
+
+	template<typename T>
+	struct tuple_element<1, Engine::Vector2<T>> {
+		using type = T;
+	};
+}
+
+namespace Engine {
+	template<std::size_t I, typename T>
+	constexpr T& get(Vector2<T>& v) noexcept {
+		static_assert(I < 2, "Index out of bounds for Vector2");
+
+		if constexpr (I == 0) return v.X;
+		else return v.Y;
+	}
+
+	template<std::size_t I, typename T>
+	constexpr const T& get(const Vector2<T>& v) noexcept {
+		static_assert(I < 2, "Index out of bounds for Vector2");
+
+		if constexpr (I == 0) return v.X;
+		else return v.Y;
+	}
+}
+
+#define ENGINE_VECTOR2_FMT_IMPL(type)\
 template<>\
 struct fmt::formatter<Engine::type>: public fmt::nested_formatter<Engine::type::ValueType> { \
 	auto format(const Engine::type &vec, format_context& ctx) const { \
@@ -88,9 +125,23 @@ struct fmt::formatter<Engine::type>: public fmt::nested_formatter<Engine::type::
 	} \
 };
 
-ENGINE_VECTOR2_FMT(Vector2u);
-ENGINE_VECTOR2_FMT(Vector2ul);
-ENGINE_VECTOR2_FMT(Vector2i);
-ENGINE_VECTOR2_FMT(Vector2il);
-ENGINE_VECTOR2_FMT(Vector2f);
-ENGINE_VECTOR2_FMT(Vector2d);
+ENGINE_VECTOR2_FMT_IMPL(Vector2u);
+ENGINE_VECTOR2_FMT_IMPL(Vector2ul);
+ENGINE_VECTOR2_FMT_IMPL(Vector2i);
+ENGINE_VECTOR2_FMT_IMPL(Vector2il);
+ENGINE_VECTOR2_FMT_IMPL(Vector2f);
+ENGINE_VECTOR2_FMT_IMPL(Vector2d);
+
+namespace std {
+	//Hash support
+	template<typename T>
+	struct hash<Engine::Vector2<T>> {
+		size_t operator()(const Engine::Vector2<T>& v) const noexcept {
+			size_t h1 = std::hash<T>{}(v.X);
+			size_t h2 = std::hash<T>{}(v.Y);
+
+			//Combine hashes
+			return h1 ^ (h2 << 1);
+		}
+	};
+}

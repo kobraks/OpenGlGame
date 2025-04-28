@@ -4,6 +4,8 @@
 
 #include <fmt/format.h>
 #include <glm/vec4.hpp>
+#include <glm/common.hpp>
+#include <glm/exponential.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -62,57 +64,21 @@ namespace Engine {
 		constexpr uint8_t& operator[](const std::ptrdiff_t i) {
 			ENGINE_ASSERT(i >= 0 && i < static_cast<std::ptrdiff_t>(Size()));
 
-			switch(i) {
-				case 0:
-					return R;
-				case 1:
-					return G;
-				case 2:
-					return B;
-				case 3:
-					return A;
-				default:
-					throw std::out_of_range("Out of range");
-			}
+			return (&R)[i];
 		}
 
 		constexpr uint8_t const& operator[](std::ptrdiff_t i) const {
 			ENGINE_ASSERT(i >= 0 && i < static_cast<std::ptrdiff_t>(Size()));
 
-			switch(i) {
-				case 0:
-					return R;
-				case 1:
-					return G;
-				case 2:
-					return B;
-				case 3:
-					return A;
-				default:
-					throw std::out_of_range("Out of range");
-			}
+			return (&R)[i];
 		}
 
 		constexpr uint8_t& operator[](Channel channel) {
-			switch (channel) {
-			case Channel::Red: return R;
-			case Channel::Green: return G;
-			case Channel::Blue: return B;
-			case Channel::Alpha: return A;
-			}
-			ENGINE_ASSERT(false);
-			throw std::out_of_range("Out of range");
+			return (&R)[static_cast<int>(channel)];
 		}
 
 		constexpr const uint8_t& operator[](Channel channel) const {
-			switch (channel) {
-			case Channel::Red: return R;
-			case Channel::Green: return G;
-			case Channel::Blue: return B;
-			case Channel::Alpha: return A;
-			}
-			ENGINE_ASSERT(false);
-			throw std::out_of_range("Out of range");
+			return (&R)[static_cast<int>(channel)];
 		}
 
 		uint8_t GetChannel(Channel ch) const {
@@ -137,6 +103,15 @@ namespace Engine {
 			case Channel::Alpha:
 				Code = (Code & ~AlphaFlag) | (value << AlphaBit); break;
 			}
+		}
+
+		std::string ToString() const {
+			const uint32_t formatted = (static_cast<uint32_t>(R) << RedBit) |
+				(static_cast<uint32_t>(G) << GreenBit) |
+				(static_cast<uint32_t>(B) << BlueBit) |
+				(static_cast<uint32_t>(A) << AlphaBit);
+
+			return fmt::format("{:#010X}", formatted);
 		}
 
 		static const Color Black;
@@ -188,7 +163,31 @@ namespace Engine {
 		constexpr auto ToFloat() const {
 			return TranslateToFloat(Code);
 		}
+
+		static constexpr Color Lerp(const Color& a, const Color& b, float t) {
+			const glm::vec4 af = a.ToFloat();
+			const glm::vec4 bf = b.ToFloat();
+
+			const glm::vec4 result = glm::mix(af, bf, t);
+			return Color(result);
+		}
+
+		constexpr Color GrayScale() const {
+			const float gray = 0.299f * static_cast<float>(R) / 255.0f + 0.587f * static_cast<float>(G) / 255.0f + 0.114f * static_cast<float>(B) / 255.0f;
+			return { gray, gray, gray, static_cast<float>(A) / 255.0f };
+		}
+
+		constexpr glm::vec4 ToLinear() const {
+			const auto c = ToFloat();
+			return glm::vec4{ glm::pow(c.r, 2.2f), glm::pow(c.g, 2.2f), glm::pow(c.b, 2.2f), c.a };
+		}
+
+		constexpr static Color FromLinear(glm::vec4 color) {
+			color = glm::vec4(glm::pow(color.r, 1.0f / 2.2f), glm::pow(color.g, 1.0f / 2.2f), glm::pow(color.b, 1.0f / 2.2f), color.a);
+			return Color(color);
+		}
 	};
+	static_assert(sizeof(Color) == sizeof(uint32_t), "Color must be 4 bytes");
 
 	constexpr bool operator==(const Color &lth, const Color &rth) {
 		return lth.Code == rth.Code;
@@ -199,11 +198,48 @@ namespace Engine {
 	}
 }
 
+namespace std {
+	template<>
+	struct tuple_size<Engine::Color> : std::integral_constant<std::size_t, 4>{};
+
+	template<std::size_t N>
+	struct tuple_element<N, Engine::Color> {
+		using type = uint8_t;
+	};
+}
+
+namespace Engine {
+	template<std::size_t N>
+	constexpr uint8_t& get(Color& color) noexcept {
+		static_assert(N < 4, "Color index out of range");
+
+		if constexpr (N == 0) return color.R;
+		else if constexpr (N == 1) return color.G;
+		else if constexpr (N == 2) return color.B;
+		else return color.A;
+	}
+
+	template<std::size_t N>
+	constexpr const uint8_t& get(const Color& color) noexcept {
+		static_assert(N < 4, "Color index out of range");
+
+		if constexpr (N == 0) return color.R;
+		else if constexpr (N == 1) return color.G;
+		else if constexpr (N == 2) return color.B;
+		else return color.A;
+	}
+}
 
 template <>
 struct fmt::formatter<Engine::Color>: formatter<uint32_t> {
 	auto format(const Engine::Color &c, format_context &ctx) const {
-		return format_to(ctx.out(), "{:#010X}", c.Code);
+
+		const uint32_t formatted = (static_cast<uint32_t>(c.R) << c.RedBit) |
+			(static_cast<uint32_t>(c.G) << c.GreenBit) |
+			(static_cast<uint32_t>(c.B) << c.BlueBit) |
+			(static_cast<uint32_t>(c.A) << c.AlphaBit);
+
+		return fmt::format("{:#010X}", formatted);
 	}
 
 	constexpr auto parse(format_parse_context &ctx) {

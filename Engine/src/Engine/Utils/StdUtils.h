@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/Core/Base.h"
+#include "Engine/Core/UUID.h"
 
 #include <string>
 #include <string_view>

@@ -34,6 +34,18 @@ namespace Engine {
 	UUID::UUID(Type id) : m_ID(id) {
 	}
 
+	UUID& UUID::operator=(const UUID& rth) {
+		m_ID = rth.m_ID;
+
+		return *this;
+	}
+
+	UUID& UUID::operator=(const Type& rth) {
+		m_ID = rth;
+
+		return *this;
+	}
+
 	std::istream &operator>>(std::istream &in, UUID &rth) {
 		std::string number;
 		in >> number;
