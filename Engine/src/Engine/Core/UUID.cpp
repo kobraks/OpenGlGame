@@ -46,6 +46,13 @@ namespace Engine {
 		return *this;
 	}
 
+	UUID UUID::FromString(const std::string& name) {
+		std::hash<std::string> hasher;
+		const std::string salt = "ENIGNE_ASSET_SALT";
+
+		return UUID(Combine<UUID::Type>(hasher(name), hasher(name + salt)));
+	}
+
 	std::istream &operator>>(std::istream &in, UUID &rth) {
 		std::string number;
 		in >> number;

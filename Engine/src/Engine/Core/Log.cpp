@@ -50,7 +50,7 @@ namespace Engine {
 	}
 
 	static void CleanOldLogs(const std::string& folderPath, size_t maxFiles) {
-		if (!fs::exists(folderPath) || fs::is_directory(folderPath))
+		if (!fs::exists(folderPath) || !fs::is_directory(folderPath))
 			return;
 
 		std::vector<fs::directory_entry> logFiles;

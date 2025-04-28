@@ -58,6 +58,18 @@ namespace Engine {
 		uint32_t Height() const { return m_Height; }
 		Vector2u Size() const { return {m_Width, m_Height }; }
 
+		void FlipVertical();
+
+		void Resize(const Vector2u& size);
+		void Resize(uint32_t newWidth, uint32_t newHeight);
+
+		void Crop(const Vector2u& start, const Vector2u& size);
+		void Crop(uint32_t startX, uint32_t startY, uint32_t width, uint32_t height);
+
+		Color GetAverageColor() const;
+
+		void Fill(const Color& color);
+
 		const auto &GetPixels() const { return m_Pixels; }
 
 		Color& GetPixel(const Vector2u &pos) { return GetPixel(pos.X, pos.Y); }

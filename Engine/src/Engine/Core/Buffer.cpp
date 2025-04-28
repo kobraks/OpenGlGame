@@ -14,6 +14,22 @@ namespace Engine {
 	Buffer::Buffer(const Buffer &other, SizeType size) : Data(other.Data),
 	                                                   Size(size) {}
 
+	Buffer::Buffer(const Buffer& buffer) = default;
+	Buffer& Buffer::operator=(const Buffer& buffer) = default;
+
+	Buffer::Buffer(Buffer&& buffer) noexcept {
+		Data = std::exchange(buffer.Data, nullptr);
+		Size = std::exchange(buffer.Size, 0);
+	}
+
+	Buffer& Buffer::operator=(Buffer&& buffer) noexcept {
+		Release();
+		Data = std::exchange(buffer.Data, nullptr);
+		Size = std::exchange(buffer.Size, 0);
+
+		return *this;
+	}
+
 	Buffer Buffer::Copy(const Buffer &other) {
 		Buffer buffer;
 
@@ -35,12 +51,12 @@ namespace Engine {
 	void Buffer::Allocate(SizeType size) {
 		delete[] static_cast<uint8_t*>(Data);
 		Data = nullptr;
+		Size = size;
 
 		if(size == 0)
 			return;
 
 		Data = new uint8_t[size];
-		Size = size;
 	}
 
 	void Buffer::Release() {
@@ -65,7 +81,7 @@ namespace Engine {
 	}
 
 	void Buffer::Write(const void *data, SizeType size, SizeType offset) {
-		ENGINE_ASSERT(offset + size <= Size, "Buffer overflow!");
+		ENGINE_ASSERT((offset + size) <= Size, "Buffer overflow!");
 
 		memcpy(static_cast<uint8_t*>(Data) + offset, data, size);
 	}
@@ -75,10 +91,18 @@ namespace Engine {
 	}
 
 	uint8_t & Buffer::operator[](SizeType idx) {
+		ENGINE_ASSERT(idx < Size);
+		if (idx >= Size)
+			throw std::out_of_range("Buffer: index out of range.");
+
 		return static_cast<uint8_t*>(Data)[idx];
 	}
 
 	uint8_t Buffer::operator[](SizeType idx) const {
+		ENGINE_ASSERT(idx < Size);
+		if (idx >= Size)
+			throw std::out_of_range("Buffer: index out of range.");
+
 		return static_cast<uint8_t*>(Data)[idx];
 	}
 }

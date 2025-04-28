@@ -12,6 +12,12 @@ namespace Engine {
 		Buffer(void *data, SizeType size);
 		Buffer(const Buffer &other, SizeType size);
 
+		Buffer(const Buffer& buffer);
+		Buffer& operator=(const Buffer& buffer);
+
+		Buffer(Buffer&& buffer) noexcept;
+		Buffer& operator=(Buffer&& buffer) noexcept;
+
 		static Buffer Copy(const Buffer &other);
 		static Buffer Copy(const void *data, SizeType size);
 
@@ -24,7 +30,7 @@ namespace Engine {
 		T& Read(SizeType offset = 0);
 
 		template <typename T>
-		const T& Read(SizeType offset = 0);
+		const T& Read(SizeType offset = 0) const;
 
 		uint8_t* ReadBytes(SizeType size, SizeType offset = 0) const;
 		void Write(const void *data, SizeType size, SizeType offset = 0);
@@ -46,8 +52,8 @@ namespace Engine {
 	}
 
 	template <typename T>
-	const T& Buffer::Read(SizeType offset) {
-		return *static_cast<T*>(static_cast<uint8_t*>(Data) + offset);
+	const T& Buffer::Read(SizeType offset) const {
+		return *static_cast<const T*>(static_cast<const uint8_t*>(Data) + offset);
 	}
 
 	template <typename T>

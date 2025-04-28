@@ -76,12 +76,11 @@ namespace Engine {
 	Image::Image(const Vector2u &size, const glm::vec4 *pixels) : Image(size.Width, size.Height, pixels) {}
 	Image::Image(const Vector2u &size, const float *pixels) : Image(size.Width, size.Height, pixels) {}
 
-	Image::Image(const Image &img) noexcept{
-		*this = img;
+	Image::Image(const Image &img) noexcept : m_Pixels(img.m_Pixels), m_Width(img.m_Width), m_Height(img.m_Height){
 	}
 
-	Image::Image(Image &&img) noexcept{
-		*this = std::move(img);
+	Image::Image(Image &&img) noexcept : m_Pixels(std::move(img.m_Pixels)), m_Width(img.m_Width), m_Height(img.m_Height){
+		img.m_Width = img.m_Height = 0;
 	}
 
 	void Image::Create(uint32_t width, uint32_t height, const Color &background) {
@@ -186,7 +185,7 @@ namespace Engine {
 		                                 );
 
 		for(uint32_t i = 0; i < width; ++i)
-			for(uint32_t j = 0; j < height; ++i) {
+			for(uint32_t j = 0; j < height; ++j) {
 				RGBQUAD c;
 
 				const auto pixel = pixels[i + j * width];
@@ -199,20 +198,85 @@ namespace Engine {
 				FreeImage_SetPixelColor(handler, i, j, &c);
 			}
 
-		bool result = false;
-		if (result = FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0); result) {
-			ENGINE_ASSERT(false);
-		}
+		bool result = FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0);
+		ENGINE_ASSERT(result);
 
 		FreeImage_Unload(handler);
 		return result;
+	}
+
+	void Image::FlipVertical() {
+		for (uint32_t y = 0; y < m_Height / 2; ++y) {
+			for (uint32_t x = 0; x < m_Width; ++x) {
+				std::swap(GetPixel(x, y), GetPixel(x, m_Height - 1 - y));
+			}
+		}
+	}
+
+	void Image::Resize(const Vector2u& size) {
+		Resize(size.Width, size.Height);
+	}
+
+	void Image::Resize(uint32_t newWidth, uint32_t newHeight) {
+		if (newWidth == m_Width && newHeight == m_Height)
+			return;
+
+		std::vector<Color> newPixels(newWidth * newHeight);
+
+		for (uint32_t y = 0; y < newHeight; ++y) {
+			for (uint32_t x = 0; x < newWidth; ++x) {
+				const uint32_t srcX = x * m_Width / newWidth;
+				const uint32_t srcY = y * m_Height / newHeight;
+				newPixels[x + y * newWidth] = GetPixel(srcX, srcY);
+			}
+		}
+
+		m_Width = newWidth;
+		m_Height = newHeight;
+		m_Pixels = std::move(newPixels);
+	}
+
+	void Image::Crop(const Vector2u& start, const Vector2u& size) {
+		Crop(start.X, start.Y, size.Width, size.Height);
+	}
+
+	void Image::Crop(uint32_t startX, uint32_t startY, uint32_t width, uint32_t height) {
+		ENGINE_ASSERT(startX + width < m_Width && startY + height < m_Height);
+		if (startX + width >= m_Width || startY + height > m_Height)
+			throw std::out_of_range("Crop parameters are out of range.");
+
+		std::vector<Color> newPixels(width * height);
+
+		for (uint32_t y = 0; y < height; ++y) {
+			for (uint32_t x = 0; x < width; ++x) {
+				newPixels[x + y * width] = GetPixel(startX + x, startY + y);
+			}
+		}
+
+		m_Width = width;
+		m_Height = height;
+		m_Pixels = std::move(newPixels);
+	}
+
+	Color Image::GetAverageColor() const {
+		glm::vec4 total(0.f);
+		for (const auto& pixel : m_Pixels) {
+			total += pixel.ToFloat();
+		}
+
+		total /= static_cast<float>(m_Pixels.size());
+		return Color(total);
+	}
+
+	void Image::Fill(const Color& color) {
+		std::ranges::fill(m_Pixels, color);
 	}
 
 	Color& Image::GetPixel(uint32_t x, uint32_t y) {
 		ENGINE_ASSERT(x < m_Width && y < m_Height);
 
 		if(x >= m_Width || y >= m_Height)
-			throw std::out_of_range("Put of range");
+			throw std::out_of_range("Out of range");
 
 		return m_Pixels[x + y * m_Width];
 	}
@@ -221,7 +285,7 @@ namespace Engine {
 		ENGINE_ASSERT(x < m_Width && y < m_Height);
 
 		if(x >= m_Width || y >= m_Height)
-			throw std::out_of_range("Put of range");
+			throw std::out_of_range("Out of range");
 
 		return m_Pixels[x + y * m_Width];
 	}
@@ -238,6 +302,8 @@ namespace Engine {
 
 		m_Pixels = std::move(img.m_Pixels);
 
+		img.m_Width = img.m_Height = 0;
+
 		return *this;
 	}
 
@@ -253,6 +319,9 @@ namespace Engine {
 	void Image::LoadToMemory(void *buffer) {
 		auto image = static_cast<FIBITMAP*>(buffer);
 		auto converted = FreeImage_ConvertTo32Bits(image);
+
+		if (!converted)
+			throw std::runtime_error("Failed to convert image to 32 bit");
 
 		Prepare(FreeImage_GetWidth(converted), FreeImage_GetHeight(converted));
 

@@ -38,6 +38,8 @@ namespace Engine {
 			return std::strong_ordering::less;
 		}
 
+		static UUID FromString(const std::string& name);
+
 		friend std::istream &operator>>(std::istream &in, UUID &rth);
 	private:
 		Type m_ID;
