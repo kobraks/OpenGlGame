@@ -35,7 +35,11 @@ namespace Engine {
 		explicit Rect(const Rect<U> &rect) : X(static_cast<T>(rect.X)),
 		                                     Y(static_cast<T>(rect.Y)),
 		                                     Width(static_cast<T>(rect.Width)),
-		                                     Height(static_cast<T>(rect.Hegiht)) {}
+		                                     Height(static_cast<T>(rect.Height)) {}
+
+		constexpr bool Contains(const Vector2<T>& point) const {
+			return Contains(point.X, point.Y);
+		}
 
 		constexpr bool Contains(ValueType x, ValueType y) const {
 			const ValueType minX = std::min(X, X + Width);
@@ -44,24 +48,70 @@ namespace Engine {
 			const ValueType minY = std::min(Y, Y + Height);
 			const ValueType maxY = std::max(Y, Y + Height);
 
-			return (X >= minX) && (x < maxX) && (y >= minY) && (y < maxY);
+			return (x >= minX) && (x < maxX) && (y >= minY) && (y < maxY);
 		}
 
-		Vector2<T> GetSize() const { return {Width, Height}; }
-		Vector2<T> GetPos() const { return {X, Y}; }
+		constexpr Vector2<T> GetSize() const { return {Width, Height}; }
+		constexpr Vector2<T> GetPos() const { return {X, Y}; }
 
-		void SetSize(const Vector2<T> &size) {
+		constexpr void SetSize(const Vector2<T> &size) {
 			Width  = size.Width;
 			Height = size.Height;
 		}
 
-		void SetPos(const Vector2<T> &pos) {
+		constexpr void SetPos(const Vector2<T> &pos) {
 			X = pos.X;
 			Y = pos.Y;
 		}
 
 		constexpr bool Contains(const Vector2<T> &point) {
 			return Contains(point.X, point.Y);
+		}
+
+		constexpr Vector2<T> GetCenter() const {
+			return { X + Width / static_cast<T>(2), Y + Height / static_cast<T>(2) };
+		}
+
+		constexpr Rect<T> Normalized() const {
+			T newX = X;
+			T newY = Y;
+			T newW = Width;
+			T newH = Height;
+
+			if (Width < T(0)) {
+				newX += Width;
+				newW = -Width;
+			}
+			if (Height < T(0)) {
+				newY += Height;
+				newH = -Height;
+			}
+
+			return Rect{ newX, newY, newW, newH };
+		}
+
+		constexpr void Offset(const Vector2<T>& offset) {
+			X += offset.X;
+			Y += offset.Y;
+		}
+
+		constexpr void Offset(ValueType dx, ValueType dy) {
+			X += dx;
+			Y += dy;
+		}
+
+		constexpr void Inflate(const Vector2<T>& amount) {
+			X -= amount.X;
+			Y -= amount.Y;
+			Width += amount.X * static_cast<T>(2);
+			Height += amount.Y * static_cast<T>(2);
+		}
+
+		constexpr void Inflate(ValueType dx, ValueType dy) {
+			X -= dx;
+			Y -= dy;
+			Width += dx * static_cast<T>(2);
+			Height += dy * static_cast<T>(2);
 		}
 
 		constexpr std::optional<Rect<T>> FindIntersection(const Rect<T> &rect) const {

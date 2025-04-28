@@ -17,13 +17,16 @@
 #define GAME_ENABLE_PROFILING
 
 #ifdef GAME_WINDOWS_PLATFORM
-#define GAME_DEBUGBREAK() __debugbreak()
+#define GAME_DEBUGBREAK_GAME()   __debugbreak()
+#define GAME_DEBUGBREAK_ENGINE() __debugbreak()
 #elif defined(GAME_LINUX_PLATFORM)
 #include <signal.h>
-#define GAME_DEBUGBREAK() raise(SIGTRAP)
+#define GAME_DEBUGBREAK_GAME()   raise(SIGTRAP)
+#define GAME_DEBUGBREAK_ENGINE() raise(SIGTRAP)
 #else
 #error "Platform doesn't support debugbreak"
 #endif //GAME_WINDOWS_PLATFORM
 #else
-#define GAME_DEBUGBREAK()
+#define GAME_DEBUGBREAK_GAME()
+#define GAME_DEBUGBREAK_ENGINE()
 #endif //GAME_DEBUG
