@@ -11,7 +11,9 @@
 namespace Engine {
 	class Log {
 	public:
-		static void Init(bool consoleOuput = true, bool FileOutput= true);
+		static void Init(bool consoleOutput = true, bool fileOutput= true);
+		static void CleanAllLogDirectories(size_t maxFilesPerDirectory = 10);
+		static void Shutdown();
 
 		static Ref<spdlog::logger> GetScriptLogger() { return s_ScriptLogger; }
 		static Ref<spdlog::logger> GetApplicationLogger() { return s_ApplicationLogger; }
