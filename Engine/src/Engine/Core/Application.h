@@ -3,8 +3,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Vector2.h"
 #include "Engine/Core/Window.h"
-#include "Engine/Core/Time.h"
-#include "Engine/Core/Clock.h"
+#include "Engine/Core/TimeStepController.h"
 
 #include "Engine/Layers/LayerStack.h"
 #include "Engine/Layers/ImGuiLayer.h"
@@ -80,12 +79,15 @@ namespace Engine {
 
 		const ApplicationSpecification& GetSpecification() const { return m_Specification; }
 
+		TimeStepController& GetTimeStepController() { return m_TimeStepController; }
+		const TimeStepController& GetTimeStepController() const { return m_TimeStepController; }
+
 		std::string_view GetCommandLineArg(size_t i) const { return m_Arguments[i]; }
 		size_t GetCommandLineArgCount() const { return m_Arguments.size(); }
 		const std::vector<std::string> GetCommandLineArgs() const { return m_Arguments; }
 
-		Time GetFrameTime() const { return m_FrameTime; }
-		Time GetElapsedTime() const { return m_Clock.GetElapsedTime(); }
+		Time GetFrameTime() const { return m_TimeStepController.GetFrameDelta(); }
+		Time GetElapsedTime() const { return m_AppClock.GetElapsedTime(); }
 
 		static Application& Get() { return *s_Instance; }
 
@@ -102,22 +104,21 @@ namespace Engine {
 		Scope<Window> m_Window;
 
 		ApplicationSpecification m_Specification;
+		TimeStepController m_TimeStepController;
 
 		LayerStack m_LayerStack;
 
 		int m_ExitCode = 0;
 
 		bool m_Run = true;
-		bool m_Minimalized = false;
+		bool m_Minimized = false;
 
 		Ref<ImGuiLayer> m_ImGuiLayer = nullptr;
 
-		uint64_t m_MaxUpdates = 60;
-		uint32_t m_UpdateRate = static_cast<uint32_t>(1000.f / 60.f);
+		// uint64_t m_MaxUpdates = 60;
+		// uint32_t m_UpdateRate = static_cast<uint32_t>(1000.f / 60.f);
 
-		Time m_FrameTime = Time::Zero;
-
-		Clock m_Clock;
+		Clock m_AppClock;
 
 		std::vector<std::string> m_Arguments;
 

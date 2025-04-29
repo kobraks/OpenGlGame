@@ -19,7 +19,7 @@
 namespace Engine {
 	Application *Application::s_Instance = nullptr;
 
-	Application::Application(const ApplicationSpecification &specs) : m_Specification(specs) {
+	Application::Application(const ApplicationSpecification &specs) : m_Specification(specs), m_TimeStepController(static_cast<uint32_t>(1000.f / 60.f), 60) {
 		s_Instance = this;
 	}
 
@@ -71,15 +71,17 @@ namespace Engine {
 	int Application::Run() {
 		glfwSetTime(0);
 
-		m_Clock.Restart();
+		m_AppClock.Restart();
 
-		Clock clock;
-		Clock updateClock;
-		uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
+		// Clock frameClock;
+		// Clock updateClock;
+		// uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
+
+		m_TimeStepController.Restart();
 
 		while(m_Run) {
-			if(!m_Minimalized) {
-				m_FrameTime = clock.Restart();
+			if(!m_Minimized) {
+				m_TimeStepController.BeginFrame();
 
 				for(auto &layer : m_LayerStack) {
 					layer->OnUpdate();
@@ -87,12 +89,9 @@ namespace Engine {
 
 				uint64_t updates = 0;
 
-				int32_t updateTime = updateClock.GetElapsedTime().AsMilliseconds();
-				while((updateTime - updateNext) >= m_UpdateRate && updates++ < m_MaxUpdates) {
+				while(m_TimeStepController.ShouldFixedUpdate()) {
 					for(auto &layer : m_LayerStack)
-						layer->OnConstUpdate(Milliseconds(static_cast<int32_t>(m_UpdateRate)));
-
-					updateNext += m_UpdateRate;
+						layer->OnConstUpdate(Milliseconds(m_TimeStepController.GetUpdateRate()));
 				}
 
 				m_ImGuiLayer->Begin();
@@ -134,8 +133,8 @@ namespace Engine {
 		                m_Window->IsFullscreen()
 		               );
 
-		LOG_ENGINE_INFO("Max updates: {}", m_MaxUpdates);
-		LOG_ENGINE_INFO("Update rate: {}", m_UpdateRate);
+		LOG_ENGINE_INFO("Max updates: {}", m_TimeStepController.GetMaxUpdates());
+		LOG_ENGINE_INFO("Update rate: {}", m_TimeStepController.GetUpdateRate());
 
 		PushOverlay(m_ImGuiLayer = MakeRef<ImGuiLayer>());
 		PushOverlay(MakeRef<StatisticLayer>());
@@ -151,11 +150,11 @@ namespace Engine {
 
 	bool Application::OnWindowResize(const WindowResizeEvent &event) {
 		if(event.GetWidth() == 0 || event.GetHeight() == 0) {
-			m_Minimalized = true;
+			m_Minimized = true;
 			return false;
 		}
 
-		m_Minimalized = false;
+		m_Minimized = false;
 		Renderer::OnWindowResize(event.GetWidth(), event.GetHeight());
 
 		return false;
