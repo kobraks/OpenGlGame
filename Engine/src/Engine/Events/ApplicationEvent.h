@@ -76,6 +76,34 @@ namespace Engine {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
+	class MonitorAddedEvent : public Event {
+	public:
+		MonitorAddedEvent(const std::string& name, uint32_t index) : m_Name(name), m_Index(index) {}
+
+		uint32_t GetIndex() const { return m_Index; }
+		std::string_view GetMonitorName() const { return m_Name; }
+
+		EVENT_CLASS_TYPE(MonitorAdded)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+	private:
+		std::string m_Name;
+		uint64_t m_Index;
+	};
+
+	class MonitorRemovedEvent : public Event {
+	public:
+		MonitorRemovedEvent(const std::string& name) : m_Name(name) {}
+
+		std::string_view GetMonitorName() const { return m_Name; }
+
+		EVENT_CLASS_TYPE(MonitorRemoved)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+
+	private:
+		std::string m_Name;
+	};
+
 	class AppTickEvent: public Event {
 	public:
 		AppTickEvent() = default;

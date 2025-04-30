@@ -17,6 +17,9 @@ namespace Engine {
 		WindowLostFocus,
 		WindowMoved,
 
+		MonitorAdded,
+		MonitorRemoved,
+
 		AppTick,
 		AppUpdate,
 		AppRender,

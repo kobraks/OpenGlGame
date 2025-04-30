@@ -42,6 +42,9 @@ namespace Engine {
 		Vector2i GetPosition() const { return m_Pos; }
 		IntRect GetWorkArea() const {return m_WorkArea; }
 
+		Vector2f GetDPI() const;
+		Vector2f GetContentScale() const;
+
 		void *GetUserData() const { return m_UserData; }
 
 		template<typename T>
@@ -49,8 +52,14 @@ namespace Engine {
 
 		void *GetNativeHandle() const { return m_NativePointer; }
 
-		VideoMode* GetVideoMode() const { return m_VideoMode; }
+		const VideoMode* GetVideoMode() const { return m_VideoMode; }
 		const std::vector<Scope<VideoMode>> &GetVideoModes() const;
+
+		const VideoMode* FindClosestMode(const Vector2u& size, int refreshRate) const;
+
+		int32_t GetCurrentRefreshRate() const { return m_VideoMode ? m_VideoMode->RefreshRate : 0; }
+
+		std::vector<int32_t> GetAvailableRefreshRates(const Vector2u& resolution) const;
 
 		void SetUserData(void *userData);
 		void SetGamma(float gamma);
@@ -58,15 +67,21 @@ namespace Engine {
 
 		GammaRamp GetGammaRamp() const;
 
+		bool IsSameMonitor(const Monitor& other) const { return m_NativePointer == other.m_NativePointer; }
+		bool IsPrimary() const { return this == GetPrimary(); }
+
 		static Monitor* GetPrimary();
 		static Monitor* Get(const size_t monitor);
-		static const std::vector<Scope<Monitor>> &GetAll();
-
+		static const std::vector<Scope<Monitor>>& GetAll();
 	private:
 		Monitor() = default;
 
 		static Scope<Monitor> Create(void *pointer);
 		static void Populate();
+		static void RegisterCallbacks();
+		static void Refresh();
+		static Monitor* AddNewMonitor(void* pointer);
+		static void RemoveMonitor(void* pointer);
 
 		std::string m_Name;
 
@@ -84,5 +99,6 @@ namespace Engine {
 		static std::vector<Scope<Monitor>> s_Monitors;
 		static Monitor* s_PrimaryMonitor;
 		static bool s_Initialized;
+		static bool s_RegisteredCallbacks;
 	};
 }
