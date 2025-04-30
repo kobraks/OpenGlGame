@@ -81,6 +81,8 @@ namespace Engine {
 		void SetPixel(const Vector2u &pos, const Color &color) { SetPixel(pos.X, pos.Y, color); }
 		void SetPixel(uint32_t x, uint32_t y, const Color &color);
 
+		std::unique_ptr<uint8_t[]> CopyAsRGBA8() const;
+
 		Image& operator=(Image&& img) noexcept;
 		Image& operator=(const Image &img) noexcept;
 

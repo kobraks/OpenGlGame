@@ -294,6 +294,21 @@ namespace Engine {
 		GetPixel(x, y) = color;
 	}
 
+	std::unique_ptr<uint8_t[]> Image::CopyAsRGBA8() const {
+		auto data = std::make_unique<uint8_t[]>(m_Pixels.size() * 4);
+
+		for (size_t i = 0; i < m_Pixels.size(); ++i) {
+			const Color& c = m_Pixels[i];
+
+			data[i * 4 + 0] = c.R;
+			data[i * 4 + 1] = c.G;
+			data[i * 4 + 2] = c.B;
+			data[i * 4 + 3] = c.A;
+		}
+
+		return data;
+	}
+
 	Image& Image::operator=(Image &&img) noexcept {
 		Clear();
 
