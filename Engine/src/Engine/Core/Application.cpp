@@ -11,6 +11,8 @@
 #include "Engine/Events/KeyEvent.h"
 #include "Engine/Events/MouseEvent.h"
 
+#include "Engine/Devices/Mouse.h"
+
 #include <GLFW/glfw3.h>
 
 #include "imgui.h"
@@ -77,6 +79,7 @@ namespace Engine {
 		while(m_Run) {
 			if(!m_Minimized) {
 				m_TimeStepController.BeginFrame();
+				Mouse::UpdateDelta();
 
 				for(auto &layer : m_LayerStack) {
 					layer->OnUpdate();

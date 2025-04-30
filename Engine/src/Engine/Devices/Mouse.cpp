@@ -4,6 +4,7 @@
 #include "Engine/Core/Window.h"
 #include "Engine/Core/Application.h"
 
+#include "Engine/Utils/LuaUtils.h"
 
 #include <GLFW/glfw3.h>
 
@@ -37,6 +38,9 @@ namespace {
 }
 
 namespace Engine {
+	Vector2f Mouse::s_Delta{ 0.0f, 0.0f };
+	Vector2f Mouse::s_LastPosition{ 0.0f, 0.0f };
+
 	bool Mouse::IsButtonPressed(MouseCode button, const Window &relative) {
 		return glfwGetMouseButton(relative.GetNativeHandle<GLFWwindow>(), button) == GLFW_PRESS;
 	}
@@ -65,6 +69,37 @@ namespace Engine {
 		return GetPosition().Y;
 	}
 
+	void Mouse::UpdateDelta() {
+		Vector2f current = GetPosition();
+		s_Delta.X = current.X - s_LastPosition.X;
+		s_Delta.Y = current.Y - s_LastPosition.Y;
+		s_LastPosition = current;
+	}
+
+	void Mouse::LockCursor(bool enabled) {
+		auto& window = Application::Get().GetWindow();
+		window.SetCursorMode(enabled ? CursorMode::Disabled : CursorMode::Normal);
+	}
+
+	void Mouse::ShowCursor(bool show) {
+		auto& window = Application::Get().GetWindow();
+		window.SetCursorMode(show ? CursorMode::Normal : CursorMode::Hidden);
+	}
+
+	bool Mouse::IsCursorVisible() {
+		const auto& window = Application::Get().GetWindow();
+		return window.GetCursorMode() == CursorMode::Normal;
+	}
+
+	void Mouse::ToggleCursorLock() {
+		LockCursor(!IsCursorLocked());
+	}
+
+	bool Mouse::IsCursorLocked() {
+		const auto& window = Application::Get().GetWindow();
+		return window.GetCursorMode() == CursorMode::Disabled;
+	}
+
 	Vector2f Mouse::GetPosition(const Window &relative) {
 		double x, y;
 		glfwGetCursorPos(relative.GetNativeHandle<GLFWwindow>(), &x, &y);
@@ -84,6 +119,8 @@ namespace Engine {
 	}
 
 	void Mouse::RegisterLua(sol::state &lua) {
+		auto mouseTable = lua.create_named_table("Mouse");
+
 		auto buttonEnum = lua.create_table_with();
 		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button0));
 		buttonEnum.set(ENUM_TO_STRING_ENUM(MouseButton, Button1));
@@ -101,9 +138,15 @@ namespace Engine {
 		mouseMetaTable.set("IsButtonPressed", ::IsButtonPressed);
 		mouseMetaTable.set("GetPosition", ::GetMousePosition);
 		mouseMetaTable.set("SetPosition", ::SetMousePosition);
-		mouseMetaTable.set("Buttons", buttonEnum);
 
-		//TODO
+		mouseTable.set_function("LockCursor", &Mouse::LockCursor);
+		mouseTable.set_function("ToggleCursorLock", &Mouse::ToggleCursorLock);
+		mouseTable.set_function("IsCursorLocked", &Mouse::IsCursorLocked);
+		mouseTable.set_function("IsCursorVisible", &Mouse::IsCursorVisible);
+		mouseTable.set_function("ShowCursor", &Mouse::ShowCursor);
+
+		SetAsReadOnlyTable(mouseMetaTable["Buttons"], buttonEnum, Deny);
+		SetAsReadOnlyTable(mouseTable, mouseMetaTable, Deny);
 	}
 
 }

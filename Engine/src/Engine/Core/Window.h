@@ -7,8 +7,6 @@
 #include <string_view>
 #include <functional>
 
-#include "Rect.h"
-
 namespace Engine {
 	struct VideoMode;
 
@@ -18,18 +16,17 @@ namespace Engine {
 	class GraphicContext;
 
 	enum class InputMode {
-		//From GLFW
-		StickyKeys = 0x00033002,
-		StickyMouseButtons = 0x00033003,
-		LockKeyModes = 0x00033004,
-		RawMouseMotion = 0x00033005
+		StickyKeys,
+		StickyMouseButtons,
+		LockKeyModes,
+		RawMouseMotion
 	};
 
 	enum class CursorMode {
-		//From GLFW
-		Normal = 0x00034001,
-		Hidden  = 0x00034002,
-		Disabled = 0x00034003
+		Normal,
+		Hidden,
+		Disabled,
+		Captured
 	};
 
 	struct WindowProperties {

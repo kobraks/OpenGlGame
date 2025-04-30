@@ -32,6 +32,21 @@ namespace Engine {
 		static float GetX();
 		static float GetY();
 
+		static void UpdateDelta();
+		static Vector2f GetDelta() { return s_Delta; }
+
+		static void LockCursor(bool enabled);
+		static void ShowCursor(bool show);
+
+		static bool IsCursorLocked();
+		static bool IsCursorVisible();
+
+		static void ToggleCursorLock();
+
 		static void RegisterLua(sol::state &lua);
+	private:
+		static Vector2f s_LastPosition;
+		static Vector2f s_Delta;
+
 	};
 }
