@@ -54,6 +54,12 @@ namespace Engine {
 		constexpr Vector2<T> GetSize() const { return {Width, Height}; }
 		constexpr Vector2<T> GetPos() const { return {X, Y}; }
 
+		constexpr ValueType GetWidth() const { return Width; }
+		constexpr ValueType GetHeight() const { return Height; }
+
+		constexpr ValueType GetX() const { return X; }
+		constexpr ValueType GetY() const { return Y; }
+
 		constexpr void SetSize(const Vector2<T> &size) {
 			Width  = size.Width;
 			Height = size.Height;
