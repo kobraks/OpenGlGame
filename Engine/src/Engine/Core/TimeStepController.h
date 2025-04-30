@@ -15,14 +15,17 @@ namespace Engine {
 		uint32_t GetUpdateRate() const { return m_UpdateRate; }
 		void SetUpdateRate(uint32_t rateMs) { m_UpdateRate = rateMs; }
 
+		Time GetFixedDeltaTime() const { return Milliseconds(static_cast<int32_t>(m_UpdateRate)); }
+		Time GetScaledFixedDeltaTime() const { return GetFixedDeltaTime() * m_TimeScale; }
+
 		uint64_t GetMaxUpdates() const { return m_MaxUpdates; }
 		void SetMaxUpdates(uint64_t maxUpdates) { m_MaxUpdates = maxUpdates; }
 
-		void SetTimeScale(float scale) { m_TimeScale = scale; }
+		void SetTimeScale(float scale);
 		float GetTimeScale() const { return m_TimeScale; }
 
 		bool IsPaused() const { return m_Paused; }
-		void Resume() { m_Paused = false; }
+		void Resume();
 		void TogglePause() { m_Paused = !m_Paused; }
 		void StepOneFrame() { if (m_Paused) m_StepOneFrame = true; }
 

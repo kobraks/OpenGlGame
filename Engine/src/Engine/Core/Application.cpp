@@ -72,11 +72,6 @@ namespace Engine {
 		glfwSetTime(0);
 
 		m_AppClock.Restart();
-
-		// Clock frameClock;
-		// Clock updateClock;
-		// uint32_t updateNext = updateClock.GetElapsedTime().AsMilliseconds();
-
 		m_TimeStepController.Restart();
 
 		while(m_Run) {
@@ -87,11 +82,9 @@ namespace Engine {
 					layer->OnUpdate();
 				}
 
-				uint64_t updates = 0;
-
 				while(m_TimeStepController.ShouldFixedUpdate()) {
 					for(auto &layer : m_LayerStack)
-						layer->OnConstUpdate(Milliseconds(m_TimeStepController.GetUpdateRate()));
+						layer->OnConstUpdate(m_TimeStepController.GetScaledFixedDeltaTime());
 				}
 
 				m_ImGuiLayer->Begin();

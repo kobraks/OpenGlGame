@@ -40,6 +40,20 @@ namespace Engine {
 		return false;
 	}
 
+	void TimeStepController::SetTimeScale(float scale) {
+		m_TimeScale = scale;
+
+		if (scale == 0.0f)
+			m_Paused = true;
+		else if (m_Paused)
+			m_Paused = false;
+	}
+
+	void TimeStepController::Resume() {
+		if (m_TimeScale != 0.0f)
+			m_Paused = false;
+	}
+
 	void TimeStepController::Restart() {
 		m_UpdateCount = 0;
 		m_NextUpdate = 0;

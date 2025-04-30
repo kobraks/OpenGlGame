@@ -115,9 +115,6 @@ namespace Engine {
 
 		Ref<ImGuiLayer> m_ImGuiLayer = nullptr;
 
-		// uint64_t m_MaxUpdates = 60;
-		// uint32_t m_UpdateRate = static_cast<uint32_t>(1000.f / 60.f);
-
 		Clock m_AppClock;
 
 		std::vector<std::string> m_Arguments;
