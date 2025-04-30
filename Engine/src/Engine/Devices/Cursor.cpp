@@ -28,18 +28,18 @@ namespace Engine {
 	}
 
 	Vector2u Cursor::GetPosition() const {
-		ENGINE_ASSERT(!IsAttached());
+		ENGINE_ASSERT(IsAttached());
 		if(!IsAttached())
 			throw std::runtime_error("Trying to access unattached cursor");
 
 		double x, y;
 
 		glfwGetCursorPos(m_Window->GetNativeHandle<GLFWwindow>(), &x, &y);
-		return Vector2u(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
+		return {static_cast<uint32_t>(x), static_cast<uint32_t>(y)};
 	}
 
 	void Cursor::SetPosition(const Vector2u &pos) {
-		ENGINE_ASSERT(!IsAttached());
+		ENGINE_ASSERT(IsAttached());
 		if(!IsAttached())
 			throw std::runtime_error("Trying to access unattached cursor");
 
@@ -50,24 +50,18 @@ namespace Engine {
 		return m_Window;
 	}
 
-	Cursor::Cursor(CursorType type) {
+	bool Cursor::IsActive() const {
+		return m_Window && m_Window->GetCursor() == this;
+	}
+
+	Cursor::Cursor(CursorType type) : m_Kind(CursorKind::System) {
 		Create(type);
 	}
 
-	Cursor::Cursor(Ref<Image> image, const Vector2i &hotspot) {
-		auto pixels = MakeScope<uint8_t[]>(image->Width() * image->Height() * 4);
+	Cursor::Cursor(Ref<Image> image, const Vector2i &hotspot) : m_Kind(CursorKind::Custom) {
+		auto pixelData = image->CopyAsRGBA8();
 
-		size_t index = 0;
-		for(const auto &pixel : image->GetPixels()) {
-			pixels[index + 0] = pixel.R;
-			pixels[index + 1] = pixel.G;
-			pixels[index + 2] = pixel.B;
-			pixels[index + 3] = pixel.A;
-
-			index += 4;
-		}
-
-		GLFWimage gImage{static_cast<int>(image->Width()), static_cast<int>(image->Height()), pixels.get()};
+		GLFWimage gImage{static_cast<int>(image->Width()), static_cast<int>(image->Height()), pixelData.get()};
 		Create(&gImage, hotspot);
 	}
 
@@ -77,6 +71,16 @@ namespace Engine {
 
 	void Cursor::Invalidate() {
 		m_Window = nullptr;
+	}
+
+	void Cursor::Apply() {
+		if (!m_Window || !m_NativePointer)
+			return;
+
+		if (IsActive())
+			return;
+
+		glfwSetCursor(m_Window->GetNativeHandle<GLFWwindow>(), GetNativePointer<GLFWcursor>());
 	}
 
 	void Cursor::Create(CursorType type) {

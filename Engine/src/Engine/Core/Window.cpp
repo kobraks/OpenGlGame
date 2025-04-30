@@ -161,7 +161,7 @@ namespace Engine {
 		return m_Cursor.get();
 	}
 
-	void Window::SetCursor(Scope<Cursor> &cursor) {
+	void Window::SetCursor(Scope<Cursor> cursor) {
 		if(!cursor)
 			return;
 
@@ -170,6 +170,7 @@ namespace Engine {
 
 		m_Cursor = std::move(cursor);
 		m_Cursor->Attach(this);
+		m_Cursor->Apply();
 	}
 
 	void Window::Invalidate() {

@@ -101,7 +101,7 @@ namespace Engine {
 		void ToggleFullscreen(Monitor *monitor, const VideoMode *mode);
 
 		Cursor* GetCursor() const;
-		void SetCursor(Scope<Cursor> &cursor);
+		void SetCursor(Scope<Cursor> cursor);
 
 		void Invalidate();
 
