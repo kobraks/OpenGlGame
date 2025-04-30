@@ -10,6 +10,7 @@ extern Engine::Application* Engine::CreateApplication(const ApplicationCommandLi
 int main(int argc, char **argv) {
 	Engine::CrashReporter::Initialize("OpenGLGame", "0.1.0-alpha", "Engine 0.3.2-dev", "Debug"); //TODO TEMPLORARY
 	Engine::CrashReporter::CleanOldCrashReports();
+	Engine::Log::CleanAllLogDirectories();
 	Engine::Log::Init();
 
 	auto app = Engine::CreateApplication({static_cast<size_t>(argc), argv});
@@ -60,5 +61,6 @@ int main(int argc, char **argv) {
 		exitCode = -1;
 	}
 
+	Engine::Log::Shutdown();
 	return exitCode;
 }
