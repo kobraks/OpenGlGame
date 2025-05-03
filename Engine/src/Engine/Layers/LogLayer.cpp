@@ -140,7 +140,7 @@ namespace Engine {
 
 		if (m_Show) {
 			ImGui::SetNextWindowSize({700, 400}, ImGuiCond_FirstUseEver);
-			ImGui::Begin("Log", &m_Show, ImGuiWindowFlags_NoSavedSettings);
+			ImGui::Begin("Log", &m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
 
 			if (ImGui::CollapsingHeader("Options")) {
 				ToggleButton("Pause", &m_Pause);
