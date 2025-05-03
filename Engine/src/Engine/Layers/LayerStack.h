@@ -20,6 +20,15 @@ namespace Engine {
 		void PopLayer(LayerPtr layer);
 		void PopOverlay(LayerPtr overlay);
 
+		bool Contains(const LayerPtr& layer) const;
+
+		void Clear();
+
+		auto GetLayerInsertIndex() const { return m_LayerInsertIndex; }
+
+		const LayerList& GetLayer() const { return m_Layers; }
+		LayerList& GetLayer() { return m_Layers; }
+
 		LayerList::iterator begin() { return m_Layers.begin(); }
 		LayerList::iterator end() { return m_Layers.end(); }
 
@@ -34,6 +43,6 @@ namespace Engine {
 
 	private:
 		LayerList m_Layers;
-		size_t m_LayerInsertIndex = 0;
+		uint64_t m_LayerInsertIndex = 0;
 	};
 }

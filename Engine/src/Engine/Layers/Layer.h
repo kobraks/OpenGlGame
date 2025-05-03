@@ -20,8 +20,14 @@ namespace Engine {
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event &event) {}
 
+		bool IsOverlay() const { return m_IsOverlay; }
+
 		std::string_view GetName() const { return m_DebugName; }
 	private:
 		std::string m_DebugName;
+
+		bool m_IsOverlay = false;
+
+		friend class LayerStack;
 	};
 }
