@@ -27,8 +27,9 @@ namespace Engine {
 		bool m_Processed = true;
 		bool m_ShowMetric = true;
 
-		uint64_t m_ContUpdateCount = 0;
+		uint64_t m_ConstUpdateCount = 0;
 		uint64_t m_LastConstUpdateCount = 0;
+		uint64_t m_InstantUps = 0;
 
 		Clock m_Clock;
 	};
