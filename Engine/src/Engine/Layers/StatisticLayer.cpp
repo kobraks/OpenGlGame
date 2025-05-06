@@ -14,140 +14,66 @@
 #include <float.h>
 #include <imgui.h>
 
-namespace {
-	void DrawFrameBudgedBands(const ImVec2& topLeft, const ImVec2& graphSize, float targetRangeMs = 50.0f,
-	                          float budget60fps = 1000.f / 60.f, float budget30fps = (1000.f / 60.f) * 2,
-	                          ImU32 green = IM_COL32(0, 255, 0, 25), ImU32 yellow = IM_COL32(255, 255, 0, 25),
-	                          ImU32 red = IM_COL32(255, 0, 0, 25)) {
-		ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-		const float y60 = topLeft.y + graphSize.y * (1.f - budget60fps / targetRangeMs);
-		const float y30 = topLeft.y + graphSize.y * (1.f - budget30fps / targetRangeMs);
-		const float yBottom = topLeft.y + graphSize.y;
-
-		const float left = topLeft.x;
-		const float right = topLeft.x + graphSize.x;
-
-		drawList->AddRectFilled(ImVec2(left, topLeft.y), ImVec2(right, y60), green);
-
-		drawList->AddRectFilled(ImVec2(left, y60), ImVec2(right, y30), yellow);
-
-		drawList->AddRectFilled(ImVec2(left, y30), ImVec2(right, yBottom), red);
-
-		char label60[16], label30[16];
-		snprintf(label60, sizeof(label60), "60 FPS");
-		snprintf(label30, sizeof(label30), "30 FPS");
-
-		drawList->AddText(ImVec2(left + 4, y60 - ImGui::GetTextLineHeight()), IM_COL32_WHITE, label60);
-		drawList->AddText(ImVec2(left + 4, y30 - ImGui::GetTextLineHeight()), IM_COL32_WHITE, label30);
-
-	}
-}
+#include "Engine/Devices/Monitor.h"
 
 namespace Engine {
-	constexpr uint32_t BUFFER_SIZE = 256;
-
-	struct Statistics {
-		std::array<float, BUFFER_SIZE> History{};
-
-		bool DynamicScale = false;
-		float ScaleBy = 10.f;
-
-		uint32_t CurrentIndex = 0;
-		double TotalHistory = 0;
-		float MinValue = 0;
-		float MaxValue = 0;
-		float TargetValue = 1000.f / 60.f; //60FPS
-		Vector2f GraphScale{0.f, 50.f};
-
-		float GetAverage() const {
-			return CurrentIndex == 0 ? 0.f : static_cast<float>(TotalHistory / CurrentIndex);
-		}
-
-		Statistics() {
-			std::ranges::fill(History, 0.f);
-		}
-
-		void AddValue(float value) {
-			TotalHistory -= History[0];
-			std::move(History.begin() + 1, History.end(), History.begin());
-			History[BUFFER_SIZE - 1] = value;
-			TotalHistory += value;
-
-			CurrentIndex = std::min(BUFFER_SIZE, CurrentIndex + 1);
-
-			if (DynamicScale) {
-				GraphScale.X = std::min(MinValue, GraphScale.X) - ScaleBy;
-				GraphScale.Y = std::max(MaxValue, GraphScale.Y) + ScaleBy;
-			}
-		}
-
-		void Draw(std::string_view name) {
-			ImGui::PushID(name.data());
-
-			Text("{}", name);
-
-			constexpr float width = 0.f;
-			const float height = (ImGui::GetFontSize() + ImGui::GetStyle().ItemSpacing.y) * 3;
-
-			const ImVec2 graphTopLeft = ImGui::GetCursorScreenPos();
-
-			ImGui::PushID("Graph");
-			auto color = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
-			color.w = 0.125;
-			ImGui::PushStyleColor(ImGuiCol_FrameBg, color);
-
-			ImGui::PlotLines("", History.data(), BUFFER_SIZE, 0, nullptr, GraphScale.X, GraphScale.Y, {width, height});
-			const ImVec2 graphSize = ImGui::GetItemRectSize();
-			DrawFrameBudgedBands(graphTopLeft, graphSize, GraphScale.Y);
-
-			ImGui::PopStyleColor();
-			ImGui::PopID();
-
-			const float yRatio = 1.f - TargetValue / GraphScale.Y;
-			const float lineY = graphTopLeft.y + height * yRatio;
-
-			const ImVec2 p1{graphTopLeft.x, lineY};
-			const ImVec2 p2{graphTopLeft.x + graphSize.x, lineY};
-			ImGui::GetWindowDrawList()->AddLine(p1, p2, IM_COL32(255, 0, 0, 100), 1.5f);
-
-			MinValue = *std::ranges::min_element(History);
-			MaxValue = *std::ranges::max_element(History);
-
-			ImGui::SameLine();
-			ImGui::BeginGroup();
-
-			TextColored(ImVec4(0.3f, 1.0f, 0.3f, 1.0f), "Min: {}", MinValue);
-			TextColored(ImVec4(0.3f, 0.7f, 1.0f, 1.0f), "Avg: {}", GetAverage());
-			TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f), "Max: {}", MaxValue);
-
-			ImGui::EndGroup();
-			ImGui::PopID();
-		}
-	};
-
 	constexpr int s_Flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 		ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoInputs |
 		ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoFocusOnAppearing;
 
-	static Statistics s_FpsStat;
-	static Statistics s_UpsStat;
-
 	StatisticLayer::StatisticLayer() : Layer("StatisticLayer") {
-		s_UpsStat.TargetValue = 60.f;
-		s_UpsStat.GraphScale = Vector2f(0.f, 100.f);
-		s_UpsStat.DynamicScale = true;
+		constexpr float targetFPS60 = 60.f;
+		constexpr float targetFPS30 = 30.f;
+		constexpr float criticalCutoffFPS = 15.0f;
+
+		constexpr float budget60FPS = 1000.f / targetFPS60;
+		constexpr float budget30FPS = 1000.f / targetFPS30;
+		constexpr float budget15FPS = 1000.f / criticalCutoffFPS;
+
+		m_FrameGraph = MakeScope<StatisticGraph>("Frame Time");
+		m_UpdateGraph = MakeScope<StatisticGraph>("UPS");
+
+		m_FrameGraph->SetTarget(1000.f / 60.f);
+		m_FrameGraph->SetScale(0.0f, 50.f);
+		m_FrameGraph->SetUnit("ms");
+
+		m_FrameGraph->AddBand(budget60FPS, IM_COL32(0, 255, 0, 25), ">= 60 FPS");
+		m_FrameGraph->AddBand(budget30FPS, IM_COL32(255, 255, 0, 25), ">= 30 FPS");
+		m_FrameGraph->AddBand(50.f, IM_COL32(255, 0, 0, 25), "< 30 FPS");
+
+		m_UpdateGraph->SetTarget(60.f);
+		m_UpdateGraph->SetScale(0, 120);
+
+		m_GraphGroup.AddGraph("fps", m_FrameGraph);
+		m_GraphGroup.AddGraph("ups", m_UpdateGraph);
 	}
 
 	void StatisticLayer::OnAttach() {
 		Layer::OnAttach();
 	}
 
+	void StatisticLayer::OnUpdate() {
+		const auto& app = Application::Get();
+		const auto frameTime = app.GetFrameTime();
+
+		m_FrameGraph->AddValue(static_cast<float>(frameTime.AsMilliseconds()));
+		if (frameTime != Time::Zero && m_InstantUpdateCount > 0) {
+			m_UpdateGraph->AddValue(static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds());
+		}
+		else {
+			m_UpdateGraph->AddValue(0.f);
+		}
+
+		m_InstantUpdateCount = 0;
+
+		Layer::OnUpdate();
+	}
+
 
 	void StatisticLayer::OnConstUpdate(const Time& timeStep) {
 		++m_ConstUpdateCount;
-		++m_InstantUps;
+		++m_InstantUpdateCount;
 	}
 
 	void StatisticLayer::OnImGuiRender() {
@@ -172,13 +98,13 @@ namespace Engine {
 			m_Clock.Restart();
 		}
 
-		s_FpsStat.AddValue(static_cast<float>(frameTime.AsMilliseconds()));
-		s_UpsStat.AddValue(static_cast<float>(m_InstantUps / frameTime.AsSeconds()));
+		// m_FrameGraph->AddValue(static_cast<float>(frameTime.AsMilliseconds()));
+		// m_UpdateGraph->AddValue(static_cast<float>(m_InstantUps / frameTime.AsSeconds()));
 
 		Text("Elapsed Time: {:.2f}s", app.GetElapsedTime().AsSeconds());
 		Text("Is VSync on: {}", window.IsVSync());
 		Text("FPS: {:.2f}", 1.f / app.GetFrameTime().AsSeconds());
-		Text("UPS (instant): {:.2f}", static_cast<float>(m_InstantUps) / frameTime.AsSeconds()); 
+		Text("UPS (instant): {:.2f}", static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds()); 
 		Text("UPS (1s average): {:.2f}", static_cast<float>(m_LastConstUpdateCount)); 
 		Text("Frame Time: {}ms", app.GetFrameTime().AsMilliseconds());
 		Text("Updates: {}", m_LastConstUpdateCount);
@@ -186,10 +112,9 @@ namespace Engine {
 		Text("Window Position: {}", windowPos);
 		Text("Window Size: {}", windowSize);
 
-		s_FpsStat.Draw("Frame Time");
-		s_UpsStat.Draw("UPS");
+		// m_InstantUps = 0;
 
-		m_InstantUps = 0;
+		m_GraphGroup.DrawAll();
 
 		ImGui::End();
 	}
