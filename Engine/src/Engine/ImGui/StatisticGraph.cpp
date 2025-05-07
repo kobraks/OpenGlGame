@@ -55,7 +55,10 @@ namespace Engine {
 		auto graphSize = ImGui::GetItemRectSize();
 
 		DrawBands(graphTopLeft, graphSize, drawList);
-		DrawTargetLine(graphTopLeft, graphSize, drawList);
+
+		if (m_TargetVisible) {
+			DrawTargetLine(graphTopLeft, graphSize, drawList);
+		}
 
 		ImGui::EndGroup();
 		ImGui::PopID();
@@ -91,6 +94,14 @@ namespace Engine {
 			throw std::out_of_range("No band at given index");
 
 		return m_Bands[index];
+	}
+
+	void StatisticGraph::RemoveBand(size_t index) {
+		ENGINE_ASSERT(index < m_Bands.size());
+		if (index >= m_Bands.size())
+			throw std::out_of_range("No band at given index");
+
+		m_Bands.erase(m_Bands.begin() + index);
 	}
 
 	void StatisticGraph::ClearBands() {

@@ -31,7 +31,8 @@ namespace Engine {
 		void EnableDynamicScale(bool enable = true) { m_DynamicScale = enable; }
 		bool IsDynamicScale() const { return m_DynamicScale; }
 
-		void TargetVisible(bool enable = true)
+		void TargetVisible(bool enable = true) { m_TargetVisible = enable; }
+		bool IsTargetVisible() const { return m_TargetVisible; }
 
 		void SetScale(float minValue, float maxValue) { m_Scale = Vector2f{ minValue, maxValue }; }
 
@@ -39,6 +40,7 @@ namespace Engine {
 		const Band& GetBand(size_t index) const;
 		Band& GetBand(size_t index);
 		size_t GetBandCount() const { return m_Bands.size(); }
+		void RemoveBand(size_t index);
 		void ClearBands();
 
 		float GetAverage() const;
