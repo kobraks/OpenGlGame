@@ -86,6 +86,7 @@ namespace Engine {
 					layer->OnUpdate();
 				}
 
+				m_TimeStepController.BeginUpdates();
 				while(m_TimeStepController.ShouldFixedUpdate()) {
 					for(auto &layer : m_LayerStack)
 						layer->OnConstUpdate(m_TimeStepController.GetScaledFixedDeltaTime());
@@ -107,12 +108,24 @@ namespace Engine {
 
 	void Application::ProcessArgs(const ApplicationCommandLineArgs &args) {
 		LOG_ENGINE_TRACE("Processing command line args");
+
+		m_CmdParser = MakeScope<CommandLineParser>(args);
 		size_t i = 0;
 		for(const auto arg : args) {
-			m_Arguments.emplace_back(arg);
 			LOG_ENGINE_TRACE("{}: {}", i++, arg);
 		}
-		LOG_ENGINE_TRACE("Done");
+
+		if (m_CmdParser->Has("fullscreen"))
+			m_Specification.FullScreen = true;
+
+		if (m_CmdParser->Has("maximize"))
+			m_Specification.FullWindow = true;
+
+		const auto width = m_CmdParser->Get("width", "1027");
+		const auto height = m_CmdParser->Get("height", "768");
+		m_Specification.WindowSize = { std::stoul(width), std::stoul(height) };
+
+		LOG_ENGINE_TRACE("Done parsing command line options");
 	}
 
 	void Application::Initialize() {

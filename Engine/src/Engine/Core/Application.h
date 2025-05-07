@@ -4,6 +4,7 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Core/Window.h"
 #include "Engine/Core/TimeStepController.h"
+#include "Engine/Utils/CommandLineParser.h"
 
 #include "Engine/Layers/LayerStack.h"
 #include "Engine/Layers/ImGuiLayer.h"
@@ -13,37 +14,6 @@ int main(int arc, char **argv);
 namespace Engine {
 	class WindowResizeEvent;
 	class WindowCloseEvent;
-
-	struct ApplicationCommandLineArgs {
-		size_t Count = 0;
-		char **Args = nullptr;
-
-		std::string_view operator[](size_t index) const {
-			ENGINE_ASSERT(index < Count);
-
-			if (index >= Count) {
-				throw std::out_of_range("Out of range");
-			}
-
-			return Args[index];
-		}
-
-		std::string_view At(size_t index) const {
-			ENGINE_ASSERT(index < Count);
-
-			if (index >= Count) {
-				throw std::out_of_range("Out of range");
-			}
-
-			return Args[index];
-		}
-
-		char ** begin() { return Args; }
-		char ** end() { return Args + Count; }
-
-		char ** begin() const { return Args; }
-		char ** end() const { return Args + Count; }
-	};
 
 	struct ApplicationSpecification {
 		std::string Name = "Application";
@@ -82,9 +52,7 @@ namespace Engine {
 		TimeStepController& GetTimeStepController() { return m_TimeStepController; }
 		const TimeStepController& GetTimeStepController() const { return m_TimeStepController; }
 
-		std::string_view GetCommandLineArg(size_t i) const { return m_Arguments[i]; }
-		size_t GetCommandLineArgCount() const { return m_Arguments.size(); }
-		const std::vector<std::string> GetCommandLineArgs() const { return m_Arguments; }
+		CommandLineParser* GetCommandLineParser() const { return m_CmdParser.get(); }
 
 		Time GetFrameTime() const { return m_TimeStepController.GetFrameDelta(); }
 		Time GetElapsedTime() const { return m_AppClock.GetElapsedTime(); }
@@ -105,6 +73,7 @@ namespace Engine {
 
 		ApplicationSpecification m_Specification;
 		TimeStepController m_TimeStepController;
+		Scope<CommandLineParser> m_CmdParser;
 
 		LayerStack m_LayerStack;
 
@@ -116,8 +85,6 @@ namespace Engine {
 		Ref<ImGuiLayer> m_ImGuiLayer = nullptr;
 
 		Clock m_AppClock;
-
-		std::vector<std::string> m_Arguments;
 
 		static Application *s_Instance;
 
