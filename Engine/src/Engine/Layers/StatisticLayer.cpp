@@ -44,6 +44,13 @@ namespace Engine {
 
 		m_UpdateGraph->SetTarget(60.f);
 		m_UpdateGraph->SetScale(0, 120);
+		m_UpdateGraph->SetUnit("UPS");
+		m_UpdateGraph->EnableSideStats(false);
+
+		m_UpdateGraph->AddBand(55.f, IM_COL32(0, 150, 255, 25), "Under 60 UPS");
+		m_UpdateGraph->AddBand(65.f, IM_COL32(0, 255, 0, 25), "Stable (60UPS)");
+		m_UpdateGraph->AddBand(90.f, IM_COL32(255, 255, 0, 25), "Catch-up");
+		m_UpdateGraph->AddBand(999.f, IM_COL32(255, 0, 0, 25), "Spikes");
 
 		m_GraphGroup.AddGraph("fps", m_FrameGraph);
 		m_GraphGroup.AddGraph("ups", m_UpdateGraph);
@@ -58,12 +65,9 @@ namespace Engine {
 		const auto frameTime = app.GetFrameTime();
 
 		m_FrameGraph->AddValue(static_cast<float>(frameTime.AsMilliseconds()));
-		if (frameTime != Time::Zero && m_InstantUpdateCount > 0) {
-			m_UpdateGraph->AddValue(static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds());
-		}
-		else {
-			m_UpdateGraph->AddValue(0.f);
-		}
+		float ups = frameTime != Time::Zero ? static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds() : 0.0f;
+		ups = std::clamp(ups, 0.0f, 120.0f);
+		m_UpdateGraph->AddValue(ups);
 
 		m_InstantUpdateCount = 0;
 
@@ -99,7 +103,7 @@ namespace Engine {
 		}
 
 		// m_FrameGraph->AddValue(static_cast<float>(frameTime.AsMilliseconds()));
-		// m_UpdateGraph->AddValue(static_cast<float>(m_InstantUps / frameTime.AsSeconds()));
+		// m_UpdateGraph->AddValue(static_cast<float>(m_InstantUpdateCount / frameTime.AsSeconds()));
 
 		Text("Elapsed Time: {:.2f}s", app.GetElapsedTime().AsSeconds());
 		Text("Is VSync on: {}", window.IsVSync());
