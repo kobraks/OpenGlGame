@@ -12,6 +12,14 @@ namespace Engine {
 		else {
 			m_FrameDelta = m_FrameClock.Restart() * m_TimeScale;
 		}
+	}
+
+	void TimeStepController::BeginUpdates() {
+		m_CurrentUpdateTime = m_UpdateClock.GetElapsedTime().AsMilliseconds();
+
+		if ((m_CurrentUpdateTime - m_NextUpdateTime) > (m_MaxUpdates * m_UpdateRate)) {
+			m_NextUpdateTime = m_CurrentUpdateTime;
+		}
 
 		if (m_StepOneFrame) {
 			m_Paused = true;
@@ -26,18 +34,19 @@ namespace Engine {
 			return false;
 
 		const uint32_t now = m_UpdateClock.GetElapsedTime().AsMilliseconds();
-		if ((now - m_NextUpdate) >= m_UpdateRate) {
-			if (m_UpdateCount <= m_NextUpdate) {
-				m_NextUpdate += m_UpdateRate;
-				++m_UpdateCount;
 
-				return true;
-			} else {
-				m_NextUpdate = now;
-			}
-		}
+		// If we're not yet due for the next update, return false
+		if ((now - m_NextUpdateTime) < m_UpdateRate)
+			return false;
 
-		return false;
+		// Clamp to max updates per frame
+		if (m_UpdateCount >= m_MaxUpdates)
+			return false;
+
+		m_NextUpdateTime += m_UpdateRate;
+		++m_UpdateCount;
+
+		return true;
 	}
 
 	void TimeStepController::SetTimeScale(float scale) {
@@ -56,7 +65,7 @@ namespace Engine {
 
 	void TimeStepController::Restart() {
 		m_UpdateCount = 0;
-		m_NextUpdate = 0;
+		m_NextUpdateTime = 0;
 		m_FrameDelta = Time::Zero;
 
 		m_FrameClock.Restart();

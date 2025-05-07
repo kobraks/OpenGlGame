@@ -8,6 +8,7 @@ namespace Engine {
 		TimeStepController(uint32_t updateRate = 16, uint64_t maxUpdates = 60);
 
 		void BeginFrame();
+		void BeginUpdates();
 		bool ShouldFixedUpdate();
 
 		Time GetFrameDelta() const { return m_FrameDelta; }
@@ -44,7 +45,8 @@ namespace Engine {
 
 		uint64_t m_UpdateCount = 0;
 
-		uint32_t m_NextUpdate = 0;
+		uint32_t m_NextUpdateTime = 0;
+		uint32_t m_CurrentUpdateTime = 0;
 
 		float m_TimeScale = 1.0f;
 		bool m_Paused = false;
