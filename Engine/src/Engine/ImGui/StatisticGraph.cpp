@@ -9,7 +9,7 @@
 #include <fmt/format.h>
 
 namespace Engine {
-	StatisticGraph::StatisticGraph(const std::string& name, uint64_t bufferSize) : m_Name(name), m_History(bufferSize, 0.0f), m_OrderedHistory(bufferSize, 0.0f), m_BufferSize(bufferSize) {
+	StatisticGraph::StatisticGraph(const std::string& name, uint64_t bufferSize) : m_Name(name), m_History(bufferSize, 0.0f), m_PlotBuffer(bufferSize, 0.0f), m_BufferSize(bufferSize) {
 	}
 
 	void StatisticGraph::AddValue(float value) {
@@ -23,11 +23,11 @@ namespace Engine {
 		m_HeadIndex = (m_HeadIndex + 1) % m_BufferSize;
 		m_Count = std::min(m_Count + 1, m_BufferSize);
 
-		m_Dirty = true;
+		m_HistoryDirty = true;
 
 		if (m_DynamicScale) {
-			m_Scale.X = std::max(0.0f, m_Min - m_ScaleMargin);
-			m_Scale.Y = m_Max + m_ScaleMargin;
+			m_ScaleMin = std::max(0.0f, m_Min - m_ScaleMargin);
+			m_ScaleMax = m_Max + m_ScaleMargin;
 		}
 	}
 
@@ -36,7 +36,7 @@ namespace Engine {
 	}
 
 	void StatisticGraph::Draw(std::string_view label) {
-		if (m_Dirty)
+		if (m_HistoryDirty)
 			RecalculateMinMax();
 
 		RebuildOrderedBuffer();
@@ -54,7 +54,7 @@ namespace Engine {
 
 		auto graphSize = ImGui::GetItemRectSize();
 
-		DrawBands(graphTopLeft, graphSize, drawList);
+		DrawValueBands(graphTopLeft, graphSize, drawList);
 
 		if (m_TargetVisible) {
 			DrawTargetLine(graphTopLeft, graphSize, drawList);
@@ -62,6 +62,10 @@ namespace Engine {
 
 		ImGui::EndGroup();
 		ImGui::PopID();
+
+		if (m_ShowSideStats) {
+			DrawSideStats();
+		}
 
 		ImGui::PopID();
 	}
@@ -73,11 +77,12 @@ namespace Engine {
 		m_Count = 0;
 		m_Total = 0.0f;
 		m_Min = m_Max = 0.0f;
-		m_Dirty = true;
+		m_HistoryDirty = true;
 	}
 
 	void StatisticGraph::AddBand(float threshold, uint32_t color, const char* label) {
 		m_Bands.emplace_back(threshold, color, label);
+		m_BandSortedDirty = true;
 	}
 
 	const Band& StatisticGraph::GetBand(size_t index) const {
@@ -88,12 +93,17 @@ namespace Engine {
 		return m_Bands[index];
 	}
 
-	Band& StatisticGraph::GetBand(size_t index) {
+	void StatisticGraph::ModifyBand(size_t index, float newThreshold, uint32_t newColor, const char* newLabel) {
 		ENGINE_ASSERT(index < m_Bands.size());
 		if (index >= m_Bands.size())
 			throw std::out_of_range("No band at given index");
 
-		return m_Bands[index];
+		Band& band = m_Bands[index];
+		band.Threshold = newThreshold;
+		band.Color = newColor;
+		band.Label = newLabel;
+
+		m_BandSortedDirty = true;
 	}
 
 	void StatisticGraph::RemoveBand(size_t index) {
@@ -102,10 +112,12 @@ namespace Engine {
 			throw std::out_of_range("No band at given index");
 
 		m_Bands.erase(m_Bands.begin() + index);
+		m_BandSortedDirty = true;
 	}
 
 	void StatisticGraph::ClearBands() {
 		m_Bands.clear();
+		m_BandSortedDirty = true;
 	}
 
 	float StatisticGraph::GetAverage() const {
@@ -132,14 +144,36 @@ namespace Engine {
 		m_Min = min;
 		m_Max = max;
 
-		m_Dirty = false;
+		m_HistoryDirty = false;
 	}
 
 	void StatisticGraph::RebuildOrderedBuffer() {
+		const uint64_t targetIndex = m_BufferSize - 1;
+
 		for (uint64_t i = 0; i < m_Count; ++i) {
-			const uint64_t index = (m_HeadIndex + i) % m_BufferSize;
-			m_OrderedHistory[i] = m_History[index];
+			const uint64_t historyIndex = (m_HeadIndex + m_Count - 1 - i + m_BufferSize) % m_BufferSize;
+			m_PlotBuffer[targetIndex - i] = m_History[historyIndex];
 		}
+		for (uint64_t i = 0; i < m_BufferSize - m_Count; ++i) {
+			m_PlotBuffer[i] = std::numeric_limits<float>::quiet_NaN();
+		}
+	}
+
+	const std::vector<const Band*>& StatisticGraph::GetSortedBands() const {
+		if (m_BandSortedDirty) {
+			m_SortedBandsCache.clear();
+			m_SortedBandsCache.reserve(m_Bands.size());
+
+			for (const auto& band : m_Bands) {
+				m_SortedBandsCache.emplace_back(&band);
+			}
+
+			std::ranges::sort(m_SortedBandsCache, [](const Band* a, const Band* b) { return a->Threshold < b->Threshold; });
+
+			m_BandSortedDirty = false;
+		}
+
+		return m_SortedBandsCache;
 	}
 
 	void StatisticGraph::DrawGraph() const {
@@ -149,32 +183,29 @@ namespace Engine {
 		color.w = 0.125f;
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, color);
 
-		ImGui::PlotLines("", m_OrderedHistory.data(), static_cast<int>(m_Count), 0, nullptr, m_Scale.X, m_Scale.Y, { 0.f, height });
+		ImGui::PlotLines("##Plot", m_PlotBuffer.data(), static_cast<int>(m_BufferSize), 0, nullptr, m_ScaleMin, m_ScaleMax, { 0.f, height });
 		
 		ImGui::PopStyleColor();
 	}
 
-	void StatisticGraph::DrawBands(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const {
+	void StatisticGraph::DrawValueBands(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const {
 		if (m_Bands.empty()) return;
 
-		auto sortedBands = m_Bands;
-		std::ranges::sort(sortedBands, [](const Band& a, const Band& b) {
-			return a.Threshold < b.Threshold;
-		});
+		auto& sortedBands = GetSortedBands();
 
 		auto ToY = [&](float value) -> float {
-			const float ratio = 1.f - ((value - m_Scale.X) / (m_Scale.Y - m_Scale.X));
+			const float ratio = 1.f - ((value - m_ScaleMin) / (m_ScaleMax - m_ScaleMin));
 			return topLeft.y + graphSize.y * std::clamp(ratio, 0.f, 1.f);
 			};
 
 		float prevY = topLeft.y + graphSize.y;
 
 		for (const auto& band : sortedBands) {
-			float bandY = ToY(band.Threshold);
-			drawList->AddRectFilled({ topLeft.x, bandY }, { topLeft.x + graphSize.x, prevY }, band.Color);
+			float bandY = ToY(band->Threshold);
+			drawList->AddRectFilled({ topLeft.x, bandY }, { topLeft.x + graphSize.x, prevY }, band->Color);
 
-			if (band.Label) {
-				drawList->AddText({ topLeft.x + 4, prevY - ImGui::GetTextLineHeight() - 2 }, IM_COL32_WHITE, band.Label);
+			if (band->Label && *band->Label) {
+				drawList->AddText({ topLeft.x + 4, prevY - ImGui::GetTextLineHeight() - 2 }, IM_COL32(255, 255, 255, 100), band->Label);
 			}
 
 			prevY = bandY;
@@ -196,12 +227,12 @@ namespace Engine {
 
 	void StatisticGraph::DrawTargetLine(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const {
 		//draw target line
-		const float scaleRange = m_Scale.Y - m_Scale.X;
-		const float yRatio = 1.f - (m_Target - m_Scale.X) / scaleRange;
+		const float scaleRange = m_ScaleMax - m_ScaleMin;
+		const float yRatio = 1.f - (m_Target - m_ScaleMin) / scaleRange;
 		const float lineY = topLeft.y + graphSize.y * yRatio;
 
-		ImVec2 p1{ topLeft.x, lineY };
-		ImVec2 p2{ topLeft.x + graphSize.x, lineY };
+		const ImVec2 p1{ topLeft.x, lineY };
+		const ImVec2 p2{ topLeft.x + graphSize.x, lineY };
 
 		drawList->AddLine(p1, p2, IM_COL32(255, 0, 0, 90), 1.5f);
 		drawList->AddText({ p1.x + 4, p1.y - ImGui::GetTextLineHeight() }, IM_COL32(255, 255, 255, 180), fmt::format("Target: {:.2f} {}", m_Target, m_Units).c_str());

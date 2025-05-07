@@ -1,6 +1,5 @@
 #pragma once
 #include "Engine/Core/Base.h"
-#include "Engine/Core/Vector2.h"
 #include <array>
 #include <string>
 #include <string_view>
@@ -34,11 +33,14 @@ namespace Engine {
 		void TargetVisible(bool enable = true) { m_TargetVisible = enable; }
 		bool IsTargetVisible() const { return m_TargetVisible; }
 
-		void SetScale(float minValue, float maxValue) { m_Scale = Vector2f{ minValue, maxValue }; }
+		void EnableSideStats(bool enable = true) { m_ShowSideStats = enable; }
+		bool AreSideStatsVisible() const { return m_ShowSideStats; }
+
+		void SetScale(float minValue, float maxValue) { m_ScaleMin = minValue; m_ScaleMax = maxValue; }
 
 		void AddBand(float threshold, uint32_t color, const char* label);
 		const Band& GetBand(size_t index) const;
-		Band& GetBand(size_t index);
+		void ModifyBand(size_t index, float newThreshold, uint32_t newColor, const char* newLabel);
 		size_t GetBandCount() const { return m_Bands.size(); }
 		void RemoveBand(size_t index);
 		void ClearBands();
@@ -47,19 +49,24 @@ namespace Engine {
 		float GetMin() const { return m_Min; }
 		float GetMax() const { return m_Max; }
 
+		uint64_t GetBufferSize() const { return m_BufferSize; }
 	protected:
 		void RecalculateMinMax();
 		void RebuildOrderedBuffer();
+
+		const std::vector<const Band*>& GetSortedBands() const;
+
 		void DrawGraph() const;
-		void DrawBands(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const;
+		void DrawValueBands(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const;
 		void DrawSideStats() const;
 		void DrawTargetLine(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const;
 
+	private:
 		std::string m_Name;
 		std::string m_Units;
 
 		std::vector<float> m_History;
-		std::vector<float> m_OrderedHistory;
+		std::vector<float> m_PlotBuffer;
 		std::vector<Band> m_Bands;
 
 		uint64_t m_BufferSize;
@@ -72,11 +79,16 @@ namespace Engine {
 		float m_Target = 0.0f;
 
 		bool m_TargetVisible = true;
+		bool m_ShowSideStats = true;
 
 		bool m_DynamicScale = false;
 		float m_ScaleMargin = 10.0f;
-		Vector2f m_Scale{ 0.0f, 50.0f };
+		float m_ScaleMin = 0.0f;
+		float m_ScaleMax = 50.0f;
 
-		bool m_Dirty = true;
+		bool m_HistoryDirty = true;
+
+		mutable std::vector<const Band*> m_SortedBandsCache;
+		mutable bool m_BandSortedDirty = true;
 	};
 }
