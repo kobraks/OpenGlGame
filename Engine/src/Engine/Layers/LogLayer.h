@@ -23,7 +23,7 @@ namespace Engine {
 		int Line{ 0 };
 		size_t ThreadId{ 0 };
 
-		void Print();
+		void Print() const;
 	};
 
 	struct LogMessage {
@@ -34,10 +34,11 @@ namespace Engine {
 		std::string Text;
 		std::string Time;
 		spdlog::level::level_enum Level;
+		std::chrono::system_clock::time_point Timestamp;
 	};
 
 	struct LogMessageEntry {
-		LogMessageEntry(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg);
+		LogMessageEntry(uint64_t index, const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg);
 
 		LogMessage Message;
 		LogSource Source;
@@ -46,6 +47,7 @@ namespace Engine {
 		size_t IdHash = 0;
 		size_t IdSelectedHash = 0;
 		size_t IdTextMultiline = 0;
+		uint64_t Index = 0;
 
 		void GenerateHash(size_t i);
 	};
@@ -100,6 +102,7 @@ namespace Engine {
 
 	private:
 		void UpdateVisibleMessages();
+		void SortVisibleMessages();
 
 		void LoggerCombo(Ref<spdlog::logger> logger);
 
@@ -111,8 +114,8 @@ namespace Engine {
 		void PrintMessagesTable();
 		void PrintTable();
 		void PrintClippedTable(LogBufferSnapshot& snapshot, int itemCount, int startIndex = -1);
-		void PrintMessage(size_t i, LogMessageEntry& messageEntry);
-		void PrintSelectedMessage(size_t i, LogMessageEntry& message);
+		void PrintMessage(const LogMessageEntry& messageEntry);
+		void PrintSelectedMessage(LogMessageEntry& message);
 
 		bool m_Show = true;
 		bool m_ScrollToBottom = true;
@@ -123,8 +126,9 @@ namespace Engine {
 		std::string m_LastFilterText;
 
 		int32_t m_MinLogLevelToPopUp = 0;
-		inline static size_t s_MaxMessages = 1000;
-		size_t m_SelectedMessageIndex;
+		inline static uint64_t s_MaxMessages = 10000;
+		uint64_t m_SelectedMessageIndex;
+		uint64_t m_NextIndex = 0;
 
 		Scope<ImGuiTextFilter> m_Filter;
 

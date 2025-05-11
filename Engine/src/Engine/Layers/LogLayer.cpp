@@ -75,7 +75,7 @@ namespace {
 }
 
 namespace Engine {
-	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings;
+	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings| ImGuiTableFlags_Sortable;
 	constexpr int TABLE_COLUMN_COUNT = 5;
 
 	LogSource::LogSource(const spdlog::source_loc& loc) {
@@ -88,7 +88,7 @@ namespace Engine {
 		ThreadId = msg.thread_id;
 	}
 
-	void LogSource::Print() {
+	void LogSource::Print() const {
 		Text("File: {}", File);
 		Text("Function: {}", Function);
 		Text("Line: {}", Line);
@@ -100,18 +100,29 @@ namespace Engine {
 		Desc = std::string(msg.payload.data(), msg.payload.size());
 
 		Text = to_string(formatted);
+		Timestamp = msg.time;
 		Time = GetTimeAsString(msg.time);
 		Level = msg.level;
 	}
 
-	LogMessageEntry::LogMessageEntry(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) : Message(formatted, msg), Source(msg) {
-		Color = SelectTextColor(msg.level);
+	LogMessageEntry::LogMessageEntry(uint64_t index, const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) : Message(formatted, msg), Source(msg) {
+ 		Color = SelectTextColor(msg.level);
+		Index = index;
+		GenerateHash(index);
 	}
 
 	void LogMessageEntry::GenerateHash(size_t i) {
-		IdHash = std::hash<std::string>()(fmt::format("{}{}", i, Message.Text));
-		IdSelectedHash = std::hash<std::string>()(fmt::format("Selected{}{}", i, Message.Text));
-		IdTextMultiline = std::hash<std::string>()(fmt::format("Text{}\"{}\"", i, Message.Text));
+ 	// 	IdHash = std::hash<std::string>()(fmt::format("{}{}", i, Message.Text));
+		// IdSelectedHash = std::hash<std::string>()(fmt::format("Selected{}{}", i, Message.Text));
+		// IdTextMultiline = std::hash<std::string>()(fmt::format("Text{}\"{}\"", i, Message.Text));
+
+		auto timestampHash = Message.Timestamp.time_since_epoch().count();
+
+		const std::string base = fmt::format("{}:{}", timestampHash, i);
+
+		IdHash = std::hash<std::string_view>{}(base);
+		IdSelectedHash = std::hash<std::string_view>{}("S" + base);
+		IdTextMultiline = std::hash<std::string_view>{}("T" + base);
 	}
 
 	LogBufferCopier::LogBufferCopier(std::mutex& mutex, const std::vector<LogMessageEntry>& sourceMessages,
@@ -234,11 +245,10 @@ namespace Engine {
 		spdlog::memory_buf_t formatted;
 		formatter_->format(msg, formatted);
 
-		auto& message = m_Messages.emplace_back(formatted, msg);
-		message.GenerateHash(m_Messages.size() - 1);
+		const auto& message = m_Messages.emplace_back(m_NextIndex++, formatted, msg);
 
 		if (m_Filter->PassFilter(message.Message.Text.c_str())) {
-			m_VisibleMessageIndices.emplace_back(m_Messages.size() - 1);
+			m_VisibleMessageIndices.emplace_back(message.Index);
 		}
 	}
 
@@ -251,6 +261,31 @@ namespace Engine {
 		for (size_t i = 0; i < m_Messages.size(); ++i) {
 			if (m_Filter->PassFilter(m_Messages.at(i).Message.Text.c_str())) {
 				m_VisibleMessageIndices.emplace_back(i);
+			}
+		}
+	}
+
+	void LogLayer::SortVisibleMessages() {
+		if (ImGuiTableSortSpecs* sortSpecs = ImGui::TableGetSortSpecs()) {
+			if (sortSpecs->SpecsDirty && sortSpecs->SpecsCount > 0) {
+				const ImGuiTableColumnSortSpecs& specs = sortSpecs->Specs[0];
+
+				auto compare = [&](size_t aIdx, size_t bIdx) {
+					const auto& a = m_Messages[m_VisibleMessageIndices[aIdx]];
+					const auto& b = m_Messages[m_VisibleMessageIndices[bIdx]];
+
+					switch (specs.ColumnIndex) {
+					case 0: return specs.SortDirection == ImGuiSortDirection_Ascending ? aIdx < bIdx : aIdx > bIdx;
+					case 1: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Timestamp < b.Message.Timestamp : a.Message.Timestamp > b.Message.Timestamp;
+					case 2: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Level < b.Message.Level : a.Message.Level > b.Message.Level;
+					case 3: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Name < b.Message.Name : a.Message.Name > b.Message.Name;
+					}
+
+					return false;
+					};
+
+				std::ranges::sort(m_VisibleMessageIndices, compare);
+				sortSpecs->SpecsDirty = false;
 			}
 		}
 	}
@@ -270,7 +305,7 @@ namespace Engine {
 		ImGui::TableSetupColumn("TimeString", ImGuiTableColumnFlags_WidthFixed, 60, 1);
 		ImGui::TableSetupColumn("Severity", ImGuiTableColumnFlags_WidthFixed, 60, 2);
 		ImGui::TableSetupColumn("Logger", ImGuiTableColumnFlags_WidthFixed, 80, 3);
-		ImGui::TableSetupColumn("Short Desc", ImGuiTableColumnFlags_WidthFixed, 500, 4);
+		ImGui::TableSetupColumn("Desc", ImGuiTableColumnFlags_WidthFixed, 500, 4);
 	}
 
 	void LogLayer::BeginTable() {
@@ -306,10 +341,17 @@ namespace Engine {
 	void LogLayer::PrintTable() {
 		ImGui::TableHeadersRow();
 
+		uint64_t selectedCopy = 0;
+		{
+			std::lock_guard guard(m_Mutex);
+
+			SortVisibleMessages();
+			selectedCopy = m_SelectedMessageIndex;
+		}
+
 		LogBufferSnapshot snapshot;
 		COPY_LOG_BUFFERS(snapshot);
 
-		const auto selectedCopy = m_SelectedMessageIndex;
 		const int total = static_cast<int>(snapshot.VisibleMessageIndices.size());
 		if (total == 0 || selectedCopy >= total) {
 			PrintClippedTable(snapshot, static_cast<int>(snapshot.VisibleMessageIndices.size()));
@@ -324,7 +366,7 @@ namespace Engine {
 		if (selectedCopy <= snapshot.VisibleMessageIndices.size()) {
 			const size_t actualIndex = snapshot.VisibleMessageIndices[selectedCopy];
 			if (actualIndex < snapshot.Messages.size()) {
-				PrintSelectedMessage(m_SelectedMessageIndex, snapshot.Messages[actualIndex]);
+				PrintSelectedMessage(snapshot.Messages[actualIndex]);
 			}
 		}
 
@@ -340,18 +382,18 @@ namespace Engine {
 			while (clipper.Step()) {
 				for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
 					const int globalIndex = (startIndex >= 0 ? startIndex + i : i);
-					const auto index = snapshot.VisibleMessageIndices[globalIndex];
+ 					const auto index = snapshot.VisibleMessageIndices[globalIndex];
 
 					if (index >= snapshot.Messages.size()) continue;
 
 					auto& message = snapshot.Messages[index];
-					PrintMessage(globalIndex, message);
+					PrintMessage(message);
 				}
 			}
 		}
 	}
 
-	void LogLayer::PrintMessage(size_t i, LogMessageEntry& messageEntry) {
+	void LogLayer::PrintMessage(const LogMessageEntry& messageEntry) {
 		ImGui::TableNextRow();
 		const auto& message = messageEntry.Message;
 
@@ -373,15 +415,15 @@ namespace Engine {
 			ImGui::SetTooltip(message.Text.c_str());
 
 		if (ImGui::IsItemClicked()) {
-			if (m_SelectedMessageIndex != i) {
-				m_SelectedMessageIndex = i;
+			if (m_SelectedMessageIndex != messageEntry.Index) {
+				m_SelectedMessageIndex = messageEntry.Index;
 			} else {
 				m_SelectedMessageIndex = s_MaxMessages + 1;
 			}
 		}
 
 		ImGui::SameLine();
-		ImGui::Text("%i", static_cast<int32_t>(i));
+		ImGui::Text("%llu", static_cast<size_t>(messageEntry.Index));
 		ImGui::TableNextColumn();
 		ImGui::TextUnformatted(message.Time.c_str());
 
@@ -403,7 +445,10 @@ namespace Engine {
 		ImGui::PopID();
 	}
 
-	void LogLayer::PrintSelectedMessage(size_t i, LogMessageEntry& message) {
+	void LogLayer::PrintSelectedMessage(LogMessageEntry& message) {
+		if (message.Index != m_SelectedMessageIndex)
+			return;
+
 		EndTable();
 
 		ImGui::PushID(static_cast<int>(message.IdSelectedHash));
@@ -419,6 +464,12 @@ namespace Engine {
 		ImGui::PushID(static_cast<int>(message.IdTextMultiline));
 		InputTextMultiline("", message.Message.Desc, ImVec2{0, 0}, ImGuiInputTextFlags_ReadOnly);
 		ImGui::PopID();
+
+		ImGui::Separator();
+		ImGui::Text("Debug: ");
+		ImGui::Text("IdHash: %llu", message.IdHash);
+		ImGui::Text("IdSelectedHash: %llu", message.IdSelectedHash);
+		ImGui::Text("IdTextMultilineHash: %llu", message.IdTextMultiline);
 
 		ImGui::Separator();
 
