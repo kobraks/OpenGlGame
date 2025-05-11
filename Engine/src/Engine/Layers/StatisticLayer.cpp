@@ -25,11 +25,11 @@ namespace Engine {
 	StatisticLayer::StatisticLayer() : Layer("StatisticLayer") {
 		constexpr float targetFPS60 = 60.f;
 		constexpr float targetFPS30 = 30.f;
-		constexpr float criticalCutoffFPS = 15.0f;
+		constexpr float criticalCutoffFPS = 20.0f;
 
 		constexpr float budget60FPS = 1000.f / targetFPS60;
 		constexpr float budget30FPS = 1000.f / targetFPS30;
-		constexpr float budget15FPS = 1000.f / criticalCutoffFPS;
+		constexpr float budget20FPS = 1000.f / criticalCutoffFPS;
 
 		m_FrameGraph = MakeScope<StatisticGraph>("Frame Time");
 		m_UpdateGraph = MakeScope<StatisticGraph>("UPS");
@@ -40,7 +40,7 @@ namespace Engine {
 
 		m_FrameGraph->AddBand(budget60FPS, IM_COL32(0, 255, 0, 25), ">= 60 FPS");
 		m_FrameGraph->AddBand(budget30FPS, IM_COL32(255, 255, 0, 25), ">= 30 FPS");
-		m_FrameGraph->AddBand(50.f, IM_COL32(255, 0, 0, 25), "< 30 FPS");
+		m_FrameGraph->AddBand(budget20FPS, IM_COL32(255, 0, 0, 25), "< 30 FPS");
 
 		m_UpdateGraph->SetTarget(60.f);
 		m_UpdateGraph->SetScale(0, 120);
