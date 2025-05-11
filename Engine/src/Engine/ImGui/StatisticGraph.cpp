@@ -205,7 +205,10 @@ namespace Engine {
 			drawList->AddRectFilled({ topLeft.x, bandY }, { topLeft.x + graphSize.x, prevY }, band->Color);
 
 			if (band->Label && *band->Label) {
-				drawList->AddText({ topLeft.x + 4, prevY - ImGui::GetTextLineHeight() - 2 }, IM_COL32(255, 255, 255, 100), band->Label);
+				const float textWidth = ImGui::CalcTextSize(band->Label).x;
+				const float labelX = m_BandLabelAlign == BandLabelAlign::Right ? topLeft.x + graphSize.x - textWidth - 4 : topLeft.x + 4;
+
+				drawList->AddText({ labelX, prevY - ImGui::GetTextLineHeight() - 2 }, IM_COL32(255, 255, 255, 100), band->Label);
 			}
 
 			prevY = bandY;

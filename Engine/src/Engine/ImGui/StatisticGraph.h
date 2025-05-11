@@ -14,6 +14,11 @@ namespace Engine {
 		const char* Label;
 	};
 
+	enum class BandLabelAlign : uint8_t {
+		Left,
+		Right
+	};
+
 	class StatisticGraph {
 	public:
 		explicit StatisticGraph(const std::string& name, uint64_t bufferSize = 256);
@@ -45,6 +50,9 @@ namespace Engine {
 		void RemoveBand(size_t index);
 		void ClearBands();
 
+		void SetBandLabelAlign(BandLabelAlign align) { m_BandLabelAlign = align; }
+		BandLabelAlign GetBandLabelAlign() const { return m_BandLabelAlign; }
+
 		float GetAverage() const;
 		float GetMin() const { return m_Min; }
 		float GetMax() const { return m_Max; }
@@ -68,6 +76,8 @@ namespace Engine {
 		std::vector<float> m_History;
 		std::vector<float> m_PlotBuffer;
 		std::vector<Band> m_Bands;
+
+		BandLabelAlign m_BandLabelAlign = BandLabelAlign::Right;
 
 		uint64_t m_BufferSize;
 		uint64_t m_HeadIndex = 0;
