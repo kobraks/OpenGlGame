@@ -36,63 +36,125 @@ namespace Engine {
 		}
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const Color &background) {
-		Create(width, height, background);
+	static constexpr Color GetColorFromFreeImage(BYTE* pixels, size_t i) {
+		Color color;
+
+		color.R = pixels[i * 4 + FI_RGBA_RED];
+		color.G = pixels[i * 4 + FI_RGBA_GREEN];
+		color.B = pixels[i * 4 + FI_RGBA_BLUE];
+		color.A = pixels[i * 4 + FI_RGBA_ALPHA];
+
+		return color;
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const Color *pixels) {
+	const char* ToString(ImageType type) {
+		switch (type) {
+		case ImageType::BMP:     return "BMP";
+		case ImageType::EXR:     return "EXR";
+		case ImageType::J2K:     return "J2K";
+		case ImageType::JP2:     return "JP2";
+		case ImageType::JPEG:    return "JPEG";
+		case ImageType::JXR:     return "JXR";
+		case ImageType::PNG:     return "PNG";
+		case ImageType::PBM:     return "PBM";
+		case ImageType::PGM:     return "PGM";
+		case ImageType::PPM:     return "PPM";
+		case ImageType::TIFF:    return "TIFF";
+		default:                 return "Unknown";
+		}
+	}
+
+	Image::Image(const Image& img) noexcept {
+		LOG_ENGINE_DEBUG("Image copied: {}x{}", img.m_Width, img.m_Height);
+		m_Pixels = img.m_Pixels;
+		m_Width = img.m_Width;
+		m_Height = img.m_Height;
+	}
+
+	Image::Image(Image&& img) noexcept {
+		LOG_ENGINE_DEBUG("Image moved: {}x{}", img.m_Width, img.m_Height);
+		m_Pixels = std::move(img.m_Pixels);
+		m_Width = std::exchange(img.m_Width, 0);
+		m_Height = std::exchange(img.m_Height, 0);
+	}
+
+	Ref<Image> Image::Create(uint32_t width, uint32_t height, const Color& background) {
+		Ref<Image> image = Ref<Image>(new Image());
+
+		image->Prepare(width, height);
+		image->Fill(background);
+
+		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, filled with color: {}", width, height, background);
+
+		return image;
+	}
+
+	Ref<Image> Image::Create(uint32_t width, uint32_t height, const Color* pixels) {
 		ENGINE_ASSERT(pixels);
-		Prepare(width, height);
+		Ref<Image> image = Ref<Image>(new Image());
 
-		std::copy_n(pixels, m_Pixels.size(), std::begin(m_Pixels));
+		image->Prepare(width, height);
+		image->CopyFromRawBuffer(pixels);
+
+		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from Color buffer", width, height);
+
+		return image;
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const uint8_t *pixels) {
+	Ref<Image> Image::Create(uint32_t width, uint32_t height, const uint8_t* pixels) {
 		ENGINE_ASSERT(pixels);
-		Prepare(width, height);
+		Ref<Image> image = Ref<Image>(new Image());
 
-		for (size_t i = 0; i < m_Pixels.size(); i++)
-			m_Pixels[i] = Color(pixels[i * 4 + 0], pixels[i * 4 + 1], pixels[i * 4 + 2], pixels[i * 4 + 3]);
+		image->Prepare(width, height);
+		image->CopyFromRawBuffer(pixels);
+
+		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from uint8_t buffer", width, height);
+
+		return image;
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const glm::vec4 *pixels) {
+	Ref<Image> Image::Create(uint32_t width, uint32_t height, const glm::vec4* pixels) {
 		ENGINE_ASSERT(pixels);
-		Prepare(width, height);
+		Ref<Image> image = Ref<Image>(new Image());
 
-		std::copy_n(pixels, static_cast<size_t>(width) * height, std::begin(m_Pixels));
+		image->Prepare(width, height);
+		image->CopyFromRawBuffer(pixels);
+
+		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from glm::vec4 buffer", width, height);
+
+		return image;
 	}
 
-	Image::Image(uint32_t width, uint32_t height, const float *pixels) {
+	Ref<Image> Image::Create(uint32_t width, uint32_t height, const float* pixels) {
 		ENGINE_ASSERT(pixels);
-		Prepare(width, height);
+		Ref<Image> image = Ref<Image>(new Image());
 
-		for (size_t i = 0; i < m_Pixels.size(); i++)
-			m_Pixels[i] = Color(pixels[i * 4 + 0], pixels[i * 4 + 1], pixels[i * 4 + 2], pixels[i * 4 + 3]);
+		image->Prepare(width, height);
+		image->CopyFromRawBuffer(pixels);
+
+		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from float buffer", width, height);
+
+		return image;
 	}
 
-	Image::Image(const Vector2u &size, const Color &background) : Image(size.Width, size.Height, background) {}
-	Image::Image(const Vector2u &size, const Color *pixels) : Image(size.Width, size.Height, pixels) {}
-	Image::Image(const Vector2u &size, const uint8_t *pixels) : Image(size.Width, size.Height, pixels) {}
-	Image::Image(const Vector2u &size, const glm::vec4 *pixels) : Image(size.Width, size.Height, pixels) {}
-	Image::Image(const Vector2u &size, const float *pixels) : Image(size.Width, size.Height, pixels) {}
-
-	Image::Image(const Image &img) noexcept : m_Pixels(img.m_Pixels), m_Width(img.m_Width), m_Height(img.m_Height){
+	Ref<Image> Image::Create(const Vector2u& size, const Color& background) {
+		return Create(size.Width, size.Height, background);
 	}
 
-	Image::Image(Image &&img) noexcept : m_Pixels(std::move(img.m_Pixels)), m_Width(img.m_Width), m_Height(img.m_Height){
-		img.m_Width = img.m_Height = 0;
+	Ref<Image> Image::Create(const Vector2u& size, const Color* pixels) {
+		return Create(size.Width, size.Height, pixels);
 	}
 
-	void Image::Create(uint32_t width, uint32_t height, const Color &background) {
-		Clear();
-
-		Prepare(width, height);
-
-		std::ranges::fill(m_Pixels, background);
+	Ref<Image> Image::Create(const Vector2u& size, const uint8_t* pixels) {
+		return Create(size.Width, size.Height, pixels);
 	}
 
-	void Image::Create(const Vector2u &size, const Color &background) {
-		Create(size.Width, size.Height, background);
+	Ref<Image> Image::Create(const Vector2u& size, const glm::vec4* pixels) {
+		return Create(size.Width, size.Height, pixels);
+	}
+
+	Ref<Image> Image::Create(const Vector2u& size, const float* pixels) {
+		return Create(size.Width, size.Height, pixels);
 	}
 
 	void Image::Clear() {
@@ -100,8 +162,17 @@ namespace Engine {
 		m_Pixels.clear();
 	}
 
+	void Image::Copy(const Ref<Image>& image) {
+		Reset(image->m_Width, image->m_Height);
+
+		LOG_ENGINE_DEBUG("Image copied: {}x{}", image->m_Width, image->m_Height);
+		Reset(image->m_Width, image->m_Height);
+
+		std::ranges::copy(image->m_Pixels, std::begin(m_Pixels));
+	}
+
 	Ref<Image> Image::Load(const Buffer& buffer) {
-		auto result = MakeRef<Image>();
+		Ref<Image> result = Ref<Image>(new Image());
 
 		ENGINE_ASSERT(buffer);
 		if (!buffer)
@@ -128,11 +199,13 @@ namespace Engine {
 		FreeImage_Unload(image);
 		FreeImage_CloseMemory(stream);
 
+		LOG_ENGINE_INFO("Loaded image from buffer: {}", result->DebugInfo());
+
 		return result;
 	}
 
 	Ref<Image> Image::Load(const std::filesystem::path &path) {
-		auto result = MakeRef<Image>();
+		Ref<Image> result = Ref<Image>(new Image());
 
 		const std::string sPath = path.string();
 
@@ -160,11 +233,13 @@ namespace Engine {
 		result->LoadToMemory(image);
 		FreeImage_Unload(image);
 
+		LOG_ENGINE_INFO("Loaded image from file '{}': {}", sPath, result->DebugInfo());
+
 		return result;
 	}
 
 
-	bool Image::Save(Ref<Image> image, const std::filesystem::path &path, ImageType type) {
+	bool Image::Save(const Ref<Image>& image, const std::filesystem::path &path, ImageType type) {
 		ENGINE_ASSERT(image);
 		if (!image)
 			throw std::runtime_error("Uninitialized memory");
@@ -184,24 +259,14 @@ namespace Engine {
 		                                  FI_RGBA_BLUE_MASK
 		                                 );
 
-		for(uint32_t i = 0; i < width; ++i)
-			for(uint32_t j = 0; j < height; ++j) {
-				RGBQUAD c;
-
-				const auto pixel = pixels[i + j * width];
-
-				c.rgbRed      = static_cast<BYTE>(pixel.R);
-				c.rgbGreen    = static_cast<BYTE>(pixel.G);
-				c.rgbBlue     = static_cast<BYTE>(pixel.B);
-				c.rgbReserved = static_cast<BYTE>(pixel.A);
-
-				FreeImage_SetPixelColor(handler, i, j, &c);
-			}
+		FillFreeImagePixels(handler, pixels, width, height);
 
 		bool result = FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0);
 		ENGINE_ASSERT(result);
 
 		FreeImage_Unload(handler);
+
+		LOG_ENGINE_INFO("Saved image to '{}' as format: {}", sPath, type);
 		return result;
 	}
 
@@ -211,6 +276,8 @@ namespace Engine {
 				std::swap(GetPixel(x, y), GetPixel(x, m_Height - 1 - y));
 			}
 		}
+
+		LOG_ENGINE_DEBUG("Flipped image vertically: {}x{}", m_Width, m_Height);
 	}
 
 	void Image::Resize(const Vector2u& size) {
@@ -220,6 +287,8 @@ namespace Engine {
 	void Image::Resize(uint32_t newWidth, uint32_t newHeight) {
 		if (newWidth == m_Width && newHeight == m_Height)
 			return;
+
+		LOG_ENGINE_DEBUG("Resized image from {}x{} to {}x{}", m_Width, m_Height, newWidth, newHeight);
 
 		std::vector<Color> newPixels(newWidth * newHeight);
 
@@ -256,6 +325,8 @@ namespace Engine {
 		m_Width = width;
 		m_Height = height;
 		m_Pixels = std::move(newPixels);
+
+		LOG_ENGINE_DEBUG("Cropped image to {}x{} at ({}, {})", width, height, startX, startY);
 	}
 
 	Color Image::GetAverageColor() const {
@@ -309,7 +380,12 @@ namespace Engine {
 		return data;
 	}
 
+	std::string Image::DebugInfo() const {
+		return fmt::format("Image: {}x{}, pixels: {}", m_Width, m_Height, m_Pixels.size());
+	}
+
 	Image& Image::operator=(Image &&img) noexcept {
+		LOG_ENGINE_DEBUG("Image moved: {}x{}", img.m_Width, img.m_Height);
 		Clear();
 
 		m_Width  = img.m_Width;
@@ -323,12 +399,17 @@ namespace Engine {
 	}
 
 	Image& Image::operator=(const Image &img) noexcept {
-		Clear();
-		Prepare(img.m_Width, img.m_Height);
+		LOG_ENGINE_DEBUG("Image copied: {}x{}", img.m_Width, img.m_Height);
+		Reset(img.m_Width, img.m_Height);
+
 
 		std::ranges::copy(img.m_Pixels, std::begin(m_Pixels));
-
 		return *this;
+	}
+
+	void Image::Reset(uint32_t width, uint32_t height) {
+		Clear();
+		Prepare(width, height);
 	}
 
 	void Image::LoadToMemory(void *buffer) {
@@ -338,26 +419,78 @@ namespace Engine {
 		if (!converted)
 			throw std::runtime_error("Failed to convert image to 32 bit");
 
-		Prepare(FreeImage_GetWidth(converted), FreeImage_GetHeight(converted));
+		const auto width = FreeImage_GetWidth(converted);
+		const auto height = FreeImage_GetHeight(converted);
+
+		Prepare(width, height);
 
 		const auto pixels = FreeImage_GetBits(converted);
 		for(size_t i = 0; i < m_Pixels.size(); ++i) {
-			m_Pixels[i] = Color(
-			                    pixels[i * 4 + FI_RGBA_RED],
-			                    pixels[i * 4 + FI_RGBA_GREEN],
-			                    pixels[i * 4 + FI_RGBA_BLUE],
-			                    pixels[i * 4 + FI_RGBA_ALPHA]
-			                   );
+			m_Pixels[i] = GetColorFromFreeImage(pixels, i);
 		}
 
 		FreeImage_Unload(converted);
 	}
 
 	void Image::Prepare(uint32_t width, uint32_t height) {
-		const auto size = static_cast<size_t>(width) * height;
+		const auto size = static_cast<size_t>(width) * static_cast<size_t>(height);
 		m_Width  = width;
 		m_Height = height;
 
 		m_Pixels.resize(size);
+	}
+
+	void Image::FillFreeImagePixels(void* handler, const std::vector<Color>& pixels, uint32_t width, uint32_t height) {
+		for (uint32_t i = 0; i < width; ++i)
+			for (uint32_t j = 0; j < height; ++j) {
+				RGBQUAD c;
+
+				const auto pixel = pixels[i + j * width];
+
+				c.rgbRed = static_cast<BYTE>(pixel.R);
+				c.rgbGreen = static_cast<BYTE>(pixel.G);
+				c.rgbBlue = static_cast<BYTE>(pixel.B);
+				c.rgbReserved = static_cast<BYTE>(pixel.A);
+
+				FreeImage_SetPixelColor(static_cast<FIBITMAP*>(handler), i, j, &c);
+			}
+	}
+
+	void Image::CopyFromRawBuffer(const Color* src) {
+		ENGINE_ASSERT(src);
+
+		std::copy_n(src, m_Pixels.size(), std::begin(m_Pixels));
+	}
+
+	void Image::CopyFromRawBuffer(const uint8_t* src) {
+		ENGINE_ASSERT(src);
+
+		for (size_t i = 0; i < m_Pixels.size(); ++i) {
+			const auto& r = src[i * 4 + 0];
+			const auto& g = src[i * 4 + 1];
+			const auto& b = src[i * 4 + 2];
+			const auto& a = src[i * 4 + 3];
+
+			m_Pixels[i] = Color(r, g, b, a);
+		}
+	}
+
+	void Image::CopyFromRawBuffer(const float* src) {
+		ENGINE_ASSERT(src);
+
+		for (size_t i = 0; i < m_Pixels.size(); ++i) {
+			const auto& r = src[i * 4 + 0];
+			const auto& g = src[i * 4 + 1];
+			const auto& b = src[i * 4 + 2];
+			const auto& a = src[i * 4 + 3];
+
+			m_Pixels[i] = Color(r, g, b, a);
+		}
+	}
+
+	void Image::CopyFromRawBuffer(const glm::vec4* src) {
+		ENGINE_ASSERT(src);
+
+		std::copy_n(src, m_Pixels.size(), std::begin(m_Pixels));
 	}
 }

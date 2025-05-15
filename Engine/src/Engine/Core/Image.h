@@ -23,40 +23,39 @@ namespace Engine {
 		TIFF
 	};
 
+	inline const char* ToString(ImageType type);
+
 	class Image {
 	public:
-		Image() = default;
-
-		Image(uint32_t width, uint32_t height, const Color &background = Color::White);
-		Image(uint32_t width, uint32_t height, const Color *pixels);
-		Image(uint32_t width, uint32_t height, const uint8_t *pixels);
-		Image(uint32_t width, uint32_t height, const glm::vec4 *pixels);
-		Image(uint32_t width, uint32_t height, const float *pixels);
-
-		Image(const Vector2u &size, const Color &background = Color::White);
-		Image(const Vector2u &size, const Color *pixels);
-		Image(const Vector2u &size, const uint8_t *pixels);
-		Image(const Vector2u &size, const glm::vec4 *pixels);
-		Image(const Vector2u &size, const float *pixels);
-
-		Image(const Image &img) noexcept;
-		Image(Image &&img) noexcept;
+		Image(const Image& img) noexcept;
+		Image(Image&& img) noexcept;
 
 		~Image() = default;
 
-		void Create(uint32_t width, uint32_t height, const Color &background = Color::White);
-		void Create(const Vector2u &size, const Color &background = Color::White);
+		[[nodiscard]] static Ref<Image> Create(uint32_t width, uint32_t height, const Color& background = Color::White);
+		[[nodiscard]] static Ref<Image> Create(uint32_t width, uint32_t height, const Color* pixels);
+		[[nodiscard]] static Ref<Image> Create(uint32_t width, uint32_t height, const uint8_t* pixels);
+		[[nodiscard]] static Ref<Image> Create(uint32_t width, uint32_t height, const glm::vec4* pixels);
+		[[nodiscard]] static Ref<Image> Create(uint32_t width, uint32_t height, const float* pixels);
+
+		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const Color& background = Color::White);
+		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const Color* pixels);
+		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const uint8_t* pixels);
+		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const glm::vec4* pixels);
+		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const float* pixels);
+
+		[[nodiscard]] static Ref<Image> Load(const Buffer& buffer);
+		[[nodiscard]] static Ref<Image> Load(const std::filesystem::path& path);
+
+		static bool Save(const Ref<Image>& image, const std::filesystem::path& path, ImageType type);
 
 		void Clear();
 
-		static Ref<Image> Load(const Buffer& buffer);
-		static Ref<Image> Load(const std::filesystem::path &path);
-
-		static bool Save(Ref<Image> image, const std::filesystem::path &path, ImageType type);
+		void Copy(const Ref<Image>& image);
 
 		uint32_t Width() const { return m_Width; }
 		uint32_t Height() const { return m_Height; }
-		Vector2u Size() const { return {m_Width, m_Height }; }
+		Vector2u Size() const { return {m_Width, m_Height}; }
 
 		void FlipVertical();
 
@@ -70,30 +69,50 @@ namespace Engine {
 
 		void Fill(const Color& color);
 
-		const auto &GetPixels() const { return m_Pixels; }
+		const auto& GetPixels() const { return m_Pixels; }
 
-		Color& GetPixel(const Vector2u &pos) { return GetPixel(pos.X, pos.Y); }
-		const Color &GetPixel(const Vector2u &pos) const { return GetPixel(pos.X, pos.Y); }
+		Color& GetPixel(const Vector2u& pos) { return GetPixel(pos.X, pos.Y); }
+		const Color& GetPixel(const Vector2u& pos) const { return GetPixel(pos.X, pos.Y); }
 
 		Color& GetPixel(uint32_t x, uint32_t y);
-		const Color &GetPixel(uint32_t x, uint32_t y) const;
+		const Color& GetPixel(uint32_t x, uint32_t y) const;
 
-		void SetPixel(const Vector2u &pos, const Color &color) { SetPixel(pos.X, pos.Y, color); }
-		void SetPixel(uint32_t x, uint32_t y, const Color &color);
+		void SetPixel(const Vector2u& pos, const Color& color) { SetPixel(pos.X, pos.Y, color); }
+		void SetPixel(uint32_t x, uint32_t y, const Color& color);
 
-		std::unique_ptr<uint8_t[]> CopyAsRGBA8() const;
+		[[nodiscard]] std::unique_ptr<uint8_t[]> CopyAsRGBA8() const;
+
+		std::string DebugInfo() const;
 
 		Image& operator=(Image&& img) noexcept;
-		Image& operator=(const Image &img) noexcept;
+		Image& operator=(const Image& img) noexcept;
 
+	protected:
+		Image() = default;
+
+		void Reset(uint32_t width, uint32_t height);
 	private:
-		void LoadToMemory(void *buffer);
+		void LoadToMemory(void* buffer);
 		void Prepare(uint32_t width, uint32_t height);
 
-	private:
+		static void FillFreeImagePixels(void* handler, const std::vector<Color>& pixels, uint32_t width, uint32_t height);
+
+		void CopyFromRawBuffer(const Color* src);
+		void CopyFromRawBuffer(const uint8_t* src);
+		void CopyFromRawBuffer(const float* src);
+		void CopyFromRawBuffer(const glm::vec4* src);
+
 		std::vector<Color> m_Pixels;
 
 		uint32_t m_Width = 0;
 		uint32_t m_Height = 0;
 	};
 }
+
+
+template<>
+struct fmt::formatter<Engine::ImageType> : fmt::formatter<const char*> {
+	auto format(Engine::ImageType type, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::ToString(type), ctx);
+	}
+};

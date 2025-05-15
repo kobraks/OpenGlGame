@@ -207,7 +207,7 @@ namespace Engine {
 		pixels.resize(size);
 
 		GetImage(pixels.data(), static_cast<uint32_t>(size));
-		return MakeRef<Image>(m_Internals->Size, pixels.data());
+		return Image::Create(m_Internals->Size, pixels.data());
 	}
 
 	Ref<Image> Texture::GetImage(const Vector2u& size, const Vector2i& offset) const {
@@ -218,7 +218,7 @@ namespace Engine {
 		pixels.resize(pixelCount);
 
 		GetImage(pixels.data(), static_cast<uint32_t>(pixelCount), size, offset);
-		return MakeRef<Image>(size, pixels.data());
+		return Image::Create(m_Internals->Size, pixels.data());
 	}
 
 	void Texture::Clear(const Color& color) {
