@@ -6,6 +6,7 @@
 #include <variant>
 
 namespace Engine {
+	struct TextureSpec;
 	class Texture;
 	class RenderBuffer;
 
@@ -103,7 +104,7 @@ namespace Engine {
 		void AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
 		void AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment);
 	private:
-
+		TextureSpec CreateAttachmentSpec(const FramebufferSpecification fb, const FramebufferTextureAttachmentSpecification& tex) const;
 		Ref<Texture> CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const;
 		Ref<RenderBuffer> CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const;
 

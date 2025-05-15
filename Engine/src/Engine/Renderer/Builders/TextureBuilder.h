@@ -13,15 +13,22 @@ namespace Engine {
 		TextureBuilder& Mipmaps(bool generate = true);
 		TextureBuilder& Label(const std::string& label);
 		TextureBuilder& Samples(uint32_t samples);
+		TextureBuilder& Usage(TextureUsage usage);
 
 		TextureBuilder& FromImage(const Ref<Image>& image);
+		TextureBuilder& FromImage(const Ref<Image>& image, TextureUsage usage);
 		TextureBuilder& FromRawData(const Buffer& buffer, DataFormat format, DataType type);
 
 		Ref<Texture> Build();
+	protected:
+		TextureSpec CreateSpec() const;
+
 	private:
 		Vector2u m_Size{ 1, 1 };
 		ImageFormat m_ImageFormat = ImageFormat::RGBA8;
 		uint32_t m_Samples = 1;
+
+		TextureUsage m_Usage = TextureUsage::Default;
 		
 		FilterMode m_FilterMin = FilterMode::Linear;
 		FilterMode m_FilterMag = FilterMode::Linear;

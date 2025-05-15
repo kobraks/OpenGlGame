@@ -93,10 +93,6 @@ namespace Engine {
 
 			return buffers;
 		}
-
-		constexpr bool IsDepthFormat(ImageFormat format) {
-			return format >= ImageFormat::DepthComponent && format <= ImageFormat::StencilIndex16;
-		}
 	}
 
 	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& specification) {
@@ -451,10 +447,21 @@ namespace Engine {
 		m_Internals->DepthAttachment = attachment;
 	}
 
-	Ref<Texture> Framebuffer::CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const {
-		const auto& specification = GetSpecification();
+	TextureSpec Framebuffer::CreateAttachmentSpec(const FramebufferSpecification fb,
+		const FramebufferTextureAttachmentSpecification& tex) const {
+		TextureSpec spec;
 
-		auto texture = Texture::Create(specification.Size, specs.Format, specification.Samples, specs.Label);
+		spec.Size = fb.Size;
+		spec.ImageFormat = tex.Format;
+		spec.Samples = fb.Samples;
+		spec.Label = tex.Label;
+		spec.Usage = Utils::IsDepthFormat(tex.Format) ? TextureUsage::DepthStencil : TextureUsage::RenderTarget;
+
+		return spec;
+	}
+
+	Ref<Texture> Framebuffer::CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const {
+		auto texture = Texture::Create(CreateAttachmentSpec(GetSpecification(), specs));
 
 		if (!texture->IsMultisampled()) {
 			if (specs.MipLevel > 0)
