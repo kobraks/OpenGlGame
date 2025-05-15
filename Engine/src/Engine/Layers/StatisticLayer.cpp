@@ -92,7 +92,7 @@ namespace Engine {
 		const auto frameTime = app.GetFrameTime();
 
 		ImGui::SetNextWindowPos({static_cast<float>(windowPos.X), static_cast<float>(windowPos.Y)});
-		ImGui::Begin("Fixed overlay", &m_Show, s_Flags);
+		ImGui::Begin("##Fixed overlay", &m_Show, s_Flags);
 
 		if (m_Clock.GetElapsedTime().AsSeconds() >= 1.f) {
 			m_LastConstUpdateCount = m_ConstUpdateCount;
