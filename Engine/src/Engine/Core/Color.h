@@ -234,12 +234,13 @@ template <>
 struct fmt::formatter<Engine::Color>: formatter<uint32_t> {
 	auto format(const Engine::Color &c, format_context &ctx) const {
 
-		const uint32_t formatted = (static_cast<uint32_t>(c.R) << c.RedBit) |
-			(static_cast<uint32_t>(c.G) << c.GreenBit) |
-			(static_cast<uint32_t>(c.B) << c.BlueBit) |
-			(static_cast<uint32_t>(c.A) << c.AlphaBit);
+		const uint32_t formatted = (static_cast<uint32_t>(c.R) << Engine::Color::RedBit) |
+			(static_cast<uint32_t>(c.G) << Engine::Color::GreenBit) |
+			(static_cast<uint32_t>(c.B) << Engine::Color::BlueBit) |
+			(static_cast<uint32_t>(c.A) << Engine::Color::AlphaBit);
 
-		return fmt::format("{:#010X}", formatted);
+		return fmt::format_to(ctx.out(), "{:#010X}", formatted);
+		// return fmt::formatter<uint32_t>::format(formatted, ctx);
 	}
 
 	constexpr auto parse(format_parse_context &ctx) {
