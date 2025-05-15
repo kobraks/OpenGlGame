@@ -7,8 +7,9 @@
 #include <FreeImage.h>
 
 namespace Engine {
-	static constexpr FREE_IMAGE_FORMAT ConvertType(const ImageType type) {
-		switch(type) {
+	namespace Utils {
+		static constexpr FREE_IMAGE_FORMAT ConvertType(const ImageType type) {
+			switch (type) {
 			case ImageType::BMP:
 				return FIF_BMP;
 			case ImageType::EXR:
@@ -33,34 +34,35 @@ namespace Engine {
 				return FIF_TIFF;
 			default:
 				return FIF_UNKNOWN;
+			}
 		}
-	}
 
-	static constexpr Color GetColorFromFreeImage(BYTE* pixels, size_t i) {
-		Color color;
+		static constexpr Color GetColorFromFreeImage(BYTE* pixels, size_t i) {
+			Color color;
 
-		color.R = pixels[i * 4 + FI_RGBA_RED];
-		color.G = pixels[i * 4 + FI_RGBA_GREEN];
-		color.B = pixels[i * 4 + FI_RGBA_BLUE];
-		color.A = pixels[i * 4 + FI_RGBA_ALPHA];
+			color.R = pixels[i * 4 + FI_RGBA_RED];
+			color.G = pixels[i * 4 + FI_RGBA_GREEN];
+			color.B = pixels[i * 4 + FI_RGBA_BLUE];
+			color.A = pixels[i * 4 + FI_RGBA_ALPHA];
 
-		return color;
-	}
+			return color;
+		}
 
-	const char* ToString(ImageType type) {
-		switch (type) {
-		case ImageType::BMP:     return "BMP";
-		case ImageType::EXR:     return "EXR";
-		case ImageType::J2K:     return "J2K";
-		case ImageType::JP2:     return "JP2";
-		case ImageType::JPEG:    return "JPEG";
-		case ImageType::JXR:     return "JXR";
-		case ImageType::PNG:     return "PNG";
-		case ImageType::PBM:     return "PBM";
-		case ImageType::PGM:     return "PGM";
-		case ImageType::PPM:     return "PPM";
-		case ImageType::TIFF:    return "TIFF";
-		default:                 return "Unknown";
+		const char* ToString(ImageType type) {
+			switch (type) {
+			case ImageType::BMP:     return "BMP";
+			case ImageType::EXR:     return "EXR";
+			case ImageType::J2K:     return "J2K";
+			case ImageType::JP2:     return "JP2";
+			case ImageType::JPEG:    return "JPEG";
+			case ImageType::JXR:     return "JXR";
+			case ImageType::PNG:     return "PNG";
+			case ImageType::PBM:     return "PBM";
+			case ImageType::PGM:     return "PGM";
+			case ImageType::PPM:     return "PPM";
+			case ImageType::TIFF:    return "TIFF";
+			default:                 return "Unknown";
+			}
 		}
 	}
 
@@ -261,7 +263,7 @@ namespace Engine {
 
 		FillFreeImagePixels(handler, pixels, width, height);
 
-		bool result = FreeImage_Save(ConvertType(type), handler, sPath.c_str(), 0);
+		bool result = FreeImage_Save(Utils::ConvertType(type), handler, sPath.c_str(), 0);
 		ENGINE_ASSERT(result);
 
 		FreeImage_Unload(handler);
@@ -426,7 +428,7 @@ namespace Engine {
 
 		const auto pixels = FreeImage_GetBits(converted);
 		for(size_t i = 0; i < m_Pixels.size(); ++i) {
-			m_Pixels[i] = GetColorFromFreeImage(pixels, i);
+			m_Pixels[i] = Utils::GetColorFromFreeImage(pixels, i);
 		}
 
 		FreeImage_Unload(converted);

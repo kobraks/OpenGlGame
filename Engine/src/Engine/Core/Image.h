@@ -23,7 +23,9 @@ namespace Engine {
 		TIFF
 	};
 
-	inline const char* ToString(ImageType type);
+	namespace Utils {
+		const char* ToString(ImageType type);
+	}
 
 	class Image {
 	public:
@@ -113,6 +115,6 @@ namespace Engine {
 template<>
 struct fmt::formatter<Engine::ImageType> : fmt::formatter<const char*> {
 	auto format(Engine::ImageType type, format_context& ctx) const {
-		return fmt::formatter<const char*>::format(Engine::ToString(type), ctx);
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(type), ctx);
 	}
 };
