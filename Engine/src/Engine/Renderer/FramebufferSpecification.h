@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/Core/Base.h"
+#include "Engine/Core/Vector2.h"
 
 #include "Engine/Renderer/GraphicEnums.h"
 
@@ -7,7 +8,7 @@
 
 namespace Engine {
 	struct FramebufferAttachmentSpecificationBase {
-		ImageFormat Format;
+		ImageFormat Format = ImageFormat::RGBA8;
 
 		std::string Label;
 	};
