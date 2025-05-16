@@ -94,6 +94,9 @@ namespace Engine {
 
 		void Swap(Texture& to);
 
+		TextureUsage GetUsage() const { return m_Internals->Usage; }
+		void SetUsage(TextureUsage usage) { m_Internals->Usage = usage; }
+
 		[[nodiscard]] bool IsSRGB() const { return m_Internals->ImageFormat == ImageFormat::SRGB8 || m_Internals->ImageFormat == ImageFormat::SRGB8A8 || m_Internals->ImageFormat == ImageFormat::SRGBA; }
 		[[nodiscard]] bool IsValid() const { return m_Internals && m_Internals->ID != 0; }
 
