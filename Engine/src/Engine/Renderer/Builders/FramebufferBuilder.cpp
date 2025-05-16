@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "FramebufferBuilder.h"
 
+#include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
 #include "Engine/Renderer/Framebuffer.h"
 
 namespace Engine {
@@ -66,10 +67,6 @@ namespace Engine {
 
 			return specs;
 		}
-
-		constexpr bool IsDepth(ImageFormat format) {
-			return format >= ImageFormat::DepthComponent && format <= ImageFormat::StencilIndex16;
-		}
 	}
 
 	FramebufferBuilder::FramebufferBuilder(const Vector2u& size) {
@@ -93,8 +90,12 @@ namespace Engine {
 		return *this;
 	}
 
+	FramebufferBuilder& FramebufferBuilder::AddColorAttachment(const TextureAttachmentBuilder& builder) {
+		return AddColorAttachment(builder.Build());
+	}
+
 	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(const FramebufferTextureAttachmentSpecification& specs) {
-		if (Utils::IsDepth(specs.Format)) {
+		if (Utils::IsDepthFormat(specs.Format)) {
 			m_Specification.DepthAttachment = specs;
 		} else {
 			ENGINE_ASSERT(FALSE);
@@ -106,7 +107,7 @@ namespace Engine {
 
 	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(
 		const FramebufferRenderBufferAttachmentSpecification& specs) {
-		if (Utils::IsDepth(specs.Format)) {
+		if (Utils::IsDepthFormat(specs.Format)) {
 			m_Specification.DepthAttachment = specs;
 		}
 		else {
@@ -117,6 +118,10 @@ namespace Engine {
 		m_Specification.DepthAttachment = specs;
 
 		return *this;
+	}
+
+	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(const TextureAttachmentBuilder& builder) {
+		return SetDepthAttachment(builder.Build());
 	}
 
 	FramebufferBuilder& FramebufferBuilder::SetDepthTextureAttachment(ImageFormat format, FilterMode minFilter,

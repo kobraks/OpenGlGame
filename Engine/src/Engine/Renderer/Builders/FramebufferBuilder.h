@@ -4,6 +4,10 @@
 #include "Engine/Renderer/GraphicEnums.h"
 
 namespace Engine {
+	class TextureAttachmentBuilder;
+}
+
+namespace Engine {
 	class Framebuffer;
 
 	class FramebufferBuilder {
@@ -16,11 +20,15 @@ namespace Engine {
 		FramebufferBuilder& AddColorAttachment(const FramebufferTextureAttachmentSpecification& specs);
 		FramebufferBuilder& AddColorAttachment(const FramebufferRenderBufferAttachmentSpecification& specs);
 
+		FramebufferBuilder& AddColorAttachment(const TextureAttachmentBuilder& builder);
+
 		FramebufferBuilder& AddTextureColorAttachment(ImageFormat format, FilterMode minFilter = FilterMode::Linear, FilterMode magFilter = FilterMode::Linear, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
 		FramebufferBuilder& AddRenderBufferColorAttachment(ImageFormat format, const std::string& label = {});
 
 		FramebufferBuilder& SetDepthAttachment(const FramebufferTextureAttachmentSpecification& specs);
 		FramebufferBuilder& SetDepthAttachment(const FramebufferRenderBufferAttachmentSpecification& specs);
+
+		FramebufferBuilder& SetDepthAttachment(const TextureAttachmentBuilder& builder);
 
 		FramebufferBuilder& SetDepthTextureAttachment(ImageFormat format, FilterMode minFilter = FilterMode::Nearest, FilterMode magFilter = FilterMode::Nearest, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
 		FramebufferBuilder& SetDepthRenderBufferAttachment(ImageFormat format, const std::string& label = {});
