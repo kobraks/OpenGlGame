@@ -17,65 +17,92 @@
 
 #define COPY_LOG_BUFFERS(snapshot) LogBufferCopier _copier(m_Mutex, m_Messages, m_VisibleMessageIndices, snapshot)
 
-namespace {
-	constexpr Engine::Color SelectTextColor(spdlog::level::level_enum level) {
-		switch (level) {
-		case spdlog::level::trace:
-			return Engine::Color(204, 204, 204);
-		case spdlog::level::debug:
-			return Engine::Color(58, 150, 221);
-		case spdlog::level::info:
-			return Engine::Color(19, 161, 14);
-		case spdlog::level::warn:
-			return Engine::Color(249, 241, 165);
-		case spdlog::level::err: ;
-		case spdlog::level::critical:
-			return Engine::Color(255, 0, 0);
-		case spdlog::level::off:
-		case spdlog::level::n_levels: default:
-			return Engine::Color(0, 0, 0, 0);
-		}
-	}
-
-	constexpr Engine::Color SelectBackgroundColor(spdlog::level::level_enum level) {
-		switch (level) {
-		case spdlog::level::trace:
-			return Engine::Color(204, 204, 204);
-		case spdlog::level::debug:
-			return Engine::Color(58, 150, 221);
-		case spdlog::level::info:
-			return Engine::Color(19, 161, 14);
-		case spdlog::level::warn:
-			return Engine::Color(249, 241, 165);
-		case spdlog::level::err: ;
-		case spdlog::level::critical:
-			return Engine::Color(255, 0, 0);
-		case spdlog::level::off:
-		case spdlog::level::n_levels: default:
-			return Engine::Color(0, 0, 0, 0);
-		}
-	}
-
-	constexpr std::string_view GetFirst(const std::string& string, size_t size) {
-		return {string.begin(), string.size() > size ? string.begin() + size : string.end()};
-	}
-
-	std::string GetTimeAsString(const spdlog::log_clock::time_point& time) {
-		return fmt::format("{:%T}", std::chrono::round<std::chrono::seconds>(time));
-	}
-
-	bool FilterChanged(ImGuiTextFilter& filter, std::string& lastFilter) {
-		if (filter.InputBuf != lastFilter) {
-			lastFilter = filter.InputBuf;
-			return true;
-		}
-
-		return false;
-	}
-}
-
 namespace Engine {
-	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings| ImGuiTableFlags_Sortable;
+	namespace Utils {
+		static constexpr Color SelectTextColor(spdlog::level::level_enum level) {
+			switch (level) {
+			case spdlog::level::trace:
+				return Color(204, 204, 204);
+			case spdlog::level::debug:
+				return Color(58, 150, 221);
+			case spdlog::level::info:
+				return Color(19, 161, 14);
+			case spdlog::level::warn:
+				return Color(249, 241, 165);
+			case spdlog::level::err: ;
+			case spdlog::level::critical:
+				return Color(255, 0, 0);
+			case spdlog::level::off:
+			case spdlog::level::n_levels: default:
+				return Color(0, 0, 0, 0);
+			}
+		}
+
+		static constexpr Color SelectBackgroundColor(spdlog::level::level_enum level) {
+			switch (level) {
+			case spdlog::level::trace:
+				return Color(204, 204, 204);
+			case spdlog::level::debug:
+				return Color(58, 150, 221);
+			case spdlog::level::info:
+				return Color(19, 161, 14);
+			case spdlog::level::warn:
+				return Color(249, 241, 165);
+			case spdlog::level::err: ;
+			case spdlog::level::critical:
+				return Color(255, 0, 0);
+			case spdlog::level::off:
+			case spdlog::level::n_levels: default:
+				return Color(0, 0, 0, 0);
+			}
+		}
+
+		static constexpr std::string_view GetFirst(const std::string& string, size_t size) {
+			return {string.begin(), string.size() > size ? string.begin() + size : string.end()};
+		}
+
+		static std::string GetTimeAsString(const spdlog::log_clock::time_point& time) {
+			return fmt::format("{:%T}", std::chrono::round<std::chrono::seconds>(time));
+		}
+
+		static bool FilterChanged(std::string& filter, std::string& lastFilter) {
+			if (filter != lastFilter) {
+				lastFilter = filter;
+				return true;
+			}
+
+			return false;
+		}
+
+		static bool FilterChanged(ImGuiTextFilter& filter, std::string& lastFilter) {
+			if (filter.InputBuf != lastFilter) {
+				lastFilter = filter.InputBuf;
+				return true;
+			}
+
+			return false;
+		}
+
+		static void LoggerCombo(Ref<spdlog::logger> logger) {
+			static constexpr std::string_view logLevels = "Trace\0Debug\0Info\0Warn\0Error\0Critical\0Off";
+
+			int32_t currentOption = logger->level();
+
+			if (Combo(fmt::format("{} severity level", logger->name()), currentOption, logLevels)) {
+				logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
+			}
+		}
+
+		static constexpr std::string Capitalize(const std::string& str) {
+			if (str.empty()) return "";
+			std::string result = str;
+			result[0] = static_cast<char>(std::toupper(result[0]));
+			return result;
+		}
+	}
+
+	constexpr ImGuiTableFlags TABLE_FLAGS = ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings |
+		ImGuiTableFlags_Sortable;
 	constexpr int TABLE_COLUMN_COUNT = 5;
 
 	LogSource::LogSource(const spdlog::source_loc& loc) {
@@ -101,18 +128,19 @@ namespace Engine {
 
 		Text = to_string(formatted);
 		Timestamp = msg.time;
-		Time = GetTimeAsString(msg.time);
+		Time = Utils::GetTimeAsString(msg.time);
 		Level = msg.level;
 	}
 
-	LogMessageEntry::LogMessageEntry(uint64_t index, const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) : Message(formatted, msg), Source(msg) {
- 		Color = SelectTextColor(msg.level);
+	LogMessageEntry::LogMessageEntry(uint64_t index, const spdlog::memory_buf_t& formatted,
+	                                 const spdlog::details::log_msg& msg) : Message(formatted, msg), Source(msg) {
+		Color = Utils::SelectTextColor(msg.level);
 		Index = index;
 		GenerateHash(index);
 	}
 
 	void LogMessageEntry::GenerateHash(size_t i) {
- 	// 	IdHash = std::hash<std::string>()(fmt::format("{}{}", i, Message.Text));
+		// 	IdHash = std::hash<std::string>()(fmt::format("{}{}", i, Message.Text));
 		// IdSelectedHash = std::hash<std::string>()(fmt::format("Selected{}{}", i, Message.Text));
 		// IdTextMultiline = std::hash<std::string>()(fmt::format("Text{}\"{}\"", i, Message.Text));
 
@@ -126,7 +154,7 @@ namespace Engine {
 	}
 
 	LogBufferCopier::LogBufferCopier(std::mutex& mutex, const std::vector<LogMessageEntry>& sourceMessages,
-		const std::vector<size_t>& sourceVisible, LogBufferSnapshot& outSnapshot) {
+	                                 const std::vector<size_t>& sourceVisible, LogBufferSnapshot& outSnapshot) {
 		std::lock_guard lock(mutex);
 		outSnapshot.Messages.reserve(sourceMessages.size());
 		outSnapshot.Messages = sourceMessages;
@@ -155,10 +183,10 @@ namespace Engine {
 
 			if (ImGui::CollapsingHeader("Options")) {
 				ToggleButton("Pause", &m_Pause);
-				LoggerCombo(Log::GetApplicationLogger());
-				LoggerCombo(Log::GetEngineLogger());
-				LoggerCombo(Log::GetGLLogger());
-				LoggerCombo(Log::GetScriptLogger());
+				Utils::LoggerCombo(Log::GetApplicationLogger());
+				Utils::LoggerCombo(Log::GetEngineLogger());
+				Utils::LoggerCombo(Log::GetGLLogger());
+				Utils::LoggerCombo(Log::GetScriptLogger());
 
 				ToggleButton("Allow Scrolling", &m_AllowScrolling);
 				ToggleButton("Auto Popup", &m_AutoPopUp);
@@ -175,17 +203,78 @@ namespace Engine {
 				Clear();
 
 			{
-				m_Filter->Draw("Filter", -100.f);
+				m_Filter->Draw("Filter", 150.0f);
+				ImGui::SameLine();
+
+				ImGui::SetNextItemWidth(120.0f);
+
+				const std::string severityLabel = m_SeverityFilter.empty() ? "Severity: All" : "Severity: " + Utils::Capitalize(m_SeverityFilter);
+				if (ImGui::BeginCombo("##Severity", severityLabel.c_str())) {
+					if (ImGui::Selectable("Severity All", m_SeverityFilter.empty())) {
+						m_LastSeverityFilter = m_SeverityFilter;
+						m_SeverityFilter.clear();
+					}
+
+					static const std::vector<std::string> severities = {
+						"trace", "debug", "info", "warn", "error", "critical"
+					};
+					for (const auto& severity : severities) {
+						const bool selected = (m_SeverityFilter == severity);
+						if (ImGui::Selectable(Utils::Capitalize(severity).c_str(), selected)) {
+							m_LastSeverityFilter = m_SeverityFilter;
+							m_SeverityFilter = severity;
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(130.f);
+				const std::string loggerLabel = m_LoggerFilter.empty() ? "Logger: All" : "Logger: " + Utils::Capitalize(m_LoggerFilter);
+				if (ImGui::BeginCombo("##Logger", loggerLabel.c_str())) {
+					if (ImGui::Selectable("Logger: All", m_LoggerFilter.empty())) {
+						m_LastLoggerFilter = m_LoggerFilter;
+						m_LoggerFilter.clear();
+					}
+
+					static const std::vector<std::string> knownLoggers = {
+						APPLICATION_LOGGER_NAME, ENGINE_LOGGER_NAME, GL_LOGGER_NAME, SCRIPT_LOGGER_NAME
+					};
+					for (const auto& logger : knownLoggers) {
+						const bool selected = (m_LoggerFilter == logger);
+						if (ImGui::Selectable(logger.c_str(), selected)) {
+							m_LastLoggerFilter = m_LoggerFilter;
+							m_LoggerFilter = logger;
+						}
+					}
+
+					ImGui::EndCombo();
+				}
+
+				ImGui::SameLine();
+
+				bool clear = false;
+				if (ImGui::Button("Clear Filters")) {
+					m_LoggerFilter.clear();
+					m_SeverityFilter.clear();
+					m_Filter->Clear();
+					clear = true;
+				}
+
 				std::lock_guard guard(m_Mutex);
 
-				if (FilterChanged(*m_Filter, m_LastFilterText)) {
+				const bool filterChanged = Utils::FilterChanged(*m_Filter, m_LastFilterText);
+				const bool loggerFilterChanged = Utils::FilterChanged(m_LoggerFilter, m_LastLoggerFilter);
+				const bool severityFilterChanged = Utils::FilterChanged(m_SeverityFilter, m_LastSeverityFilter);
+
+				if (clear || (filterChanged || loggerFilterChanged || severityFilterChanged))
 					UpdateVisibleMessages();
-				}
 
 				ImGui::PushID("Num of messages");
 				if (m_Messages.size() >= s_MaxMessages)
 					ImGui::PushStyleColor(ImGuiCol_Text, {1, 0, 0, 1});
-				ImGui::LabelText("", "Num of messages: %i/%i", m_Messages.size(), s_MaxMessages);
+				ImGui::LabelText("##MessagesCount", "Num of messages: %i/%i", m_Messages.size(), s_MaxMessages);
 				if (m_Messages.size() >= s_MaxMessages) {
 					ImGui::PopStyleColor();
 					ImGui::TextColored({1, 0, 0, 1},
@@ -247,7 +336,7 @@ namespace Engine {
 
 		const auto& message = m_Messages.emplace_back(m_NextIndex++, formatted, msg);
 
-		if (m_Filter->PassFilter(message.Message.Text.c_str())) {
+		if (PassFilters(message)) {
 			m_VisibleMessageIndices.emplace_back(message.Index);
 		}
 	}
@@ -255,11 +344,20 @@ namespace Engine {
 	void LogLayer::flush_() {
 	}
 
+	bool LogLayer::PassFilters(const LogMessageEntry& message) const {
+		const auto passesTextFilter = m_Filter->PassFilter(message.Message.Text.c_str());
+		const auto passesLoggerNameFilter = m_LoggerFilter.empty() || message.Message.Name == m_LoggerFilter;
+		const auto passesSeverityLevelFilter = m_SeverityFilter.empty() || to_string_view(message.Message.Level) ==
+			m_SeverityFilter;
+
+		return passesTextFilter && passesLoggerNameFilter && passesSeverityLevelFilter;
+	}
+
 	void LogLayer::UpdateVisibleMessages() {
 		m_VisibleMessageIndices.clear();
 		m_VisibleMessageIndices.reserve(m_Messages.capacity());
 		for (size_t i = 0; i < m_Messages.size(); ++i) {
-			if (m_Filter->PassFilter(m_Messages.at(i).Message.Text.c_str())) {
+			if (PassFilters(m_Messages.at(i))) {
 				m_VisibleMessageIndices.emplace_back(i);
 			}
 		}
@@ -276,27 +374,23 @@ namespace Engine {
 
 					switch (specs.ColumnIndex) {
 					case 0: return specs.SortDirection == ImGuiSortDirection_Ascending ? aIdx < bIdx : aIdx > bIdx;
-					case 1: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Timestamp < b.Message.Timestamp : a.Message.Timestamp > b.Message.Timestamp;
-					case 2: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Level < b.Message.Level : a.Message.Level > b.Message.Level;
-					case 3: return specs.SortDirection == ImGuiSortDirection_Ascending ? a.Message.Name < b.Message.Name : a.Message.Name > b.Message.Name;
+					case 1: return specs.SortDirection == ImGuiSortDirection_Ascending
+						               ? a.Message.Timestamp < b.Message.Timestamp
+						               : a.Message.Timestamp > b.Message.Timestamp;
+					case 2: return specs.SortDirection == ImGuiSortDirection_Ascending
+						               ? a.Message.Level < b.Message.Level
+						               : a.Message.Level > b.Message.Level;
+					case 3: return specs.SortDirection == ImGuiSortDirection_Ascending
+						               ? a.Message.Name < b.Message.Name
+						               : a.Message.Name > b.Message.Name;
 					}
 
 					return false;
-					};
+				};
 
 				std::ranges::sort(m_VisibleMessageIndices, compare);
 				sortSpecs->SpecsDirty = false;
 			}
-		}
-	}
-
-	void LogLayer::LoggerCombo(Ref<spdlog::logger> logger) {
-		static constexpr std::string_view logLevels = "Trace\0Debug\0Info\0Warn\0Error\0Critical\0Off";
-
-		int32_t currentOption = logger->level();
-
-		if (Combo(fmt::format("{} severity level", logger->name()), currentOption, logLevels)) {
-			logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
 		}
 	}
 
@@ -378,11 +472,11 @@ namespace Engine {
 	void LogLayer::PrintClippedTable(LogBufferSnapshot& snapshot, int itemCount, int startIndex) {
 		if (itemCount > 0) {
 			ImGuiListClipper clipper;
-			clipper.Begin(static_cast<int>(itemCount));
+			clipper.Begin(itemCount);
 			while (clipper.Step()) {
 				for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; ++i) {
 					const int globalIndex = (startIndex >= 0 ? startIndex + i : i);
- 					const auto index = snapshot.VisibleMessageIndices[globalIndex];
+					const auto index = snapshot.VisibleMessageIndices[globalIndex];
 
 					if (index >= snapshot.Messages.size()) continue;
 
@@ -417,7 +511,8 @@ namespace Engine {
 		if (ImGui::IsItemClicked()) {
 			if (m_SelectedMessageIndex != messageEntry.Index) {
 				m_SelectedMessageIndex = messageEntry.Index;
-			} else {
+			}
+			else {
 				m_SelectedMessageIndex = s_MaxMessages + 1;
 			}
 		}
@@ -438,7 +533,7 @@ namespace Engine {
 		const ImVec2 textSize = ImGui::CalcTextSize(message.Desc.c_str());
 		const float contentRegionWidth = ImGui::GetContentRegionAvail().x;
 
-		const auto shortDesc = GetFirst(message.Desc, contentRegionWidth - textSize.x);
+		const auto shortDesc = Utils::GetFirst(message.Desc, contentRegionWidth - textSize.x);
 		ImGui::TextUnformatted(shortDesc.data(), shortDesc.data() + shortDesc.size());
 
 		ImGui::EndGroup();

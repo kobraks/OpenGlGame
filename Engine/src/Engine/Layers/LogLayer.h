@@ -20,8 +20,8 @@ namespace Engine {
 
 		std::string File;
 		std::string Function;
-		int Line{ 0 };
-		size_t ThreadId{ 0 };
+		int Line{0};
+		size_t ThreadId{0};
 
 		void Print() const;
 	};
@@ -29,12 +29,12 @@ namespace Engine {
 	struct LogMessage {
 		LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg);
 
-		std::string Name;
-		std::string Desc;
-		std::string Text;
-		std::string Time;
-		spdlog::level::level_enum Level;
-		std::chrono::system_clock::time_point Timestamp;
+		std::string Name; //Logger name
+		std::string Desc; //Description (log message)
+		std::string Text; //Full message: time stamp logger name and Desc
+		std::string Time; //String of Timestamp
+		spdlog::level::level_enum Level; //Severity of message
+		std::chrono::system_clock::time_point Timestamp; //TimeStamp when message got send in
 	};
 
 	struct LogMessageEntry {
@@ -58,8 +58,8 @@ namespace Engine {
 	};
 
 	struct LogBufferCopier {
-	public:
-		LogBufferCopier(std::mutex& mutex, const std::vector<LogMessageEntry>& sourceMessages, const std::vector<size_t>& sourceVisible, LogBufferSnapshot& outSnapshot);
+		LogBufferCopier(std::mutex& mutex, const std::vector<LogMessageEntry>& sourceMessages,
+		                const std::vector<size_t>& sourceVisible, LogBufferSnapshot& outSnapshot);
 	};
 
 	class LogLayer : public Layer, public spdlog::sinks::base_sink<std::mutex> {
@@ -101,10 +101,10 @@ namespace Engine {
 		void flush_() override;
 
 	private:
+		bool PassFilters(const LogMessageEntry& message) const;
+
 		void UpdateVisibleMessages();
 		void SortVisibleMessages();
-
-		void LoggerCombo(Ref<spdlog::logger> logger);
 
 		static void SetUpTable();
 
@@ -124,6 +124,8 @@ namespace Engine {
 		bool m_Pause = false;
 
 		std::string m_LastFilterText;
+		std::string m_LastLoggerFilter;
+		std::string m_LastSeverityFilter;
 
 		int32_t m_MinLogLevelToPopUp = 0;
 		inline static uint64_t s_MaxMessages = 10000;
@@ -131,6 +133,8 @@ namespace Engine {
 		uint64_t m_NextIndex = 0;
 
 		Scope<ImGuiTextFilter> m_Filter;
+		std::string m_LoggerFilter;
+		std::string m_SeverityFilter;
 
 		std::vector<LogMessageEntry> m_Messages;
 		std::vector<size_t> m_VisibleMessageIndices;
