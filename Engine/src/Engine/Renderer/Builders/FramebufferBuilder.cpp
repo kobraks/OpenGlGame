@@ -2,6 +2,7 @@
 #include "FramebufferBuilder.h"
 
 #include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
+#include "Engine/Renderer/Builders/RenderBufferAttachmentBuilder.h"
 #include "Engine/Renderer/Framebuffer.h"
 
 namespace Engine {
@@ -70,23 +71,23 @@ namespace Engine {
 	}
 
 	FramebufferBuilder::FramebufferBuilder(const Vector2u& size) {
-		m_Specification.Size = size;
+		m_Spec.Size = size;
 	}
 
 	FramebufferBuilder& FramebufferBuilder::Size(const Vector2u& size) {
-		m_Specification.Size = size;
+		m_Spec.Size = size;
 
 		return *this;
 	}
 
 	FramebufferBuilder& FramebufferBuilder::AddColorAttachment(const FramebufferTextureAttachmentSpecification& specs) {
-		m_Specification.ColorAttachments.emplace_back(specs);
+		m_Spec.ColorAttachments.emplace_back(specs);
 		return *this;
 	}
 
 	FramebufferBuilder& FramebufferBuilder::AddColorAttachment(
 		const FramebufferRenderBufferAttachmentSpecification& specs) {
-		m_Specification.ColorAttachments.emplace_back(specs);
+		m_Spec.ColorAttachments.emplace_back(specs);
 		return *this;
 	}
 
@@ -94,9 +95,13 @@ namespace Engine {
 		return AddColorAttachment(builder.Build());
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(const FramebufferTextureAttachmentSpecification& specs) {
+	FramebufferBuilder& FramebufferBuilder::AddColorAttachment(const RenderBufferAttachmentBuilder& builder) {
+		return AddColorAttachment(builder.Build());
+	}
+
+	FramebufferBuilder& FramebufferBuilder::DepthAttachment(const FramebufferTextureAttachmentSpecification& specs) {
 		if (Utils::IsDepthFormat(specs.Format)) {
-			m_Specification.DepthAttachment = specs;
+			m_Spec.DepthAttachment = specs;
 		} else {
 			ENGINE_ASSERT(FALSE);
 			throw std::runtime_error("Attempted to set not depth formated texture");
@@ -105,37 +110,41 @@ namespace Engine {
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(
+	FramebufferBuilder& FramebufferBuilder::DepthAttachment(
 		const FramebufferRenderBufferAttachmentSpecification& specs) {
 		if (Utils::IsDepthFormat(specs.Format)) {
-			m_Specification.DepthAttachment = specs;
+			m_Spec.DepthAttachment = specs;
 		}
 		else {
 			ENGINE_ASSERT(FALSE);
 			throw std::runtime_error("Attempted to set not depth formated texture");
 		}
 
-		m_Specification.DepthAttachment = specs;
+		m_Spec.DepthAttachment = specs;
 
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetDepthAttachment(const TextureAttachmentBuilder& builder) {
-		return SetDepthAttachment(builder.Build());
+	FramebufferBuilder& FramebufferBuilder::DepthAttachment(const TextureAttachmentBuilder& builder) {
+		return DepthAttachment(builder.Build());
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetDepthTextureAttachment(ImageFormat format, FilterMode minFilter,
-	                                                                  FilterMode magFilter, WrapMode wrapS,
-	                                                                  WrapMode wrapT, bool useSRGB, uint32_t mipLevel,
-	                                                                  uint32_t layer,
-	                                                                  const std::string& label) {
-		return SetDepthAttachment(Utils::CreateAttachmentTextureSpecification(
+	FramebufferBuilder& FramebufferBuilder::DepthAttachment(const RenderBufferAttachmentBuilder& builder) {
+		return DepthAttachment(builder.Build());
+	}
+
+	FramebufferBuilder& FramebufferBuilder::DepthTextureAttachment(ImageFormat format, FilterMode minFilter,
+	                                                               FilterMode magFilter, WrapMode wrapS,
+	                                                               WrapMode wrapT, bool useSRGB, uint32_t mipLevel,
+	                                                               uint32_t layer,
+	                                                               const std::string& label) {
+		return DepthAttachment(Utils::CreateAttachmentTextureSpecification(
 			format, minFilter, magFilter, wrapS, wrapT, useSRGB,
 			mipLevel, layer, label));
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetDepthRenderBufferAttachment(ImageFormat format, const std::string& label) {
-		return SetDepthAttachment(Utils::CreateAttachmentRenderBufferSpecification(format, label));
+	FramebufferBuilder& FramebufferBuilder::DepthRenderBufferAttachment(ImageFormat format, const std::string& label) {
+		return DepthAttachment(Utils::CreateAttachmentRenderBufferSpecification(format, label));
 	}
 
 	FramebufferBuilder& FramebufferBuilder::AddTextureColorAttachment(ImageFormat format, FilterMode minFilter,
@@ -152,38 +161,44 @@ namespace Engine {
 		return AddColorAttachment(Utils::CreateAttachmentRenderBufferSpecification(format, label));
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetSamples(uint32_t samples) {
-		m_Specification.Samples = samples;
+	FramebufferBuilder& FramebufferBuilder::Samples(uint32_t samples) {
+		m_Spec.Samples = samples;
 
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetSwapchainTarget(bool value) {
-		m_Specification.SwapchainTarget = value;
+	FramebufferBuilder& FramebufferBuilder::SwapchainTarget(bool value) {
+		m_Spec.SwapchainTarget = value;
 
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetAllowBlit(bool value) {
-		m_Specification.AllowBlit = value;
+	FramebufferBuilder& FramebufferBuilder::AllowBlit(bool value) {
+		m_Spec.AllowBlit = value;
 
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetLayered(bool value) {
-		m_Specification.Layered = value;
+	FramebufferBuilder& FramebufferBuilder::Layered(bool value) {
+		m_Spec.Layered = value;
 
 		return *this;
 	}
 
-	FramebufferBuilder& FramebufferBuilder::SetLabel(std::string label) {
-		m_Specification.Label = std::move(label);
+	FramebufferBuilder& FramebufferBuilder::Label(std::string label) {
+		m_Spec.Label = std::move(label);
+
+		return *this;
+	}
+
+	FramebufferBuilder& FramebufferBuilder::Clear() {
+		m_Spec = {};
 
 		return *this;
 	}
 
 	FramebufferSpecification FramebufferBuilder::BuildSpecification() const {
-		return m_Specification;
+		return m_Spec;
 	}
 
 	Ref<Framebuffer> FramebufferBuilder::Build() const {

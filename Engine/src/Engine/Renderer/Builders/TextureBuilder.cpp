@@ -79,21 +79,33 @@ namespace Engine {
 		return *this;
 	}
 
-	Ref<Texture> TextureBuilder::Build() {
-		auto texture = Texture::Create(CreateSpec());
+	TextureBuilder& TextureBuilder::Clear() {
+		m_Size = { 1, 1 };
+		m_ImageFormat = ImageFormat::RGBA8;
+		m_Samples = 1;
 
-		if (!texture->IsMultisampled()) {
-			texture->SetFilters(m_FilterMin, m_FilterMag);
-			texture->SetWrapping(m_WrapS, m_WrapT);
-		}
+		m_Usage = TextureUsage::Default;
 
-		if (m_GenerateMipMaps)
-			texture->GenerateMipMaps();
+		m_FilterMin = FilterMode::Linear;
+		m_FilterMag = FilterMode::Linear;
 
-		return texture;
+		m_WrapS = WrapMode::ClampEdge;
+		m_WrapT = WrapMode::ClampEdge;
+
+		m_GenerateMipMaps = false;
+		m_Label = {};
+
+		m_Image = nullptr;
+
+		m_Buffer.Release();
+		m_DataFormat = DataFormat::RGBA;
+		m_DataType = DataType::UnsignedByte;
+		m_UseRawData = false;
+
+		return *this;
 	}
 
-	TextureSpec TextureBuilder::CreateSpec() const {
+	TextureSpec TextureBuilder::BuildSpecification() const {
 		TextureSpec spec;
 
 		if (!m_UseRawData && m_Image && m_Size != m_Image->Size()) {
@@ -110,15 +122,31 @@ namespace Engine {
 			spec.InitialData = static_cast<const uint8_t*>(m_Buffer.Data);
 			spec.DataFormat = m_DataFormat;
 			spec.DataType = m_DataType;
-		} else if (m_Image) {
+		}
+		else if (m_Image) {
 			spec.Size = m_Image->Size();
 			spec.InitialData = m_Image->GetPixels().data();
 			spec.DataFormat = DataFormat::RGBA;
 			spec.DataType = DataType::UnsignedByte;
-		} else {
+		}
+		else {
 			spec.Size = m_Size;
 		}
 
 		return spec;
+	}
+
+	Ref<Texture> TextureBuilder::Build() const {
+		auto texture = Texture::Create(BuildSpecification());
+
+		if (!texture->IsMultisampled()) {
+			texture->SetFilters(m_FilterMin, m_FilterMag);
+			texture->SetWrapping(m_WrapS, m_WrapT);
+		}
+
+		if (m_GenerateMipMaps)
+			texture->GenerateMipMaps();
+
+		return texture;
 	}
 }

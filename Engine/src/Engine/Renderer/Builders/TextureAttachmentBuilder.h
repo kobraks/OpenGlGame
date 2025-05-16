@@ -21,6 +21,8 @@ namespace Engine {
 		TextureAttachmentBuilder& Layer(uint32_t layer);
 		TextureAttachmentBuilder& SRGB(bool enabled);
 
+		TextureAttachmentBuilder& Clear();
+
 		FramebufferTextureAttachmentSpecification Build() const;
 
 	private:

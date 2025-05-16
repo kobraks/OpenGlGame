@@ -4,7 +4,7 @@
 namespace Engine {
 	class ShaderProgramBuilder {
 	public:
-		ShaderProgramBuilder& SetLabel(const std::string& label);
+		ShaderProgramBuilder& Label(const std::string& label);
 
 		ShaderProgramBuilder& AddStage(Ref<ShaderStage> stage);
 		ShaderProgramBuilder& Vert(Ref<ShaderSource> source, const std::string& label);
@@ -14,9 +14,10 @@ namespace Engine {
 		ShaderProgramBuilder& Control(Ref<ShaderSource> source, const std::string& label);
 		ShaderProgramBuilder& Eval(Ref<ShaderSource> source, const std::string& label);
 
-		Ref<ShaderProgram> Build();
+		ShaderProgramBuilder& Clear();
 
-		std::pair<Ref<ShaderProgram>, ShaderLinkResult> BuildWithResult();
+		Ref<ShaderProgram> Build() const;
+		std::pair<Ref<ShaderProgram>, ShaderLinkResult> BuildWithResult() const;
 
 	private:
 		std::vector<Ref<ShaderStage>> m_Stages;

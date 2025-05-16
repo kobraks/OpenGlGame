@@ -4,7 +4,7 @@
 #include "Engine/Renderer/ShaderSource.h"
 
 namespace Engine {
-	ShaderProgramBuilder& ShaderProgramBuilder::SetLabel(const std::string& label) {
+	ShaderProgramBuilder& ShaderProgramBuilder::Label(const std::string& label) {
 		m_Label = label;
 		return *this;
 	}
@@ -43,7 +43,14 @@ namespace Engine {
 		return AddStage(ShaderStage::CreateEvaluation(source, label));
 	}
 
-	Ref<ShaderProgram> ShaderProgramBuilder::Build(){
+	ShaderProgramBuilder& ShaderProgramBuilder::Clear() {
+		m_Label.clear();
+		m_Stages.clear();
+
+		return *this;
+	}
+
+	Ref<ShaderProgram> ShaderProgramBuilder::Build() const {
 		auto [program, result] = BuildWithResult();
 
 		if (!result) {
@@ -53,7 +60,7 @@ namespace Engine {
 		return program;
 	}
 
-	std::pair<Ref<ShaderProgram>, ShaderLinkResult> ShaderProgramBuilder::BuildWithResult() {
+	std::pair<Ref<ShaderProgram>, ShaderLinkResult> ShaderProgramBuilder::BuildWithResult() const {
 		auto program = ShaderProgram::Create(m_Label);
 
 		for (const auto& stage : m_Stages) {
@@ -61,9 +68,6 @@ namespace Engine {
 		}
 
 		auto result = program->Link();
-
-		m_Stages.clear();
-		m_Label.clear();
 
 		return { program, result };
 	}

@@ -70,6 +70,12 @@ namespace Engine {
 		return *this;
 	}
 
+	TextureAttachmentBuilder& TextureAttachmentBuilder::Clear() {
+		m_Spec = {};
+
+		return *this;
+	}
+
 	FramebufferTextureAttachmentSpecification TextureAttachmentBuilder::Build() const {
 		return m_Spec;
 	}

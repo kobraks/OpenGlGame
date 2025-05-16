@@ -19,10 +19,10 @@ namespace Engine {
 		TextureBuilder& FromImage(const Ref<Image>& image, TextureUsage usage);
 		TextureBuilder& FromRawData(const Buffer& buffer, DataFormat format, DataType type);
 
-		Ref<Texture> Build();
-	protected:
-		TextureSpec CreateSpec() const;
+		TextureBuilder& Clear();
 
+		TextureSpec BuildSpecification() const;
+		Ref<Texture> Build() const;
 	private:
 		Vector2u m_Size{ 1, 1 };
 		ImageFormat m_ImageFormat = ImageFormat::RGBA8;
