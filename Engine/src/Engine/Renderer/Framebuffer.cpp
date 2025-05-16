@@ -93,6 +93,48 @@ namespace Engine {
 
 			return buffers;
 		}
+
+		struct DepthAttachmentInfo {
+			uint32_t AttachmentPoint;
+			bool HasDepth = false;
+			bool HasStencil = false;
+		};
+
+		static DepthAttachmentInfo ToGLDepthAttachmentPoint(ImageFormat format) {
+			DepthAttachmentInfo info;
+
+			ENGINE_ASSERT(Utils::IsDepthFormat(format), "Non-depth format used in depth attachment!");
+			if (!IsDepthFormat(format))
+				throw std::invalid_argument("Format is not a depth/stencil format");
+
+			if (format <= ImageFormat::Depth32FStencil8) {
+				info.AttachmentPoint = GL_DEPTH_STENCIL_ATTACHMENT;
+				info.HasDepth = true;
+				info.HasStencil = true;
+			}
+			else if (format <= ImageFormat::StencilIndex16) {
+				info.AttachmentPoint = GL_STENCIL_ATTACHMENT;
+				info.HasStencil = true;
+			}
+			else {
+				info.AttachmentPoint = GL_DEPTH_ATTACHMENT;
+				info.HasDepth = true;
+			}
+
+			return info;
+		}
+
+		static std::string AttachmentPointToString(uint32_t point) {
+			if (point >= GL_COLOR_ATTACHMENT0 && point <= GL_COLOR_ATTACHMENT31)
+				return fmt::format("GL_COLOR_ATTACHMENT{}", point - GL_COLOR_ATTACHMENT0);
+
+			switch (point) {
+			case GL_DEPTH_ATTACHMENT: return "GL_DEPTH_ATTACHMENT";
+			case GL_DEPTH_STENCIL_ATTACHMENT: return "GL_DEPTH_STENCIL_ATTACHMENT";
+			case GL_STENCIL_ATTACHMENT: return "GL_STENCIL_ATTACHMENT";
+			default: return fmt::format("0x{:X}", point);
+			}
+		}
 	}
 
 	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& specification) {
@@ -314,8 +356,13 @@ namespace Engine {
 			glObjectLabel(GL_FRAMEBUFFER, *this, -1, specs.Label.c_str());
 
 		SetUpAttachments();
-		SetDrawBuffers(m_Internals->ColorAttachmentCount - 1);
+		SetDrawBuffers(m_Internals->ColorAttachmentCount);
 		CheckCompleteness();
+
+		LOG_GL_INFO("Framebuffer '{}' created with {} color and {} depth attachments",
+			Label(),
+			m_Internals->ColorAttachmentCount,
+			m_Internals->DepthBuffer ? 1 : 0);
 	}
 
 	void Framebuffer::CheckCompleteness() const {
@@ -327,9 +374,12 @@ namespace Engine {
 			fmt::memory_buffer buffer;
 			fmt::format_to(std::back_inserter(buffer), "{:#x}: '{}'->{}\0", error.Code, error.Name, error.Desc);
 
+			LOG_GL_ERROR("Framebuffer '{}' incomplete: {} - {}", Label(), error.Name, error.Desc);
 			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", buffer.data()));
 			throw std::exception(fmt::format("Unable to create framebuffer: {}", buffer.data()).c_str());
 		}
+
+		LOG_GL_DEBUG("Framebuffer '{}' is complete", Label());
 	}
 
 	void Framebuffer::SetUpAttachments() {
@@ -360,21 +410,13 @@ namespace Engine {
 			m_Internals->ColorAttachments.emplace_back(attachment);
 		}
 		else { //if its not RenderBuffer its must be Texture
-			auto& specs = const_cast<FramebufferTextureAttachmentSpecification&>(*std::get_if<
-				FramebufferTextureAttachmentSpecification>(&specification));
+			auto specs = std::get<FramebufferTextureAttachmentSpecification>(specification);
 			if (specs.UseSRGB && specs.Format == ImageFormat::RGBA8)
 				specs.Format = ImageFormat::SRGB8A8;
 
 			auto attachment = CreateAttachment(specs);
 
-			if (m_Internals->Specification.Layered) {
-				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment, specs.MipLevel, specs.Layer);
-			}
-			else {
-				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment, specs.MipLevel);
-			}
-
-			m_Internals->ColorAttachments.emplace_back(attachment);
+			FinalizeAttachment(attachment, specs, false, attachmentPoint);
 		}
 	}
 
@@ -389,80 +431,90 @@ namespace Engine {
 			const auto& specs = *std::get_if<FramebufferTextureAttachmentSpecification>(&specification);
 			auto attachment = CreateAttachment(specs);
 
-			if (m_Internals->Specification.Layered) {
-				AttachDepth(specs.Format, attachment, specs.MipLevel, specs.Layer);
-			}
-			else {
-				AttachDepth(specs.Format, attachment, specs.MipLevel);
-			}
+			FinalizeAttachment(attachment, specs, true, 0);
 		}
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel) {
-		glNamedFramebufferTexture(*this, attachmentPoint, static_cast<GLuint>(*attachment), static_cast<GLint>(mipLevel));
+		glNamedFramebufferTexture(*this, attachmentPoint, static_cast<GLuint>(*attachment),
+		                          static_cast<GLint>(mipLevel));
+
+		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' to point {} (mip={})",
+			Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel);
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
-		glNamedFramebufferTextureLayer(*this, attachmentPoint, static_cast<GLuint>(*attachment), static_cast<GLint>(mipLevel),
+		glNamedFramebufferTextureLayer(*this, attachmentPoint, static_cast<GLuint>(*attachment),
+		                               static_cast<GLint>(mipLevel),
 		                               static_cast<GLint>(layer));
+
+		LOG_GL_DEBUG("Framebuffer '{}': Attached layered texture '{}' to point {} (mip={}, layer={})",
+			Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel, layer);
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment) {
 		glNamedFramebufferRenderbuffer(*this, attachmentPoint, GL_RENDERBUFFER, *attachment);
+		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer to point {}",
+			Label(), Utils::AttachmentPointToString(attachmentPoint));
 	}
 
 	uint32_t Framebuffer::DepthAttachmentPoint(ImageFormat format) const {
-		if (Utils::IsDepthFormat(format)) {
-			m_Internals->DepthBuffer = format < ImageFormat::StencilIndex;
+		const auto& info = Utils::ToGLDepthAttachmentPoint(format);
+		m_Internals->DepthBuffer = info.HasDepth;
+		m_Internals->Stencil = info.HasStencil;
 
-			if (format <= ImageFormat::Depth32FStencil8) {
-				m_Internals->Stencil = true;
-				return GL_DEPTH_STENCIL_ATTACHMENT;
-			}
-
-			if (format <= ImageFormat::StencilIndex16) {
-				m_Internals->Stencil = true;
-				return GL_STENCIL_ATTACHMENT;
-			}
-
-			return GL_DEPTH_ATTACHMENT;
-		}
-
-		ENGINE_ASSERT(false);
-		throw std::runtime_error("Invalid depth attachment format");
+		return info.AttachmentPoint;
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel);
 		m_Internals->DepthAttachment = attachment;
+
+		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=false)",
+			Label(), attachment->Label(), format, mipLevel);
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel, layer);
 		m_Internals->DepthAttachment = attachment;
+
+		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=true, layer={})",
+			Label(), attachment->Label(), format, mipLevel, layer);
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment) {
 		Attach(DepthAttachmentPoint(format), attachment);
+		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer as depth attachment (format={})",
+			Label(), format);
 		m_Internals->DepthAttachment = attachment;
 	}
 
 	TextureSpec Framebuffer::CreateAttachmentSpec(const FramebufferSpecification fb,
-		const FramebufferTextureAttachmentSpecification& tex) const {
+	                                              const FramebufferTextureAttachmentSpecification& tex) const {
 		TextureSpec spec;
 
 		spec.Size = fb.Size;
 		spec.ImageFormat = tex.Format;
 		spec.Samples = fb.Samples;
 		spec.Label = tex.Label;
-		spec.Usage = Utils::IsDepthFormat(tex.Format) ? TextureUsage::DepthStencil : TextureUsage::RenderTarget;
+		spec.Usage = Utils::GetUsageFromFormat(tex.Format);
 
 		return spec;
 	}
 
 	Ref<Texture> Framebuffer::CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const {
 		auto texture = Texture::Create(CreateAttachmentSpec(GetSpecification(), specs));
+		return texture;
+	}
 
+	Ref<RenderBuffer> Framebuffer::CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const {
+		const auto& specification = GetSpecification();
+		return RenderBuffer::Create(specification.Size, specification.Samples, specs.Format);
+	}
+
+	void Framebuffer::FinalizeAttachment(const Ref<Texture>& texture,
+	                                     const FramebufferTextureAttachmentSpecification& specs, bool isDepth,
+	                                     uint32_t attachmentPoint) {
 		if (!texture->IsMultisampled()) {
 			if (specs.MipLevel > 0)
 				texture->GenerateMipMaps();
@@ -471,12 +523,33 @@ namespace Engine {
 			texture->SetFilters(specs.MinFilter, specs.MagFilter);
 		}
 
-		return texture;
-	}
+		LOG_GL_TRACE("Finalized texture attachment '{}': size={}x{}, format={}, usage={}, multisampled={}",
+			specs.Label,
+			texture->Width(), texture->Height(),
+			specs.Format,
+			texture->GetUsage(),
+			texture->IsMultisampled());
 
-	Ref<RenderBuffer> Framebuffer::CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const {
-		const auto& specification = GetSpecification();
-		return RenderBuffer::Create(specification.Size, specification.Samples, specs.Format);
+		if (isDepth) {
+			if (m_Internals->Specification.Layered) {
+				AttachDepth(specs.Format, texture, specs.MipLevel, specs.Layer);
+			}
+			else {
+				AttachDepth(specs.Format, texture, specs.MipLevel);
+			}
+
+			m_Internals->DepthAttachment = texture;
+		}
+		else {
+			if (m_Internals->Specification.Layered) {
+				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, texture, specs.MipLevel, specs.Layer);
+			}
+			else {
+				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, texture, specs.MipLevel);
+			}
+
+			m_Internals->ColorAttachments.emplace_back(texture);
+		}
 	}
 
 	Framebuffer::Internals::Internals(const FramebufferSpecification& specification) : Specification(specification) {
@@ -493,6 +566,7 @@ namespace Engine {
 	void Framebuffer::Internals::Invalidate() {
 		glDeleteFramebuffers(1, &ID);
 		ColorAttachmentCount = 0;
+		ColorAttachments.clear();
 		if (!Specification.SwapchainTarget)
 			glCreateFramebuffers(1, &ID);
 		else

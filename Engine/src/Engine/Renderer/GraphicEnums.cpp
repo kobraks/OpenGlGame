@@ -237,4 +237,10 @@ namespace Engine::Utils {
 	bool IsColorFormat(ImageFormat format) {
 		return !IsDepthFormat(format);
 	}
+
+	TextureUsage GetUsageFromFormat(ImageFormat format) {
+		if (IsDepthFormat(format)) return TextureUsage::DepthStencil;
+		if (IsStorageCapable(format)) return TextureUsage::Storage;
+		return TextureUsage::RenderTarget;
+	}
 }

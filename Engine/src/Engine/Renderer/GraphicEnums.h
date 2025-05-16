@@ -173,6 +173,8 @@ namespace Engine {
 		bool IsDepthStencilFormat(ImageFormat format);
 
 		bool IsColorFormat(ImageFormat format);
+
+		TextureUsage GetUsageFromFormat(ImageFormat format);
 	}
 }
 

@@ -5,6 +5,8 @@
 
 #include <variant>
 
+#include "Texture.h"
+
 namespace Engine {
 	struct TextureSpec;
 	class Texture;
@@ -46,6 +48,8 @@ namespace Engine {
 		const Vector2u& Size() const { return m_Internals->Specification.Size;  }
 		uint32_t Width() const { return m_Internals->Specification.Size.Width; }
 		uint32_t Height() const { return m_Internals->Specification.Size.Height; }
+
+		uint32_t AttachmentCount() const { return static_cast<uint32_t>(m_Internals->ColorAttachments.size()) + (m_Internals->DepthBuffer ? 1 : 0); }
 
 		void Invalidate();
 		void Resize(const Vector2u& size);
@@ -108,6 +112,7 @@ namespace Engine {
 		Ref<Texture> CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const;
 		Ref<RenderBuffer> CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const;
 
+		void FinalizeAttachment(const Ref<Texture>& texture, const FramebufferTextureAttachmentSpecification& specs, bool isDepth, uint32_t attachmentPoint);
 
 		class Internals {
 		public:
