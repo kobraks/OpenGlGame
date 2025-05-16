@@ -12,8 +12,17 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "ImGuizmo.h"
+#include "Engine/Renderer/Builders/FramebufferBuilder.h"
+#include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
+#include "ImGui/imgui_internal.h"
 
 namespace Editor {
+	bool DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size,
+	                    const ImVec4& tinitColor) {
+		return ImGui::ImageButton(name.c_str(), icon->ID(), {size, size}, {0.0f, 0.0f}, {1.0f, 1.0f},
+		                          {0.0f, 0.0f, 0.0f, 0.0f}, tinitColor);
+	}
+
 	EditorLayer::EditorLayer() : Layer("EditorLayer") {
 	}
 
@@ -23,8 +32,8 @@ namespace Editor {
 		m_EditorScene = Engine::MakeRef<Engine::Scene>();
 		m_ActiveScene = m_EditorScene;
 
-		if (Engine::Application::Get().GetCommandLineArgCount() > 1) {
-			OpenProject(Engine::Application::Get().GetCommandLineArg(1));
+		if (Engine::Application::Get().GetSpecification().CommandLineArgs.Count > 1) {
+			OpenProject(Engine::Application::Get().GetSpecification().CommandLineArgs.At(1));
 		}
 		else {
 			NewProject();
@@ -34,15 +43,15 @@ namespace Editor {
 
 		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
 
-		Engine::FramebufferSpecification frameSpec;
+		const auto depthTexture = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::Depth24Stencil8).Label("DepthStencilTestViewport");
+		const auto colorBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::RGBA8).Label("ColorBufferViewport");
+		const auto pickerBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::R32I).Label("PickerBufferViewport");
 
-		frameSpec.Attachments = {
-			Engine::FramebufferAttachmentFormat::RGBA8, Engine::FramebufferAttachmentFormat::RedInteger,
-			Engine::FramebufferAttachmentFormat::Depth
-		};
-		frameSpec.Size = { 1024, 1024 };
-
-		m_Framebuffer = Engine::Framebuffer::Create(frameSpec);
+		m_Framebuffer = Engine::FramebufferBuilder().AddColorAttachment(colorBuffer).
+		                                             AddColorAttachment(pickerBuffer).
+		                                             DepthAttachment(depthTexture).
+		                                             Label("Viewport").
+		                                             Build();
 
 		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));
 		m_IconPause = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PauseButton.png"));
@@ -59,16 +68,16 @@ namespace Editor {
 		Layer::OnUpdate();
 
 		m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
-			static_cast<uint32_t>(m_ViewportSize.y));
+		                                static_cast<uint32_t>(m_ViewportSize.y));
 
 		if (const auto size = m_Framebuffer->Size(); m_ViewportSize.x > 0.f && m_ViewportSize.y > 0.f && (size.Width
 			!= static_cast<uint32_t>(m_ViewportSize.x) || size.Height != static_cast<uint32_t>(m_ViewportSize.y))) {
-			m_Framebuffer->Resize({ static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y) });
+			m_Framebuffer->Resize({static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y)});
 			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
 		}
 
 		m_Framebuffer->Bind();
-		Engine::RendererCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 1.f });
+		Engine::RendererCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1.f});
 		Engine::RendererCommand::Clear();
 
 		m_Framebuffer->GetColorTextureAttachment()->Clear(-1);
@@ -95,17 +104,17 @@ namespace Editor {
 		mx -= m_ViewportBounds[0].x;
 		my -= m_ViewportBounds[0].y;
 		const glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-		my = viewportSize.y;
+		my = viewportSize.y - my;
 
 		const int mouseX = static_cast<int>(mx);
 		const int mouseY = static_cast<int>(my);
 
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(
 			viewportSize.y)) {
-			const int pixelData = m_Framebuffer->ReadPixel(1, { mouseX, mouseY });
+			const int pixelData = m_Framebuffer->ReadPixel(1, {mouseX, mouseY});
 			m_HoveredEntity = pixelData == -1
-				? Engine::Entity()
-				: Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
+				                  ? Engine::Entity()
+				                  : Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
 		}
 
 		m_Framebuffer->Unbind();
@@ -154,7 +163,7 @@ namespace Editor {
 			windowFlags |= ImGuiWindowFlags_NoBackground;
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
-		ImGui::Begin("DockSpace Demo", &dockspaceOpen, windowFlags);
+		ImGui::Begin("##DockSpace", &dockspaceOpen, windowFlags);
 		ImGui::PopStyleVar();
 
 		if (optFullscreen)
@@ -168,6 +177,7 @@ namespace Editor {
 
 		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
 			const ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
+			SetupDefaultDockSpace(dockspaceID);
 			ImGui::DockSpace(dockspaceID, ImVec2(0.f, 0.f), dockspaceFlags);
 		}
 
@@ -215,8 +225,8 @@ namespace Editor {
 		const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
 		const auto viewportOffset = ImGui::GetWindowPos();
 
-		m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y };
-		m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y };
+		m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
+		m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
 
 		m_ViewportFocused = ImGui::IsWindowFocused();
 		m_ViewportHovered = ImGui::IsWindowHovered();
@@ -224,10 +234,10 @@ namespace Editor {
 		Engine::Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
 
 		const ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = { viewportPanelSize.x, viewportPanelSize.y };
+		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
 		const auto texture = m_Framebuffer->GetColorTextureAttachment();
-		ImGui::Image(texture->ID(), ImVec2{ m_ViewportSize.x, m_ViewportSize.y }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+		ImGui::Image(texture->ID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
 
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
@@ -245,8 +255,8 @@ namespace Editor {
 			ImGuizmo::SetDrawlist();
 
 			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
-				m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-				m_ViewportBounds[1].y - m_ViewportBounds[0].y);
+			                  m_ViewportBounds[1].x - m_ViewportBounds[0].x,
+			                  m_ViewportBounds[1].y - m_ViewportBounds[0].y);
 
 			//Camera
 			//
@@ -268,11 +278,11 @@ namespace Editor {
 			if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
 				snapValue = 45.f;
 
-			float snapValues[3] = { snapValue, snapValue, snapValue };
+			float snapValues[3] = {snapValue, snapValue, snapValue};
 
 			Manipulate(value_ptr(cameraView), value_ptr(cameraProjection),
-				static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
-				snap ? snapValues : nullptr);
+			           static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
+			           snap ? snapValues : nullptr);
 
 			if (ImGuizmo::IsUsing()) {
 				glm::vec3 translation, rotation, scale;
@@ -284,7 +294,8 @@ namespace Editor {
 				tc.Scale = scale;
 			}
 		}
-		ImGui::End();
+
+		ImGui::End(); //End viewport
 		ImGui::PopStyleVar();
 
 		UiToolbar();
@@ -523,9 +534,23 @@ namespace Editor {
 	}
 
 	void EditorLayer::UiToolbar() {
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		const bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
+		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
+		const bool hasPauseButton = m_SceneState != SceneState::Edit;
+
+		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + 1;
+
+		constexpr float windowHeight = 32;
+
+		constexpr float spacing = 4.0f;
+		constexpr float buttonSize = windowHeight - spacing;
+
+		const float windowWidth = buttonSize * static_cast<float>(buttonCount) + static_cast<float>(buttonCount - 1) *
+			spacing;
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
 
 		const auto& colors = ImGui::GetStyle().Colors;
 
@@ -535,30 +560,26 @@ namespace Editor {
 		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
+		ImGui::SetNextWindowSize({windowWidth, windowHeight + spacing * 2});
+		// ImGui::SetNextWindowPos();
 		ImGui::Begin("##toolbar", nullptr,
-			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
 		bool toolbarEnabled = static_cast<bool>(m_ActiveScene);
 
-		auto tintColor = ImVec4(1, 1, 1,  1.f);
+		auto tintColor = ImVec4(1, 1, 1, 1.f);
 
 		if (!toolbarEnabled)
 			tintColor.w = 0.5f;
 
-		const float size = ImGui::GetWindowHeight() - 4.f;
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
 
-		const bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
-		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
-		const bool hasPauseButton = m_SceneState != SceneState::Edit;
+		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
 
 		if (hasPlayButton) {
-			Engine::Ref<Engine::Texture> icon = (m_SceneState == SceneState::Edit || m_SceneState ==
-				SceneState::Simulate)
-				? m_IconPlay
-				: m_IconStop;
-			if (ImGui::ImageButton("##PlayButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0, 0, 0, 0 }, tintColor) &&
-				toolbarEnabled) {
+			const auto& icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
+				                   ? m_IconPlay
+				                   : m_IconStop;
+			if (DrawButtonIcon(icon, "##PlayButton", buttonSize, tintColor) && toolbarEnabled) {
 				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
 					OnScenePlay();
 				else if (m_SceneState == SceneState::Play)
@@ -567,12 +588,13 @@ namespace Editor {
 		}
 
 		if (hasSimulateButton) {
-			Engine::Ref<Engine::Texture> icon = (m_SceneState == SceneState::Edit || m_SceneState ==
-				SceneState::Play)
-				? m_IconPlay
-				: m_IconStop;
-			if (ImGui::ImageButton("##SimulateButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0, 0, 0, 0 }, tintColor) &&
-				toolbarEnabled) {
+			if (hasPlayButton)
+				ImGui::SameLine(0, spacing);
+
+			const auto& icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
+				                   ? m_IconSimulate
+				                   : m_IconStop;
+			if (DrawButtonIcon(icon, "##SimulateButton", buttonSize, tintColor) && toolbarEnabled) {
 				if (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play)
 					OnSceneSimulate();
 				else if (m_SceneState == SceneState::Simulate)
@@ -582,19 +604,19 @@ namespace Editor {
 
 		if (hasPauseButton) {
 			const bool isPaused = m_ActiveScene->IsPaused();
-			ImGui::SameLine();
+			ImGui::SameLine(0, spacing);
 			{
-				Engine::Ref<Engine::Texture> icon = m_IconPause;
-				if (ImGui::ImageButton("##PauseButton", icon->ID(), {size, size}, {0, 0}, {1, 1}, {0.f, 0.f, 0.f, 0.f}, tintColor) && toolbarEnabled) {
+				const auto& icon = m_IconPause;
+				if (DrawButtonIcon(icon, "##PauseButton", buttonSize, tintColor) && toolbarEnabled) {
 					m_ActiveScene->SetPaused(!isPaused);
 				}
 			}
 
 			if (isPaused) {
-				ImGui::SameLine();
+				ImGui::SameLine(0, spacing);
 				{
-					Engine::Ref<Engine::Texture> icon = m_IconStep;
-					if (ImGui::ImageButton("##StepButton", icon->ID(), { size, size }, { 0, 0 }, { 1, 1 }, { 0.f, 0.f, 0.f, 0.f }, tintColor) && toolbarEnabled) {
+					const auto& icon = m_IconStep;
+					if (DrawButtonIcon(icon, "##StepButton", buttonSize, tintColor) && toolbarEnabled) {
 						m_ActiveScene->Step();
 					}
 				}
@@ -605,5 +627,27 @@ namespace Editor {
 		ImGui::PopStyleColor(3);
 
 		ImGui::End();
+	}
+
+	void EditorLayer::SetupDefaultDockSpace(ImGuiID dockSpaceID) {
+		if (ImGui::DockBuilderGetNode(dockSpaceID))
+			return;
+
+		ImGui::DockBuilderRemoveNode(dockSpaceID);
+		ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
+		ImGui::DockBuilderSetNodeSize(dockSpaceID, ImGui::GetMainViewport()->Size);
+
+		ImGuiID dockMainID = dockSpaceID;
+		ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Left, 0.2f, nullptr, &dockMainID);
+		ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Right, 0.25f, nullptr, &dockMainID);
+		ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Down, 0.25f, nullptr, &dockMainID);
+		ImGuiID dockCenter = dockMainID;
+
+		ImGui::DockBuilderDockWindow("Scene Hierarchy", dockLeft);
+		ImGui::DockBuilderDockWindow("Properties", dockRight);
+		ImGui::DockBuilderDockWindow("Content Browser", dockBottom);
+		ImGui::DockBuilderDockWindow("Viewport", dockCenter);
+
+		ImGui::DockBuilderFinish(dockSpaceID);
 	}
 }

@@ -51,6 +51,8 @@ namespace Editor
 		void UiToolbar();
 
 	private:
+		void SetupDefaultDockSpace(ImGuiID dockSpaceID);
+
 		enum class SceneState
 		{
 			Edit = 0,
