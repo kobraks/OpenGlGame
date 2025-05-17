@@ -15,14 +15,14 @@ namespace Engine {
 
 	class ShaderStage {
 	public:
-		enum class Type {
-			Unknown = 0,
-			Vertex,
-			Fragment,
-			Geometry,
-			Compute,
-			Control,
-			Evaluation
+		enum class Type : uint32_t {
+			None = 0,
+			Vertex = 1 << 0,
+			Fragment = 1 << 1,
+			Geometry = 1 << 2,
+			Compute = 1 << 3,
+			Control = 1 << 4,
+			Evaluation = 1 << 5
 		};
 
 		using IDType = uint32_t;
@@ -62,12 +62,10 @@ namespace Engine {
 
 		void FetchLog();
 
-	private:
-
 		class GLState {
 		public:
 			Ref<ShaderSource> Source;
-			Type Type     = Type::Unknown;
+			Type Type = Type::None;
 			bool Compiled = false;
 			IDType Shader = 0;
 
@@ -80,4 +78,27 @@ namespace Engine {
 
 		Ref<GLState> m_GLState;
 	};
+
+
+	constexpr ShaderStage::Type operator|(ShaderStage::Type lhs, ShaderStage::Type rhs) {
+		return static_cast<ShaderStage::Type>(static_cast<std::underlying_type_t<ShaderStage::Type>>(lhs) | static_cast<std::underlying_type_t<ShaderStage::Type>>(rhs));
+	}
+
+	constexpr ShaderStage::Type operator&(ShaderStage::Type lhs, ShaderStage::Type rhs) {
+		return static_cast<ShaderStage::Type>(static_cast<std::underlying_type_t<ShaderStage::Type>>(lhs) & static_cast<std::underlying_type_t<ShaderStage::Type>>(rhs));
+	}
+
+	constexpr ShaderStage::Type operator~(ShaderStage::Type rhs) {
+		return static_cast<ShaderStage::Type>(~static_cast<std::underlying_type_t<ShaderStage::Type>>(rhs));
+	}
+
+	constexpr ShaderStage::Type& operator|=(ShaderStage::Type& lhs, ShaderStage::Type rhs) {
+		lhs = lhs | rhs;
+		return lhs;
+	}
+
+	constexpr ShaderStage::Type& operator&=(ShaderStage::Type& lhs, ShaderStage::Type rhs) {
+		lhs = lhs & rhs;
+		return lhs;
+	}
 }

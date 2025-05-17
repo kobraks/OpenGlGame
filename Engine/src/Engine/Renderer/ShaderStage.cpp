@@ -120,8 +120,12 @@ namespace Engine {
 		FetchLog();
 		result.LogMessage = m_GLState->LogMessage;
 
-		if (!result.LogMessage.empty())
-			LOG_GL_INFO("Compiling shader [Id: {}] '{}' returned: {}", m_GLState->Shader, m_GLState->Label, result.LogMessage);
+		if (!result.LogMessage.empty()) {
+			if (!result.Success)
+				LOG_GL_ERROR("Compilation failed [Id: {}] '{}': {}", m_GLState->Shader, m_GLState->Label, result.LogMessage);
+			else
+				LOG_GL_DEBUG("Compilation log [Id: {}] '{}': {}", m_GLState->Shader, m_GLState->Label, result.LogMessage);
+		}
 
 		return result;
 	}
