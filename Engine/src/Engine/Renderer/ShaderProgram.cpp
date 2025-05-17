@@ -7,6 +7,16 @@
 #include <boost/algorithm/string.hpp>
 
 namespace Engine {
+	namespace Utils {
+		constexpr bool HasStage(ShaderStage::Type mask, ShaderStage::Type test) {
+			return (mask & test) != ShaderStage::Type::None;
+		}
+
+		constexpr void RemoveStage(ShaderStage::Type& mask, ShaderStage::Type stage) {
+			mask &= ~stage;
+		}
+	}
+
 	Ref<ShaderProgram> ShaderProgram::Create(const std::string& label) {
 		auto program = Ref<ShaderProgram>(new ShaderProgram());
 		program->SetLabel(label);
@@ -88,7 +98,7 @@ namespace Engine {
 		std::vector<std::byte> binary(length);
 		in.read(reinterpret_cast<char*>(binary.data()), static_cast<std::streamsize>(binary.size()));
 
-		Ref<ShaderProgram> program;
+		Ref<ShaderProgram> program = Ref<ShaderProgram>(new ShaderProgram());
 		program->SetLabel(label);
 		glProgramBinary(*program, format, binary.data(), static_cast<GLsizei>(binary.size()));
 
@@ -108,7 +118,7 @@ namespace Engine {
 	}
 
 	void ShaderProgram::Attach(Ref<ShaderStage> stage) {
-		if (m_GLState->Reflection.UsedStages.contains(stage->GetType()) || m_GLState->Stages.contains(stage)) {
+		if (Utils::HasStage(m_GLState->Reflection.UsedStages, stage->GetType()) || m_GLState->Stages.contains(stage)) {
 			LOG_GL_WARN("Trying to attach attached stage");
 			return;
 		}
@@ -123,7 +133,7 @@ namespace Engine {
 
 		glAttachShader(*this, *stage);
 		m_GLState->Stages.emplace(stage);
-		m_GLState->Reflection.UsedStages.emplace(stage->GetType());
+		m_GLState->Reflection.UsedStages |= stage->GetType();
 		FetchLog();
 	}
 
@@ -134,6 +144,11 @@ namespace Engine {
 	}
 
 	void ShaderProgram::Detach(Ref<ShaderStage> stage) {
+		if (!Utils::HasStage(m_GLState->Reflection.UsedStages, stage->GetType())) {
+			LOG_GL_WARN("Tryied to detach not attached shader");
+			return;
+		}
+
 		auto& stages = m_GLState->Stages;
 		auto iter = stages.find(stage);
 
@@ -152,7 +167,7 @@ namespace Engine {
 
 		glDetachShader(*this, *stage);
 		stages.erase(iter);
-		m_GLState->Reflection.UsedStages.erase(stage->GetType());
+		Utils::RemoveStage(m_GLState->Reflection.UsedStages, stage->GetType());
 		FetchLog();
 	}
 
@@ -210,8 +225,12 @@ namespace Engine {
 		FetchLog();
 		result.LogMessage = m_GLState->LogMessage;
 
-		if (!result.LogMessage.empty())
-			LOG_GL_DEBUG("Linking program [Id: {}] '{}' returned: {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+		if (!result.LogMessage.empty()) {
+			if (!result.Success)
+				LOG_GL_ERROR("Linking log [ID: {}] '{}': {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+			else
+				LOG_GL_DEBUG("Linking log [ID: {}] '{}': {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+		}
 
 		return result;
 	}
@@ -231,6 +250,13 @@ namespace Engine {
 
 		FetchLog();
 		result.LogMessage = m_GLState->LogMessage;
+
+		if (!result.LogMessage.empty()) {
+			if (!result.Valid)
+				LOG_GL_ERROR("Validation log [ID: {}] '{}': {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+			else
+				LOG_GL_DEBUG("Validation log [ID: {}] '{}': {}", m_GLState->Program, m_GLState->Label, result.LogMessage);
+		}
 
 		return result;
 	}
@@ -550,6 +576,19 @@ namespace Engine {
 			m_GLState->UniformLocations.emplace(info.Name, info.Location);
 			m_GLState->Reflection.Uniforms.emplace_back(info);
 
+			if (info.Size > 1) {
+				LOG_GL_DEBUG("Uniform {} is table", info.Name);
+				for (int j = 0; j < info.Size; ++j) {
+					const std::string indexedName = fmt::format("{}[{}]", info.Name, j);
+					const int loc = glGetUniformLocation(*this, indexedName.c_str());
+
+					if (loc != -1) {
+						m_GLState->UniformLocations.emplace(indexedName, loc);
+						m_GLState->Reflection.Uniforms.emplace_back(indexedName, 1, info.Type, loc);
+					}
+				}
+			}
+
 			LOG_GL_DEBUG(
 				"Uniform {}, Name: {}, Size: {}, Type: {}, Location: {}",
 				i,
@@ -614,6 +653,10 @@ namespace Engine {
 		info.Name = std::string(length, 0);
 		glGetActiveUniform(*this, index, length, nullptr, &info.Size, &info.Type, info.Name.data());
 		info.Location = glGetUniformLocation(*this, info.Name.data());
+
+		if (info.Size > 1 && info.Name.ends_with("[0]")) {
+			info.Name.resize(info.Name.size() - 3); //remove "[0]"
+		}
 
 		return info;
 	}

@@ -72,7 +72,7 @@ namespace Engine {
 		struct Reflection {
 			std::vector<UniformInfo> Uniforms;
 			std::vector<UniformBlockInfo> Blocks;
-			std::unordered_set<ShaderStage::Type> UsedStages;
+			ShaderStage::Type UsedStages = ShaderStage::Type::None;
 		};
 
 		static Ref<ShaderProgram> Create(const std::string& label = {});
