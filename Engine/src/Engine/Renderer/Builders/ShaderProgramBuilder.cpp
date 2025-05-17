@@ -12,7 +12,8 @@ namespace Engine {
 	ShaderProgramBuilder& ShaderProgramBuilder::AddStage(Ref<ShaderStage> stage) {
 		if (stage && stage->IsCompiled()) {
 			m_Stages.emplace_back(stage);
-		} else {
+		}
+		else {
 			LOG_WARN("Attempted to add uncompiled shader stage: {}", stage ? stage->Label() : "<null>");
 		}
 
@@ -54,13 +55,26 @@ namespace Engine {
 		auto [program, result] = BuildWithResult();
 
 		if (!result) {
-			LOG_ERROR("ShaderProgram [{}] failed to link:\n{}", m_Label, result.LogMessage);
+			LOG_ENGINE_ERROR("ShaderProgram [{}] failed to link:\n{}", m_Label, result.LogMessage);
 		}
 
 		return program;
 	}
 
 	std::pair<Ref<ShaderProgram>, ShaderLinkResult> ShaderProgramBuilder::BuildWithResult() const {
+		if (m_Stages.empty()) {
+			LOG_ENGINE_ERROR("ShaderProgramBuilder: cannot build program '{}'; no shader stages attached.", m_Label);
+			return {nullptr, ShaderLinkResult{false, "No shader stages provided."}};
+		}
+
+		for (const auto& stage : m_Stages) {
+			if (!stage || !stage->IsCompiled()) {
+				LOG_ERROR("ShaderProgramBuilder: stage '{}' is missing or not compiled",
+				          stage ? stage->Label() : "<null>");
+				return {nullptr, ShaderLinkResult{false, "Uncompiled or missing stage."}};
+			}
+		}
+
 		auto program = ShaderProgram::Create(m_Label);
 
 		for (const auto& stage : m_Stages) {
@@ -69,6 +83,6 @@ namespace Engine {
 
 		auto result = program->Link();
 
-		return { program, result };
+		return {program, result};
 	}
 }
