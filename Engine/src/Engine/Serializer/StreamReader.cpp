@@ -3,15 +3,15 @@
 
 namespace Engine {
 	bool StreamReader::ReadBuffer(Buffer &buffer, size_t size) {
-		buffer.Size = size;
+		uint32_t readSize = static_cast<uint32_t>(size);
 
 		if(size == 0) {
-			if(!ReadData(reinterpret_cast<char*>(buffer.Size), sizeof(size_t)))
+			if(!ReadData(reinterpret_cast<char*>(readSize), sizeof(size_t)))
 				return false;
 		}
 
-		buffer.Allocate(buffer.Size);
-		return ReadData(static_cast<char *>(buffer.Data), buffer.Size);
+		buffer.Allocate(readSize);
+		return ReadData(buffer.As<char>(), buffer.Size());
 	}
 
 	bool StreamReader::ReadString(std::string &string) {

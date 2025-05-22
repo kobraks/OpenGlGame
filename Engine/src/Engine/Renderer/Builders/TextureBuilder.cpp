@@ -119,7 +119,7 @@ namespace Engine {
 
 		if (m_UseRawData) {
 			spec.Size = m_Size;
-			spec.InitialData = static_cast<const uint8_t*>(m_Buffer.Data);
+			spec.InitialData = m_Buffer.As<uint8_t>();
 			spec.DataFormat = m_DataFormat;
 			spec.DataType = m_DataType;
 		}

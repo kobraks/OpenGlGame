@@ -1,108 +1,116 @@
 #include "pch.h"
 #include "Buffer.h"
 
+#include "Engine/Core/BufferView.h"
+
 #include <cstring>
 #include <memory>
 
 namespace Engine {
-	Buffer::Buffer() : Data(nullptr),
-	                   Size(0) {}
-
-	Buffer::Buffer(void *data, SizeType size) : Data(data),
-	                                          Size(size) {}
-
-	Buffer::Buffer(const Buffer &other, SizeType size) : Data(other.Data),
-	                                                   Size(size) {}
-
-	Buffer::Buffer(const Buffer& buffer) = default;
-	Buffer& Buffer::operator=(const Buffer& buffer) = default;
-
-	Buffer::Buffer(Buffer&& buffer) noexcept {
-		Data = std::exchange(buffer.Data, nullptr);
-		Size = std::exchange(buffer.Size, 0);
+	Buffer::Buffer(SizeType size) {
+		Allocate(size);
 	}
 
-	Buffer& Buffer::operator=(Buffer&& buffer) noexcept {
+	Buffer::Buffer(const BufferView& view) : Buffer(view.Data(), view.Size()) {
+	}
+
+	Buffer::Buffer(const void* data, SizeType size) {
+		Allocate(size);
+		std::memcpy(m_Data.get(), data, size);
+	}
+
+	Buffer::Buffer(const Buffer& other, SizeType offset) {
+		const auto length = other.Size() - offset;
+
+		ENGINE_ASSERT(offset <= other.Size());
+		if (offset > other.Size())
+			throw std::runtime_error("Buffer overflow");
+
+		Allocate(length);
+		std::memcpy(m_Data.get(), other.m_Data.get() + offset, length);
+	}
+
+	Buffer::Buffer(Buffer&& other) noexcept : m_Data(std::move(other.m_Data)), m_Size(std::move(other.m_Size)) {
+		other.m_Size = 0;
+		other.m_Data = nullptr;
+	}
+
+	Buffer::~Buffer() {
 		Release();
-		Data = std::exchange(buffer.Data, nullptr);
-		Size = std::exchange(buffer.Size, 0);
+	}
+
+	Buffer& Buffer::operator=(const Buffer& other) {
+		if (this != &other) {
+			Allocate(other.m_Size);
+			std::memcpy(m_Data.get(), other.m_Data.get(), other.m_Size);
+		}
 
 		return *this;
 	}
 
-	Buffer Buffer::Copy(const Buffer &other) {
-		Buffer buffer;
+	Buffer& Buffer::operator=(Buffer&& other) noexcept {
+		if (this != &other) {
+			m_Data = std::move(other.m_Data);
+			m_Size = other.m_Size;
 
-		buffer.Allocate(other.Size);
-		std::memcpy(buffer.Data, other.Data, other.Size);
+			other.m_Size = 0;
+			other.m_Data = nullptr;
+		}
 
-		return buffer;
+		return *this;
 	}
 
-	Buffer Buffer::Copy(const void *data, SizeType size) {
-		Buffer buffer;
+	bool Buffer::operator==(const Buffer& rth) const {
+		return m_Size == rth.m_Size && std::memcpy(m_Data.get(), rth.m_Data.get(), m_Size) == 0;
+	}
 
-		buffer.Allocate(size);
-		std::memcpy(buffer.Data, data, size);
+	Buffer Buffer::Copy(const void* data, SizeType size) {
+		return Buffer(data, size);
+	}
 
-		return buffer;
+	Buffer Buffer::FromSpan(std::span<const std::byte> span) {
+		return Buffer(span.data(), span.size_bytes());
 	}
 
 	void Buffer::Allocate(SizeType size) {
-		delete[] static_cast<uint8_t*>(Data);
-		Data = nullptr;
-		Size = size;
+		if (size == 0) {
+			m_Data.reset();
+			m_Size = 0;
+			return;
+		}
 
-		if(size == 0)
+		m_Data = std::make_unique<std::byte[]>(size);
+		m_Size = size;
+	}
+
+	void Buffer::Resize(SizeType newSize) {
+		if (newSize == m_Size)
 			return;
 
-		Data = new uint8_t[size];
+		auto newData = std::make_unique<std::byte[]>(newSize);
+		if (m_Data && m_Size > 0) {
+			std::memcpy(newData.get(), m_Data.get(), std::min(m_Size, newSize));
+		}
+
+		m_Data = std::move(newData);
+		m_Size = newSize;
 	}
 
 	void Buffer::Release() {
-		delete[] static_cast<uint8_t*>(Data);
-
-		Data = nullptr;
-		Size = 0;
+		m_Data.reset();
+		m_Size = 0;
 	}
 
 	void Buffer::ZeroInitialize() {
-		if(Data)
-			std::memset(Data, 0, Size);
+		if (m_Data)
+			std::memset(m_Data.get(), 0, m_Size);
 	}
 
-	uint8_t * Buffer::ReadBytes(SizeType size, SizeType offset) const {
-		ENGINE_ASSERT(offset + size <= Size, "Buffer overflow!");
+	void Buffer::Write(const void* data, SizeType size, SizeType offset) {
+		ENGINE_ASSERT(offset + size <= m_Size);
+		if (offset + size > m_Size)
+			throw std::runtime_error("Buffer::Write: Overflow");
 
-		auto buffer = new uint8_t[size];
-
-		memcpy(buffer, static_cast<uint8_t*>(Data) + offset, size);
-		return buffer;
-	}
-
-	void Buffer::Write(const void *data, SizeType size, SizeType offset) {
-		ENGINE_ASSERT((offset + size) <= Size, "Buffer overflow!");
-
-		memcpy(static_cast<uint8_t*>(Data) + offset, data, size);
-	}
-
-	Buffer::operator bool() const {
-		return Data;
-	}
-
-	uint8_t & Buffer::operator[](SizeType idx) {
-		ENGINE_ASSERT(idx < Size);
-		if (idx >= Size)
-			throw std::out_of_range("Buffer: index out of range.");
-
-		return static_cast<uint8_t*>(Data)[idx];
-	}
-
-	uint8_t Buffer::operator[](SizeType idx) const {
-		ENGINE_ASSERT(idx < Size);
-		if (idx >= Size)
-			throw std::out_of_range("Buffer: index out of range.");
-
-		return static_cast<uint8_t*>(Data)[idx];
+		std::memcpy(m_Data.get() + offset, data, size);
 	}
 }

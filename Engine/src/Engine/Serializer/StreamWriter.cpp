@@ -4,11 +4,11 @@
 namespace Engine {
 	void StreamWriter::WriteBuffer(Buffer buffer, bool writeSize) {
 		if (writeSize) {
-			uint32_t size = static_cast<uint32_t>(buffer.Size);
+			uint32_t size = static_cast<uint32_t>(buffer.Size());
 			WriteData(reinterpret_cast<const char*>(&size), sizeof(uint32_t));
 		}
 
-		WriteData(static_cast<const char*>(buffer.Data), buffer.Size);
+		WriteData(buffer.As<const char>(), buffer.Size());
 	}
 
 	void StreamWriter::WriteZero(size_t size) {

@@ -6,7 +6,7 @@ namespace Engine {
 		m_BufferPosition(position) {}
 
 	bool BufferStreamWriter::WriteData(const char *data, size_t size) {
-		bool valid = m_BufferPosition + size <= m_TargetBuffer.Size;
+		bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
 
 		ENGINE_ASSERT(valid)
 		if(!valid)
@@ -21,7 +21,7 @@ namespace Engine {
 		m_BufferPosition(position) {}
 
 	bool BufferStreamReader::ReadData(char *destination, size_t size) {
-		bool valid = m_BufferPosition + size <= m_TargetBuffer.Size;
+		bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
 
 		ENGINE_ASSERT(valid);
 		if (!valid)
