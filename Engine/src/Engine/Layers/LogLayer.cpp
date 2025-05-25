@@ -144,7 +144,7 @@ namespace Engine {
 		// IdSelectedHash = std::hash<std::string>()(fmt::format("Selected{}{}", i, Message.Text));
 		// IdTextMultiline = std::hash<std::string>()(fmt::format("Text{}\"{}\"", i, Message.Text));
 
-		auto timestampHash = Message.Timestamp.time_since_epoch().count();
+		const auto timestampHash = Message.Timestamp.time_since_epoch().count();
 
 		const std::string base = fmt::format("{}:{}", timestampHash, i);
 
@@ -447,26 +447,40 @@ namespace Engine {
 		COPY_LOG_BUFFERS(snapshot);
 
 		const int total = static_cast<int>(snapshot.VisibleMessageIndices.size());
-		if (total == 0 || selectedCopy >= total) {
+		int selectedIndex = static_cast<int>(snapshot.VisibleMessageIndices.size() + 1);
+
+		if (total == 0)
+			return;
+
+		if (selectedCopy != s_MaxMessages) {
+			for (int i = 0; i < total; ++i) {
+				if (selectedCopy == snapshot.VisibleMessageIndices[i]) {
+					selectedIndex = i;
+				}
+			}
+		}
+
+		//Print all if no message is selected
+		if (total != 0 && selectedIndex > total) {
 			PrintClippedTable(snapshot, static_cast<int>(snapshot.VisibleMessageIndices.size()));
 
 			return;
 		}
 
 		//First half if selected message
-		PrintClippedTable(snapshot, static_cast<int>(selectedCopy + 1));
-
+		PrintClippedTable(snapshot, selectedIndex + 1);
+		
 		//Selected message
-		if (selectedCopy <= snapshot.VisibleMessageIndices.size()) {
-			const size_t actualIndex = snapshot.VisibleMessageIndices[selectedCopy];
+		if (selectedIndex <= snapshot.VisibleMessageIndices.size()) {
+			const size_t actualIndex = snapshot.VisibleMessageIndices[selectedIndex];
 			if (actualIndex < snapshot.Messages.size()) {
 				PrintSelectedMessage(snapshot.Messages[actualIndex]);
 			}
 		}
-
+		
 		//after selected message
-		const int remaining = total - static_cast<int>(selectedCopy + 1);
-		PrintClippedTable(snapshot, remaining, static_cast<int>(selectedCopy + 1));
+		const int remaining = total - (selectedIndex + 1);
+		PrintClippedTable(snapshot, remaining, selectedIndex + 1);
 	}
 
 	void LogLayer::PrintClippedTable(LogBufferSnapshot& snapshot, int itemCount, int startIndex) {
@@ -509,6 +523,7 @@ namespace Engine {
 			ImGui::SetTooltip(message.Text.c_str());
 
 		if (ImGui::IsItemClicked()) {
+			std::lock_guard guard(m_Mutex);
 			if (m_SelectedMessageIndex != messageEntry.Index) {
 				m_SelectedMessageIndex = messageEntry.Index;
 			}
