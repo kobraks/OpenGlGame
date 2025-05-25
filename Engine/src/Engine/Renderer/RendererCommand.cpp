@@ -3,17 +3,52 @@
 
 #include "glad/glad.h"
 
+#include <string_view>
+
 namespace Engine {
+	namespace Utils {
+		constexpr std::string_view GetStringForSource(GLenum source) {
+			switch (source) {
+			case GL_DEBUG_SOURCE_API: return "API";
+			case GL_DEBUG_SOURCE_WINDOW_SYSTEM: return "WindowSystem";
+			case GL_DEBUG_SOURCE_SHADER_COMPILER: return "ShaderCompiler";
+			case GL_DEBUG_SOURCE_THIRD_PARTY: return "ThirdParty";
+			case GL_DEBUG_SOURCE_APPLICATION: return "Application";
+			case GL_DEBUG_SOURCE_OTHER: return "Other";
+			default: return "Unknown";
+			}
+		}
+		
+		constexpr std::string_view GetStringForType(GLenum type) {
+			switch (type) {
+			case GL_DEBUG_TYPE_ERROR: return "Error";
+			case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: return "Deprecated";
+			case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: return "UndefinedBehavior";
+			case GL_DEBUG_TYPE_PORTABILITY: return "Portability";
+			case GL_DEBUG_TYPE_PERFORMANCE: return "Performance";
+			case GL_DEBUG_TYPE_MARKER: return "Marker";
+			case GL_DEBUG_TYPE_OTHER: return "Other";
+			default: return "Unknown";
+			}
+		}
+	}
+
 	void OpenGLMessageCallback(unsigned source, unsigned type, unsigned id, unsigned severity, int length,
 	                           const char* message, const void* userParam) {
+
+		const auto sourceStr = Utils::GetStringForSource(source);
+		const auto typeStr = Utils::GetStringForType(type);
+
+		const std::string formatted = fmt::format("[{}][{}][ID:{}]: {}", sourceStr, typeStr, id, message);
+
 		switch (severity) {
-		case GL_DEBUG_SEVERITY_HIGH: LOG_GL_CRITICAL(message);
+		case GL_DEBUG_SEVERITY_HIGH: LOG_GL_CRITICAL(formatted);
 			return;
-		case GL_DEBUG_SEVERITY_MEDIUM: LOG_GL_ERROR(message);
+		case GL_DEBUG_SEVERITY_MEDIUM: LOG_GL_ERROR(formatted);
 			return;
-		case GL_DEBUG_SEVERITY_LOW: LOG_GL_WARN(message);
+		case GL_DEBUG_SEVERITY_LOW: LOG_GL_WARN(formatted);
 			return;
-		case GL_DEBUG_SEVERITY_NOTIFICATION: LOG_GL_TRACE(message);
+		case GL_DEBUG_SEVERITY_NOTIFICATION: LOG_GL_TRACE(formatted);
 			return;
 		}
 

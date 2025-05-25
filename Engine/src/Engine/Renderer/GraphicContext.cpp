@@ -9,7 +9,6 @@
 
 #include <fmt/std.h>
 
-
 namespace Engine {
 	GraphicContext::~GraphicContext() {
 		Detach();
