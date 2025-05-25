@@ -49,6 +49,11 @@ namespace Engine::CrashReporter {
 		}
 		return ss.str();
 	}
+
+	void Initialize(CrashReporterConfig config) {
+		return Initialize(config.ApplicationName, config.ApplicationVersion, config.EngineVersion, config.BuildType);
+	}
+
 	void Initialize(const std::string& appName, const std::string& appVersion, const std::string& engineVersion, const std::string& buildType) {
 		s_ApplicationName = appName;
 		s_ApplicationVersion = appVersion;

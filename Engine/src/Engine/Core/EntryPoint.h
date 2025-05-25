@@ -6,9 +6,10 @@
 #include "Engine/Core/CrashReporter.h"
 
 extern Engine::Application* Engine::CreateApplication(const ApplicationCommandLineArgs &args);
+extern Engine::CrashReporter::CrashReporterConfig Engine::InitializeCrashReporter();
 
 int main(int argc, char **argv) {
-	Engine::CrashReporter::Initialize("OpenGLGame", "0.1.0-alpha", "Engine 0.3.2-dev", "Debug"); //TODO TEMPLORARY
+	Engine::CrashReporter::Initialize(Engine::InitializeCrashReporter());
 	Engine::CrashReporter::CleanOldCrashReports();
 	Engine::Log::CleanAllLogDirectories();
 	Engine::Log::Init();

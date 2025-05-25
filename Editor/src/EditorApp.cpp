@@ -26,4 +26,15 @@ namespace Engine {
 
 		return new Editor::EditorApp(spec);
 	}
+
+	Engine::CrashReporter::CrashReporterConfig Engine::InitializeCrashReporter() {
+		CrashReporter::CrashReporterConfig config;
+
+		config.ApplicationName = "Editor";
+		config.ApplicationVersion = "0.0.1";
+		config.BuildType = "Dev";
+		config.EngineVersion = "0.0.1";
+
+		return config;
+	}
 }
