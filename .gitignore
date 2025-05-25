@@ -1,16 +1,37 @@
-#ignore bins
+#Build output
 **/bin/
-bin-int/
+**/bin-int/
 Intermediates/
+x64/
+Debug/
+Release/
 
-#log files
-*.log
+#Compiled binaries & intermediate files
+*.obj
+*.pdb
+*.idb
+*.ipch
+*.ilk
+*.tlog
+*.cache
 
-#VS files
-.vs/
+#project files
 **.sln
 **.sln.*
 **.vcxproj
 **.vcxproj.filters
 **.vcxproj.user
-**.csproj
+
+#VS stuff
+.vs/
+*.VC.db
+*.suo
+*.user
+*.ncb
+*.log
+*.sdf
+*.opensdf
+*.db
+
+#Other
+#*.log
