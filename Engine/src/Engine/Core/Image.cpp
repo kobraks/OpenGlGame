@@ -180,7 +180,7 @@ namespace Engine {
 		if (!buffer)
 			throw std::runtime_error("Uninitialized buffer");
 
-		auto stream = FreeImage_OpenMemory(static_cast<BYTE*>(buffer.Data), static_cast<DWORD>(buffer.Size));
+		auto stream = FreeImage_OpenMemory(const_cast<BYTE*>(buffer.As<BYTE>()), static_cast<DWORD>(buffer.Size()));
 		const auto format = FreeImage_GetFileTypeFromMemory(stream, 0);
 
 		ENGINE_ASSERT(format != FIF_UNKNOWN);
