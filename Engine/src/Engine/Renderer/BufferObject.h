@@ -148,7 +148,13 @@ namespace Engine {
 			return value;
 		}
 
-		Buffer Copy(uint32_t size, uint32_t offset = 0) const;
+		void Set(const BufferView& buffer, uint32_t offset = 0) { return Set(buffer.Data(), static_cast<uint32_t>(buffer.Size()), offset); }
+		void Set(std::span<std::byte> bytes, uint32_t offset = 0) { return Set(bytes.data(), static_cast<uint32_t>(bytes.size_bytes()), offset); }
+
+		template<typename T>
+		void Set(std::span<const T> span, uint32_t offset = 0) { return Set(span.data(), static_cast<uint32_t>(span.size_bytes()), offset); }
+
+		Buffer CopyTo(uint32_t size, uint32_t offset = 0) const;
 		BufferView View(uint32_t size, uint32_t offset = 0) const;
 
 		uint32_t Size() const { return m_Size; }

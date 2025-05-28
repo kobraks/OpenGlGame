@@ -246,7 +246,7 @@ namespace Engine {
 		std::memcpy(m_Data + offset, data, size);
 	}
 
-	Buffer BufferContent::Copy(uint32_t size, uint32_t offset) const {
+	Buffer BufferContent::CopyTo(uint32_t size, uint32_t offset) const {
 		Utils::AssertAccess(m_Access, true, false);
 
 		ENGINE_ASSERT(size + offset <= m_Size);
