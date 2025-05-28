@@ -73,7 +73,7 @@ namespace Engine {
 		m_Internals->ImageFormat = imageFormat;
 		m_Internals->Size = size;
 
-		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), Utils::ToGLImageFormat(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), Utils::ToGL(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
 	void RenderBuffer::Allocate(const Vector2u& size, enum Engine::ImageFormat imageFormat) {
@@ -81,6 +81,6 @@ namespace Engine {
 		m_Internals->ImageFormat = imageFormat;
 		m_Internals->Size = size;
 
-		glNamedRenderbufferStorage(*this, Utils::ToGLImageFormat(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+		glNamedRenderbufferStorage(*this, Utils::ToGL(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 }

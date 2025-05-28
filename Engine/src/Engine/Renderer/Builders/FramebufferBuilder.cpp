@@ -5,6 +5,8 @@
 #include "Engine/Renderer/Builders/RenderBufferAttachmentBuilder.h"
 #include "Engine/Renderer/Framebuffer.h"
 
+#include "Engine/Utils/GraphicEnumsUtils.h"
+
 namespace Engine {
 	namespace Utils {
 		constexpr static void SetBaseAttachmentSpecification(FramebufferAttachmentSpecificationBase& baseSpecs,

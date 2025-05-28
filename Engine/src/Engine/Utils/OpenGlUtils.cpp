@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 
 namespace Engine::Utils {
-	uint32_t ToGLImageFormat(ImageFormat format) {
+	uint32_t ToGL(ImageFormat format) {
 		switch (format) {
 		case ImageFormat::CompressedRed:
 			return GL_COMPRESSED_RED;
@@ -174,7 +174,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLFilterMode(FilterMode filter) {
+	uint32_t ToGL(FilterMode filter) {
 		switch (filter) {
 		case FilterMode::Nearest:
 			return GL_NEAREST;
@@ -194,7 +194,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLWrapMode(WrapMode wrapMode) {
+	uint32_t ToGL(WrapMode wrapMode) {
 		switch (wrapMode) {
 		case WrapMode::Repeat:
 			return GL_REPEAT;
@@ -210,7 +210,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLDataFormat(DataFormat format) {
+	uint32_t ToGL(DataFormat format) {
 		switch (format) {
 		case DataFormat::Red:
 			return GL_RED;
@@ -248,7 +248,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLDataType(DataType type) {
+	uint32_t ToGL(DataType type) {
 		switch (type) {
 		case DataType::Byte:
 			return GL_BYTE;
@@ -272,7 +272,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLFilter(BlitFilter filter) {
+	uint32_t ToGL(BlitFilter filter) {
 		switch (filter) {
 		case BlitFilter::Nearest:
 			return GL_NEAREST;
@@ -284,7 +284,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGLMask(BlitMask mask) {
+	uint32_t ToGL(BlitMask mask) {
 		switch (mask) {
 		case BlitMask::Color:
 			return GL_COLOR_BUFFER_BIT;
@@ -372,6 +372,20 @@ namespace Engine::Utils {
 		default:
 			LOG_ENGINE_WARN("No default format/type mapping for ImageFormat {}", static_cast<uint32_t>(format));
 			return { DataFormat::RGBA, DataType::UnsignedByte }; // safe fallback
+		}
+	}
+
+	uint32_t ToGL(BufferUsage usage) {
+		switch (usage) {
+		case BufferUsage::StaticDraw: return GL_STATIC_DRAW;
+		case BufferUsage::StaticRead: return GL_STATIC_READ;
+		case BufferUsage::StaticCopy: return GL_STATIC_COPY;
+		case BufferUsage::DynamicDraw: return GL_DYNAMIC_DRAW;
+		case BufferUsage::DynamicRead: return GL_DYNAMIC_READ;
+		case BufferUsage::DynamicCopy: return GL_DYNAMIC_COPY;
+		case BufferUsage::StreamDraw: return GL_STREAM_DRAW;
+		case BufferUsage::StreamRead: return GL_STREAM_READ;
+		case BufferUsage::StreamCopy: return GL_STREAM_COPY;
 		}
 	}
 }

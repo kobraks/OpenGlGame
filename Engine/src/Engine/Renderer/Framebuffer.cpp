@@ -3,7 +3,9 @@
 
 #include "Engine/Renderer/Texture.h"
 #include "Engine/Renderer/RenderBuffer.h"
+
 #include "Engine/Utils/OpenGlUtils.h"
+#include "Engine/Utils/GraphicEnumsUtils.h"
 
 #include "glad/glad.h"
 
@@ -289,7 +291,7 @@ namespace Engine {
 
 		glBlitNamedFramebuffer(*source, 0, 0, 0, static_cast<GLint>(source->Width()),
 		                       static_cast<GLint>(source->Height()), 0, 0, static_cast<GLint>(Width()),
-		                       static_cast<GLint>(Height()), Utils::ToGLMask(mask), Utils::ToGLFilter(filter));
+		                       static_cast<GLint>(Height()), Utils::ToGL(mask), Utils::ToGL(filter));
 	}
 
 	void Framebuffer::BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter) {
@@ -299,7 +301,7 @@ namespace Engine {
 
 		glBlitNamedFramebuffer(*this, *target, 0, 0, static_cast<GLint>(target->Width()),
 		                       static_cast<GLint>(target->Height()), 0, 0, static_cast<GLint>(Width()),
-		                       static_cast<GLint>(Height()), Utils::ToGLMask(mask), Utils::ToGLFilter(filter));
+		                       static_cast<GLint>(Height()), Utils::ToGL(mask), Utils::ToGL(filter));
 	}
 
 	Vector2u Framebuffer::MaxViewportSize() {
