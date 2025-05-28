@@ -7,7 +7,7 @@
 
 namespace Engine {
 	namespace Utils {
-		uint32_t CreateBuffer() {
+		static uint32_t CreateBuffer() {
 			uint32_t name = 0;
 			glCreateBuffers(1, &name);
 			return name;
@@ -17,7 +17,7 @@ namespace Engine {
 			return (value & flag) != BufferStorageFlags::None;
 		}
 
-		uint32_t ToGL(BufferAccess access) {
+		static uint32_t ToGL(BufferAccess access) {
 			switch (access) {
 			case BufferAccess::ReadOnly:
 				return GL_READ_ONLY;
@@ -26,9 +26,11 @@ namespace Engine {
 			case BufferAccess::ReadWrite:
 				return GL_READ_WRITE;
 			}
+
+			return GL_READ_WRITE;
 		}
 
-		uint32_t ToGL(BufferStorageFlags flags) {
+		static uint32_t ToGL(BufferStorageFlags flags) {
 			uint32_t glFlags = 0;
 
 			if (HasFlag(flags, BufferStorageFlags::Dynamic)) glFlags |= GL_DYNAMIC_STORAGE_BIT;
@@ -52,28 +54,23 @@ namespace Engine {
 			ENGINE_ASSERT(false, "Invalid mapping flags for determining BufferAccess.");
 			throw std::runtime_error("BufferStorageFlags must include MapRead or MapWrite to determine access.");
 		}
-
-		inline void AssertAccess(BufferAccess access, bool requiresRead, bool requiresWrite) {
-			if (requiresRead && access == BufferAccess::WriteOnly) {
-				ENGINE_ASSERT(false, "Attempted to read form buffer mapped as WriteOnly");
-				throw std::runtime_error("Attempted to read from buffer mapped as WriteOnly");
-			}
-
-			if (requiresWrite && access == BufferAccess::ReadOnly) {
-				ENGINE_ASSERT(false, "Attempted to write into buffer mapped as ReadOnly");
-				throw std::runtime_error("Attempted to write into buffer mapped as ReadOnly");
-			}
-		}
 	}
 
-	BufferObject::BufferObject(uint32_t target, BufferUsage usageHint) : m_State(MakeRef<GLState>(target)) {
-		m_State->Usage = usageHint;
+	BufferObject::BufferObject(uint32_t target) : m_State(MakeRef<GLState>(target)) {
+	}
+
+	void BufferObject::Allocate(const void* data, uint32_t size, BufferStorageFlags flags) {
+		PrepareAllocate(size, BufferStorageMode::Immutable);
+		AllocateImmutable(data, size, flags);
+	}
+
+	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usage) {
+		PrepareAllocate(size, BufferStorageMode::Mutable);
+		AllocateMutable(data, size, usage);
 	}
 
 	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usage, BufferStorageMode mode, BufferStorageFlags flags) {
-		ForceUnMap();
-		m_State->Size = size;
-		m_State->StorageMode = mode;
+		PrepareAllocate(size, mode);
 
 		if (mode == BufferStorageMode::Mutable)
 			AllocateMutable(data, size, usage);
@@ -93,6 +90,13 @@ namespace Engine {
 		}
 	}
 
+	void BufferObject::PrepareAllocate(uint32_t size, BufferStorageMode mode) {
+		ForceUnMap();
+
+		m_State->Size = size;
+		m_State->StorageMode = mode;
+	}
+
 	void BufferObject::AllocateMutable(const void* data, uint32_t size, BufferUsage usage) {
 		m_State->Usage = usage;
 
@@ -104,7 +108,8 @@ namespace Engine {
 			ENGINE_ASSERT(false, "Persistent mapping requires MapWrite access.");
 			throw std::runtime_error("Persistent mapping requires MapWrite access.");
 		}
-		
+
+		m_State->Flags = flags;
 		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::ToGL(flags));
 
 		if (Utils::HasFlag(flags, BufferStorageFlags::MapPersistent)) {
@@ -139,7 +144,7 @@ namespace Engine {
 	}
 	
 	Buffer BufferObject::Download(uint32_t size, uint32_t offset) const {
-		if (!m_State->Content.expired()) {
+		if (IsMapped()) {
 			ENGINE_ASSERT(false, "failed: Buffer is currently mapped.");
 			throw std::runtime_error("Download() failed: buffer is currently mapped.");
 		}
@@ -234,11 +239,74 @@ namespace Engine {
 	void BufferContent::Set(const std::byte* data, uint32_t size, uint32_t offset) {
 		Utils::AssertAccess(m_Access, false, true);
 
-		ENGINE_ASSERT(size + offset <= m_Buffer.Size());
-		if (size + offset > m_Buffer.Size())
-			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, m_Buffer.Size()));
+		ENGINE_ASSERT(size + offset <= m_Size);
+		if (size + offset > m_Size)
+			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, m_Size));
 
 		std::memcpy(m_Data + offset, data, size);
+	}
+
+	Buffer BufferContent::Copy(uint32_t size, uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(size + offset <= m_Size);
+		if (size + offset > m_Size)
+			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, m_Size));
+
+		Buffer buffer(size);
+		std::memcpy(buffer.Data(), m_Data + offset, size);
+
+		return buffer;
+	}
+
+	BufferView BufferContent::View(uint32_t size, uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(size + offset <= m_Size);
+		if (size + offset > m_Size)
+			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, m_Size));
+
+		return {m_Data + offset, size};
+	}
+
+	std::span<std::byte> BufferContent::AsSpan(uint32_t offset) {
+		Utils::AssertAccess(m_Access, true, false);
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		const auto count = m_Size - offset;
+
+		return { m_Data + offset, count };
+	}
+
+	std::span<const std::byte> BufferContent::AsSpan(uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		const auto count = m_Size - offset;
+
+		return { m_Data + offset, count };
+	}
+
+	std::span<std::byte> BufferContent::AsSpan(uint32_t count, uint32_t offset) {
+		Utils::AssertAccess(m_Access, true, false);
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data + offset, count };
+	}
+
+	std::span<const std::byte> BufferContent::AsSpan(uint32_t count, uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data + offset, count };
 	}
 
 	BufferContent::BufferContent(BufferAccess access, const BufferObject& buffer) : BufferContent(access, buffer, buffer.Size(), 0) {
@@ -251,10 +319,6 @@ namespace Engine {
 		if (buffer.Size() == 0)
 			throw std::runtime_error("Cannot map buffer (size = 0). Buffer must be allocated before mapping.");
 
-		if (m_Size == buffer.Size()) {
-			m_Data = static_cast<std::byte*>(glMapNamedBuffer(buffer.RendererID(), Utils::ToGL(m_Access))) + offset;
-		} else {
-			m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, Utils::ToGL(m_Access)));
-		}
+		m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, Utils::ToGL(m_Access)));
 	}
 }

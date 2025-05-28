@@ -25,26 +25,24 @@ namespace Engine {
 		ReadWrite
 	};
 
-	inline constexpr BufferStorageFlags operator|(BufferStorageFlags a, BufferStorageFlags b) {
-		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-	}
-
-	inline constexpr BufferStorageFlags operator|=(BufferStorageFlags& a, BufferStorageFlags b) {
-		return a = (a | b);
-	}
-
-	inline constexpr BufferStorageFlags operator & (BufferStorageFlags a, BufferStorageFlags b) {
-		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-	}
-
-	inline constexpr BufferStorageFlags& operator &= (BufferStorageFlags& a, BufferStorageFlags b) {
-		return a = a & b;
-	}
-
 	enum class BufferStorageMode {
 		Mutable,
 		Immutable,
 	};
+
+	namespace Utils {
+		inline void AssertAccess(BufferAccess access, bool requiresRead, bool requiresWrite) {
+			if (requiresRead && access == BufferAccess::WriteOnly) {
+				ENGINE_ASSERT(false, "Attempted to read form buffer mapped as WriteOnly");
+				throw std::runtime_error("Attempted to read from buffer mapped as WriteOnly");
+			}
+
+			if (requiresWrite && access == BufferAccess::ReadOnly) {
+				ENGINE_ASSERT(false, "Attempted to write into buffer mapped as ReadOnly");
+				throw std::runtime_error("Attempted to write into buffer mapped as ReadOnly");
+			}
+		}
+	}
 
 	class BufferContent;
 
@@ -71,6 +69,8 @@ namespace Engine {
 
 		uint32_t Size() const { return m_State->Size; }
 		BufferUsage UsageHint() const { return m_State->Usage; }
+		BufferStorageMode Mode() const { return m_State->StorageMode; }
+		BufferStorageFlags Flags() const { return m_State->Flags; }
 
 		IDType RendererID() const { return m_State->RendererID; }
 		operator IDType() const { return m_State->RendererID; }
@@ -78,13 +78,18 @@ namespace Engine {
 		void SetLabel(const std::string& label);
 		std::string_view Label() const { return m_State->Label; }
 	protected:
-		BufferObject(uint32_t target, BufferUsage usageHint);
+		BufferObject(uint32_t target);
 		virtual ~BufferObject() = default;
+
+		void Allocate(const void* data, uint32_t size, BufferStorageFlags flags);
+		void Allocate(const void* data, uint32_t size, BufferUsage usage);
 
 		void Allocate(const void* data, uint32_t size, BufferUsage usage, BufferStorageMode mode, BufferStorageFlags flags);
 
 		void ForceUnMap();
 	private:
+		void PrepareAllocate(uint32_t size, BufferStorageMode mode);
+
 		void AllocateMutable(const void* data, uint32_t size, BufferUsage usage);
 		void AllocateImmutable(const void* data, uint32_t size, BufferStorageFlags flags);
 
@@ -94,6 +99,7 @@ namespace Engine {
 			uint32_t Target = 0;
 			uint32_t Size = 0;
 			BufferStorageMode StorageMode = BufferStorageMode::Mutable;
+			BufferStorageFlags Flags = BufferStorageFlags::None;
 			std::weak_ptr<BufferContent> Content;
 
 			Ref<BufferContent> PersistentContent = nullptr;
@@ -112,6 +118,9 @@ namespace Engine {
 	public:
 		~BufferContent();
 
+		bool IsValid() const { return m_Data != nullptr && m_Size > 0; }
+		explicit operator bool() const { return IsValid(); }
+
 		const std::byte* Get() const;
 		std::byte* Get();
 
@@ -125,18 +134,44 @@ namespace Engine {
 		template<typename T>
 		T Get(const uint32_t offset = 0) const {
 			const std::byte* data = Get();
-			ENGINE_ASSERT(offset + sizeof(T) <= m_Buffer.Size());
+			ENGINE_ASSERT(offset + sizeof(T) <= m_Size);
 
-			if (offset + sizeof(T) > m_Buffer.Size())
-				throw std::out_of_range("");
+			if (offset + sizeof(T) > m_Size)
+				throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, sizeof(T), m_Size));
 
 			T value;
-			std::memcpy(&value, static_cast<const std::byte*>(data) + offset, sizeof(T));
+			std::memcpy(&value, data + offset, sizeof(T));
 
 			return value;
 		}
 
+		Buffer Copy(uint32_t size, uint32_t offset = 0) const;
+		BufferView View(uint32_t size, uint32_t offset = 0) const;
+
+		uint32_t Size() const { return m_Size; }
+
 		BufferAccess Access() const { return m_Access; }
+
+		std::span<std::byte> AsSpan(uint32_t offset = 0);
+		std::span<const std::byte> AsSpan(uint32_t offset = 0) const;
+
+		std::span<std::byte> AsSpan(uint32_t count, uint32_t offset);
+		std::span<const std::byte> AsSpan(uint32_t count, uint32_t offset) const;
+
+		template<typename T>
+		std::span<T> AsSpan(uint32_t offset = 0);
+
+		template<typename T>
+		std::span<const T> AsSpan(uint32_t offset = 0) const;
+
+		template<typename T>
+		std::span<T> AsSpan(uint32_t elementCount, uint32_t offset);
+
+		template<typename T>
+		std::span<const T> AsSpan(uint32_t elementCount, uint32_t offset) const;
+
+		template<typename T>
+		bool IsAligned(uint32_t offset) const;
 
 		BufferContent(const BufferContent&) = delete;
 		BufferContent(BufferContent&&) noexcept = delete;
@@ -155,4 +190,89 @@ namespace Engine {
 		const BufferAccess m_Access;
 		const BufferObject& m_Buffer;
 	};
+
+	template <typename T>
+	std::span<T> BufferContent::AsSpan(uint32_t offset) {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferContent::AsSpan<T>(): Misaligned data access.");
+
+		const auto count = m_Size - offset;
+		ENGINE_ASSERT(count % sizeof(T) == 0, "BufferContent::AsSpan<T>(): Size is not a multiple of T.");
+
+		return { reinterpret_cast<T*>(m_Data + offset), count / sizeof(T) };
+	}
+
+	template <typename T>
+	std::span<const T> BufferContent::AsSpan(uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferContent::AsSpan<T>(): Misaligned data access.");
+
+		const auto count = m_Size - offset;
+
+		ENGINE_ASSERT(count % sizeof(T) == 0, "BufferContent::AsSpan<T>(): Size is not a multiple of T.");
+
+
+		return { reinterpret_cast<const T*>(m_Data + offset), count / sizeof(T) };
+	}
+
+	template <typename T>
+	std::span<T> BufferContent::AsSpan(uint32_t elementCount, uint32_t offset) {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferContent::AsSpan<T>(): Misaligned data access.");
+
+		ENGINE_ASSERT((elementCount * sizeof(T)) + offset <= m_Size, "BufferContent::AsSpan<T>(): Size is not a multiple of T.");
+		if ((elementCount * sizeof(T)) + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", elementCount, offset, m_Size));
+
+		return { reinterpret_cast<T*>(m_Data + offset), elementCount };
+	}
+
+	template <typename T>
+	std::span<const T> BufferContent::AsSpan(uint32_t elementCount, uint32_t offset) const {
+		Utils::AssertAccess(m_Access, true, false);
+
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferContent::AsSpan<T>(): Misaligned data access.");
+
+		ENGINE_ASSERT((elementCount * sizeof(T)) + offset <= m_Size, "BufferContent::AsSpan<T>(): Size is not a multiple of T.");
+		if ((elementCount * sizeof(T)) + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", elementCount, offset, m_Size));
+
+		return { reinterpret_cast<const T*>(m_Data + offset), elementCount };
+	}
+
+	template <typename T>
+	bool BufferContent::IsAligned(uint32_t offset) const {
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferContent::IsAligned<T>(): Offset {} exceeds buffer size {}", offset, m_Size));
+
+		return reinterpret_cast<uintptr_t>(m_Data + offset) % alignof(T) == 0;
+	}
+
+	inline constexpr BufferStorageFlags operator|(BufferStorageFlags a, BufferStorageFlags b) {
+		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+	}
+
+	inline constexpr BufferStorageFlags operator|=(BufferStorageFlags& a, BufferStorageFlags b) {
+		return a = (a | b);
+	}
+
+	inline constexpr BufferStorageFlags operator & (BufferStorageFlags a, BufferStorageFlags b) {
+		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+	}
+
+	inline constexpr BufferStorageFlags& operator &= (BufferStorageFlags& a, BufferStorageFlags b) {
+		return a = a & b;
+	}
 }
