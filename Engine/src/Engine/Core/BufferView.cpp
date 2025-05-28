@@ -50,12 +50,40 @@ namespace Engine {
 		m_Size = length;
 	}
 
-	std::span<std::byte> BufferView::AsSpan() {
-		return { m_Data, m_Size };
+	bool BufferView::operator==(const BufferView& rth) const {
+		return m_Size == rth.m_Size && std::memcmp(m_Data, rth.m_Data, m_Size) == 0;
 	}
 
-	std::span<const std::byte> BufferView::AsSpan() const {
-		return { m_Data, m_Size };
+	std::span<std::byte> BufferView::AsSpan(SizeType offset) {
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		return { m_Data + offset, m_Size - offset };
+	}
+
+	std::span<const std::byte> BufferView::AsSpan(SizeType offset) const {
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		return { m_Data + offset, m_Size - offset };
+	}
+
+	std::span<std::byte> BufferView::AsSpan(SizeType count, SizeType offset) {
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data + offset, count };
+	}
+
+	std::span<const std::byte> BufferView::AsSpan(SizeType count, SizeType offset) const {
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data + offset, count };
 	}
 
 	BufferView BufferView::Slice(SizeType offset, SizeType length) const {

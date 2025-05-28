@@ -61,7 +61,7 @@ namespace Engine {
 	}
 
 	bool Buffer::operator==(const Buffer& rth) const {
-		return m_Size == rth.m_Size && std::memcpy(m_Data.get(), rth.m_Data.get(), m_Size) == 0;
+		return m_Size == rth.m_Size && std::memcmp(m_Data.get(), rth.m_Data.get(), m_Size) == 0;
 	}
 
 	Buffer Buffer::Copy(const void* data, SizeType size) {
@@ -104,6 +104,45 @@ namespace Engine {
 	void Buffer::ZeroInitialize() {
 		if (m_Data)
 			std::memset(m_Data.get(), 0, m_Size);
+	}
+
+	BufferView Buffer::Slice(SizeType offset, SizeType length) const {
+		return BufferView(*this, offset, length);
+	}
+
+	std::span<std::byte> Buffer::AsSpan(SizeType offset) {
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		const auto count = m_Size - offset;
+
+		return { m_Data.get() + offset, count }; }
+
+	std::span<const std::byte> Buffer::AsSpan(SizeType offset) const {
+		ENGINE_ASSERT(offset <= m_Size);
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+
+		const auto count = m_Size - offset;
+
+		return { m_Data.get() + offset, count };
+	}
+
+	std::span<std::byte> Buffer::AsSpan(SizeType count, SizeType offset) {
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data.get() + offset, count};
+	}
+
+	std::span<const std::byte> Buffer::AsSpan(SizeType count, SizeType offset) const { 
+		ENGINE_ASSERT(count + offset <= m_Size);
+		if (count + offset > m_Size)
+			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
+
+		return { m_Data.get() + offset, count};
 	}
 
 	void Buffer::Write(const void* data, SizeType size, SizeType offset) {

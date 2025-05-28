@@ -21,6 +21,8 @@ namespace Engine {
 		BufferView(const BufferView& buffer, SizeType offset = 0);
 		BufferView(const BufferView& buffer, SizeType offset, SizeType length);
 
+		bool operator==(const BufferView& rth) const;
+
 		template<typename T>
 		static BufferView From(T& object) {
 			return {reinterpret_cast<std::byte*>(&object), sizeof(T)};
@@ -38,14 +40,23 @@ namespace Engine {
         template<typename T>
         const T* As() const;
 
-        std::span<std::byte> AsSpan();
-        std::span<const std::byte> AsSpan() const;
+		std::span<std::byte> AsSpan(SizeType offset = 0);
+		std::span<const std::byte> AsSpan(SizeType offset = 0) const;
+
+		std::span<std::byte> AsSpan(SizeType count, SizeType offset );
+		std::span<const std::byte> AsSpan(SizeType count, SizeType offset) const;
+
+		template<typename T>
+        std::span<T> AsSpan(SizeType offset = 0);
 
         template<typename T>
-        std::span<T> AsSpan();
+        std::span<const T> AsSpan(SizeType offset = 0) const;
 
-        template<typename T>
-        std::span<const T> AsSpan() const;
+		template<typename T>
+		std::span<T> AsSpan(SizeType elementCount, SizeType offset);
+
+		template<typename T>
+		std::span<const T> AsSpan(SizeType elementCount, SizeType offset = 0) const;
 
 		BufferView Slice(SizeType offset, SizeType length) const;
 
@@ -116,13 +127,51 @@ namespace Engine {
 	}
 
 	template <typename T>
-	std::span<T> BufferView::AsSpan() {
-		return { reinterpret_cast<T*>(m_Data), m_Size / sizeof(T)};
+	std::span<T> BufferView::AsSpan(SizeType offset) {
+		ENGINE_ASSERT(offset <= m_Size);
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferView::AsSpan<T>(): Misaligned data access.");
+
+		if (offset > m_Size)
+			throw std::out_of_range("BufferView::AsSpan<T>(): Out of bounds access");
+
+		const auto count = m_Size - offset;
+
+		return { reinterpret_cast<T*>(m_Data + offset), count / sizeof(T)};
 	}
 
 	template <typename T>
-	std::span<const T> BufferView::AsSpan() const {
-		return { reinterpret_cast<const T*>(m_Data), m_Size / sizeof(T) };
+	std::span<const T> BufferView::AsSpan(SizeType offset) const {
+		ENGINE_ASSERT(offset <= m_Size);
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferView::AsSpan<T>(): Misaligned data access.");
+
+		if (offset > m_Size)
+			throw std::out_of_range("BufferView::AsSpan<T>(): Out of bounds access");
+
+		const auto count = m_Size - offset;
+
+		return { reinterpret_cast<const T*>(m_Data + offset), count / sizeof(T) };
+	}
+
+	template <typename T>
+	std::span<T> BufferView::AsSpan(SizeType elementCount, SizeType offset) {
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferView::AsSpan<T>(): Misaligned data access.");
+
+		ENGINE_ASSERT((elementCount * sizeof(T)) + offset <= m_Size, "BufferView::AsSpan<T>(): Size is not a multiple of T.");
+		if ((elementCount * sizeof(T)) + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", elementCount, offset, m_Size));
+
+		return { reinterpret_cast<T*>(m_Data + offset), elementCount };
+	}
+
+	template <typename T>
+	std::span<const T> BufferView::AsSpan(SizeType elementCount, SizeType offset) const {
+		ENGINE_ASSERT(IsAligned<T>(offset), "BufferView::AsSpan<T>(): Misaligned data access.");
+
+		ENGINE_ASSERT((elementCount * sizeof(T)) + offset <= m_Size, "BufferView::AsSpan<T>(): Size is not a multiple of T.");
+		if ((elementCount * sizeof(T)) + offset > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", elementCount, offset, m_Size));
+
+		return { reinterpret_cast<const T*>(m_Data + offset), elementCount };
 	}
 
 	template <typename T>
