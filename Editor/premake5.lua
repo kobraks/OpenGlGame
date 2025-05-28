@@ -17,6 +17,7 @@ project "Editor"
 	{
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
+		"YAML_CPP_STATIC_DEFINE",
 		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE"
 	}
 	
@@ -35,6 +36,7 @@ project "Editor"
 		"%{IncludeDir.FreeImage}",
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.Entt}",
+		"%{IncludeDir.Yaml}",
 	}
 
 	links
