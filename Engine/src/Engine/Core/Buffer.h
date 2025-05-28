@@ -1,5 +1,8 @@
 #pragma once
 #include "Engine/Core/Base.h"
+
+#include "Engine/Utils/CoreUtility.h"
+
 #include <span>
 #include <cstddef>
 
@@ -187,6 +190,6 @@ namespace Engine {
 		if (offset > m_Size)
 			throw std::runtime_error(fmt::format("Buffer::IsAligned<T>: Overflow with offset {}", offset));
 
-		return reinterpret_cast<uintptr_t>(Data() + offset) % alignof(T) == 0;
+		return Utils::IsAlignTo<T>(m_Data.get(), offset);
 	}
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
+#include "Engine/Utils/CoreUtility.h"
+
 #include <cstddef>
 #include <span>
 
@@ -180,6 +182,6 @@ namespace Engine {
 		if (offset > m_Size)
 			throw std::runtime_error(fmt::format("BufferView::IsAligned<T>: Overflow with offset {}", offset));
 
-		return reinterpret_cast<uintptr_t>(m_Data + offset) % alignof(T) == 0;
+		return Utils::IsAlignTo<T>(m_Data, offset);
 	}
 }

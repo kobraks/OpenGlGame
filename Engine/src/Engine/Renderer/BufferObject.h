@@ -3,7 +3,10 @@
 
 #include "Engine/Core/Buffer.h"
 #include "Engine/Core/BufferView.h"
+
 #include "Engine/Renderer/GraphicEnums.h"
+
+#include "Engine/Utils/CoreUtility.h"
 
 #include <string>
 #include <string_view>
@@ -257,7 +260,7 @@ namespace Engine {
 		if (offset > m_Size)
 			throw std::out_of_range(fmt::format("BufferContent::IsAligned<T>(): Offset {} exceeds buffer size {}", offset, m_Size));
 
-		return reinterpret_cast<uintptr_t>(m_Data + offset) % alignof(T) == 0;
+		return Utils::IsAlignTo<T>(m_Data, offset);
 	}
 
 	inline constexpr BufferStorageFlags operator|(BufferStorageFlags a, BufferStorageFlags b) {
