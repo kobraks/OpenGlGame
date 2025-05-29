@@ -64,16 +64,16 @@ namespace Engine {
 		AllocateImmutable(data, size, flags);
 	}
 
-	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usage) {
+	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usageHint) {
 		PrepareAllocate(size, BufferStorageMode::Mutable);
-		AllocateMutable(data, size, usage);
+		AllocateMutable(data, size, usageHint);
 	}
 
-	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usage, BufferStorageMode mode, BufferStorageFlags flags) {
+	void BufferObject::Allocate(const void* data, uint32_t size, BufferUsage usageHint, BufferStorageMode mode, BufferStorageFlags flags) {
 		PrepareAllocate(size, mode);
 
 		if (mode == BufferStorageMode::Mutable)
-			AllocateMutable(data, size, usage);
+			AllocateMutable(data, size, usageHint);
 		else
 			AllocateImmutable(data, size, flags);
 	}
@@ -182,6 +182,8 @@ namespace Engine {
 			std::memcpy(buffer.Data(), ptr, buffer.Size());
 		}
 
+		glDeleteBuffers(1, &stagingBuffer);
+
 		return buffer;
 	}
 
@@ -203,6 +205,18 @@ namespace Engine {
 		m_State->Content = content;
 
 		return content;
+	}
+
+	void BufferObject::Invalidate() {
+		glInvalidateBufferData(m_State->RendererID);
+	}
+
+	void BufferObject::Invalidate(uint32_t offset, uint32_t length) {
+		ENGINE_ASSERT(offset + length <= Size());
+		if (offset + length > Size())
+			throw std::out_of_range("Out of bounds");
+
+		glInvalidateBufferSubData(m_State->RendererID, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(length));
 	}
 
 	void BufferObject::SetLabel(const std::string& label) {
@@ -267,6 +281,25 @@ namespace Engine {
 			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, m_Size));
 
 		return {m_Data + offset, size};
+	}
+
+	void BufferContent::Flush(uint32_t offset, uint32_t size) {
+		if (!(Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapWrite)) || 
+			!(Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapPersistent))) {
+			ENGINE_ASSERT(false, "Flush requires persistent mapped wirteable buffer.");
+			throw std::runtime_error("Flush requires persistent mapped wirteable buffer.");
+		}
+
+		if (!Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapCoherent)) {
+			if (size == 0)
+				size = m_Size;
+		}
+
+		ENGINE_ASSERT(offset + size <= m_Size);
+		if (offset + size > m_Size)
+			throw std::out_of_range(fmt::format("Flush out of bounds: offset={}, size={}, bufferSize={}", offset, size, m_Size));
+
+		glFlushMappedBufferRange(m_Buffer.RendererID(), m_Offset + offset, size);
 	}
 
 	std::span<std::byte> BufferContent::AsSpan(uint32_t offset) {

@@ -70,6 +70,9 @@ namespace Engine {
 
 		bool IsMapped() const { return !m_State->Content.expired() || m_State->PersistentContent != nullptr; }
 
+		void Invalidate();
+		void Invalidate(uint32_t offset, uint32_t length);
+
 		uint32_t Size() const { return m_State->Size; }
 		BufferUsage UsageHint() const { return m_State->Usage; }
 		BufferStorageMode Mode() const { return m_State->StorageMode; }
@@ -85,9 +88,9 @@ namespace Engine {
 		virtual ~BufferObject() = default;
 
 		void Allocate(const void* data, uint32_t size, BufferStorageFlags flags);
-		void Allocate(const void* data, uint32_t size, BufferUsage usage);
+		void Allocate(const void* data, uint32_t size, BufferUsage usageHit);
 
-		void Allocate(const void* data, uint32_t size, BufferUsage usage, BufferStorageMode mode, BufferStorageFlags flags);
+		void Allocate(const void* data, uint32_t size, BufferUsage usageHit, BufferStorageMode mode, BufferStorageFlags flags);
 
 		void ForceUnMap();
 	private:
@@ -160,6 +163,8 @@ namespace Engine {
 		uint32_t Size() const { return m_Size; }
 
 		BufferAccess Access() const { return m_Access; }
+
+		void Flush(uint32_t offset = 0, uint32_t size = 0);
 
 		std::span<std::byte> AsSpan(uint32_t offset = 0);
 		std::span<const std::byte> AsSpan(uint32_t offset = 0) const;
