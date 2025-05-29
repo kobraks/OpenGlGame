@@ -6,6 +6,10 @@ namespace Engine {
 	public:
 		using BufferObject::BufferObject;
 
+		inline void BindToArrayIndex(uint32_t bindPoint, uint32_t index, uint32_t size, uint32_t offset = 0) const {
+			BindRange(bindPoint + index, size, offset);
+		}
+
 		static Ref<ShaderStorageBuffer> Create(uint32_t size, BufferStorageFlags flags = BufferStorageFlags::None);
 		static Ref<ShaderStorageBuffer> Create(uint32_t size, BufferUsage usageHint);
 
@@ -16,8 +20,8 @@ namespace Engine {
 	template<typename T>
 	class TypedShaderStorageBuffer : public ShaderStorageBuffer {
 	public:
-		void SetData(std::span<const T> data) {
-			GetContent(BufferAccess::WriteOnly)->Set(data);
+		void SetData(std::span<const T> data, uint32_t offset = 0) {
+			Upload({ data.data(), data.size_bytes()}, offset);
 		}
 
 		std::span<T> GetData() {
