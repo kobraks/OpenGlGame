@@ -9,7 +9,7 @@ namespace Engine {
 		virtual ~VertexBuffer() override = default;
 
 		void SetData(const std::byte* data, uint32_t size, uint32_t offset = 0) {
-			Upload({ data, size }, offset);
+			Write({ data, size }, offset);
 		}
 
 		const BufferLayout& GetLayout() const { return *m_Layout; }

@@ -36,7 +36,7 @@ namespace Engine {
 		return buffer;
 	}
 
-	IndexBuffer::IndexBuffer() : BufferObject(GL_ELEMENT_ARRAY_BUFFER) {
+	IndexBuffer::IndexBuffer() : BufferObject(BufferTarget::ElementArray) {
 	}
 
 }

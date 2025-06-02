@@ -17,6 +17,6 @@ namespace Engine {
 		return buffer;
 	}
 
-	ShaderStorageBuffer::ShaderStorageBuffer() : BufferObject(GL_SHADER_STORAGE_BUFFER) {
+	ShaderStorageBuffer::ShaderStorageBuffer() : BufferObject(BufferTarget::ShaderStorage) {
 	}
 }

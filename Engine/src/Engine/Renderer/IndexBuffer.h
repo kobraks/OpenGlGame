@@ -8,7 +8,7 @@ namespace Engine {
 			ENGINE_ASSERT((offset + elementCount * sizeof(uint32_t)) <= Size(), "IndexBuffer::SetIndices out of bounds");
 
 			m_Count = elementCount;
-			Upload({ data,  elementCount * sizeof(uint32_t)}, offset);
+			Write({ data,  elementCount * sizeof(uint32_t)}, offset);
 		}
 
 		uint32_t Count() const { return m_Count; }

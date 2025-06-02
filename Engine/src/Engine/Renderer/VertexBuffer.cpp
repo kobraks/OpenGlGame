@@ -34,6 +34,6 @@ namespace Engine {
 		return buffer;
 	}
 
-	VertexBuffer::VertexBuffer() : BufferObject(GL_ARRAY_BUFFER), m_Layout(MakeScope<BufferLayout>()) {
+	VertexBuffer::VertexBuffer() : BufferObject(BufferTarget::Array), m_Layout(MakeScope<BufferLayout>()) {
 	}
 }

@@ -25,7 +25,7 @@ namespace Engine {
 		}
 
 		std::span<T> GetData() {
-			return GetContent(BufferAccess::ReadOnly)->template AsSpan<T>();
+			return Map(BufferAccess::ReadOnly)->template AsSpan<T>();
 		}
 	};
 
