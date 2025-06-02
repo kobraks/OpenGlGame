@@ -2,12 +2,14 @@
 #include "MappedBufferRegion.h"
 
 #include "Engine/Renderer/BufferObject.h"
+#include "Engine/Utils/Renderer/EnumStringConverters.h"
+#include "Engine/Utils/Renderer/GLEnumConverters.h"
 
 #include <glad/glad.h>
 
 namespace Engine {
 	MappedBufferRegion::~MappedBufferRegion() {
-		LOG_GL_DEBUG("MappedBufferRegion destroyed: buffer={}, bufferTarget={}", m_Buffer.RendererID(), Utils::ToString(m_Buffer.Target()));
+		LOG_GL_DEBUG("MappedBufferRegion destroyed: buffer={}, bufferTarget={}", m_Buffer.RendererID(), m_Buffer.Target());
 		glUnmapNamedBuffer(m_Buffer.RendererID());
 	}
 
@@ -209,7 +211,7 @@ namespace Engine {
 		if (buffer.Size() == 0)
 			throw std::runtime_error("Cannot map buffer (size = 0). Buffer must be allocated before mapping.");
 
-		m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, Utils::ToGL(m_Access)));
+		m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, Utils::EnumToGLConstant(m_Access)));
 
 		ENGINE_ASSERT(m_Data != nullptr, "Mapping buffer failed. Buffer may not be allocated or OpenGL context is not current.");
 

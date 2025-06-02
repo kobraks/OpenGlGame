@@ -5,7 +5,7 @@
 #include "Engine/Renderer/Builders/RenderBufferAttachmentBuilder.h"
 #include "Engine/Renderer/Framebuffer.h"
 
-#include "Engine/Utils/GraphicEnumsUtils.h"
+#include "Engine/Utils/Renderer/ImageFormatTraits.h"
 
 namespace Engine {
 	namespace Utils {

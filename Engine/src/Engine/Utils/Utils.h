@@ -9,6 +9,4 @@
 
 #include "Engine/Utils/LuaUtils.h"
 
-#include "Engine/Utils/GraphicEnumsUtils.h"
-#include "Engine/Utils/OpenGlUtils.h"
 #include "Engine/Utils/CommandLineParser.h"

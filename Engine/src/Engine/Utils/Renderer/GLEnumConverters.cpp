@@ -1,10 +1,9 @@
 #include "pch.h"
-#include "OpenGlUtils.h"
-
+#include "GLEnumConverters.h"
 #include <glad/glad.h>
 
 namespace Engine::Utils {
-	uint32_t ToGL(ImageFormat format) {
+	uint32_t EnumToGLConstant(ImageFormat format) {
 		switch (format) {
 		case ImageFormat::CompressedRed:
 			return GL_COMPRESSED_RED;
@@ -174,7 +173,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(FilterMode filter) {
+	uint32_t EnumToGLConstant(FilterMode filter) {
 		switch (filter) {
 		case FilterMode::Nearest:
 			return GL_NEAREST;
@@ -194,7 +193,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(WrapMode wrapMode) {
+	uint32_t EnumToGLConstant(WrapMode wrapMode) {
 		switch (wrapMode) {
 		case WrapMode::Repeat:
 			return GL_REPEAT;
@@ -210,7 +209,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(DataFormat format) {
+	uint32_t EnumToGLConstant(DataFormat format) {
 		switch (format) {
 		case DataFormat::Red:
 			return GL_RED;
@@ -248,7 +247,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(DataType type) {
+	uint32_t EnumToGLConstant(DataType type) {
 		switch (type) {
 		case DataType::Byte:
 			return GL_BYTE;
@@ -272,7 +271,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(BlitFilter filter) {
+	uint32_t EnumToGLConstant(BlitFilter filter) {
 		switch (filter) {
 		case BlitFilter::Nearest:
 			return GL_NEAREST;
@@ -284,7 +283,7 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	uint32_t ToGL(BlitMask mask) {
+	uint32_t EnumToGLConstant(BlitMask mask) {
 		switch (mask) {
 		case BlitMask::Color:
 			return GL_COLOR_BUFFER_BIT;
@@ -298,84 +297,63 @@ namespace Engine::Utils {
 		throw std::out_of_range("");
 	}
 
-	std::pair<DataFormat, DataType> GetDefaultFormatAndType(ImageFormat format) {
-		switch (format) {
-		case ImageFormat::Red:
-		case ImageFormat::R8:
-			return { DataFormat::Red, DataType::UnsignedByte };
-
-		case ImageFormat::RG:
-		case ImageFormat::RG8:
-			return { DataFormat::RG, DataType::UnsignedByte };
-
-		case ImageFormat::RGB:
-		case ImageFormat::RGB8:
-			return { DataFormat::RGB, DataType::UnsignedByte };
-
-		case ImageFormat::RGBA:
-		case ImageFormat::RGBA8:
-			return { DataFormat::RGBA, DataType::UnsignedByte };
-
-		case ImageFormat::SRGB8:
-			return { DataFormat::RGB, DataType::UnsignedByte };
-
-		case ImageFormat::SRGB8A8:
-			return { DataFormat::RGBA, DataType::UnsignedByte };
-
-			// Float formats
-		case ImageFormat::R16F:
-		case ImageFormat::R32F:
-			return { DataFormat::Red, DataType::Float };
-
-		case ImageFormat::RG16F:
-		case ImageFormat::RG32F:
-			return { DataFormat::RG, DataType::Float };
-
-		case ImageFormat::RGB16F:
-		case ImageFormat::RGB32F:
-			return { DataFormat::RGB, DataType::Float };
-
-		case ImageFormat::RGBA16F:
-		case ImageFormat::RGBA32F:
-			return { DataFormat::RGBA, DataType::Float };
-
-			// Integer formats
-		case ImageFormat::R8I:
-		case ImageFormat::R32I:
-			return { DataFormat::RedInteger, DataType::Int };
-
-		case ImageFormat::RG8I:
-		case ImageFormat::RG32I:
-			return { DataFormat::RGInteger, DataType::Int };
-
-		case ImageFormat::RGB8I:
-		case ImageFormat::RGB32I:
-			return { DataFormat::RGBInteger, DataType::Int };
-
-		case ImageFormat::RGBA8I:
-		case ImageFormat::RGBA32I:
-			return { DataFormat::RGBAInteger, DataType::Int };
-
-			// Depth formats
-		case ImageFormat::DepthComponent:
-		case ImageFormat::DepthComponent16:
-		case ImageFormat::DepthComponent24:
-		case ImageFormat::DepthComponent32:
-		case ImageFormat::DepthComponent32F:
-			return { DataFormat::DepthComponent, DataType::Float };
-
-			// Depth-stencil
-		case ImageFormat::Depth24Stencil8:
-		case ImageFormat::Depth32FStencil8:
-			return { DataFormat::DepthStencil, DataType::UnsignedInt };
-
-		default:
-			LOG_ENGINE_WARN("No default format/type mapping for ImageFormat {}", static_cast<uint32_t>(format));
-			return { DataFormat::RGBA, DataType::UnsignedByte }; // safe fallback
+	uint32_t EnumToGLConstant(BufferAccess access) {
+		switch (access) {
+		case BufferAccess::ReadOnly:
+			return GL_READ_ONLY;
+		case BufferAccess::WriteOnly:
+			return GL_WRITE_ONLY;
+		case BufferAccess::ReadWrite:
+			return GL_READ_WRITE;
 		}
+
+		return GL_READ_WRITE;
 	}
 
-	uint32_t ToGL(BufferUsage usage) {
+	uint32_t EnumToGLConstant(BufferStorageFlags flags) {
+		uint32_t glFlags = 0;
+
+		if (HasFlag(flags, BufferStorageFlags::Dynamic)) glFlags |= GL_DYNAMIC_STORAGE_BIT;
+		if (HasFlag(flags, BufferStorageFlags::MapRead)) glFlags |= GL_MAP_READ_BIT;
+		if (HasFlag(flags, BufferStorageFlags::MapWrite)) glFlags |= GL_MAP_WRITE_BIT;
+		if (HasFlag(flags, BufferStorageFlags::MapPersistent)) glFlags |= GL_MAP_PERSISTENT_BIT;
+		if (HasFlag(flags, BufferStorageFlags::MapCoherent)) glFlags |= GL_MAP_COHERENT_BIT;
+		if (HasFlag(flags, BufferStorageFlags::ClientStorage)) glFlags |= GL_CLIENT_STORAGE_BIT;
+
+		return glFlags;
+	}
+
+	uint32_t EnumToGLConstant(BufferTarget target) {
+		switch (target) {
+		case BufferTarget::Array:
+			return GL_ARRAY_BUFFER;
+		case BufferTarget::ElementArray:
+			return GL_ELEMENT_ARRAY_BUFFER;
+		case BufferTarget::Uniform:
+			return GL_UNIFORM_BUFFER;
+		case BufferTarget::ShaderStorage:
+			return GL_SHADER_STORAGE_BUFFER;
+		case BufferTarget::CopyRead:
+			return GL_COPY_READ_BUFFER;
+		case BufferTarget::CopyWrite:
+			return GL_COPY_WRITE_BUFFER;
+		case BufferTarget::PixelPack:
+			return GL_PIXEL_PACK_BUFFER;
+		case BufferTarget::PixelUnpack:
+			return GL_PIXEL_UNPACK_BUFFER;
+		case BufferTarget::DrawIndirect:
+			return GL_DRAW_INDIRECT_BUFFER;
+		case BufferTarget::DispatchIndirect:
+			return GL_DISPATCH_INDIRECT_BUFFER;
+		case BufferTarget::TransformFeedback:
+			return GL_TRANSFORM_FEEDBACK_BUFFER;
+		case BufferTarget::AtomicCounter:
+			return GL_ATOMIC_COUNTER_BUFFER;
+		}
+		return 0; // Invalid target
+	}
+
+	uint32_t EnumToGLConstant(BufferUsage usage) {
 		switch (usage) {
 		case BufferUsage::StaticDraw: return GL_STATIC_DRAW;
 		case BufferUsage::StaticRead: return GL_STATIC_READ;

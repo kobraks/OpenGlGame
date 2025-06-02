@@ -1,41 +1,22 @@
 #pragma once
-#include "Engine/Core/Base.h"
-
 #include "Engine/Renderer/GraphicEnums.h"
+#include "Engine/Renderer/BufferEnums.h"
 
-namespace Engine {
-	struct BufferUsageIntent {
-		bool cpuWrite = true;
-		bool cpuReads = false;
-		bool gpuWrite = false;
-		bool gpuReads = true;
-		bool isDynamic = false;
-		bool isStreaming = false;
-	};
+namespace Engine::Utils {
+	const char* ToString(WrapMode mode);
+	const char* ToString(FilterMode mode);
+	const char* ToString(BlitFilter filter);
+	const char* ToString(BlitMask mask);
+	const char* ToString(DataFormat format);
+	const char* ToString(ImageFormat format);
+	const char* ToString(DataType type);
+	const char* ToString(TextureUsage usage);
 
-	BufferUsage ChooseUsage(const BufferUsageIntent& intent);
-
-	namespace Utils {
-		const char* ToString(WrapMode mode);
-		const char* ToString(FilterMode mode);
-		const char* ToString(BlitFilter filter);
-		const char* ToString(BlitMask mask);
-		const char* ToString(DataFormat format);
-		const char* ToString(ImageFormat format);
-		const char* ToString(DataType type);
-		const char* ToString(TextureUsage usage);
-		const char* ToString(BufferUsage usage);
-
-		bool IsDepthFormat(ImageFormat format);
-		bool IsStorageCapable(ImageFormat format);
-
-		bool IsStencilOnlyFormat(ImageFormat format);
-		bool IsDepthStencilFormat(ImageFormat format);
-
-		bool IsColorFormat(ImageFormat format);
-
-		TextureUsage GetUsageFromFormat(ImageFormat format);
-	}
+	const char* ToString(BufferUsage usage);
+	const char* ToString(BufferStorageFlags flags);
+	const char* ToString(BufferAccess access);
+	const char* ToString(BufferStorageMode mode);
+	const char* ToString(BufferTarget target);
 }
 
 template <>
@@ -97,6 +78,34 @@ struct fmt::formatter<Engine::TextureUsage> : fmt::formatter<const char*> {
 template<>
 struct fmt::formatter<Engine::BufferUsage> : fmt::formatter<const char*> {
 	auto format(Engine::BufferUsage v, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::BufferStorageFlags> : fmt::formatter<const char*> {
+	auto format(Engine::BufferStorageFlags v, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::BufferStorageMode> : fmt::formatter<const char*> {
+	auto format(Engine::BufferStorageMode v, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::BufferAccess> : fmt::formatter<const char*> {
+	auto format(Engine::BufferAccess v, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::BufferTarget> : fmt::formatter<const char*> {
+	auto format(Engine::BufferTarget v, format_context& ctx) const {
 		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
 	}
 };

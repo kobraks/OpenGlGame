@@ -6,6 +6,8 @@
 
 #include "Engine/Renderer/BufferEnums.h"
 
+#include "Engine/Utils/Renderer/BufferUsageMapper.h"
+
 namespace Engine {
 	class MappedBufferRegion {
 		friend class BufferObject;

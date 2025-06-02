@@ -3,8 +3,9 @@
 
 #include "Engine/Core/Image.h"
 
-#include "Engine/Utils/OpenGlUtils.h"
-#include "Engine/Utils/GraphicEnumsUtils.h"
+#include "Engine/Utils/Renderer/GLEnumConverters.h"
+#include "Engine/Utils/Renderer/EnumStringConverters.h"
+#include "Engine/Utils/Renderer/ImageFormatTraits.h"
 
 #include "glad/glad.h"
 
@@ -197,7 +198,7 @@ namespace Engine {
 		}
 
 		m_Internals->Wrapping.S = wrapping;
-		SetParameter(GL_TEXTURE_WRAP_S, Utils::ToGL(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_S, Utils::EnumToGLConstant(wrapping));
 	}
 
 	void Texture::SetWrappingT(WrapMode wrapping) {
@@ -207,7 +208,7 @@ namespace Engine {
 		}
 
 		m_Internals->Wrapping.T = wrapping;
-		SetParameter(GL_TEXTURE_WRAP_T, Utils::ToGL(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_T, Utils::EnumToGLConstant(wrapping));
 	}
 
 	void Texture::SetFilters(FilterMode min, FilterMode mag) {
@@ -227,7 +228,7 @@ namespace Engine {
 		}
 
 		m_Internals->Filter.Min = filter;
-		SetParameter(GL_TEXTURE_MIN_FILTER, Utils::ToGL(filter));
+		SetParameter(GL_TEXTURE_MIN_FILTER, Utils::EnumToGLConstant(filter));
 	}
 
 	void Texture::SetMagFilter(FilterMode filter) {
@@ -242,7 +243,7 @@ namespace Engine {
 		}
 
 		m_Internals->Filter.Mag = filter;
-		SetParameter(GL_TEXTURE_MAG_FILTER, Utils::ToGL(filter));
+		SetParameter(GL_TEXTURE_MAG_FILTER, Utils::EnumToGLConstant(filter));
 	}
 
 	Ref<Image> Texture::ToImage() const {
@@ -276,7 +277,7 @@ namespace Engine {
 	}
 
 	void Texture::Clear(const void* pixels, DataFormat dataFormat, DataType dataType) {
-		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::ToGL(dataFormat), Utils::ToGL(dataType),
+		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::EnumToGLConstant(dataFormat), Utils::EnumToGLConstant(dataType),
 		                pixels);
 
 		// LOG_GL_TRACE("Clearing texture: label='{}', full size={}, format={}, type={}", Label(), Size(), dataFormat, dataType);
@@ -295,8 +296,8 @@ namespace Engine {
 		Utils::CheckSubRegionSize(offset, size, Size());
 
 		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, size.Width, size.Height, 0,
-		                   Utils::ToGL(dataFormat),
-		                   Utils::ToGL(dataType), pixels);
+		                   Utils::EnumToGLConstant(dataFormat),
+		                   Utils::EnumToGLConstant(dataType), pixels);
 
 		LOG_GL_TRACE("Clearing texture region: offset={}, size={}, format={}, type={}",
 			offset, size, dataFormat, dataType);
@@ -377,7 +378,7 @@ namespace Engine {
 		m_Internals->ImageFormat = imageFormat;
 		m_Internals->Samples = samples;
 		m_Internals->Usage = usage;
-		const auto& imageFormatGL = m_Internals->ImageFormatGL = Utils::ToGL(imageFormat);
+		const auto& imageFormatGL = m_Internals->ImageFormatGL = Utils::EnumToGLConstant(imageFormat);
 
 		if (usage == TextureUsage::DepthStencil) {
 			ENGINE_ASSERT(Utils::IsDepthFormat(imageFormat), "DepthStencil usage requires a depth-capable format.");
@@ -410,8 +411,8 @@ namespace Engine {
 
 		Utils::CheckSubRegionSize(offset, size, Size());
 		glTextureSubImage2D(static_cast<GLuint>(*this), 0, offset.X, offset.Y, static_cast<GLsizei>(size.Width),
-		                    static_cast<GLsizei>(size.Height), Utils::ToGL(format),
-		                    Utils::ToGL(dataType), pixels);
+		                    static_cast<GLsizei>(size.Height), Utils::EnumToGLConstant(format),
+		                    Utils::EnumToGLConstant(dataType), pixels);
 
 		LOG_GL_TRACE("Uploading texture data: size={}x{}, format={}, type={}", size.Width, size.Height, format, dataType);
 	}

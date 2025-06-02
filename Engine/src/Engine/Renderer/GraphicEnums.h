@@ -155,18 +155,4 @@ namespace Engine {
 		DepthStencil,
 		Storage
 	};
-
-	enum class BufferUsage {
-		StaticDraw,
-		StaticRead,
-		StaticCopy,
-
-		DynamicDraw,
-		DynamicRead,
-		DynamicCopy,
-
-		StreamDraw,
-		StreamRead,
-		StreamCopy
-	};
 }

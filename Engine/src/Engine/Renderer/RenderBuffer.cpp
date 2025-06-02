@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "Engine/Renderer/RenderBuffer.h"
-#include "Engine/Utils/OpenGlUtils.h"
+#include "Engine/Utils/Renderer/GLEnumConverters.h"
+#include "Engine/Utils/Renderer/EnumStringConverters.h"
 
 #include "glad/glad.h"
 
@@ -73,7 +74,7 @@ namespace Engine {
 		m_Internals->ImageFormat = imageFormat;
 		m_Internals->Size = size;
 
-		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), Utils::ToGL(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), Utils::EnumToGLConstant(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
 	void RenderBuffer::Allocate(const Vector2u& size, enum Engine::ImageFormat imageFormat) {
@@ -81,6 +82,6 @@ namespace Engine {
 		m_Internals->ImageFormat = imageFormat;
 		m_Internals->Size = size;
 
-		glNamedRenderbufferStorage(*this, Utils::ToGL(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
+		glNamedRenderbufferStorage(*this, Utils::EnumToGLConstant(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 }

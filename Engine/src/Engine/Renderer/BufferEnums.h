@@ -40,41 +40,19 @@ namespace Engine {
 		AtomicCounter
 	};
 
-	namespace Utils {
-		const char* ToString(BufferStorageFlags flags);
-		const char* ToString(BufferAccess access);
-		const char* ToString(BufferStorageMode mode);
-		const char* ToString(BufferTarget target);
+	enum class BufferUsage {
+		StaticDraw,
+		StaticRead,
+		StaticCopy,
 
-		uint32_t ToGL(BufferAccess access);
-		uint32_t ToGL(BufferStorageFlags flags);
-		uint32_t ToGL(BufferTarget target);
+		DynamicDraw,
+		DynamicRead,
+		DynamicCopy,
 
-		constexpr BufferAccess DetermineAccessFromFlags(BufferStorageFlags flags) {
-			if (HasFlag(flags, BufferStorageFlags::MapRead) && HasFlag(flags, BufferStorageFlags::MapWrite))
-				return BufferAccess::ReadWrite;
-			if (HasFlag(flags, BufferStorageFlags::MapRead))
-				return BufferAccess::ReadOnly;
-			if (HasFlag(flags, BufferStorageFlags::MapWrite))
-				return BufferAccess::WriteOnly;
-
-			ENGINE_ASSERT(false, "Invalid mapping flags for determining BufferAccess.");
-			throw std::runtime_error("BufferStorageFlags must include MapRead or MapWrite to determine access.");
-		}
-
-		inline void AssertAccess(BufferAccess access, bool requiresRead, bool requiresWrite) {
-			if (requiresRead && access == BufferAccess::WriteOnly) {
-				ENGINE_ASSERT(false, "Attempted to read form buffer mapped as WriteOnly");
-				throw std::runtime_error("Attempted to read from buffer mapped as WriteOnly");
-			}
-
-			if (requiresWrite && access == BufferAccess::ReadOnly) {
-				ENGINE_ASSERT(false, "Attempted to write into buffer mapped as ReadOnly");
-				throw std::runtime_error("Attempted to write into buffer mapped as ReadOnly");
-			}
-		}
-	}
-
+		StreamDraw,
+		StreamRead,
+		StreamCopy
+	};
 
 	inline constexpr BufferStorageFlags operator|(BufferStorageFlags a, BufferStorageFlags b) {
 		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
@@ -93,30 +71,3 @@ namespace Engine {
 	}
 }
 
-template <>
-struct fmt::formatter<Engine::BufferStorageFlags> : fmt::formatter<const char*> {
-	auto format(Engine::BufferStorageFlags v, format_context& ctx) const {
-		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
-	}
-};
-
-template <>
-struct fmt::formatter<Engine::BufferStorageMode> : fmt::formatter<const char*> {
-	auto format(Engine::BufferStorageMode v, format_context& ctx) const {
-		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
-	}
-};
-
-template <>
-struct fmt::formatter<Engine::BufferAccess> : fmt::formatter<const char*> {
-	auto format(Engine::BufferAccess v, format_context& ctx) const {
-		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
-	}
-};
-
-template <>
-struct fmt::formatter<Engine::BufferTarget> : fmt::formatter<const char*> {
-	auto format(Engine::BufferTarget v, format_context& ctx) const {
-		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
-	}
-};

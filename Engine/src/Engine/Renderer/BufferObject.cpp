@@ -1,9 +1,11 @@
 #include "pch.h"
 #include "BufferObject.h"
 
-#include "Engine/Utils/OpenGlUtils.h"
 
 #include "Engine/Renderer/MappedBufferRegion.h"
+
+#include "Engine/Utils/Renderer/GLEnumConverters.h"
+#include "Engine/Utils/Renderer/EnumStringConverters.h"
 
 #include <glad/glad.h>
 
@@ -17,6 +19,7 @@ namespace Engine {
 	}
 
 	BufferObject::BufferObject(BufferTarget target) : m_State(MakeRef<GLState>(target)) {
+		LOG_GL_DEBUG("BufferObject created: ID={}, target={}", m_State->RendererID, m_State->Target);
 	}
 
 	void BufferObject::Allocate(const void* data, uint32_t size, BufferStorageFlags flags) {
@@ -51,7 +54,8 @@ namespace Engine {
 	void BufferObject::AllocateMutable(const void* data, uint32_t size, BufferUsage usage) {
 		m_State->Usage = usage;
 
-		glNamedBufferData(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::ToGL(usage));
+		LOG_GL_INFO("BufferObject ID={} allocated mutable: size={}, usage={}", m_State->RendererID, size, Utils::ToString(usage));
+		glNamedBufferData(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::EnumToGLConstant(usage));
 	}
 
 	void BufferObject::AllocateImmutable(const void* data, uint32_t size, BufferStorageFlags flags) {
@@ -61,7 +65,7 @@ namespace Engine {
 		}
 
 		m_State->Flags = flags;
-		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::ToGL(flags));
+		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::EnumToGLConstant(flags));
 
 		if (Utils::HasFlag(flags, BufferStorageFlags::MapPersistent)) {
 			m_State->PersistentContent = Map(Utils::DetermineAccessFromFlags(flags));
@@ -69,17 +73,17 @@ namespace Engine {
 	}
 
 	void BufferObject::Bind() const {
-		glBindBuffer(Utils::ToGL(m_State->Target), m_State->RendererID);
+		glBindBuffer(Utils::EnumToGLConstant(m_State->Target), m_State->RendererID);
 	}
 
 	void BufferObject::BindTo(uint32_t bindingPoint) const {
-		glBindBufferBase(Utils::ToGL(m_State->Target), bindingPoint, m_State->RendererID);
+		glBindBufferBase(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID);
 	}
 
 	void BufferObject::BindRange(uint32_t bindingPoint, uint32_t size, uint32_t offset) const {
 		ENGINE_ASSERT(offset + size <= m_State->Size);
 
-		glBindBufferRange(Utils::ToGL(m_State->Target), bindingPoint, m_State->RendererID, offset, size);
+		glBindBufferRange(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID, offset, size);
 	}
 
 	void BufferObject::Write(const BufferView& buffer, uint32_t offset) {
@@ -182,6 +186,7 @@ namespace Engine {
 	}
 
 	BufferObject::GLState::~GLState() {
+		LOG_GL_DEBUG("BufferObject destroyed: ID={}, target={}", RendererID, Utils::ToString(Target));
 		glDeleteBuffers(1, &RendererID);
 	}
 }
