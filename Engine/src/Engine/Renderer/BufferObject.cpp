@@ -42,9 +42,12 @@ namespace Engine {
 		if (m_State->PersistentContent) {
 			m_State->PersistentContent = nullptr;
 		}
+
+		LOG_GL_DEBUG("BufferObject ID={} mapping cleared", m_State->RendererID);
 	}
 
 	void BufferObject::PrepareAllocate(uint32_t size, BufferStorageMode mode) {
+		LOG_GL_TRACE("BufferObject::PrepareAllocate(): ID={}, size={}, mode={}", m_State->RendererID, size, mode);
 		ClearMapping();
 
 		m_State->Size = size;
@@ -65,25 +68,30 @@ namespace Engine {
 		}
 
 		m_State->Flags = flags;
+		LOG_GL_INFO("BufferObject ID={} allocated immutable: size={}, flags=0x{:X}", m_State->RendererID, size, static_cast<uint32_t>(flags));
 		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, Utils::EnumToGLConstant(flags));
 
 		if (Utils::HasFlag(flags, BufferStorageFlags::MapPersistent)) {
+			LOG_GL_DEBUG("BufferObject ID={} persistently mapped with access={}", m_State->RendererID, Utils::DetermineAccessFromFlags(flags));
 			m_State->PersistentContent = Map(Utils::DetermineAccessFromFlags(flags));
 		}
 	}
 
 	void BufferObject::Bind() const {
 		glBindBuffer(Utils::EnumToGLConstant(m_State->Target), m_State->RendererID);
+		LOG_GL_TRACE("BufferObject::Bind(): ID={}, target={}", m_State->RendererID, m_State->Target);
 	}
 
 	void BufferObject::BindTo(uint32_t bindingPoint) const {
 		glBindBufferBase(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID);
+		LOG_GL_TRACE("BufferObject::BindTo(): ID={}, target={}, bindingPoint={}", m_State->RendererID, m_State->Target, bindingPoint);
 	}
 
 	void BufferObject::BindRange(uint32_t bindingPoint, uint32_t size, uint32_t offset) const {
 		ENGINE_ASSERT(offset + size <= m_State->Size);
 
 		glBindBufferRange(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID, offset, size);
+		LOG_GL_TRACE("BufferObject::BindRange(): ID={}, target={}, bindingPoint={}, size={}, offset={}", m_State->RendererID, m_State->Target, bindingPoint, size, offset);
 	}
 
 	void BufferObject::Write(const BufferView& buffer, uint32_t offset) {
@@ -92,6 +100,7 @@ namespace Engine {
 			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, buffer.Size(), Size()));
 
 		glNamedBufferSubData(m_State->RendererID, offset, static_cast<GLsizeiptr>(buffer.Size()), buffer.Data());
+		LOG_GL_TRACE("BufferObject::Write(): ID={}, offset={}, size={}", m_State->RendererID, offset, buffer.Size());
 	}
 
 	Buffer BufferObject::Read(uint32_t offset) const {
@@ -115,6 +124,7 @@ namespace Engine {
 			glUnmapNamedBuffer(m_State->RendererID);
 		}
 
+		LOG_GL_TRACE("BufferObject::Read(): ID={}, offset={}, size={}", m_State->RendererID, offset, size);
 		return buffer;
 	}
 
@@ -139,6 +149,7 @@ namespace Engine {
 
 		glDeleteBuffers(1, &stagingBuffer);
 
+		LOG_GL_TRACE("BufferObject::ReadSafeCopy(): ID={}, offset={}, size={}", m_State->RendererID, offset, size);
 		return buffer;
 	}
 
@@ -149,6 +160,7 @@ namespace Engine {
 		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(access, *this));
 		m_State->Content = content;
 
+		LOG_GL_DEBUG("BufferObject::Map(): ID={}, access={}, full size={} mapped", m_State->RendererID, access, m_State->Size);
 		return content;
 	}
 
@@ -159,11 +171,13 @@ namespace Engine {
 		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(access, *this, length, offset));
 		m_State->Content = content;
 
+		LOG_GL_DEBUG("BufferObject::Map(): ID={}, access={}, offset={}, length={}", m_State->RendererID, access, offset, length);
 		return content;
 	}
 
 	void BufferObject::Invalidate() {
 		glInvalidateBufferData(m_State->RendererID);
+		LOG_GL_TRACE("BufferObject::Invalidate(): ID={} entire buffer invalidated", m_State->RendererID);
 	}
 
 	void BufferObject::Invalidate(uint32_t offset, uint32_t length) {
@@ -172,6 +186,7 @@ namespace Engine {
 			throw std::out_of_range("Out of bounds");
 
 		glInvalidateBufferSubData(m_State->RendererID, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(length));
+		LOG_GL_TRACE("BufferObject::Invalidate(): ID={}, offset={}, length={} invalidated", m_State->RendererID, offset, length);
 	}
 
 	void BufferObject::SetLabel(const std::string& label) {
@@ -180,6 +195,8 @@ namespace Engine {
 
 		glObjectLabel(GL_BUFFER, m_State->RendererID, -1, label.data());
 		m_State->Label = label;
+
+		LOG_GL_DEBUG("BufferObject::SetLabel(): ID={}, label={}", m_State->RendererID, label);
 	}
 
 	BufferObject::GLState::GLState(BufferTarget target) : RendererID(Utils::CreateBuffer()), Target(target) {
