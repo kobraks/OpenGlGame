@@ -8,20 +8,23 @@
 
 #include "Engine/Devices/Keyboard.h"
 
+#include "Engine/ImGui/ImGuiUtils.h"
+#include "Engine/ImGui/ImGuiScoped.h"
+#include "Engine/Utils/StdUtils.h"
+
+#include <ImGui/imgui.h>
+
 #include <chrono>
 #include <fmt/format.h>
 #include <fmt/chrono.h>
-
-#include "Imgui.h"
-#include "Engine/ImGui/ImGuiUtils.h"
-#include "Engine/ImGui/ImGuiScoped.h"
+#include <array>
 
 #define COPY_LOG_BUFFERS(snapshot) LogBufferCopier _copier(m_Mutex, m_Messages, m_VisibleMessageIndices, snapshot)
 
 namespace Engine {
-	static const std::vector<std::string> s_Severities = {
-		"Trace", "Debug", "Info", "Warn", "Error", "Critical"
-	};
+	static constexpr std::array<std::string_view, 6> s_Severities = { "Trace", "Debug", "Info", "Warn", "Error", "Critical" };
+	static constexpr std::array<std::string_view, 4> s_KnownLoggers = { APPLICATION_LOGGER_NAME, ENGINE_LOGGER_NAME, GL_LOGGER_NAME, SCRIPT_LOGGER_NAME };
+	static std::unordered_map<std::string_view, int32_t, TransparentStringHash, TransparentStringEqual> s_LoggerNameToId;
 
 	namespace Utils {
 		static constexpr Color SelectTextColor(spdlog::level::level_enum level) {
@@ -97,24 +100,73 @@ namespace Engine {
 			return false;
 		}
 
-		static void LoggerCombo(Ref<spdlog::logger> logger) {
-			int32_t currentOption = logger->level();
-
-			if (ImGui::BeginCombo(fmt::format("{} severity level", logger->name()).c_str(),
-			                      s_Severities[currentOption].c_str())) {
+		static void SeverityCombo(std::string_view label, int32_t& currentOption, ImGuiComboFlags flags = 0) {
+			if (ImGui::BeginCombo(EnsureNullTerminated(label), EnsureNullTerminated(s_Severities[currentOption]),  flags)) {
 				for (std::size_t i = 0; i < s_Severities.size(); ++i) {
-					const bool selected = currentOption == static_cast<int32_t>(i);
-					const auto& severity = s_Severities[i];
+					const auto& severity= s_Severities[i];
 
-					if (ImGui::Selectable(severity.c_str(), selected)) {
+					if (ImGui::Selectable(EnsureNullTerminated(severity), currentOption == static_cast<int32_t>(i))) {
 						currentOption = static_cast<int32_t>(i);
 					}
 				}
 
 				ImGui::EndCombo();
 			}
+		}
+
+		static bool SeverityCombo(std::string_view label, std::string_view preview, int32_t& currentOption, ImGuiComboFlags flags = 0) {
+			bool selected = false;
+
+			if (ImGui::BeginCombo(EnsureNullTerminated(label), EnsureNullTerminated(preview), flags)) {
+				if (ImGui::Selectable("Severity All", currentOption == -1)) {
+					currentOption = -1;
+					selected = true;
+				}
+
+				for (std::size_t i = 0; i < s_Severities.size(); ++i) {
+					const auto& severity = s_Severities[i];
+
+					if (ImGui::Selectable(EnsureNullTerminated(severity), currentOption == static_cast<int32_t>(i))) {
+						currentOption = static_cast<int32_t>(i);
+						selected = true;
+					}
+				}
+
+				ImGui::EndCombo();
+			}
+
+			return selected;
+		}
+
+		static void LoggerCombo(Ref<spdlog::logger> logger) {
+			int32_t currentOption = logger->level();
+			SeverityCombo(fmt::format("{} severity level", logger->name()), currentOption);
 
 			logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
+		}
+
+		static bool LoggerCombo(std::string_view label, std::string_view preview, int32_t& selected, ImGuiComboFlags flags = 0) {
+			bool result = false;
+
+			if (ImGui::BeginCombo(EnsureNullTerminated(label), EnsureNullTerminated(preview), flags)) {
+				if (ImGui::Selectable("Logger: All", selected == -1)) {
+					selected = -1;
+					result = true;
+				}
+
+				for (std::size_t i = 0; i < s_KnownLoggers.size(); ++i) {
+					const auto& logger = s_KnownLoggers[i];
+
+					if (ImGui::Selectable(EnsureNullTerminated(logger), selected == static_cast<int32_t>(i))) {
+						selected = static_cast<int32_t>(i);
+						result = true;
+					}
+				}
+
+				ImGui::EndCombo();
+			}
+
+			return result;
 		}
 
 		static constexpr std::string Capitalize(const std::string& str) {
@@ -122,6 +174,24 @@ namespace Engine {
 			std::string result = str;
 			result[0] = static_cast<char>(std::toupper(result[0]));
 			return result;
+		}
+
+		static int32_t GetLoggerId(std::string_view loggerName) {
+			auto it = s_LoggerNameToId.find(loggerName);
+
+			if (it == s_LoggerNameToId.end()) {
+				for (int32_t i = 0; i < static_cast<int32_t>(s_KnownLoggers.size()); ++i) {
+					if (s_KnownLoggers[i] == loggerName) {
+						s_LoggerNameToId.emplace(s_KnownLoggers[i], i);
+						return i;
+					}
+				}
+
+				s_LoggerNameToId.emplace(s_KnownLoggers[0], 0);
+				return 0;
+			}
+
+			return it->second;
 		}
 	}
 
@@ -149,6 +219,8 @@ namespace Engine {
 	LogMessage::LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) {
 		Name = std::string(msg.logger_name.data(), msg.logger_name.size());
 		Desc = std::string(msg.payload.data(), msg.payload.size());
+
+		LoggerId = Utils::GetLoggerId(Name);
 
 		Text = to_string(formatted);
 		Timestamp = msg.time;
@@ -216,18 +288,7 @@ namespace Engine {
 				if (m_AutoPopUp) {
 					int32_t minLogLevelToPopUp = m_MinLogLevelToPopUp;
 
-					if (ImGui::BeginCombo("Min severity to popup", s_Severities[m_MinLogLevelToPopUp].c_str())) {
-						for (std::size_t i = 0; i < s_Severities.size(); ++i) {
-							const bool selected = m_MinLogLevelToPopUp == static_cast<int32_t>(i);
-							const auto& severity = s_Severities[i];
-
-							if (ImGui::Selectable(severity.c_str(), selected)) {
-								minLogLevelToPopUp = static_cast<int32_t>(i);
-							}
-						}
-
-						ImGui::EndCombo();
-					}
+					Utils::SeverityCombo("Min severity to popup", minLogLevelToPopUp);
 
 					m_MinLogLevelToPopUp = minLogLevelToPopUp;
 				}
@@ -247,57 +308,32 @@ namespace Engine {
 
 				const std::string severityLabel = m_SeverityFilter == -1
 					                                  ? "Severity: All"
-					                                  : "Severity: " + s_Severities[m_SeverityFilter];
-				if (ImGui::BeginCombo("##Severity", severityLabel.c_str())) {
-					if (ImGui::Selectable("Severity All", m_SeverityFilter == -1)) {
-						m_LastSeverityFilter = m_SeverityFilter;
-						m_SeverityFilter = -1;
-					}
+					                                  : "Severity: " + std::string(s_Severities[m_SeverityFilter]);
 
-					for (std::size_t i = 0; i < s_Severities.size(); ++i) {
-						const bool selected = m_SeverityFilter == static_cast<int32_t>(i);
-						const auto& severity = s_Severities[i];
-
-						if (ImGui::Selectable(severity.c_str(), selected)) {
-							m_LastSeverityFilter = m_SeverityFilter;
-							m_SeverityFilter = static_cast<int32_t>(i);
-						}
-					}
-
-					ImGui::EndCombo();
+				int32_t severityFilter = m_SeverityFilter;
+				if (Utils::SeverityCombo("##Severity", severityLabel, severityFilter)) {
+					m_LastSeverityFilter = m_SeverityFilter;
+					m_SeverityFilter = severityFilter;
 				}
 
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(130.f);
-				const std::string loggerLabel = m_LoggerFilter.empty()
+				const std::string loggerLabel = m_LoggerFilter == -1
 					                                ? "Logger: All"
-					                                : "Logger: " + Utils::Capitalize(m_LoggerFilter);
-				if (ImGui::BeginCombo("##Logger", loggerLabel.c_str())) {
-					if (ImGui::Selectable("Logger: All", m_LoggerFilter.empty())) {
-						m_LastLoggerFilter = m_LoggerFilter;
-						m_LoggerFilter.clear();
-					}
+					                                : "Logger: " + std::string(s_KnownLoggers[m_LoggerFilter]);
 
-					static const std::vector<std::string> knownLoggers = {
-						APPLICATION_LOGGER_NAME, ENGINE_LOGGER_NAME, GL_LOGGER_NAME, SCRIPT_LOGGER_NAME
-					};
-					for (const auto& logger : knownLoggers) {
-						const bool selected = (m_LoggerFilter == logger);
-						if (ImGui::Selectable(logger.c_str(), selected)) {
-							m_LastLoggerFilter = m_LoggerFilter;
-							m_LoggerFilter = logger;
-						}
-					}
-
-					ImGui::EndCombo();
+				int32_t selectedLoggerFilter = m_LoggerFilter;
+				if (Utils::LoggerCombo("##LoggerCombo", loggerLabel, selectedLoggerFilter)) {
+					m_LastLoggerFilter = m_LoggerFilter;
+					m_LoggerFilter = selectedLoggerFilter;
 				}
 
 				ImGui::SameLine();
 
 				bool clear = false;
 				if (ImGui::Button("Clear Filters")) {
-					m_LoggerFilter.clear();
-					m_SeverityFilter = 0;
+					m_LoggerFilter = -1;
+					m_SeverityFilter = -1;
 					m_Filter->Clear();
 					clear = true;
 				}
@@ -390,7 +426,7 @@ namespace Engine {
 
 	bool LogLayer::PassFilters(const LogMessageEntry& message) const {
 		const auto passesTextFilter = m_Filter->PassFilter(message.Message.Text.c_str());
-		const auto passesLoggerNameFilter = m_LoggerFilter.empty() || message.Message.Name == m_LoggerFilter;
+		const auto passesLoggerNameFilter = m_LoggerFilter == -1 || message.Message.LoggerId == m_LoggerFilter;
 		const auto passesSeverityLevelFilter = m_SeverityFilter == -1 || message.Message.Level == m_SeverityFilter;
 
 		return passesTextFilter && passesLoggerNameFilter && passesSeverityLevelFilter;

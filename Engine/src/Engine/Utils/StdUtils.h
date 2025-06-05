@@ -19,6 +19,46 @@ namespace Engine {
 		}
 	};
 
+	struct TransparentStringEqual {
+		using is_transparent = void;
+
+		bool operator()(const std::string& lhs, const std::string& rhs) const noexcept {
+			return lhs == rhs;
+		}
+
+		bool operator()(const std::string& lhs, std::string_view rhs) const noexcept {
+			return lhs == rhs;
+		}
+
+		bool operator()(const std::string_view lhs, const std::string& rhs) const noexcept {
+			return lhs == rhs;
+		}
+
+		bool operator()(std::string_view lhs, std::string_view rhs) const noexcept {
+			return lhs == rhs;
+		}
+
+		bool operator()(std::string_view lhs, const char* rhs) const noexcept {
+			return lhs == std::string_view(rhs);
+		}
+
+		bool operator()(const char* lhs, const std::string& rhs) const noexcept {
+			return std::string_view(lhs) == rhs;
+		}
+
+		bool operator()(const std::string& lhs, const char* rhs) const noexcept {
+			return lhs == std::string_view(rhs);
+		}
+
+		bool operator()(const char* lhs, const char* rhs) const noexcept {
+			return std::strcmp(lhs, rhs);
+		}
+
+		bool operator()(const char* lhs, std::string_view rhs) const noexcept {
+			return std::string_view(lhs) == rhs;
+		}
+	};
+
 	using TransparentStringHash = Overload<std::hash<std::string>, std::hash<std::string_view>, CharPointerHash>;
 
 	namespace Utils {
