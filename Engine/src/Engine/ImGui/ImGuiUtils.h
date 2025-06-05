@@ -97,7 +97,7 @@ namespace Engine {
 		return ImGui::TreeNodeEx(fmt::format(format, std::forward<Args>(args)...).c_str(), flags);
 	}
 
-	bool ToggleButton(std::string_view name, bool *v);
+	bool ToggleButton(std::string_view name, bool *enabled);
 
 	void HelpMarker(std::string_view description);
 }

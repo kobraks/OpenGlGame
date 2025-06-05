@@ -1,5 +1,8 @@
 #include "pch.h"
 #include "Engine/ImGui/ImGuiUtils.h"
+
+#include "Engine/ImGui/ImGuiScoped.h"
+
 #include "Engine/Core/Assert.h"
 
 #include <imgui_internal.h>
@@ -45,7 +48,7 @@ namespace Engine {
 
 		flags |= ImGuiInputTextFlags_CallbackResize;
 		InputTextCallbackData data{&string, callback, userData};
-		return ImGui::InputText(label.data(), string.data(), string.capacity(), flags, InputTextCallback, &data);
+		return ImGui::InputTextEx(Utils::EnsureNullTerminated(label), nullptr, string.data(), static_cast<int>(string.capacity()), ImVec2(0, 0), flags, InputTextCallback, &data);
 	}
 
 	bool Combo(std::string_view label, int32_t &currentItem, std::string_view itemList, int32_t maxHeightInItems) {
@@ -89,18 +92,10 @@ namespace Engine {
 		flags |= ImGuiInputTextFlags_CallbackResize;
 		InputTextCallbackData data{&string, callback, userData};
 
-		return ImGui::InputTextMultiline(
-		                                 label.data(),
-		                                 string.data(),
-		                                 string.capacity(),
-		                                 size,
-		                                 flags,
-		                                 InputTextCallback,
-		                                 &data
-		                                );
+		return ImGui::InputTextEx(Utils::EnsureNullTerminated(label), nullptr, string.data(), static_cast<int>(string.capacity()), size, flags | ImGuiInputTextFlags_Multiline, InputTextCallback, &data);
 	}
 
-	bool ToggleButton(std::string_view name, bool *v) {
+	bool ToggleButton(std::string_view name, bool *enabled) {
 		//Soruce https://github.com/ocornut/imgui/issues/1537
 		const char *id = name.data();
 		bool clicked   = false;
@@ -115,42 +110,46 @@ namespace Engine {
 		const float width = height * 1.55f;
 		const float radius = height * 0.50f;
 
-		ImGui::PushID(id);
-		ImGui::BeginGroup();
-		ImGui::InvisibleButton(id, ImVec2(width, height));
-		if (ImGui::IsItemClicked()) {
-			*v = !*v;
-			clicked = true;
-		}
-
-		ImGuiContext &gg = *GImGui;
-
 		constexpr float ANIM_SPEED = 0.085f;
-		float time = *v ? 1.f : 0.f;
 
-		if (gg.LastActiveId == gg.CurrentWindow->GetID(id)) {
-			const float tAnim = ImSaturate(gg.LastActiveIdTimer / ANIM_SPEED);
+		{
+			ScopedID buttonID(id);
+			ScopedGroup buttonGroup;
 
-			time = *v ? (tAnim) : (1.f - tAnim);
+			ImGui::InvisibleButton(id, ImVec2(width, height));
+			if (ImGui::IsItemClicked()) {
+				*enabled = !*enabled;
+				clicked = true;
+			}
+
+			const ImGuiContext& context = *GImGui;
+
+			float time = *enabled ? 1.f : 0.f;
+
+			if (context.LastActiveId == context.CurrentWindow->GetID(id)) {
+				const float timeAnim = ImSaturate(context.LastActiveIdTimer / ANIM_SPEED);
+
+				time = *enabled ? (timeAnim) : (1.f - timeAnim);
+			}
+
+			ImU32 colorBG;
+			if (ImGui::IsItemHovered())
+				colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.78f, 0.78f, 0.78f, 1.0f), *enabled ? colors[ImGuiCol_ButtonActive] : ImVec4{ 0.78f, 0.78f, 0.78f, 1.0f }, time));
+			else
+				colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.85f, 0.85f, 0.85f, 1.0f), *enabled ? colors[ImGuiCol_Button] : ImVec4{ 0.85f, 0.85f, 0.85f, 1.0f }, time));
+
+			drawList->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), colorBG, height * 0.5f);
+			drawList->AddCircleFilled(ImVec2(pos.x + radius + time * (width - radius * 2.0f), pos.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+
+			ImGui::SameLine((winPos.x + width + style.ItemSpacing.x));
+
+			{
+				ScopedID labelID("Label");
+				ImGui::TextUnformatted(id);
+
+			}
 		}
 
-		ImU32 colorBG;
-		if (ImGui::IsItemHovered())
-			colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.78f, 0.78f, 0.78f, 1.0f), *v ? colors[ImGuiCol_ButtonActive] : ImVec4{0.78f, 0.78f, 0.78f, 1.0f}, time));
-		else
-			colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.85f, 0.85f, 0.85f, 1.0f), *v ? colors[ImGuiCol_Button] : ImVec4{0.85f, 0.85f, 0.85f, 1.0f}, time));
-
-		drawList->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), colorBG, height * 0.5f);
-		drawList->AddCircleFilled(ImVec2(pos.x + radius + time * (width - radius * 2.0f), pos.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
-
-		ImGui::SameLine((winPos.x + width + style.ItemSpacing.x));
-
-		ImGui::PushID("Label");
-		ImGui::TextUnformatted(id);
-		ImGui::PopID();
-
-		ImGui::EndGroup();
-		ImGui::PopID();
 		return clicked;
 	}
 
