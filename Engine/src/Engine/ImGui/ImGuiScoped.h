@@ -3,13 +3,14 @@
 #include "Engine/Core/Color.h"
 
 #include "Engine/Utils/StdUtils.h"
+#include "Engine/Utils/CoreTraits.h"
 
 #include <ImGui/imgui.h>
 
 #include <initializer_list>
 
 namespace Engine {
-	struct ScopedGroup {
+	struct ScopedGroup : NonCopyableNonMoveable {
 		ScopedGroup() {
 			ImGui::BeginGroup();
 		}
@@ -19,7 +20,7 @@ namespace Engine {
 		}
 	};
 
-	struct ScopedID {
+	struct ScopedID : NonCopyableNonMoveable {
 		explicit ScopedID(int id) {
 			ImGui::PushID(id);
 		}
@@ -41,7 +42,7 @@ namespace Engine {
 		}
 	};
 
-	struct ScopedStyleColor {
+	struct ScopedStyleColor : NonCopyableNonMoveable {
 		explicit ScopedStyleColor(std::initializer_list<std::pair<ImGuiCol, ImVec4>> colors) {
 			for (const auto& [col, val] : colors) {
 				ImGui::PushStyleColor(col, val);
@@ -90,7 +91,7 @@ namespace Engine {
 		int m_Count = 0;
 	};
 
-	struct ScopedStyleVar {
+	struct ScopedStyleVar : NonCopyableNonMoveable {
 		explicit ScopedStyleVar(std::initializer_list<std::pair<ImGuiStyleVar, float>> vars) {
 			for (const auto& [var, val] : vars) {
 				ImGui::PushStyleVar(var, val);
@@ -120,5 +121,23 @@ namespace Engine {
 		}
 	private:
 		int m_Count = 0;
+	};
+
+	struct ScopedDisable : NonCopyableNonMoveable {
+		explicit ScopedDisable(bool condition = true) {
+			if (condition) {
+				ImGui::BeginDisabled();
+				m_Active = true;
+			}
+		}
+
+		~ScopedDisable() {
+			if (m_Active) {
+				ImGui::EndDisabled();
+			}
+		}
+
+	private:
+		bool m_Active = false;
 	};
 }
