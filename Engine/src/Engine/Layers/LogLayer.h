@@ -29,7 +29,7 @@ namespace Engine {
 	struct LogMessage {
 		LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg);
 
-		std::string Name; //Logger name
+		std::string_view Name; //Logger name
 		std::string Desc; //Description (log message)
 		std::string Text; //Full message: time stamp logger name and Desc
 		std::string Time; //String of Timestamp

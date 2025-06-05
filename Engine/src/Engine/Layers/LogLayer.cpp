@@ -8,9 +8,11 @@
 
 #include "Engine/Devices/Keyboard.h"
 
+#include "Engine/Utils/CoreUtility.h"
+#include "Engine/Utils/StdUtils.h"
+
 #include "Engine/ImGui/ImGuiUtils.h"
 #include "Engine/ImGui/ImGuiScoped.h"
-#include "Engine/Utils/StdUtils.h"
 
 #include <ImGui/imgui.h>
 
@@ -65,10 +67,6 @@ namespace Engine {
 			}
 		}
 
-		static constexpr std::string_view GetFirst(const std::string& string, size_t size) {
-			return {string.begin(), string.size() > size ? string.begin() + size : string.end()};
-		}
-
 		static std::string GetTimeAsString(const spdlog::log_clock::time_point& time) {
 			return fmt::format("{:%T}", std::chrono::round<std::chrono::seconds>(time));
 		}
@@ -91,7 +89,7 @@ namespace Engine {
 			return false;
 		}
 
-		static bool FilterChanged(ImGuiTextFilter& filter, std::string& lastFilter) {
+		static bool FilterChanged(const ImGuiTextFilter& filter, std::string& lastFilter) {
 			if (filter.InputBuf != lastFilter) {
 				lastFilter = filter.InputBuf;
 				return true;
@@ -217,14 +215,17 @@ namespace Engine {
 	}
 
 	LogMessage::LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) {
-		Name = std::string(msg.logger_name.data(), msg.logger_name.size());
+		const std::string name(msg.logger_name.data(), msg.logger_name.size());
 		Desc = std::string(msg.payload.data(), msg.payload.size());
 
-		LoggerId = Utils::GetLoggerId(Name);
+		LoggerId = Utils::GetLoggerId(name);
+		Name = s_KnownLoggers[LoggerId];
 
 		Text = to_string(formatted);
+
 		Timestamp = msg.time;
 		Time = Utils::GetTimeAsString(msg.time);
+
 		Level = msg.level;
 	}
 
@@ -620,14 +621,14 @@ namespace Engine {
 		ImGui::TextUnformatted(to_string_view(message.Level).data());
 
 		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(message.Name.c_str());
+		ImGui::TextUnformatted(message.Name.data());
 
 		ImGui::TableNextColumn();
 
 		const ImVec2 textSize = ImGui::CalcTextSize(message.Desc.c_str());
 		const float contentRegionWidth = ImGui::GetContentRegionAvail().x;
 
-		const auto shortDesc = Utils::GetFirst(message.Desc, static_cast<size_t>(contentRegionWidth - textSize.x));
+		const auto shortDesc = Utils::GetFirst(message.Desc, static_cast<std::size_t>(contentRegionWidth - textSize.x));
 		ImGui::TextUnformatted(shortDesc.data(), shortDesc.data() + shortDesc.size());
 	}
 
