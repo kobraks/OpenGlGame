@@ -5,6 +5,9 @@
 #include <imgui_internal.h>
 
 namespace Engine {
+	constexpr size_t DefaultInputTextReserve = 32;
+	constexpr size_t DefaultInputMultilineReserve = 64;
+
 	struct InputTextCallbackData {
 		std::string *String;
 		CallbackFunction Callback;
@@ -37,13 +40,36 @@ namespace Engine {
 		) {
 		ENGINE_ASSERT((ImGuiInputTextFlags_CallbackResize & flags) == 0);
 
+		if (string.capacity() == 0)
+			string.reserve(DefaultInputTextReserve);
+
 		flags |= ImGuiInputTextFlags_CallbackResize;
 		InputTextCallbackData data{&string, callback, userData};
 		return ImGui::InputText(label.data(), string.data(), string.capacity(), flags, InputTextCallback, &data);
 	}
 
 	bool Combo(std::string_view label, int32_t &currentItem, std::string_view itemList, int32_t maxHeightInItems) {
-		return ImGui::Combo(label.data(), &currentItem, itemList.data(), maxHeightInItems);
+		static std::string tmpLabel;
+		static std::string tmpItemList;
+		const auto cLabel= Utils::EnsureNullTerminated(label, tmpLabel);
+		const auto cItemList = Utils::EnsureNullTerminated(itemList, tmpItemList);
+
+		return ImGui::Combo(cLabel, &currentItem, cItemList, maxHeightInItems);
+	}
+
+	bool DragVec2(std::string_view label, glm::vec2& vec, float speed, float min, float max, const char* format,
+		ImGuiSliderFlags flags) {
+		return ImGui::DragFloat2(Utils::EnsureNullTerminated(label), &vec.x, speed, min, max, format, flags);
+	}
+
+	bool DragVec3(std::string_view label, glm::vec3& vec, float speed, float min, float max, const char* format,
+		ImGuiSliderFlags flags) {
+		return ImGui::DragFloat3(Utils::EnsureNullTerminated(label), &vec.x, speed, min, max, format, flags);
+	}
+
+	bool DragVec4(std::string_view label, glm::vec4& vec, float speed, float min, float max, const char* format,
+		ImGuiSliderFlags flags) {
+		return ImGui::DragFloat4(Utils::EnsureNullTerminated(label), &vec.x, speed, min, max, format, flags);
 	}
 
 	bool InputTextMultiline(
@@ -55,6 +81,10 @@ namespace Engine {
 		void *userData
 		) {
 		ENGINE_ASSERT((ImGuiInputTextFlags_CallbackResize & flags) == 0);
+
+
+		if (string.capacity() == 0)
+			string.reserve(DefaultInputMultilineReserve);
 
 		flags |= ImGuiInputTextFlags_CallbackResize;
 		InputTextCallbackData data{&string, callback, userData};

@@ -48,24 +48,82 @@ namespace Engine {
 	}
 
 	int LuaForEach(lua_State* L) {
-		luaL_checktype(L, -2, LUA_TTABLE);
-		luaL_checktype(L, -1, LUA_TFUNCTION);
-
-		lua_pushvalue(L, -2);
-		lua_pushnil(L);
-
-		while (lua_next(L, -2) != 0) {
-			lua_pushvalue(L, -4);
-			lua_pushvalue(L, -3);
-			lua_pushvalue(L, -3);
-
-			lua_call(L, 2, 0);
-			lua_pop(L, 1);
+		if (!lua_istable(L, -2)) {
+			LOG_SCRIPT_ERROR("Expected table at index -2, got {}", luaL_typename(L, -2));
+			return luaL_error(L, "Expected table at index -2, got %s", luaL_typename(L, -2));
 		}
 
-		lua_pop(L, 1);
+		if (!lua_isfunction(L, -1)) {
+			LOG_SCRIPT_ERROR("Expected function at index -1, got {}", luaL_typename(L, -1));
+			return luaL_error(L, "Expected function at index -1, got %s", luaL_typename(L, -1));
+		}
 
+		const int tableIndex = lua_gettop(L) - 1; // -2 in absolute
+		const int funcIndex = lua_gettop(L); // -1 in absolute
+
+		lua_pushvalue(L, tableIndex); //push copy of table 
+		lua_pushnil(L); //push initial value
+
+		while (lua_next(L, -2) != 0) {
+			// table ... func table key value
+			lua_pushvalue(L, funcIndex); //push function
+			lua_pushvalue(L, -3); // key
+			lua_pushvalue(L, -3); // value
+
+			if (!SafeLuaCall(L, 2, 0, "LuaForEach handler"))
+				return luaL_error(L, "LuaForEach Handler execution failed");
+
+			lua_pop(L, 1); //pop value
+		}
+
+		lua_pop(L, 1); //pop table copy
 		return 0;
+	}
+
+	bool SafeLuaCall(lua_State* L, int args, int results, const char* context) {
+		const int tracebackIndex = PushStandardLuaErrorHandler(L);
+		const int base = lua_gettop(L) - args - 1; // -1 accounts for the pushed handler
+
+		lua_insert(L, base); // place header below function and args
+
+		const int error = lua_pcall(L, args, results, base);
+		lua_remove(L, base); //remove handler
+
+		if (error != LUA_OK) {
+			const char* message = lua_tostring(L, -1);
+			if (context) {
+				LOG_SCRIPT_ERROR("[{}] lua error: {}", context, message);
+			}
+			else {
+				LOG_SCRIPT_ERROR("Lua error: {}", message);
+			}
+
+			lua_pop(L, 1); //pop error message
+			return false;
+		}
+
+		return true;
+	}
+
+	int PushStandardLuaErrorHandler(lua_State* L) {
+		lua_getglobal(L, "debug");
+		if (!lua_istable(L, -1)) {
+			lua_pop(L, 1); // remove invalid "debug"
+			LOG_SCRIPT_WARN("'debug' table not found in Lua state");
+			lua_pushcfunction(L, lua_error); //fallback: push no-op error handler
+			return lua_gettop(L);
+		}
+
+		lua_getfield(L, -1, "traceback"); //+1
+		lua_remove(L, -2); //remove "debug"
+
+		if (!lua_isfunction(L, -1)) {
+			lua_pop(L, 1);
+			LOG_SCRIPT_WARN("'debug.traceback' not found, using lua_error fallback");
+			lua_pushcfunction(L, lua_error); //fallback
+		}
+
+		return lua_gettop(L); // return absolute index of the header
 	}
 
 	template<class T>
@@ -138,32 +196,25 @@ namespace Engine {
 	{
 		fmt::memory_buffer out;
 
-
 		int top = lua_gettop(L);
 		for (int i = 1; i <= top; ++i)
 		{
-			fmt::format_to(std::back_inserter(out), "{}\t{}\t", i, luaL_typename(L, i));
-			// printf("%d\t%s\t", i, luaL_typename(L, i));
+			fmt::format_to(std::back_inserter(out), "[{}] {:<8} ", i, luaL_typename(L, i));
 			switch (lua_type(L, i))
 			{
 			case LUA_TNUMBER:
-				fmt::format_to(std::back_inserter(out), "{:g}\n", lua_tonumber(L, i));
-				// printf("%g\n", lua_tonumber(L, i));
+				fmt::format_to(std::back_inserter(out), "{:g}\t-- number\n", lua_tonumber(L, i));
 				break;
 			case LUA_TSTRING:
-				fmt::format_to(std::back_inserter(out), "{}\n", lua_tostring(L, i));
-				// printf("%s\n", lua_tostring(L, i));
+				fmt::format_to(std::back_inserter(out), "\"{}\"\t-- string\n", lua_tostring(L, i));
 				break;
 			case LUA_TBOOLEAN:
-				fmt::format_to(std::back_inserter(out), "{}\n", lua_toboolean(L, i));
-				// printf("%s\n", (lua_toboolean(L, i) ? "true" : "false"));
+				fmt::format_to(std::back_inserter(out), "{}\t-- boolean\n", lua_toboolean(L, i));
 				break;
 			case LUA_TNIL:
-				fmt::format_to(std::back_inserter(out), "nil\n");
-				// printf("%s\n", "nil");
+				fmt::format_to(std::back_inserter(out), "nil\t-- nil\n");
 			default:
-				fmt::format_to(std::back_inserter(out), "{:p}", lua_topointer(L, i));
-				// printf("%p\n", lua_topointer(L, i));
+				fmt::format_to(std::back_inserter(out), "{:p}\t-- {}", lua_topointer(L, i), luaL_typename(L, i));
 				break;
 			}
 		}

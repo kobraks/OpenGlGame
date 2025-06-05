@@ -2,6 +2,7 @@
 #include "StatisticGraph.h"
 
 #include "Engine/ImGui/ImGuiUtils.h"
+#include "Engine/ImGui/ImGuiScoped.h"
 
 #include <imgui.h>
 #include <algorithm>
@@ -41,33 +42,32 @@ namespace Engine {
 
 		RebuildOrderedBuffer();
 
-		ImGui::PushID(label.data());
+		ScopedID drawID(label);
 		Text("{}", label);
 
 		auto drawList = ImGui::GetWindowDrawList();
 		const ImVec2 graphTopLeft = ImGui::GetCursorScreenPos();
 
-		ImGui::PushID("Graph");
-		ImGui::BeginGroup();
+		{
+			ScopedID graphID("Graph");
+			ImGui::BeginGroup();
 
-		DrawGraph();
+			DrawGraph();
 
-		auto graphSize = ImGui::GetItemRectSize();
+			auto graphSize = ImGui::GetItemRectSize();
 
-		DrawValueBands(graphTopLeft, graphSize, drawList);
+			DrawValueBands(graphTopLeft, graphSize, drawList);
 
-		if (m_TargetVisible) {
-			DrawTargetLine(graphTopLeft, graphSize, drawList);
+			if (m_TargetVisible) {
+				DrawTargetLine(graphTopLeft, graphSize, drawList);
+			}
+
+			ImGui::EndGroup();
 		}
-
-		ImGui::EndGroup();
-		ImGui::PopID();
 
 		if (m_ShowSideStats) {
 			DrawSideStats();
 		}
-
-		ImGui::PopID();
 	}
 
 	void StatisticGraph::Reset() {
@@ -181,11 +181,9 @@ namespace Engine {
 
 		ImVec4 color = ImGui::GetStyleColorVec4(ImGuiCol_FrameBg);
 		color.w = 0.125f;
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, color);
+		ScopedStyleColor bgColor(ImGuiCol_FrameBg, color);
 
 		ImGui::PlotLines("##Plot", m_PlotBuffer.data(), static_cast<int>(m_BufferSize), 0, nullptr, m_ScaleMin, m_ScaleMax, { 0.f, height });
-		
-		ImGui::PopStyleColor();
 	}
 
 	void StatisticGraph::DrawValueBands(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const {

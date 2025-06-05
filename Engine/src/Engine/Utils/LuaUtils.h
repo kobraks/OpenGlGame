@@ -16,6 +16,9 @@ namespace Engine {
 
 	void ForEach(lua_State* L, int tableIndex, std::function<void(int, int)> function);
 	int LuaForEach(lua_State* L);
+	bool SafeLuaCall(lua_State* L, int args, int results, const char* context = nullptr);
+
+	int PushStandardLuaErrorHandler(lua_State* L);
 
 	glm::vec2 ReadVector2(const sol::table& vector);
 	glm::vec3 ReadVector3(const sol::table& vector);

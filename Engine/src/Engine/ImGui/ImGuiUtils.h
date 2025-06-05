@@ -1,16 +1,28 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
+#include "Engine/Core/Color.h"
+
+#include "Engine/Utils/StdUtils.h"
+
 #include <functional>
-#include <string>
-#include <string_view>
 #include <type_traits>
 
 #include <fmt/format.h>
+
 #include <ImGui/imgui.h>
+
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
 
 namespace Engine {
 	using CallbackFunction = std::function<int(ImGuiInputTextCallbackData *)>;
+
+	template<typename Container>
+	auto ComboFromContainer(std::string_view label, int32_t& currentItem, const Container& items, auto&& getter, int32_t maxHeightInItems = -1) {
+		return ImGui::Combo(Utils::EnsureNullTerminated(label), &currentItem, getter, const_cast<void*>(static_cast<const void*>(&items)), static_cast<int>(items.size()), maxHeightInItems);
+	}
 
 	bool InputText(
 		std::string_view label,
@@ -24,8 +36,37 @@ namespace Engine {
 
 	template <typename T>
 	bool Combo(std::string_view label, int32_t &currentItem, std::vector<T> &itemList, int32_t maxHeightInItems = -1) {
-		return ImGui::Combo(label.data(), &currentItem, itemList.data(), itemList.size(), maxHeightInItems);
+		static_assert(std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>, "Combo only supports std::string or std::string_view as vector element types");
+
+		return false;
 	}
+
+	template<>
+	inline bool Combo(std::string_view label, int32_t& currentItem, std::vector<std::string>& itemList, int32_t maxHeightInItems) {
+		auto getter = [](void* data, int idx)-> const char* {
+			const auto items = static_cast<std::vector<std::string>*>(data);
+
+			return items->at(idx).c_str();
+		};
+
+		return ComboFromContainer(label, currentItem, itemList, getter, maxHeightInItems);
+	}
+
+	template<>
+	inline bool Combo(std::string_view label, int32_t& currentItem, std::vector<std::string_view>& itemList, int32_t maxHeightInItems) {
+		auto getter = [](void* data, int idx)-> const char* {
+			const auto items = static_cast<std::vector<std::string_view>*>(data);
+
+			thread_local std::string item;
+			return Utils::EnsureNullTerminated(items->at(idx), item);
+			};
+
+		return ComboFromContainer(label, currentItem, itemList, getter, maxHeightInItems);
+	}
+
+	bool DragVec2(std::string_view label, glm::vec2& vec, float speed = 0.1f, float min = 0.0f, float max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+	bool DragVec3(std::string_view label, glm::vec3& vec, float speed = 0.1f, float min = 0.0f, float max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
+	bool DragVec4(std::string_view label, glm::vec4& vec, float speed = 0.1f, float min = 0.0f, float max = 0.0f, const char* format = "%.3f", ImGuiSliderFlags flags = 0);
 
 	bool InputTextMultiline(
 		std::string_view label,
@@ -47,7 +88,7 @@ namespace Engine {
 	}
 
 	template <class... Args>
-	void BulledText(fmt::format_string<Args...> format, Args &&... args) {
+	void BulletText(fmt::format_string<Args...> format, Args &&... args) {
 		return ImGui::BulletText(fmt::format(format, std::forward<Args>(args)...).c_str());
 	}
 
