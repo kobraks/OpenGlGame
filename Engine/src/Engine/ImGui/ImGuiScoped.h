@@ -9,6 +9,16 @@
 #include <initializer_list>
 
 namespace Engine {
+	struct ScopedGroup {
+		ScopedGroup() {
+			ImGui::BeginGroup();
+		}
+
+		~ScopedGroup() {
+			ImGui::EndGroup();
+		}
+	};
+
 	struct ScopedID {
 		explicit ScopedID(int id) {
 			ImGui::PushID(id);

@@ -33,6 +33,7 @@ namespace Engine {
 		std::string Desc; //Description (log message)
 		std::string Text; //Full message: time stamp logger name and Desc
 		std::string Time; //String of Timestamp
+
 		spdlog::level::level_enum Level; //Severity of message
 		std::chrono::system_clock::time_point Timestamp; //TimeStamp when message got send in
 	};
@@ -125,7 +126,7 @@ namespace Engine {
 
 		std::string m_LastFilterText;
 		std::string m_LastLoggerFilter;
-		std::string m_LastSeverityFilter;
+		int32_t m_LastSeverityFilter = -1;
 
 		int32_t m_MinLogLevelToPopUp = 0;
 		inline static uint64_t s_MaxMessages = 10000;
@@ -134,7 +135,7 @@ namespace Engine {
 
 		Scope<ImGuiTextFilter> m_Filter;
 		std::string m_LoggerFilter;
-		std::string m_SeverityFilter;
+		int32_t m_SeverityFilter = -1;
 
 		std::vector<LogMessageEntry> m_Messages;
 		std::vector<size_t> m_VisibleMessageIndices;

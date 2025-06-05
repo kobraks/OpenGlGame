@@ -50,7 +50,7 @@ namespace Engine {
 
 		{
 			ScopedID graphID("Graph");
-			ImGui::BeginGroup();
+			ScopedGroup group;
 
 			DrawGraph();
 
@@ -61,8 +61,6 @@ namespace Engine {
 			if (m_TargetVisible) {
 				DrawTargetLine(graphTopLeft, graphSize, drawList);
 			}
-
-			ImGui::EndGroup();
 		}
 
 		if (m_ShowSideStats) {
@@ -218,12 +216,11 @@ namespace Engine {
 	}
 
 	void StatisticGraph::DrawSideStats() const {
+		ScopedGroup group;
 		ImGui::SameLine();
-		ImGui::BeginGroup();
 		TextColored({ 0.3f, 1.f, 0.3f, 1.f }, "Min: {:.2f} {}", m_Min, m_Units);
 		TextColored({ 0.3f, 0.7f, 1.0f, 1.f }, "Avg: {:.2f} {}", GetAverage(), m_Units);
 		TextColored({ 1.0f, 0.3f, 0.3f, 1.f }, "Max: {:.2f} {}", m_Max, m_Units);
-		ImGui::EndGroup();
 	}
 
 	void StatisticGraph::DrawTargetLine(const ImVec2& topLeft, const ImVec2& graphSize, ImDrawList* drawList) const {

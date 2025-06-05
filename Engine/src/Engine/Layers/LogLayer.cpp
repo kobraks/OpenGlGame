@@ -14,10 +14,15 @@
 
 #include "Imgui.h"
 #include "Engine/ImGui/ImGuiUtils.h"
+#include "Engine/ImGui/ImGuiScoped.h"
 
 #define COPY_LOG_BUFFERS(snapshot) LogBufferCopier _copier(m_Mutex, m_Messages, m_VisibleMessageIndices, snapshot)
 
 namespace Engine {
+	static const std::vector<std::string> s_Severities = {
+		"Trace", "Debug", "Info", "Warn", "Error", "Critical"
+	};
+
 	namespace Utils {
 		static constexpr Color SelectTextColor(spdlog::level::level_enum level) {
 			switch (level) {
@@ -65,7 +70,16 @@ namespace Engine {
 			return fmt::format("{:%T}", std::chrono::round<std::chrono::seconds>(time));
 		}
 
-		static bool FilterChanged(std::string& filter, std::string& lastFilter) {
+		static bool FilterChanged(const std::string& filter, std::string& lastFilter) {
+			if (filter != lastFilter) {
+				lastFilter = filter;
+				return true;
+			}
+
+			return false;
+		}
+
+		static bool FilterChanged(int32_t filter, int32_t& lastFilter) {
 			if (filter != lastFilter) {
 				lastFilter = filter;
 				return true;
@@ -84,13 +98,23 @@ namespace Engine {
 		}
 
 		static void LoggerCombo(Ref<spdlog::logger> logger) {
-			static constexpr std::string_view logLevels = "Trace\0Debug\0Info\0Warn\0Error\0Critical\0Off";
-
 			int32_t currentOption = logger->level();
 
-			if (Combo(fmt::format("{} severity level", logger->name()), currentOption, logLevels)) {
-				logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
+			if (ImGui::BeginCombo(fmt::format("{} severity level", logger->name()).c_str(),
+			                      s_Severities[currentOption].c_str())) {
+				for (std::size_t i = 0; i < s_Severities.size(); ++i) {
+					const bool selected = currentOption == static_cast<int32_t>(i);
+					const auto& severity = s_Severities[i];
+
+					if (ImGui::Selectable(severity.c_str(), selected)) {
+						currentOption = static_cast<int32_t>(i);
+					}
+				}
+
+				ImGui::EndCombo();
 			}
+
+			logger->set_level(static_cast<spdlog::level::level_enum>(currentOption));
 		}
 
 		static constexpr std::string Capitalize(const std::string& str) {
@@ -175,8 +199,6 @@ namespace Engine {
 	}
 
 	void LogLayer::OnImGuiRender() {
-		constexpr std::string_view LogPopUpLevels = "Trace\0Debug\0Info\0Warn\0Error\0Critical";
-
 		if (m_Show) {
 			ImGui::SetNextWindowSize({700, 400}, ImGuiCond_FirstUseEver);
 			ImGui::Begin("Log", &m_Show, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDocking);
@@ -192,7 +214,22 @@ namespace Engine {
 				ToggleButton("Auto Popup", &m_AutoPopUp);
 
 				if (m_AutoPopUp) {
-					Combo("Min severity to popup", m_MinLogLevelToPopUp, LogPopUpLevels);
+					int32_t minLogLevelToPopUp = m_MinLogLevelToPopUp;
+
+					if (ImGui::BeginCombo("Min severity to popup", s_Severities[m_MinLogLevelToPopUp].c_str())) {
+						for (std::size_t i = 0; i < s_Severities.size(); ++i) {
+							const bool selected = m_MinLogLevelToPopUp == static_cast<int32_t>(i);
+							const auto& severity = s_Severities[i];
+
+							if (ImGui::Selectable(severity.c_str(), selected)) {
+								minLogLevelToPopUp = static_cast<int32_t>(i);
+							}
+						}
+
+						ImGui::EndCombo();
+					}
+
+					m_MinLogLevelToPopUp = minLogLevelToPopUp;
 				}
 
 				ImGui::InputInt("Max num of messages", reinterpret_cast<int*>(&s_MaxMessages));
@@ -208,21 +245,22 @@ namespace Engine {
 
 				ImGui::SetNextItemWidth(120.0f);
 
-				const std::string severityLabel = m_SeverityFilter.empty() ? "Severity: All" : "Severity: " + Utils::Capitalize(m_SeverityFilter);
+				const std::string severityLabel = m_SeverityFilter == -1
+					                                  ? "Severity: All"
+					                                  : "Severity: " + s_Severities[m_SeverityFilter];
 				if (ImGui::BeginCombo("##Severity", severityLabel.c_str())) {
-					if (ImGui::Selectable("Severity All", m_SeverityFilter.empty())) {
+					if (ImGui::Selectable("Severity All", m_SeverityFilter == -1)) {
 						m_LastSeverityFilter = m_SeverityFilter;
-						m_SeverityFilter.clear();
+						m_SeverityFilter = -1;
 					}
 
-					static const std::vector<std::string> severities = {
-						"trace", "debug", "info", "warn", "error", "critical"
-					};
-					for (const auto& severity : severities) {
-						const bool selected = (m_SeverityFilter == severity);
-						if (ImGui::Selectable(Utils::Capitalize(severity).c_str(), selected)) {
+					for (std::size_t i = 0; i < s_Severities.size(); ++i) {
+						const bool selected = m_SeverityFilter == static_cast<int32_t>(i);
+						const auto& severity = s_Severities[i];
+
+						if (ImGui::Selectable(severity.c_str(), selected)) {
 							m_LastSeverityFilter = m_SeverityFilter;
-							m_SeverityFilter = severity;
+							m_SeverityFilter = static_cast<int32_t>(i);
 						}
 					}
 
@@ -231,7 +269,9 @@ namespace Engine {
 
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(130.f);
-				const std::string loggerLabel = m_LoggerFilter.empty() ? "Logger: All" : "Logger: " + Utils::Capitalize(m_LoggerFilter);
+				const std::string loggerLabel = m_LoggerFilter.empty()
+					                                ? "Logger: All"
+					                                : "Logger: " + Utils::Capitalize(m_LoggerFilter);
 				if (ImGui::BeginCombo("##Logger", loggerLabel.c_str())) {
 					if (ImGui::Selectable("Logger: All", m_LoggerFilter.empty())) {
 						m_LastLoggerFilter = m_LoggerFilter;
@@ -257,7 +297,7 @@ namespace Engine {
 				bool clear = false;
 				if (ImGui::Button("Clear Filters")) {
 					m_LoggerFilter.clear();
-					m_SeverityFilter.clear();
+					m_SeverityFilter = 0;
 					m_Filter->Clear();
 					clear = true;
 				}
@@ -271,19 +311,23 @@ namespace Engine {
 				if (clear || (filterChanged || loggerFilterChanged || severityFilterChanged))
 					UpdateVisibleMessages();
 
-				ImGui::PushID("Num of messages");
-				if (m_Messages.size() >= s_MaxMessages)
-					ImGui::PushStyleColor(ImGuiCol_Text, {1, 0, 0, 1});
-				ImGui::LabelText("##MessagesCount", "Num of messages: %i/%i", m_Messages.size(), s_MaxMessages);
-				if (m_Messages.size() >= s_MaxMessages) {
-					ImGui::PopStyleColor();
-					ImGui::TextColored({1, 0, 0, 1},
-					                   "Buffer full for memory save no more messages will be shown please clear buffer");
+				{
+					ScopedID messagesID("Num of messages");
+
+					if (m_Messages.size() >= s_MaxMessages)
+						ImGui::PushStyleColor(ImGuiCol_Text, {1, 0, 0, 1});
+					ImGui::LabelText("##MessagesCount", "Num of messages: %i/%i", m_Messages.size(), s_MaxMessages);
+
+					if (m_Messages.size() >= s_MaxMessages) {
+						ImGui::PopStyleColor();
+						ImGui::TextColored({1, 0, 0, 1},
+						                   "Buffer full for memory save no more messages will be shown please clear buffer");
+					}
+
+					if (m_Pause) {
+						ImGui::TextColored({1, 0, 0, 1}, "Paused");
+					}
 				}
-				if (m_Pause) {
-					ImGui::TextColored({1, 0, 0, 1}, "Paused");
-				}
-				ImGui::PopID();
 			}
 
 			PrintMessagesTable();
@@ -347,8 +391,7 @@ namespace Engine {
 	bool LogLayer::PassFilters(const LogMessageEntry& message) const {
 		const auto passesTextFilter = m_Filter->PassFilter(message.Message.Text.c_str());
 		const auto passesLoggerNameFilter = m_LoggerFilter.empty() || message.Message.Name == m_LoggerFilter;
-		const auto passesSeverityLevelFilter = m_SeverityFilter.empty() || to_string_view(message.Message.Level) ==
-			m_SeverityFilter;
+		const auto passesSeverityLevelFilter = m_SeverityFilter == -1 || message.Message.Level == m_SeverityFilter;
 
 		return passesTextFilter && passesLoggerNameFilter && passesSeverityLevelFilter;
 	}
@@ -414,15 +457,16 @@ namespace Engine {
 		ImGui::BeginChild("LogScrollArea", {0, 0}, ImGuiChildFlags_Border,
 		                  ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings);
 
-		ImGui::PushID("LoggerTable");
-		BeginTable();
+		{
+			ScopedID loggerTable("LoggerTable");
+			BeginTable();
 
-		SetUpTable();
+			SetUpTable();
 
-		PrintTable();
+			PrintTable();
 
-		EndTable();
-		ImGui::PopID();
+			EndTable();
+		}
 
 		if (m_AllowScrolling && m_ScrollToBottom)
 			ImGui::SetScrollHereY(1.f);
@@ -469,7 +513,7 @@ namespace Engine {
 
 		//First half if selected message
 		PrintClippedTable(snapshot, selectedIndex + 1);
-		
+
 		//Selected message
 		if (selectedIndex <= snapshot.VisibleMessageIndices.size()) {
 			const size_t actualIndex = snapshot.VisibleMessageIndices[selectedIndex];
@@ -477,7 +521,7 @@ namespace Engine {
 				PrintSelectedMessage(snapshot.Messages[actualIndex]);
 			}
 		}
-		
+
 		//after selected message
 		const int remaining = total - (selectedIndex + 1);
 		PrintClippedTable(snapshot, remaining, selectedIndex + 1);
@@ -504,9 +548,8 @@ namespace Engine {
 	void LogLayer::PrintMessage(const LogMessageEntry& messageEntry) {
 		ImGui::TableNextRow();
 		const auto& message = messageEntry.Message;
-
-		ImGui::PushID(static_cast<int>(messageEntry.IdHash));
-		ImGui::BeginGroup();
+		ScopedID ID(static_cast<int>(messageEntry.IdHash));
+		ScopedGroup messageGroup;
 
 		ImGui::TableNextColumn();
 		ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, messageEntry.Color.Code);
@@ -548,11 +591,8 @@ namespace Engine {
 		const ImVec2 textSize = ImGui::CalcTextSize(message.Desc.c_str());
 		const float contentRegionWidth = ImGui::GetContentRegionAvail().x;
 
-		const auto shortDesc = Utils::GetFirst(message.Desc, contentRegionWidth - textSize.x);
+		const auto shortDesc = Utils::GetFirst(message.Desc, static_cast<size_t>(contentRegionWidth - textSize.x));
 		ImGui::TextUnformatted(shortDesc.data(), shortDesc.data() + shortDesc.size());
-
-		ImGui::EndGroup();
-		ImGui::PopID();
 	}
 
 	void LogLayer::PrintSelectedMessage(LogMessageEntry& message) {
@@ -561,36 +601,35 @@ namespace Engine {
 
 		EndTable();
 
-		ImGui::PushID(static_cast<int>(message.IdSelectedHash));
-		ImGui::BeginGroup();
+		{
+			ScopedID selected(static_cast<int>(message.IdSelectedHash));
+			ScopedGroup messageGroup;
 
-		message.Source.Print();
+			message.Source.Print();
 
-		ImGui::Separator();
-		Text("Time: {}", message.Message.Time);
-		Text("Name: {}", message.Message.Name);
-		Text("Level: {}", to_string_view(message.Message.Level));
+			ImGui::Separator();
+			Text("Time: {}", message.Message.Time);
+			Text("Name: {}", message.Message.Name);
+			Text("Level: {}", to_string_view(message.Message.Level));
 
-		ImGui::PushID(static_cast<int>(message.IdTextMultiline));
-		InputTextMultiline("", message.Message.Desc, ImVec2{0, 0}, ImGuiInputTextFlags_ReadOnly);
-		ImGui::PopID();
+			{
+				ScopedID multilineID(static_cast<int>(message.IdTextMultiline));
+				InputTextMultiline("", message.Message.Desc, ImVec2{0, 0}, ImGuiInputTextFlags_ReadOnly);
+			}
 
-		ImGui::Separator();
-		ImGui::Text("Debug: ");
-		ImGui::Text("IdHash: %llu", message.IdHash);
-		ImGui::Text("IdSelectedHash: %llu", message.IdSelectedHash);
-		ImGui::Text("IdTextMultilineHash: %llu", message.IdTextMultiline);
+			ImGui::Separator();
+			ImGui::Text("Debug: ");
+			ImGui::Text("IdHash: %llu", message.IdHash);
+			ImGui::Text("IdSelectedHash: %llu", message.IdSelectedHash);
+			ImGui::Text("IdTextMultilineHash: %llu", message.IdTextMultiline);
 
-		ImGui::Separator();
+			ImGui::Separator();
 
-		if (ImGui::Button("Copy"))
-			ImGui::SetClipboardText(message.Message.Text.c_str());
+			if (ImGui::Button("Copy"))
+				ImGui::SetClipboardText(message.Message.Text.c_str());
 
-		ImGui::Separator();
-
-
-		ImGui::EndGroup();
-		ImGui::PopID();
+			ImGui::Separator();
+		}
 
 		BeginTable();
 	}
