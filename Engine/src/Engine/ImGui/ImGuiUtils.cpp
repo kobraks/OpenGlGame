@@ -95,63 +95,145 @@ namespace Engine {
 		return ImGui::InputTextEx(Utils::EnsureNullTerminated(label), nullptr, string.data(), static_cast<int>(string.capacity()), size, flags | ImGuiInputTextFlags_Multiline, InputTextCallback, &data);
 	}
 
-	bool ToggleButton(std::string_view name, bool *enabled) {
-		//Soruce https://github.com/ocornut/imgui/issues/1537
-		const char *id = name.data();
-		bool clicked   = false;
+	// bool ToggleButton(std::string_view name, bool *enabled) {
+	// 	//Soruce https://github.com/ocornut/imgui/issues/1537
+	// 	const char *id = name.data();
+	// 	bool clicked   = false;
+	//
+	// 	const ImGuiStyle &style = ImGui::GetStyle();
+	// 	const ImVec4 *colors    = style.Colors;
+	// 	const ImVec2 pos        = ImGui::GetCursorScreenPos();
+	// 	const ImVec2 winPos     = ImGui::GetCursorPos();
+	// 	ImDrawList *drawList    = ImGui::GetWindowDrawList();
+	//
+	// 	const float height = ImGui::GetFrameHeight();
+	// 	const float width = height * 1.55f;
+	// 	const float radius = height * 0.50f;
+	//
+	// 	constexpr float ANIM_SPEED = 0.085f;
+	//
+	// 	ScopedID buttonID(id);
+	// 	ScopedGroup buttonGroup;
+	//
+	// 	ImGui::InvisibleButton(id, ImVec2(width, height));
+	// 	if (ImGui::IsItemClicked()) {
+	// 		*enabled = !*enabled;
+	// 		clicked = true;
+	// 	}
+	//
+	// 	const ImGuiContext& context = *GImGui;
+	//
+	// 	float time = *enabled ? 1.f : 0.f;
+	//
+	// 	if (context.LastActiveId == context.CurrentWindow->GetID(id)) {
+	// 		const float timeAnim = ImSaturate(context.LastActiveIdTimer / ANIM_SPEED);
+	//
+	// 		time = *enabled ? (timeAnim) : (1.f - timeAnim);
+	// 	}
+	//
+	// 	ImU32 colorBG;
+	// 	if (ImGui::IsItemHovered())
+	// 		colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.78f, 0.78f, 0.78f, 1.0f), *enabled ? colors[ImGuiCol_ButtonActive] : ImVec4{ 0.78f, 0.78f, 0.78f, 1.0f }, time));
+	// 	else
+	// 		colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.85f, 0.85f, 0.85f, 1.0f), *enabled ? colors[ImGuiCol_Button] : ImVec4{ 0.85f, 0.85f, 0.85f, 1.0f }, time));
+	//
+	// 	drawList->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), colorBG, height * 0.5f);
+	// 	drawList->AddCircleFilled(ImVec2(pos.x + radius + time * (width - radius * 2.0f), pos.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+	//
+	// 	ImGui::SameLine((winPos.x + width + style.ItemSpacing.x));
+	//
+	// 	{
+	// 		ScopedID labelID("Label");
+	// 		ImGui::TextUnformatted(id);
+	//
+	// 	}
+	//
+	// 	return clicked;
+	// }
 
-		const ImGuiStyle &style = ImGui::GetStyle();
-		const ImVec4 *colors    = style.Colors;
-		const ImVec2 pos        = ImGui::GetCursorScreenPos();
-		const ImVec2 winPos     = ImGui::GetCursorPos();
-		ImDrawList *drawList    = ImGui::GetWindowDrawList();
+	bool ToggleButton(std::string_view label, bool* value, std::string_view tooltip, const ToggleButtonStyle* style) {
+		const char* id = label.data();
 
-		const float height = ImGui::GetFrameHeight();
-		const float width = height * 1.55f;
-		const float radius = height * 0.50f;
+		bool clicked = false;
 
-		constexpr float ANIM_SPEED = 0.085f;
+		const ToggleButtonStyle defaultStyle{};
+		const ToggleButtonStyle& s = style ? *style : defaultStyle;
 
-		{
-			ScopedID buttonID(id);
-			ScopedGroup buttonGroup;
+		const ImVec2 pos = ImGui::GetCursorScreenPos();
+		const ImVec2 winPos = ImGui::GetCursorPos();
 
-			ImGui::InvisibleButton(id, ImVec2(width, height));
-			if (ImGui::IsItemClicked()) {
-				*enabled = !*enabled;
-				clicked = true;
-			}
+		const ImVec2 size = s.Size;
+		const auto imStyle = ImGui::GetStyle();
+		const ImVec4* colors = imStyle.Colors;
 
-			const ImGuiContext& context = *GImGui;
+		const float radius = size.y * 0.5f;
 
-			float time = *enabled ? 1.f : 0.f;
+		constexpr float SpeedAnim = 10.0f;
 
-			if (context.LastActiveId == context.CurrentWindow->GetID(id)) {
-				const float timeAnim = ImSaturate(context.LastActiveIdTimer / ANIM_SPEED);
+		ImDrawList* draw = ImGui::GetWindowDrawList();
 
-				time = *enabled ? (timeAnim) : (1.f - timeAnim);
-			}
+		ScopedID buttonID(id);
+		ScopedGroup buttonBody;
 
-			ImU32 colorBG;
-			if (ImGui::IsItemHovered())
-				colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.78f, 0.78f, 0.78f, 1.0f), *enabled ? colors[ImGuiCol_ButtonActive] : ImVec4{ 0.78f, 0.78f, 0.78f, 1.0f }, time));
-			else
-				colorBG = ImGui::GetColorU32(ImLerp(ImVec4(0.85f, 0.85f, 0.85f, 1.0f), *enabled ? colors[ImGuiCol_Button] : ImVec4{ 0.85f, 0.85f, 0.85f, 1.0f }, time));
+		// Button logic
+		if (ImGui::InvisibleButton(id, size)) {
+			*value = !*value;
+			clicked = true;
+		}
 
-			drawList->AddRectFilled(pos, ImVec2(pos.x + width, pos.y + height), colorBG, height * 0.5f);
-			drawList->AddCircleFilled(ImVec2(pos.x + radius + time * (width - radius * 2.0f), pos.y + radius), radius - 1.5f, IM_COL32(255, 255, 255, 255));
+		const bool hovered = ImGui::IsItemHovered();
+		const bool active = ImGui::IsItemActive();
+		const bool focused = ImGui::IsItemFocused();
 
-			ImGui::SameLine((winPos.x + width + style.ItemSpacing.x));
+		if (focused && ImGui::IsKeyPressed(ImGuiKey_Space))
+			*value = !*value;
 
-			{
-				ScopedID labelID("Label");
-				ImGui::TextUnformatted(id);
 
-			}
+		const auto& context = *GImGui;
+		const auto widgedID = context.LastItemData.ID;
+		float& animation = *ImGui::GetStateStorage()->GetFloatRef(widgedID, *value ? 1.0f : 0.0f);
+		float target = *value ? 1.0f : 0.f;
+		animation = ImLerp(animation, target, ImGui::GetIO().DeltaTime * SpeedAnim);
+
+		const ImVec4 colorOff = ImGui::ColorConvertU32ToFloat4(s.OffColor);
+		const ImVec4 colorOn = ImGui::ColorConvertU32ToFloat4(s.OnColor);
+		const ImVec4 colorBlend = ImLerp(colorOff, colorOn, animation);
+
+		ImU32 colorBG;
+		if (hovered) {
+			colorBG = ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.HoverBrightness));
+		} else {
+			colorBG = ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.IdleDarkening));
+		}
+
+
+		const auto posMax = ImVec2(pos.x + size.x, pos.y + size.y);
+
+		// Background
+		draw->AddRectFilled(pos, posMax, colorBG, radius);
+		// Border
+		draw->AddRect(pos, posMax, s.BorderColor, radius, 0, 1.0f);
+
+		// Thumb
+		const float thumbX = ImLerp(pos.x + radius, pos.x + size.x - radius, animation);
+		const ImVec2 center = { thumbX, pos.y + radius };
+		draw->AddCircleFilled(center, radius - 2.0f, s.ThumbColor);
+
+		// Tooltip
+		if (!tooltip.empty() && hovered) {
+			ImGui::SetTooltip("%s", tooltip.data());
+		}
+
+		// Label (to right of toggle)
+		if (!label.empty()) {
+			ScopedID labelID("Label");
+			ImGui::SameLine(winPos.x + s.Size.x + imStyle.ItemSpacing.x);
+			ImGui::TextUnformatted(label.data());
 		}
 
 		return clicked;
 	}
+
 
 	void HelpMarker(std::string_view description) {
 		ImGui::TextDisabled("(?)");

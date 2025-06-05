@@ -97,7 +97,19 @@ namespace Engine {
 		return ImGui::TreeNodeEx(fmt::format(format, std::forward<Args>(args)...).c_str(), flags);
 	}
 
-	bool ToggleButton(std::string_view name, bool *enabled);
+	struct ToggleButtonStyle {
+		ImU32 OnColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
+		ImU32 OffColor = ImGui::GetColorU32(ImGuiCol_Button);
+
+		ImU32 ThumbColor = ImGui::GetColorU32(ImGuiCol_Text);
+		ImU32 BorderColor = ImGui::GetColorU32(ImGuiCol_Border);
+		ImVec2 Size = { 40.0f, 20.0f};
+
+		float HoverBrightness = 0.1f;
+		float IdleDarkening = 0.05f;
+	};
+
+	bool ToggleButton(std::string_view label, bool* value, std::string_view tooltip = "", const ToggleButtonStyle* style = nullptr);
 
 	void HelpMarker(std::string_view description);
 }
