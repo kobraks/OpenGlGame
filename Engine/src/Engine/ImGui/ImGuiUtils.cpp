@@ -153,4 +153,11 @@ namespace Engine {
 		ImGui::PopID();
 		return clicked;
 	}
+
+	void HelpMarker(std::string_view description) {
+		ImGui::TextDisabled("(?)");
+
+		if (ImGui::IsItemHovered())
+			ImGui::SetTooltip("%s", Utils::EnsureNullTerminated(description));
+	}
 }

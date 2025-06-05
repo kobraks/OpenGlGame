@@ -98,4 +98,6 @@ namespace Engine {
 	}
 
 	bool ToggleButton(std::string_view name, bool *v);
+
+	void HelpMarker(std::string_view description);
 }
