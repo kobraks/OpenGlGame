@@ -34,4 +34,8 @@ namespace Engine::Utils {
 	constexpr T AlignUp(const T& value, size_t alignment) {
 		return (value + static_cast<T>(alignment - 1)) & ~static_cast<T>(alignment - 1);
 	}
+
+	constexpr std::string_view GetFirst(const std::string& string, std::size_t size) {
+		return { string.begin(), string.size() > size ? string.begin() + size : string.end() };
+	}
 }
