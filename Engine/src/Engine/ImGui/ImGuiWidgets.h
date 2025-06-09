@@ -16,8 +16,11 @@ namespace Engine {
 		ImU32 OnColor = ImGui::GetColorU32(ImGuiCol_ButtonActive);
 		ImU32 OffColor = ImGui::GetColorU32(ImGuiCol_Button);
 
-		ImU32 ThumbColor = ImGui::GetColorU32(ImGuiCol_Text);
 		ImU32 BorderColor = ImGui::GetColorU32(ImGuiCol_Border);
+
+		ImU32 ThumbOnColor = ImGui::GetColorU32(ImGuiCol_Text);
+		ImU32 ThumbOffColor = ImGui::GetColorU32(ImGuiCol_Text);
+
 
 		ImVec2 Size = { 40.0f, 20.0f };
 
