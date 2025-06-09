@@ -51,7 +51,7 @@ namespace Engine {
 		}
 
 		bool operator()(const char* lhs, const char* rhs) const noexcept {
-			return std::strcmp(lhs, rhs);
+			return std::strcmp(lhs, rhs) == 0;
 		}
 
 		bool operator()(const char* lhs, std::string_view rhs) const noexcept {
