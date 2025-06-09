@@ -11,8 +11,9 @@
 #include "Engine/Utils/CoreUtility.h"
 #include "Engine/Utils/StdUtils.h"
 
-#include "Engine/ImGui/ImGuiUtils.h"
 #include "Engine/ImGui/ImGuiScoped.h"
+#include "Engine/ImGui/ImGuiWidgets.h"
+#include "Engine/ImGui/ImGuiInput.h"
 
 #include <ImGui/imgui.h>
 

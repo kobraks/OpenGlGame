@@ -1,8 +1,8 @@
 #include "pch.h"
 #include "StatisticGraph.h"
 
-#include "Engine/ImGui/ImGuiUtils.h"
 #include "Engine/ImGui/ImGuiScoped.h"
+#include "Engine/ImGui/ImGuiWidgets.h"
 
 #include <imgui.h>
 #include <algorithm>

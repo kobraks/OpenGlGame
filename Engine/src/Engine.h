@@ -31,7 +31,10 @@
 #include "Engine/Events/KeyEvent.h"
 #include "Engine/Events/MouseEvent.h"
 
-#include "Engine/ImGui/ImGuiUtils.h"
+#include "Engine/ImGui/ImGuiScoped.h"
+#include "Engine/ImGui/ImGuiDrawUtils.h"
+#include "Engine/ImGui/ImGuiInput.h"
+#include "Engine/ImGui/ImGuiWidgets.h"
 
 #include "Engine/Layers/Layer.h"
 
