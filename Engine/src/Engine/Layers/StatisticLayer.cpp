@@ -105,16 +105,16 @@ namespace Engine {
 		// m_FrameGraph->AddValue(static_cast<float>(frameTime.AsMilliseconds()));
 		// m_UpdateGraph->AddValue(static_cast<float>(m_InstantUpdateCount / frameTime.AsSeconds()));
 
-		Text("Elapsed Time: {:.2f}s", app.GetElapsedTime().AsSeconds());
-		Text("Is VSync on: {}", window.IsVSync());
-		Text("FPS: {:.2f}", 1.f / app.GetFrameTime().AsSeconds());
-		Text("UPS (instant): {:.2f}", static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds()); 
-		Text("UPS (1s average): {:.2f}", static_cast<float>(m_LastConstUpdateCount)); 
-		Text("Frame Time: {}ms", app.GetFrameTime().AsMilliseconds());
-		Text("Updates: {}", m_LastConstUpdateCount);
-		Text("Mouse Position: {}", mousePos);
-		Text("Window Position: {}", windowPos);
-		Text("Window Size: {}", windowSize);
+		TextUnformatted("Elapsed Time: {:.2f}s", app.GetElapsedTime().AsSeconds());
+		TextUnformatted("Is VSync on: {}", window.IsVSync());
+		TextUnformatted("FPS: {:.2f}", 1.f / app.GetFrameTime().AsSeconds());
+		TextUnformatted("UPS (instant): {:.2f}", static_cast<float>(m_InstantUpdateCount) / frameTime.AsSeconds()); 
+		TextUnformatted("UPS (1s average): {:.2f}", static_cast<float>(m_LastConstUpdateCount)); 
+		TextUnformatted("Frame Time: {}ms", app.GetFrameTime().AsMilliseconds());
+		TextUnformatted("Updates: {}", m_LastConstUpdateCount);
+		TextUnformatted("Mouse Position: {}", mousePos);
+		TextUnformatted("Window Position: {}", windowPos);
+		TextUnformatted("Window Size: {}", windowSize);
 
 		// m_InstantUps = 0;
 

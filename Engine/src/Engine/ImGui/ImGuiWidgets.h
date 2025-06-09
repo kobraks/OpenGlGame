@@ -25,8 +25,8 @@ namespace Engine {
 		float IdleDarkening = 0.05f;
 	};
 
+	bool ToggleButton(std::string_view id, std::string_view label, bool* value, std::string_view tooltip = "", const ToggleButtonStyle* style = nullptr);
 	bool ToggleButton(std::string_view label, bool* value, std::string_view tooltip = "", const ToggleButtonStyle* style = nullptr);
-
 
 	template<typename Container>
 	auto ComboFromContainer(std::string_view label, int32_t& currentItem, const Container& items, auto&& getter, int32_t maxHeightInItems = -1) {
@@ -85,8 +85,32 @@ namespace Engine {
 	}
 
 	template <class... Args>
-	void Text(fmt::format_string<Args...> format, Args &&... args) {
+	void TextUnformatted(fmt::format_string<Args...> format, Args &&... args) {
 		return ImGui::TextUnformatted(fmt::format(format, std::forward<Args>(args)...).c_str());
+	}
+
+	inline void TextUnformatted(std::string_view text) {
+		return ImGui::TextUnformatted(text.data(), text.data() + text.size());
+	}
+
+	inline void BulletText(std::string_view text) {
+		return ImGui::BulletText("%.*s", static_cast<int>(text.size()), text.data());
+	}
+
+	inline void TextColored(const ImVec4& color, std::string_view text) {
+		return ImGui::TextColored(color, "%.*s", static_cast<int>(text.size()), text.data());
+	}
+
+	inline bool TreeNodeEx(std::string_view label, ImGuiTreeNodeFlags flags = 0) {
+		return ImGui::TreeNodeEx(Utils::EnsureNullTerminated(label), flags);
+	}
+
+	inline std::string FormatLabelWithID(std::string_view label, std::string_view idSuffix) {
+		return fmt::format("{}##{}", label, idSuffix);
+	}
+
+	inline std::string FormatLabelWithID(std::string_view label, int32_t idSuffix) {
+		return fmt::format("{}##{}", label, idSuffix);
 	}
 
 }

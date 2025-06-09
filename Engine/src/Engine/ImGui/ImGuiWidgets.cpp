@@ -8,6 +8,87 @@
 #include <imgui_internal.h>
 
 namespace Engine {
+	bool ToggleButton(std::string_view id, std::string_view label, bool* value, std::string_view tooltip,
+		const ToggleButtonStyle* style) {
+		ENGINE_ASSERT(!id.empty());
+		if (id.empty()) {
+			throw std::invalid_argument("ToggleButton ID cannot be empty.");
+		}
+
+		bool clicked = false;
+
+		const static ToggleButtonStyle defaultStyle{};
+		const ToggleButtonStyle& s = style ? *style : defaultStyle;
+
+		const ImVec2 pos = ImGui::GetCursorScreenPos();
+		const ImVec2 winPos = ImGui::GetCursorPos();
+
+		const ImVec2 size = s.Size;
+		const auto imStyle = ImGui::GetStyle();
+
+		const float radius = size.y * 0.5f;
+
+		constexpr float SpeedAnim = 10.0f;
+
+		ImDrawList* draw = ImGui::GetWindowDrawList();
+
+		static thread_local std::string tmpID;
+		const char* cID = Utils::EnsureNullTerminated(id, tmpID);
+
+		ScopedID scopedID(cID);
+		ScopedGroup buttonGroup;
+
+		//Button logic
+		if (ImGui::InvisibleButton("##ToggleButton", size)) {
+			*value = !*value;
+			clicked = true;
+		}
+
+		const bool hovered = ImGui::IsItemHovered();
+		const bool focused = ImGui::IsItemFocused();
+
+		if (focused && ImGui::IsKeyPressed(ImGuiKey_Space))
+			*value = !*value;
+
+		const auto& context = *GImGui;
+		const auto widgetID = context.LastItemData.ID;
+		const float target = *value ? 1.0f : 0.0f;
+
+		float& animation = *ImGui::GetStateStorage()->GetFloatRef(widgetID, target);
+		animation = ImLerp(animation, target, ImGui::GetIO().DeltaTime * SpeedAnim);
+
+		const ImVec4 colorOff = ImGui::ColorConvertU32ToFloat4(s.OffColor);
+		const ImVec4 colorOn = ImGui::ColorConvertU32ToFloat4(s.OnColor);
+		const ImVec4 colorBlend = ImLerp(colorOff, colorOn, animation);
+
+		const ImU32 colorBG = hovered ? ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.HoverBrightness)) : ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.IdleDarkening));
+
+		const ImVec2 posMax = ImVec2(pos.x + size.x, pos.y + size.y);
+		// Background
+		draw->AddRectFilled(pos, posMax, colorBG, radius);
+		// Border
+		draw->AddRect(pos, posMax, s.BorderColor, radius, 0, 1.0f);
+
+		// Thumb
+		const float thumbX = ImLerp(pos.x + radius, pos.x + size.x - radius, animation);
+		const ImVec2 center = { thumbX, pos.y + radius };
+		draw->AddCircleFilled(center, radius - 2.0f, s.ThumbColor);
+
+		// Tooltip
+		if (!tooltip.empty() && hovered) {
+			ImGui::SetTooltip("%s", tooltip.data());
+		}
+
+		// Label (to right of toggle)
+		if (!label.empty()) {
+			ScopedID labelID("ToggleLabel");
+			ImGui::SameLine(winPos.x + s.Size.x + imStyle.ItemSpacing.x);
+			TextUnformatted(label);
+		}
+
+		return clicked;
+	}
+
 	// bool ToggleButton(std::string_view name, bool *enabled) {
 // 	//Soruce https://github.com/ocornut/imgui/issues/1537
 // 	const char *id = name.data();
@@ -63,86 +144,8 @@ namespace Engine {
 //
 // 	return clicked;
 // }
-
 	bool ToggleButton(std::string_view label, bool* value, std::string_view tooltip, const ToggleButtonStyle* style) {
-		bool clicked = false;
-
-		const ToggleButtonStyle defaultStyle{};
-		const ToggleButtonStyle& s = style ? *style : defaultStyle;
-
-		const ImVec2 pos = ImGui::GetCursorScreenPos();
-		const ImVec2 winPos = ImGui::GetCursorPos();
-
-		const ImVec2 size = s.Size;
-		const auto imStyle = ImGui::GetStyle();
-
-		const float radius = size.y * 0.5f;
-
-		constexpr float SpeedAnim = 10.0f;
-
-		ImDrawList* draw = ImGui::GetWindowDrawList();
-
-		ScopedID buttonID(label);
-		ScopedGroup buttonBody;
-
-		// Button logic
-		if (ImGui::InvisibleButton(label.data(), size)) {
-			*value = !*value;
-			clicked = true;
-		}
-
-		const bool hovered = ImGui::IsItemHovered();
-		const bool focused = ImGui::IsItemFocused();
-
-		if (focused && ImGui::IsKeyPressed(ImGuiKey_Space))
-			*value = !*value;
-
-
-		const auto& context = *GImGui;
-		const auto widgetID = context.LastItemData.ID;
-		const float target = *value ? 1.0f : 0.f;
-
-		float& animation = *ImGui::GetStateStorage()->GetFloatRef(widgetID, target);
-		animation = ImLerp(animation, target, ImGui::GetIO().DeltaTime * SpeedAnim);
-
-		const ImVec4 colorOff = ImGui::ColorConvertU32ToFloat4(s.OffColor);
-		const ImVec4 colorOn = ImGui::ColorConvertU32ToFloat4(s.OnColor);
-		const ImVec4 colorBlend = ImLerp(colorOff, colorOn, animation);
-
-		ImU32 colorBG;
-		if (hovered) {
-			colorBG = ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.HoverBrightness));
-		}
-		else {
-			colorBG = ImGui::GetColorU32(ImLerp(colorBlend, ImVec4(1, 1, 1, 1), s.IdleDarkening));
-		}
-
-
-		const auto posMax = ImVec2(pos.x + size.x, pos.y + size.y);
-
-		// Background
-		draw->AddRectFilled(pos, posMax, colorBG, radius);
-		// Border
-		draw->AddRect(pos, posMax, s.BorderColor, radius, 0, 1.0f);
-
-		// Thumb
-		const float thumbX = ImLerp(pos.x + radius, pos.x + size.x - radius, animation);
-		const ImVec2 center = { thumbX, pos.y + radius };
-		draw->AddCircleFilled(center, radius - 2.0f, s.ThumbColor);
-
-		// Tooltip
-		if (!tooltip.empty() && hovered) {
-			ImGui::SetTooltip("%s", tooltip.data());
-		}
-
-		// Label (to right of toggle)
-		if (!label.empty() && !label.starts_with("##")) {
-			ScopedID labelID("Label");
-			ImGui::SameLine(winPos.x + s.Size.x + imStyle.ItemSpacing.x);
-			ImGui::TextUnformatted(label.data());
-		}
-
-		return clicked;
+		return ToggleButton(label, label, value, tooltip, style);
 	}
 
 	bool Combo(std::string_view label, int32_t& currentItem, std::string_view itemList, int32_t maxHeightInItems) {

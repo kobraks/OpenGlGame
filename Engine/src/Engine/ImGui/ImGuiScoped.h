@@ -30,7 +30,7 @@ namespace Engine {
 		}
 
 		explicit ScopedID(std::string_view strID) {
-			ImGui::PushID(strID.data());
+			ImGui::PushID(Utils::EnsureNullTerminated(strID));
 		}
 
 		explicit ScopedID(const void* ptrID) {

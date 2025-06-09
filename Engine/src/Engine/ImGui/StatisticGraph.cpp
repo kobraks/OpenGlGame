@@ -43,7 +43,7 @@ namespace Engine {
 		RebuildOrderedBuffer();
 
 		ScopedID drawID(label);
-		Text("{}", label);
+		TextUnformatted("{}", label);
 
 		auto drawList = ImGui::GetWindowDrawList();
 		const ImVec2 graphTopLeft = ImGui::GetCursorScreenPos();

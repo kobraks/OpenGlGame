@@ -209,10 +209,10 @@ namespace Engine {
 	}
 
 	void LogSource::Print() const {
-		Text("File: {}", File);
-		Text("Function: {}", Function);
-		Text("Line: {}", Line);
-		Text("Thread: {}", ThreadId);
+		TextUnformatted("File: {}", File);
+		TextUnformatted("Function: {}", Function);
+		TextUnformatted("Line: {}", Line);
+		TextUnformatted("Thread: {}", ThreadId);
 	}
 
 	LogMessage::LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) {
@@ -646,9 +646,9 @@ namespace Engine {
 			message.Source.Print();
 
 			ImGui::Separator();
-			Text("Time: {}", message.Message.Time);
-			Text("Name: {}", message.Message.Name);
-			Text("Level: {}", to_string_view(message.Message.Level));
+			TextUnformatted("Time: {}", message.Message.Time);
+			TextUnformatted("Name: {}", message.Message.Name);
+			TextUnformatted("Level: {}", to_string_view(message.Message.Level));
 
 			{
 				ScopedID multilineID(static_cast<int>(message.IdTextMultiline));
