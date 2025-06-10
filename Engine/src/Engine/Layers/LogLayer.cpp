@@ -601,7 +601,7 @@ namespace Engine {
 		}
 
 		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip(message.Text.c_str());
+			SetTooltip(message.Text);
 
 		if (ImGui::IsItemClicked()) {
 			std::lock_guard guard(m_Mutex);
@@ -614,15 +614,15 @@ namespace Engine {
 		}
 
 		ImGui::SameLine();
-		ImGui::Text("%llu", static_cast<size_t>(messageEntry.Index));
+		TextUnformatted("{}", messageEntry.Index);
 		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(message.Time.c_str());
+		TextUnformatted(message.Time);
 
 		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(to_string_view(message.Level).data());
+		TextUnformatted(std::string_view(to_string_view(message.Level)));
 
 		ImGui::TableNextColumn();
-		ImGui::TextUnformatted(message.Name.data());
+		TextUnformatted(message.Name);
 
 		ImGui::TableNextColumn();
 
@@ -630,7 +630,7 @@ namespace Engine {
 		const float contentRegionWidth = ImGui::GetContentRegionAvail().x;
 
 		const auto shortDesc = Utils::GetFirst(message.Desc, static_cast<std::size_t>(contentRegionWidth - textSize.x));
-		ImGui::TextUnformatted(shortDesc.data(), shortDesc.data() + shortDesc.size());
+		TextUnformatted(shortDesc);
 	}
 
 	void LogLayer::PrintSelectedMessage(LogMessageEntry& message) {
@@ -652,14 +652,17 @@ namespace Engine {
 
 			{
 				ScopedID multilineID(static_cast<int>(message.IdTextMultiline));
+				// ImGui::PushTextWrapPos(0.0f);
 				InputTextMultiline("", message.Message.Desc, ImVec2{0, 0}, ImGuiInputTextFlags_ReadOnly);
+				// ImGui::TextWrapped("%s", message.Message.Desc.c_str());
+				// ImGui::PopTextWrapPos();
 			}
 
 			ImGui::Separator();
-			ImGui::Text("Debug: ");
-			ImGui::Text("IdHash: %llu", message.IdHash);
-			ImGui::Text("IdSelectedHash: %llu", message.IdSelectedHash);
-			ImGui::Text("IdTextMultilineHash: %llu", message.IdTextMultiline);
+			TextUnformatted("Debug: ");
+			TextUnformatted("IdHash: {}", message.IdHash);
+			TextUnformatted("IdSelectedHash: {}", message.IdSelectedHash);
+			TextUnformatted("IdTextMultilineHash: {}", message.IdTextMultiline);
 
 			ImGui::Separator();
 
