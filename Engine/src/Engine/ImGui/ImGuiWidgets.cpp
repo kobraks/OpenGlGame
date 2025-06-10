@@ -83,7 +83,7 @@ namespace Engine {
 
 		// Tooltip
 		if (!tooltip.empty() && hovered) {
-			ImGui::SetTooltip("%s", tooltip.data());
+			SetTooltip(tooltip);
 		}
 
 		// Label (to right of toggle)

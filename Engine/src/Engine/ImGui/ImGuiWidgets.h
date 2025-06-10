@@ -89,7 +89,13 @@ namespace Engine {
 
 	template <class... Args>
 	void TextUnformatted(fmt::format_string<Args...> format, Args &&... args) {
-		return ImGui::TextUnformatted(fmt::format(format, std::forward<Args>(args)...).c_str());
+		const std::string formatted = fmt::format(format, std::forward<Args>(args)...);
+		return ImGui::TextUnformatted(formatted.c_str(), formatted.c_str() + formatted.size());
+	}
+
+	template <class... Args>
+	void SetTooltip(fmt::format_string<Args...> format, Args &&... args) {
+		return ImGui::SetTooltip(fmt::format(format, std::forward<Args>(args)...).c_str());
 	}
 
 	inline void TextUnformatted(std::string_view text) {
@@ -108,6 +114,10 @@ namespace Engine {
 		return ImGui::TreeNodeEx(Utils::EnsureNullTerminated(label), flags);
 	}
 
+	inline void SetTooltip(std::string_view text) {
+		return ImGui::SetTooltip("%.*s", static_cast<int>(text.size()), text.data());
+	}
+
 	inline std::string FormatLabelWithID(std::string_view label, std::string_view idSuffix) {
 		return fmt::format("{}##{}", label, idSuffix);
 	}
@@ -115,5 +125,4 @@ namespace Engine {
 	inline std::string FormatLabelWithID(std::string_view label, int32_t idSuffix) {
 		return fmt::format("{}##{}", label, idSuffix);
 	}
-
 }

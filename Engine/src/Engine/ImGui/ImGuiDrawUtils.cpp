@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "ImGuiDrawUtils.h"
 
+#include "Engine/ImGui/ImGuiWidgets.h"
+
 #include "Engine/Utils/StdUtils.h"
 
 namespace Engine {
@@ -8,6 +10,6 @@ namespace Engine {
 		ImGui::TextDisabled("(?)");
 
 		if (ImGui::IsItemHovered())
-			ImGui::SetTooltip("%s", Utils::EnsureNullTerminated(description));
+			SetTooltip(description);
 	}
 }
