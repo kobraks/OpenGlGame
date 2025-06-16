@@ -300,6 +300,8 @@ namespace Engine {
 	}
 
 	void LogPanel::RenderSelected(const LogMessageEntry& entry) {
+		constexpr ImGuiTreeNodeFlags HEADER_FLAGS = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+
 		if (entry.Index != m_SelectedIndex)
 			return;
 
@@ -315,18 +317,19 @@ namespace Engine {
 			ScopedGroup messageGroup;
 
 			ImGui::Separator();
-			TextUnformatted("Source:");
-			TextUnformatted("Function: {}", source.FunctionName);
-			TextUnformatted("Line: {}", source.LineNumber);
-			TextUnformatted("Thread: {}", source.ThreadID);
+			if (ImGui::CollapsingHeader("Source", HEADER_FLAGS)) {
+				TextUnformatted("Function: {}", source.FunctionName);
+				TextUnformatted("Line: {}", source.LineNumber);
+				TextUnformatted("Thread: {}", source.ThreadID);
+			}
 
+			if (ImGui::CollapsingHeader("Metadata", HEADER_FLAGS)) {
+				TextUnformatted("Time: {}", message.TimeString);
+				TextUnformatted("Logger: {}", message.LoggerName);
+				TextUnformatted("Level: {}", to_string_view(message.Level));
+			}
 
-			ImGui::Separator();
-			TextUnformatted("Time: {}", message.TimeString);
-			TextUnformatted("Name: {}", message.LoggerName);
-			TextUnformatted("Level: {}", to_string_view(message.Level));
-
-			{
+			if (ImGui::CollapsingHeader("Message", HEADER_FLAGS)) {
 				ScopedID multilineID(static_cast<int>(hashes.IDTextMultiline));
 
 				// ImGui::PushTextWrapPos(0.0f);
@@ -335,12 +338,12 @@ namespace Engine {
 				// ImGui::PopTextWrapPos();
 			}
 
-			ImGui::Separator();
-			TextUnformatted("Debug:");
-			TextUnformatted("IDHash: {}", hashes.IDHash);
-			TextUnformatted("IDSelectedHash: {}", hashes.IDSelectedHash);
-			TextUnformatted("IDTextMultilineHash: {}", hashes.IDTextMultiline);
-
+			if (ImGui::CollapsingHeader("Debug", HEADER_FLAGS)) {
+				TextUnformatted("IDHash: {}", hashes.IDHash);
+				TextUnformatted("IDSelectedHash: {}", hashes.IDSelectedHash);
+				TextUnformatted("IDTextMultilineHash: {}", hashes.IDTextMultiline);
+			}
+			
 			ImGui::Separator();
 
 			if (ImGui::Button("Copy")) {
