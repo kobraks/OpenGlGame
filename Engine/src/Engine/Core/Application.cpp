@@ -130,11 +130,6 @@ namespace Engine {
 
 	void Application::Initialize() {
 		auto logLayer = MakeRef<LogLayer>();
-		Log::GetApplicationLogger()->sinks().push_back(logLayer);
-		Log::GetEngineLogger()->sinks().push_back(logLayer);
-		Log::GetGLLogger()->sinks().push_back(logLayer);
-		Log::GetScriptLogger()->sinks().push_back(logLayer);
-
 		m_Window = Window::Create(WindowProperties(m_Specification.Name, m_Specification.WindowSize));
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
