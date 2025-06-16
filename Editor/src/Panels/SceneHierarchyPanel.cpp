@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 
-#include "Engine/ImGui/ImGuiUtils.h"
+#include "Engine/ImGui/ImGuiWidgets.h"
+#include "Engine/ImGui/ImGuiInput.h"
+
 #include "Engine/Scene/Components.h"
 
 #include <ImGui/imgui.h>
