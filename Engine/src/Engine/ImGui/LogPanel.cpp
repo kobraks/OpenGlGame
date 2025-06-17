@@ -140,7 +140,7 @@ namespace Engine {
 	}
 
 	void LogPanel::RenderStatistics() const {
-		ScopedID messagesID("Num of messages");
+		ScopedID messagesID("Statistic");
 		ScopedStyleVar styleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0));
 
 		const auto maxMessages = m_Storage->GetMaxMessages();
@@ -367,10 +367,10 @@ namespace Engine {
 
 	void LogPanel::SetUpTableColumns() {
 		ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_WidthFixed, 35, 0);
-		ImGui::TableSetupColumn("TimeString", ImGuiTableColumnFlags_WidthFixed, 60, 1);
+		ImGui::TableSetupColumn("Time", ImGuiTableColumnFlags_WidthFixed, 60, 1);
 		ImGui::TableSetupColumn("Severity", ImGuiTableColumnFlags_WidthFixed, 60, 2);
 		ImGui::TableSetupColumn("Logger", ImGuiTableColumnFlags_WidthFixed, 80, 3);
-		ImGui::TableSetupColumn("Desc", ImGuiTableColumnFlags_WidthFixed, 500, 4);
+		ImGui::TableSetupColumn("Description", ImGuiTableColumnFlags_WidthFixed, 500, 4);
 	}
 
 	void LogPanel::Clear() {

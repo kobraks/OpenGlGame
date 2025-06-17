@@ -5,6 +5,7 @@
 #include "Engine/Logging/LogUtils.h"
 
 #include <fmt/chrono.h>
+#include <boost/algorithm/string.hpp>
 
 namespace Engine {
 	LogSource::LogSource(const spdlog::source_loc& loc) {
@@ -20,6 +21,7 @@ namespace Engine {
 	LogMessage::LogMessage(const spdlog::memory_buf_t& formatted, const spdlog::details::log_msg& msg) {
 		const std::string loggerName(msg.logger_name.data(), msg.logger_name.size());
 		Description = std::string(msg.payload.data(), msg.payload.size());
+		boost::algorithm::trim(Description);
 
 		LoggerID = Utils::GetLoggerID(loggerName);
 		LoggerName = Utils::GetKnownLoggersName().at(LoggerID);
