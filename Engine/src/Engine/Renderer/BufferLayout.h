@@ -45,9 +45,12 @@ namespace Engine {
 	struct BufferElement {
 		std::string Name;
 		ShaderDataType Type = ShaderDataType::None;
-		uint32_t Size = 0;;
+		uint32_t Size = 0;
 		uint64_t Offset = 0;
 		bool Normalized = false;
+
+		bool UseInstancing = false;
+		uint32_t Divisor = 0;
 
 		BufferElement() = default;
 		BufferElement(ShaderDataType type, const std::string& name, bool normalized = false) : Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized) {}
@@ -81,6 +84,15 @@ namespace Engine {
 
 		uint32_t GetStride() const { return m_Stride; }
 		const std::vector<BufferElement>& GetElements() const { return m_Elements; }
+		const BufferElement& GetElement(uint32_t index) const {
+			ENGINE_ASSERT(index < m_Elements.size(), "Index out of bounds!");
+			if (index >= m_Elements.size())
+				throw std::out_of_range("Index out of bounds!");
+
+			return m_Elements[index];
+		}
+
+		std::size_t GetElementCount() const { return m_Elements.size(); }
 
 		std::vector<BufferElement>::iterator begin() { return m_Elements.begin(); }
 		std::vector<BufferElement>::iterator end() { return m_Elements.end(); }
