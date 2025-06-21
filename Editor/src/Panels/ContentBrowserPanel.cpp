@@ -20,7 +20,7 @@ namespace Editor {
 		float cellSize = thumbnailSize + padding;
 
 		if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory)) {
-			if (ImGui::ImageButton("<-", static_cast<ImTextureID>(m_BackArrowIcon->ID()), {20.f, 20.f}, { 0, 1 }, { 1, 0 }))
+			if (ImGui::ImageButton("<-", static_cast<ImTextureID>(m_BackArrowIcon->RendererID()), {20.f, 20.f}, { 0, 1 }, { 1, 0 }))
 				m_CurrentDirectory = m_CurrentDirectory.parent_path();
 		}
 
@@ -40,7 +40,7 @@ namespace Editor {
 			//TODO Directory
 			const Engine::Ref<Engine::Texture> icon = directoryEntry.is_directory() ? m_DirectoryIcon : m_FileIcon;
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0, 0, 0, 0 });
-			ImGui::ImageButton("Button", static_cast<ImTextureID>(icon->ID()), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
+			ImGui::ImageButton("Button", static_cast<ImTextureID>(icon->RendererID()), { thumbnailSize, thumbnailSize }, { 0, 1 }, { 1, 0 });
 
 			if (ImGui::BeginDragDropSource()) {
 				const std::filesystem::path relativePath(path);

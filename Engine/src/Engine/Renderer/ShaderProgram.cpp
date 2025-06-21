@@ -52,7 +52,7 @@ namespace Engine {
 		std::vector<std::byte> binary(length);
 		GLenum format = 0;
 
-		glGetProgramBinary(*program, length, nullptr, &format, binary.data());
+		glGetProgramBinary(static_cast<IDType>(*program), length, nullptr, &format, binary.data());
 
 		std::ofstream out(path, std::ios::binary);
 		if (!out) {
@@ -62,7 +62,7 @@ namespace Engine {
 
 		const uint64_t labelLength = program->Label().size();
 		out.write(reinterpret_cast<const char*>(&labelLength), sizeof(labelLength));
-		out.write(program->Label().data(), labelLength);
+		out.write(program->Label().data(), static_cast<std::streamsize>(labelLength));
 
 		out.write(reinterpret_cast<const char*>(&length), sizeof(length));
 		out.write(reinterpret_cast<const char*>(&format), sizeof(format));
@@ -82,7 +82,7 @@ namespace Engine {
 		in.read(reinterpret_cast<char*>(&labelLength), sizeof(labelLength));
 
 		std::string label(labelLength, 0);
-		in.read(label.data(), labelLength);
+		in.read(label.data(), static_cast<std::streamsize>(labelLength));
 
 		GLint length = 0;
 		in.read(reinterpret_cast<char*>(&length), sizeof(length));
@@ -100,7 +100,7 @@ namespace Engine {
 
 		Ref<ShaderProgram> program = Ref<ShaderProgram>(new ShaderProgram());
 		program->SetLabel(label);
-		glProgramBinary(*program, format, binary.data(), static_cast<GLsizei>(binary.size()));
+		glProgramBinary(static_cast<IDType>(*program), format, binary.data(), static_cast<GLsizei>(binary.size()));
 
 		if (!program->CheckIfLinked()) {
 			return nullptr;
@@ -114,7 +114,7 @@ namespace Engine {
 			return;
 
 		m_GLState->Label = label;
-		glObjectLabel(GL_PROGRAM, *this, -1, label.c_str());
+		glObjectLabel(GL_PROGRAM, static_cast<IDType>(*this), -1, label.c_str());
 	}
 
 	void ShaderProgram::Attach(Ref<ShaderStage> stage) {
@@ -126,12 +126,12 @@ namespace Engine {
 		LOG_GL_DEBUG(
 			"Attaching {} shader {} to shader program {} (id: {})",
 			stage->TypeToString(),
-			stage->ID(),
+			stage->RendererID(),
 			m_GLState->Label,
 			m_GLState->Program
 		);
 
-		glAttachShader(*this, *stage);
+		glAttachShader(static_cast<IDType>(*this), static_cast<ShaderStage::IDType>(*stage));
 		m_GLState->Stages.emplace(stage);
 		m_GLState->Reflection.UsedStages |= stage->GetType();
 		FetchLog();
@@ -160,12 +160,12 @@ namespace Engine {
 		LOG_GL_DEBUG(
 			"Detaching {} shader {} from shader program {} (id: {})",
 			stage->TypeToString(),
-			stage->ID(),
+			stage->RendererID(),
 			m_GLState->Label,
 			m_GLState->Program
 		);
 
-		glDetachShader(*this, *stage);
+		glDetachShader(static_cast<IDType>(*this), static_cast<ShaderStage::IDType>(*stage));
 		stages.erase(iter);
 		Utils::RemoveStage(m_GLState->Reflection.UsedStages, stage->GetType());
 		FetchLog();
@@ -184,12 +184,12 @@ namespace Engine {
 			LOG_GL_DEBUG(
 				"Detaching {} shader {} from shader program {} (id: {})",
 				stage->TypeToString(),
-				stage->ID(),
+				stage->RendererID(),
 				m_GLState->Label,
 				m_GLState->Program
 			);
 
-			glDetachShader(*this, *stage);
+			glDetachShader(static_cast<IDType>(*this), static_cast<ShaderStage::IDType>(*stage));
 		}
 		stages.clear();
 		
@@ -209,7 +209,7 @@ namespace Engine {
 		LOG_GL_DEBUG("Linking {} (ID: {}) shader program", m_GLState->Label, m_GLState->Program);
 		ShaderLinkResult result;
 
-		glLinkProgram(*this);
+		glLinkProgram(static_cast<IDType>(*this));
 
 		if (GetParameter(GL_LINK_STATUS) == GL_FALSE) {
 			LOG_GL_ERROR("Failed to link {} (id: {}) shader program", m_GLState->Label, m_GLState->Program);
@@ -238,7 +238,7 @@ namespace Engine {
 	ShaderValidationResult ShaderProgram::Validate() {
 		ShaderValidationResult result;
 
-		glValidateProgram(*this);
+		glValidateProgram(static_cast<IDType>(*this));
 
 		const auto success = GetParameter(GL_VALIDATE_STATUS);
 
@@ -265,7 +265,7 @@ namespace Engine {
 		if (!IsLinked())
 			return;
 
-		glUseProgram(*this);
+		glUseProgram(static_cast<IDType>(*this));
 	}
 
 	ShaderProgram::AttributeLocationType ShaderProgram::GetAttributeLocation(std::string_view name) const {
@@ -507,7 +507,7 @@ namespace Engine {
 	}
 
 	void ShaderProgram::GetParameter(uint32_t pName, int* params) {
-		glGetProgramiv(*this, pName, params);
+		glGetProgramiv(static_cast<IDType>(*this), pName, params);
 	}
 
 	void ShaderProgram::FetchLog() {
@@ -516,7 +516,7 @@ namespace Engine {
 		if (length > 0) {
 			m_GLState->LogMessage.resize(length + 1, 0);
 
-			glGetProgramInfoLog(*this, length, nullptr, m_GLState->LogMessage.data());
+			glGetProgramInfoLog(static_cast<IDType>(*this), length, nullptr, m_GLState->LogMessage.data());
 
 			boost::trim(m_GLState->LogMessage);
 		}
@@ -580,7 +580,7 @@ namespace Engine {
 				LOG_GL_DEBUG("Uniform {} is table", info.Name);
 				for (int j = 0; j < info.Size; ++j) {
 					const std::string indexedName = fmt::format("{}[{}]", info.Name, j);
-					const int loc = glGetUniformLocation(*this, indexedName.c_str());
+					const int loc = glGetUniformLocation(static_cast<IDType>(*this), indexedName.c_str());
 
 					if (loc != -1) {
 						m_GLState->UniformLocations.emplace(indexedName, loc);
@@ -602,14 +602,14 @@ namespace Engine {
 
 	int ShaderProgram::GetActiveUniformI(uint32_t index, uint32_t pName) {
 		int value = 0;
-		glGetActiveUniformsiv(*this, 1, &index, pName, &value);
+		glGetActiveUniformsiv(static_cast<IDType>(*this), 1, &index, pName, &value);
 
 		return value;
 	}
 
 	int ShaderProgram::GetActiveUniformBlockI(uint32_t index, uint32_t pName) {
 		int value = 0;
-		glGetActiveUniformBlockiv(*this, index, pName, &value);
+		glGetActiveUniformBlockiv(static_cast<IDType>(*this), index, pName, &value);
 
 		return value;
 	}
@@ -618,7 +618,7 @@ namespace Engine {
 		const size_t length = static_cast<size_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_NAME_LENGTH));
 		std::string name(length + 1, 0);
 
-		glGetActiveUniformName(*this, index, static_cast<GLsizei>(length), nullptr, name.data());
+		glGetActiveUniformName(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), nullptr, name.data());
 		return name;
 	}
 
@@ -651,8 +651,8 @@ namespace Engine {
 		uint32_t length = GetActiveUniformI(index, GL_UNIFORM_NAME_LENGTH);
 
 		info.Name = std::string(length, 0);
-		glGetActiveUniform(*this, index, length, nullptr, &info.Size, &info.Type, info.Name.data());
-		info.Location = glGetUniformLocation(*this, info.Name.data());
+		glGetActiveUniform(static_cast<IDType>(*this), index, length, nullptr, &info.Size, &info.Type, info.Name.data());
+		info.Location = glGetUniformLocation(static_cast<IDType>(*this), info.Name.data());
 
 		if (info.Size > 1 && info.Name.ends_with("[0]")) {
 			info.Name.resize(info.Name.size() - 3); //remove "[0]"

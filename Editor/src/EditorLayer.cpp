@@ -19,7 +19,7 @@
 namespace Editor {
 	bool DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size,
 	                    const ImVec4& tinitColor) {
-		return ImGui::ImageButton(name.c_str(), icon->ID(), {size, size}, {0.0f, 0.0f}, {1.0f, 1.0f},
+		return ImGui::ImageButton(name.c_str(), icon->RendererID(), {size, size}, {0.0f, 0.0f}, {1.0f, 1.0f},
 		                          {0.0f, 0.0f, 0.0f, 0.0f}, tinitColor);
 	}
 
@@ -237,7 +237,7 @@ namespace Editor {
 		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
 
 		const auto texture = m_Framebuffer->GetColorTextureAttachment();
-		ImGui::Image(texture->ID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
+		ImGui::Image(texture->RendererID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
 
 		if (ImGui::BeginDragDropTarget()) {
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {

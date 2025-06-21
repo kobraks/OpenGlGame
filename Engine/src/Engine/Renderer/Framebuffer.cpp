@@ -149,7 +149,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::Bind(bool adjustViewport) const {
-		glBindFramebuffer(GL_FRAMEBUFFER, m_Internals->Specification.SwapchainTarget ? 0u : *this);
+		glBindFramebuffer(GL_FRAMEBUFFER, m_Internals->Specification.SwapchainTarget ? 0u : static_cast<IDType>(*this));
 
 		if (adjustViewport) {
 			SetViewport({0, 0}, m_Internals->Specification.Size);
@@ -218,13 +218,13 @@ namespace Engine {
 						"SetDrawBuffers failed: Number of draw buffers ({}) exceeds available draw buffers count ({})",
 						drawBuffers, buffers.size()).c_str());
 
-			glNamedFramebufferDrawBuffers(*this, static_cast<GLsizei>(drawBuffers), buffers.data());
+			glNamedFramebufferDrawBuffers(static_cast<IDType>(*this), static_cast<GLsizei>(drawBuffers), buffers.data());
 		}
 		else {
 			if (m_Internals->ColorAttachmentCount > 0)
-				glNamedFramebufferDrawBuffer(*this, GL_COLOR_ATTACHMENT0);
+				glNamedFramebufferDrawBuffer(static_cast<IDType>(*this), GL_COLOR_ATTACHMENT0);
 			else
-				glNamedFramebufferDrawBuffer(*this, GL_NONE);
+				glNamedFramebufferDrawBuffer(static_cast<IDType>(*this), GL_NONE);
 		}
 	}
 
@@ -290,7 +290,7 @@ namespace Engine {
 		              "Present() must be called on a swapchain framebuffer");
 		ENGINE_ASSERT(source->GetSpecification().AllowBlit, "Source framebuffer must have AllowBlit = true");
 
-		glBlitNamedFramebuffer(*source, 0, 0, 0, static_cast<GLint>(source->Width()),
+		glBlitNamedFramebuffer(static_cast<IDType>(*source), 0, 0, 0, static_cast<GLint>(source->Width()),
 		                       static_cast<GLint>(source->Height()), 0, 0, static_cast<GLint>(Width()),
 		                       static_cast<GLint>(Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
 	}
@@ -300,7 +300,7 @@ namespace Engine {
 		ENGINE_ASSERT(target->GetSpecification().AllowBlit, "target framebuffer must allow blit!");
 		ENGINE_ASSERT(target->GetSpecification().SwapchainTarget, "Use Present() for blitting to swapchain!");
 
-		glBlitNamedFramebuffer(*this, *target, 0, 0, static_cast<GLint>(target->Width()),
+		glBlitNamedFramebuffer(static_cast<IDType>(*this), static_cast<IDType>(*target), 0, 0, static_cast<GLint>(target->Width()),
 		                       static_cast<GLint>(target->Height()), 0, 0, static_cast<GLint>(Width()),
 		                       static_cast<GLint>(Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
 	}
@@ -356,7 +356,7 @@ namespace Engine {
 			return;
 
 		if (!specs.Label.empty())
-			glObjectLabel(GL_FRAMEBUFFER, *this, -1, specs.Label.c_str());
+			glObjectLabel(GL_FRAMEBUFFER, static_cast<IDType>(*this), -1, specs.Label.c_str());
 
 		SetUpAttachments();
 		SetDrawBuffers(m_Internals->ColorAttachmentCount);
@@ -439,7 +439,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel) {
-		glNamedFramebufferTexture(*this, attachmentPoint, static_cast<GLuint>(*attachment),
+		glNamedFramebufferTexture(static_cast<IDType>(*this), attachmentPoint, static_cast<GLuint>(*attachment),
 		                          static_cast<GLint>(mipLevel));
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' to point {} (mip={})",
@@ -447,7 +447,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
-		glNamedFramebufferTextureLayer(*this, attachmentPoint, static_cast<GLuint>(*attachment),
+		glNamedFramebufferTextureLayer(static_cast<IDType>(*this), attachmentPoint, static_cast<GLuint>(*attachment),
 		                               static_cast<GLint>(mipLevel),
 		                               static_cast<GLint>(layer));
 
@@ -456,7 +456,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment) {
-		glNamedFramebufferRenderbuffer(*this, attachmentPoint, GL_RENDERBUFFER, *attachment);
+		glNamedFramebufferRenderbuffer(static_cast<IDType>(*this), attachmentPoint, GL_RENDERBUFFER, *attachment);
 		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer to point {}",
 			Label(), Utils::AttachmentPointToString(attachmentPoint));
 	}

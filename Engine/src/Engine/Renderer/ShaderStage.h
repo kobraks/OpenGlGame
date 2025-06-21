@@ -44,8 +44,8 @@ namespace Engine {
 		void SetSource(Ref<ShaderSource> source);
 		Ref<ShaderSource> GetSource() const { return m_GLState->Source; }
 
-		operator IDType() const { return m_GLState->Shader; }
-		IDType ID() const { return m_GLState->Shader; }
+		explicit operator IDType() const { return m_GLState->Shader; }
+		IDType RendererID() const { return m_GLState->Shader; }
 
 		Type GetType() const { return m_GLState->Type; }
 

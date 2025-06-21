@@ -98,12 +98,12 @@ namespace Engine {
 			return;
 
 		m_GLState->Label = label;
-		glObjectLabel(GL_SHADER, *this, -1, m_GLState->Label.c_str());
+		glObjectLabel(GL_SHADER, static_cast<IDType>(*this), -1, m_GLState->Label.c_str());
 	}
 
 	ShaderCompileResult ShaderStage::Compile() {
 		LOG_GL_DEBUG("Compiling {} [id: {}] {} Shader", m_GLState->Label, m_GLState->Shader, Utils::ShaderTypeString(m_GLState->Type));
-		glCompileShader(*this);
+		glCompileShader(static_cast<IDType>(*this));
 
 		ShaderCompileResult result;
 		int status = GetParameter(GL_COMPILE_STATUS);
@@ -141,7 +141,7 @@ namespace Engine {
 
 		m_GLState->Source = source;
 
-		glShaderSource(*this, 1, &cstr, nullptr);
+		glShaderSource(static_cast<IDType>(*this), 1, &cstr, nullptr);
 
 		FetchLog();
 	}
@@ -154,7 +154,7 @@ namespace Engine {
 	}
 
 	void ShaderStage::GetParameter(uint32_t pName, int* params) const {
-		glGetShaderiv(*this, pName, params);
+		glGetShaderiv(static_cast<IDType>(*this), pName, params);
 	}
 
 	void ShaderStage::FetchLog() {
@@ -163,7 +163,7 @@ namespace Engine {
 		if (length > 0) {
 			m_GLState->LogMessage.resize(length + 1, 0);
 
-			glGetShaderInfoLog(*this, length, nullptr, m_GLState->LogMessage.data());
+			glGetShaderInfoLog(static_cast<IDType>(*this), length, nullptr, m_GLState->LogMessage.data());
 
 			boost::trim(m_GLState->LogMessage);
 		}

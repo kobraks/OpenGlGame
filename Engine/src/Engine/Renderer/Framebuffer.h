@@ -31,8 +31,8 @@ namespace Engine {
 
 		static Ref<Framebuffer> Create(const FramebufferSpecification& specification);
 
-		operator IDType() const { return m_Internals->ID; }
-		uint32_t ID() const { return m_Internals->ID;  }
+		explicit operator IDType() const { return m_Internals->ID; }
+		uint32_t RendererID() const { return m_Internals->ID;  }
 
 		void Bind(bool adjustViewport = true) const;
 

@@ -48,7 +48,7 @@ namespace Engine {
 		BufferTarget Target() const { return m_State->Target; }
 
 		IDType RendererID() const { return m_State->RendererID; }
-		operator IDType() const { return m_State->RendererID; }
+		explicit operator IDType() const { return m_State->RendererID; }
 
 		void SetLabel(const std::string& label);
 		std::string_view Label() const { return m_State->Label; }

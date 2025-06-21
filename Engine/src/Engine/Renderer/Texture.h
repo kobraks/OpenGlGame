@@ -29,7 +29,7 @@ namespace Engine {
 		~Texture() = default;
 
 		[[nodiscard]] explicit operator IDType() const { return m_Internals->ID; }
-		[[nodiscard]] IDType ID() const { return m_Internals->ID; }
+		[[nodiscard]] IDType RendererID() const { return m_Internals->ID; }
 
 		void GenerateMipMaps() const;
 

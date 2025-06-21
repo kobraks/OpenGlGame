@@ -81,8 +81,8 @@ namespace Engine {
 		static bool SaveBinary(Ref<ShaderProgram> program, std::filesystem::path path);
 		static Ref<ShaderProgram> LoadBinary(std::filesystem::path path);
 
-		operator IDType() const { return m_GLState->Program;  }
-		IDType ID() const { return m_GLState->Program; }
+		explicit operator IDType() const { return m_GLState->Program;  }
+		IDType RendererID() const { return m_GLState->Program; }
 
 		bool IsLinked() const { return m_GLState->Linked; }
 		std::string_view Label() const { return m_GLState->Label; }
@@ -334,7 +334,7 @@ namespace Engine {
 		if (iter != std::end(container))
 			location = iter->second;
 		else
-			location = container.emplace(std::string(name), glFunction(*this, name.data())).first->second;
+			location = container.emplace(std::string(name), glFunction(static_cast<IDType>(*this), name.data())).first->second;
 
 		return location;
 	}
