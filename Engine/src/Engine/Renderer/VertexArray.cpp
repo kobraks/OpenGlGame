@@ -82,6 +82,13 @@ namespace Engine {
 
 	}
 
+	Ref<VertexArray> VertexArray::Create(const std::string& label) {
+		auto vertexArray = MakeRef<VertexArray>();
+		vertexArray->SetLabel(label);
+		LOG_GL_DEBUG("Creating vertex array with ID: {}, Label: {}", vertexArray->RendererID());
+		return vertexArray;
+	}
+
 	void VertexArray::Bind() const {
 		glBindVertexArray(static_cast<IDType>(*this));
 	}

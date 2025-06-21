@@ -13,7 +13,7 @@ namespace Engine {
 	public:
 		using IDType = uint32_t;
 
-		VertexArray();
+		static Ref<VertexArray> Create(const std::string& label = "");
 
 		explicit operator IDType() const { return m_GLState->ID; }
 		IDType RendererID() const { return m_GLState->ID; }
@@ -29,10 +29,27 @@ namespace Engine {
 
 		void Clear();
 
-		const Ref<IndexBuffer>& GetIndexBuffer() const { return m_GLState->IndexBuffer; }
 		const std::vector<Ref<VertexBuffer>>& GetVertexBuffers() const { return m_GLState->VertexBuffers; }
 
+		Ref<IndexBuffer> GetIndexBuffer() const {
+			ENGINE_ASSERT(m_GLState->IndexBuffer, "Index buffer is not set!");
+			return m_GLState->IndexBuffer;
+		}
+
+		Ref<VertexBuffer> GetVertexBuffer(size_t index) const {
+			if (m_GLState->VertexBuffers.empty())
+				throw std::runtime_error("No vertex buffers available!");
+
+			ENGINE_ASSERT(index < m_GLState->VertexBuffers.size(), "Vertex buffer index out of range!");
+			if (index >= m_GLState->VertexBuffers.size())
+				throw std::out_of_range("Vertex buffer index out of range!");
+
+			return m_GLState->VertexBuffers[index];
+		}
+
 	private:
+		VertexArray();
+
 		struct GLState {
 			IDType ID{};
 
