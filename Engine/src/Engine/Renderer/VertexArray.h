@@ -47,6 +47,14 @@ namespace Engine {
 			return m_GLState->VertexBuffers[index];
 		}
 
+		bool HasIndexBuffer() const {
+			return m_GLState->IndexBuffer != nullptr;
+		}
+
+		bool HasVertexBuffers() const {
+			return !m_GLState->VertexBuffers.empty();
+		}
+
 	private:
 		VertexArray();
 
