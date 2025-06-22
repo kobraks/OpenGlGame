@@ -83,9 +83,9 @@ namespace Engine {
 	}
 
 	Ref<VertexArray> VertexArray::Create(const std::string& label) {
-		auto vertexArray = MakeRef<VertexArray>();
+		auto vertexArray = Ref<VertexArray>(new VertexArray());
 		vertexArray->SetLabel(label);
-		LOG_GL_DEBUG("Creating vertex array with ID: {}, Label: {}", vertexArray->RendererID());
+		LOG_GL_DEBUG("Creating vertex array with ID: {}, Label: {}", vertexArray->RendererID(), label);
 		return vertexArray;
 	}
 
