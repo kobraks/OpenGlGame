@@ -32,12 +32,14 @@ namespace Engine {
 		bool Empty() const { return m_Data == nullptr || m_Size == 0; }
 
 		static Buffer Copy(const void* data, SizeType size);
+		static Buffer Copy(const Buffer& buffer);
 		static Buffer FromSpan(std::span<const std::byte> span);
 
 		void Allocate(SizeType size);
 		void Resize(SizeType newSize);
 		void Release();
-		void ZeroInitialize();
+		void ZeroInitialize() { if (!Empty()) Fill(static_cast<std::byte>(0)); }
+		void Fill(std::byte value);
 
 		std::byte* Data() { return m_Data.get(); }
 		const std::byte* Data() const { return m_Data.get(); }
@@ -45,6 +47,8 @@ namespace Engine {
 		SizeType Size() const { return m_Size; }
 
 		BufferView Slice(SizeType offset, SizeType length) const;
+
+		Buffer Clone() const;
 
 		std::span<std::byte> AsSpan(SizeType offset = 0);
 		std::span<const std::byte> AsSpan(SizeType offset = 0) const;

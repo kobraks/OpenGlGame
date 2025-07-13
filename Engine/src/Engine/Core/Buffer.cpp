@@ -16,7 +16,10 @@ namespace Engine {
 
 	Buffer::Buffer(const void* data, SizeType size) {
 		Allocate(size);
-		std::memcpy(m_Data.get(), data, size);
+
+		if (data) {
+			std::memcpy(m_Data.get(), data, size);
+		}
 	}
 
 	Buffer::Buffer(const Buffer& other, SizeType offset) {
@@ -68,6 +71,10 @@ namespace Engine {
 		return Buffer(data, size);
 	}
 
+	Buffer Buffer::Copy(const Buffer& buffer) {
+		return Buffer(buffer.Data(), buffer.Size());
+	}
+
 	Buffer Buffer::FromSpan(std::span<const std::byte> span) {
 		return Buffer(span.data(), span.size_bytes());
 	}
@@ -101,13 +108,20 @@ namespace Engine {
 		m_Size = 0;
 	}
 
-	void Buffer::ZeroInitialize() {
-		if (m_Data)
-			std::memset(m_Data.get(), 0, m_Size);
+	void Buffer::Fill(std::byte value) {
+		if (m_Data) {
+			std::memset(m_Data.get(), static_cast<unsigned char>(value), m_Size);
+		} else {
+			throw std::runtime_error("Buffer::Fill: Buffer is not allocated");
+		}
 	}
 
 	BufferView Buffer::Slice(SizeType offset, SizeType length) const {
 		return BufferView(*this, offset, length);
+	}
+
+	Buffer Buffer::Clone() const {
+		return Buffer(m_Data.get(), m_Size);
 	}
 
 	std::span<std::byte> Buffer::AsSpan(SizeType offset) {

@@ -69,6 +69,8 @@ namespace Engine {
 
         operator bool() const { return m_Data != nullptr; }
 
+		bool Empty() const { return m_Data == nullptr || m_Size == 0; }
+
 		template<typename T>
 		bool IsAligned(SizeType offset = 0) const;
 
