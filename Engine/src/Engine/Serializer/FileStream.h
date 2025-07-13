@@ -16,9 +16,9 @@ namespace Engine {
 		~FileStreamWriter() override;
 
 		bool IsStreamGood() const final { return m_Stream.good(); }
-		size_t GetStreamPosition() override { return m_Stream.tellp(); }
-		void SetStreamPosition(size_t position) override { m_Stream.seekp(position); }
-		bool WriteData(const char *data, size_t size) final;
+		std::size_t GetStreamPosition() override { return m_Stream.tellp(); }
+		void SetStreamPosition(std::size_t position) override { m_Stream.seekp(position); }
+		bool WriteData(const std::byte *data, std::size_t size) final;
 
 	private:
 		std::filesystem::path m_Path;
@@ -32,9 +32,9 @@ namespace Engine {
 		~FileStreamReader() override;
 
 		bool IsStreamGood() const final { return m_Stream.good(); }
-		size_t GetStreamPosition() override { return m_Stream.tellg(); }
-		void SetStreamPosition(size_t position) override { m_Stream.seekg(position); }
-		bool ReadData(char *destination, size_t size) final;
+		std::size_t GetStreamPosition() override { return m_Stream.tellg(); }
+		void SetStreamPosition(std::size_t position) override { m_Stream.seekg(position); }
+		bool ReadData(std::byte *destination, std::size_t size) final;
 
 	private:
 		std::filesystem::path m_Path;

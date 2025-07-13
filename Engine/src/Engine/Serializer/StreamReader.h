@@ -12,18 +12,18 @@ namespace Engine {
 		virtual ~StreamReader() = default;
 
 		virtual bool IsStreamGood() const = 0;
-		virtual size_t GetStreamPosition() = 0;
-		virtual void SetStreamPosition(size_t position) = 0;
-		virtual bool ReadData(char *destination, size_t size) = 0;
+		virtual std::size_t GetStreamPosition() = 0;
+		virtual void SetStreamPosition(std::size_t position) = 0;
+		virtual bool ReadData(std::byte *destination, std::size_t size) = 0;
 
 		operator bool() const { return IsStreamGood(); }
 
-		bool ReadBuffer(Buffer &buffer, size_t size = 0);
+		bool ReadBuffer(Buffer &buffer, Buffer::SizeType size = 0);
 		bool ReadString(std::string &string);
 
 		template<typename T>
 		bool ReadRaw(T &type) {
-			bool success = ReadData(reinterpret_cast<char *>(&type), sizeof(T));
+			bool success = ReadData(reinterpret_cast<std::byte *>(&type), sizeof(T));
 			ENGINE_ASSERT(success);
 			return success;
 		}

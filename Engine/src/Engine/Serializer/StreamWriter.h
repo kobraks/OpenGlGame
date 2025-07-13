@@ -12,20 +12,20 @@ namespace Engine {
 		virtual ~StreamWriter() = default;
 
 		virtual bool IsStreamGood() const = 0;
-		virtual size_t GetStreamPosition() = 0;
-		virtual void SetStreamPosition(size_t position) = 0;
-		virtual bool WriteData(const char *data, size_t size) = 0;
+		virtual std::size_t GetStreamPosition() = 0;
+		virtual void SetStreamPosition(std::size_t position) = 0;
+		virtual bool WriteData(const std::byte *data, std::size_t size) = 0;
 
 		operator bool() const { return IsStreamGood(); }
 
 		void WriteBuffer(Buffer buffer, bool writeSize = true);
-		void WriteZero(size_t size);
+		void WriteZero(std::size_t size);
 		void WriteString(const std::string &string);
 		void WriteString(std::string_view string);
 
 		template<typename T>
 		void WriteRaw(const T &type) {
-			bool success = WriteData(reinterpret_cast<const char *>(&type), sizeof(T));
+			bool success = WriteData(reinterpret_cast<const std::byte *>(&type), sizeof(T));
 			ENGINE_ASSERT(success);
 		}
 
