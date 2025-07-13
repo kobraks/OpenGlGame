@@ -26,6 +26,7 @@ namespace Engine {
 	};
 
 	class FileStreamReader : public StreamReader {
+	public:
 		FileStreamReader(const std::filesystem::path &path);
 		FileStreamReader(const FileStreamReader&) = delete;
 

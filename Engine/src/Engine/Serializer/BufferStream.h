@@ -27,6 +27,7 @@ namespace Engine {
 	};
 
 	class BufferStreamReader : public StreamReader {
+	public:
 		BufferStreamReader(Buffer targetBuffer, Buffer::SizeType position = 0);
 		BufferStreamReader(const BufferStreamWriter&) = delete;
 		virtual ~BufferStreamReader() override = default;
