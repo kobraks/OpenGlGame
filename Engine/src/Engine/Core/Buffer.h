@@ -55,7 +55,8 @@ namespace Engine {
 		std::span<std::byte> AsSpan(SizeType count, SizeType offset = 0);
 		std::span<const std::byte> AsSpan(SizeType count, SizeType offset = 0) const;
 
-		void Write(const void* data, SizeType size, SizeType offset = 0);
+		void Write(const std::byte* data, SizeType size, SizeType offset = 0);
+		void Write(const BufferView& buffer, SizeType offset = 0);
 
 		template<typename T>
 		T& Read(SizeType offset = 0);

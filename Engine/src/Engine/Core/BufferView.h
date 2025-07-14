@@ -14,14 +14,14 @@ namespace Engine {
 
 		BufferView() = default;
 
-		BufferView(std::byte* data, SizeType size);
-		BufferView(const void* data, SizeType size);
+		BufferView(std::byte* data, SizeType size, bool allowWrite = false);
+		BufferView(const void* data, SizeType size, bool allowWrite = false);
 
-		BufferView(const Buffer& buffer, SizeType offset = 0);
-		BufferView(const Buffer& buffer, SizeType offset, SizeType length);
+		BufferView(const Buffer& buffer, SizeType offset = 0, bool allowWrite = false);
+		BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite = false);
 
-		BufferView(const BufferView& buffer, SizeType offset = 0);
-		BufferView(const BufferView& buffer, SizeType offset, SizeType length);
+		BufferView(const BufferView& buffer, SizeType offset = 0, bool allowWrite = false);
+		BufferView(const BufferView& buffer, SizeType offset, SizeType length, bool allowWrite = false);
 
 		bool operator==(const BufferView& rth) const;
 
@@ -67,6 +67,21 @@ namespace Engine {
 		std::byte* Data() { return m_Data; }
 		const std::byte* Data() const { return m_Data; }
 
+		void Write(const std::byte* data, SizeType size, SizeType offset = 0);
+
+		void Fill(std::byte value);
+
+		void FillZeros() { Fill(static_cast<std::byte>(0)); }
+
+		template<typename T>
+		void Write(const T& value, SizeType offset = 0) {
+			Write(&value, sizeof(T), offset);
+		}
+
+		void Write(const BufferView& buffer, SizeType offset = 0);
+
+		bool IsWritable() const { return m_AllowWrite; }
+
         operator bool() const { return m_Data != nullptr; }
 
 		bool Empty() const { return m_Data == nullptr || m_Size == 0; }
@@ -86,6 +101,8 @@ namespace Engine {
 	private:
         std::byte* m_Data = nullptr;
         SizeType m_Size = 0;
+
+		bool m_AllowWrite = true; // Allows writing to the buffer view, useful for read-only views
 	};
 
 	template <typename T>

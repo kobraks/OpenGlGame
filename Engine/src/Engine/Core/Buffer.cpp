@@ -117,7 +117,7 @@ namespace Engine {
 	}
 
 	BufferView Buffer::Slice(SizeType offset, SizeType length) const {
-		return BufferView(*this, offset, length);
+		return BufferView(*this, offset, length, true);
 	}
 
 	Buffer Buffer::Clone() const {
@@ -159,7 +159,15 @@ namespace Engine {
 		return { m_Data.get() + offset, count};
 	}
 
-	void Buffer::Write(const void* data, SizeType size, SizeType offset) {
+	void Buffer::Write(const BufferView& buffer, SizeType offset) {
+		ENGINE_ASSERT(offset + buffer.Size() <= m_Size);
+		if (offset + buffer.Size() > m_Size)
+			throw std::runtime_error("Buffer::Write: Overflow");
+
+		std::memcpy(m_Data.get() + offset, buffer.Data(), buffer.Size());
+	}
+
+	void Buffer::Write(const std::byte* data, SizeType size, SizeType offset) {
 		ENGINE_ASSERT(offset + size <= m_Size);
 		if (offset + size > m_Size)
 			throw std::runtime_error("Buffer::Write: Overflow");
