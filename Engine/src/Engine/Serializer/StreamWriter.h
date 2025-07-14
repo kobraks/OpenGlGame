@@ -11,6 +11,7 @@ namespace Engine {
 	public:
 		virtual ~StreamWriter() = default;
 
+		virtual void Flush() {}
 		virtual bool IsStreamGood() const = 0;
 		virtual std::size_t GetStreamPosition() = 0;
 		virtual void SetStreamPosition(std::size_t position) = 0;
