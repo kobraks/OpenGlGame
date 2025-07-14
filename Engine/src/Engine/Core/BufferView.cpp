@@ -74,18 +74,6 @@ namespace Engine {
 		std::memcpy(destination, m_Data + offset, size);
 	}
 
-	void BufferView::Write(const std::byte* data, SizeType size, SizeType offset) {
-		ENGINE_ASSERT(m_AllowWrite, "BufferView::Write: Attempting to write to a read-only buffer view.");
-		if (!m_AllowWrite)
-			throw std::runtime_error("BufferView::Write: Attempting to write to a read-only buffer view.");
-
-		ENGINE_ASSERT(offset + size <= m_Size);
-		if (offset + size > m_Size)
-			throw std::out_of_range(fmt::format("BufferView::Write: Out of bounds (offset={}, size={}, buffer size={})", offset, size, m_Size));
-
-		std::memcpy(m_Data + offset, data, size);
-	}
-
 	void BufferView::Fill(std::byte value) {
 		ENGINE_ASSERT(m_AllowWrite, "BufferView::Fill: Attempting to fill a read-only buffer view.");
 		if (!m_AllowWrite)
@@ -97,15 +85,15 @@ namespace Engine {
 			throw std::runtime_error("BufferView::Fill: Cannot fill an empty buffer view.");
 	}
 
-	void BufferView::Write(const BufferView& buffer, SizeType offset) {
+	void BufferView::Write(const std::byte* data, SizeType size, SizeType offset) {
 		ENGINE_ASSERT(m_AllowWrite, "BufferView::Write: Attempting to write to a read-only buffer view.");
 		if (!m_AllowWrite)
 			throw std::runtime_error("BufferView::Write: Attempting to write to a read-only buffer view.");
 
-		ENGINE_ASSERT(offset + buffer.Size() <= m_Size);
-		if (offset + buffer.Size() > m_Size)
-			throw std::out_of_range(fmt::format("BufferView::Write: Out of bounds (offset={}, size={}, buffer size={})", offset, buffer.Size(), m_Size));
+		ENGINE_ASSERT(offset + size <= m_Size);
+		if (offset + size > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::Write: Out of bounds (offset={}, size={}, buffer size={})", offset, size, m_Size));
 
-		std::memcpy(m_Data + offset, buffer.Data(), buffer.Size());
+		std::memcpy(m_Data + offset, data, size);
 	}
 }

@@ -137,11 +137,7 @@ namespace Engine {
 	}
 
 	void Buffer::Write(const BufferView& buffer, SizeType offset) {
-		ENGINE_ASSERT(offset + buffer.Size() <= m_Size);
-		if (offset + buffer.Size() > m_Size)
-			throw std::runtime_error("Buffer::Write: Overflow");
-
-		std::memcpy(m_Data.get() + offset, buffer.Data(), buffer.Size());
+		Write(buffer.Data(), buffer.Size(), offset);
 	}
 
 	void Buffer::Write(const std::byte* data, SizeType size, SizeType offset) {

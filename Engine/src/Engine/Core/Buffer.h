@@ -49,6 +49,11 @@ namespace Engine {
 
 		void Write(const std::byte* data, SizeType size, SizeType offset = 0);
 		void Write(const BufferView& buffer, SizeType offset = 0);
+
+		template <typename T>
+		void Write(const T& value, SizeType offset = 0) {
+			Write(reinterpret_cast<const std::byte*>(&value), sizeof(T), offset);
+		}
 	private:
 		std::unique_ptr<std::byte[]> m_Data = nullptr;
 		SizeType m_Size = 0;

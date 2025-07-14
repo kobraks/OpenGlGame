@@ -12,8 +12,8 @@ namespace Engine {
 		BufferView(std::byte* data, SizeType size, bool allowWrite = false);
 		BufferView(const void* data, SizeType size, bool allowWrite = false);
 
-		BufferView(const Buffer& buffer, SizeType offset = 0, bool allowWrite = false);
-		BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite = false);
+		BufferView(const Buffer& buffer, SizeType offset = 0, bool allowWrite = true);
+		BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite = true);
 
 		BufferView(const BufferView& buffer, SizeType offset = 0, bool allowWrite = false);
 		BufferView(const BufferView& buffer, SizeType offset, SizeType length, bool allowWrite = false);
@@ -34,18 +34,17 @@ namespace Engine {
 
 		void Read(std::byte* destination, SizeType size, SizeType offset = 0) const;
 
-		void Write(const std::byte* data, SizeType size, SizeType offset = 0);
-
 		void Fill(std::byte value);
 
 		void FillZeros() { Fill(static_cast<std::byte>(0)); }
 
-		template<typename T>
-		void Write(const T& value, SizeType offset = 0) {
-			Write(&value, sizeof(T), offset);
-		}
+		void Write(const std::byte* data, SizeType size, SizeType offset = 0);
+		void Write(const BufferView& buffer, SizeType offset = 0) { Write(buffer.Data(), buffer.Size(), offset); }
 
-		void Write(const BufferView& buffer, SizeType offset = 0);
+		template <typename T>
+		void Write(const T& value, SizeType offset = 0) {
+			Write(reinterpret_cast<const std::byte*>(&value), sizeof(T), offset);
+		}
 
 		bool IsWritable() const { return m_AllowWrite; }
 
