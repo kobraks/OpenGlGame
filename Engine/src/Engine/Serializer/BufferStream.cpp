@@ -2,8 +2,10 @@
 #include "Engine/Serializer/BufferStream.h"
 
 namespace Engine {
-	BufferStreamWriter::BufferStreamWriter(Buffer& targetBuffer, Buffer::SizeType position) : m_TargetBuffer(targetBuffer),
-		m_BufferPosition(position) {}
+	BufferStreamWriter::BufferStreamWriter(BufferView& targetBuffer, BufferView::SizeType position) : m_TargetBuffer(targetBuffer),
+		m_BufferPosition(position), m_BufferBeginPosition(position) {
+		ENGINE_ASSERT(m_TargetBuffer.IsWritable(), "BufferStreamWriter: Target buffer must be writable.");
+	}
 
 	bool BufferStreamWriter::WriteData(const std::byte *data, std::size_t size) {
 		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
@@ -12,14 +14,14 @@ namespace Engine {
 		if(!valid)
 			return false;
 
-		std::memcpy(m_TargetBuffer.Data() + m_BufferPosition, data, size);
+		m_TargetBuffer.Write(data, size, m_BufferPosition);
 		m_BufferPosition += size;
 
 		return true;
 	}
 
-	BufferStreamReader::BufferStreamReader(Buffer& targetBuffer, Buffer::SizeType position) : m_TargetBuffer(targetBuffer),
-		m_BufferPosition(position) {}
+	BufferStreamReader::BufferStreamReader(BufferView& targetBuffer, BufferView::SizeType position) : m_TargetBuffer(targetBuffer),
+		m_BufferPosition(position), m_BufferBeginPosition(position) {}
 
 	bool BufferStreamReader::ReadData(std::byte *destination, std::size_t size) {
 		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
@@ -28,7 +30,7 @@ namespace Engine {
 		if (!valid)
 			return false;
 
-		std::memcpy(destination, m_TargetBuffer.Data() + m_BufferPosition, size);
+		m_TargetBuffer.Read(destination, size, m_BufferPosition);
 		m_BufferPosition += size;
 
 		return true;
