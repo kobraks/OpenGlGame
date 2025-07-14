@@ -15,8 +15,8 @@ namespace Engine {
 		BufferView(const Buffer& buffer, SizeType offset = 0, bool allowWrite = true);
 		BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite = true);
 
-		BufferView(const BufferView& buffer, SizeType offset = 0, bool allowWrite = false);
-		BufferView(const BufferView& buffer, SizeType offset, SizeType length, bool allowWrite = false);
+		BufferView(const BufferView& buffer, SizeType offset = 0);
+		BufferView(const BufferView& buffer, SizeType offset, SizeType length);
 
 		bool operator==(const BufferView& rth) const;
 

@@ -34,24 +34,28 @@ namespace Engine {
 		m_AllowWrite = allowWrite;
 	}
 
-	BufferView::BufferView(const BufferView& buffer, SizeType offset, bool allowWrite) {
+	BufferView::BufferView(const BufferView& buffer, SizeType offset) {
 		ENGINE_ASSERT(offset <= buffer.m_Size);
 		if (offset > buffer.m_Size)
 			throw std::runtime_error("Buffer overflow!");
 
+		// Iam creating a non-owning, potentially mutable view from const data
+		// Mutability of the view must be respected externally
 		m_Data = const_cast<std::byte*>(static_cast<const std::byte*>(buffer.m_Data) + offset);
 		m_Size = buffer.m_Size - offset;
-		m_AllowWrite = allowWrite;
+		m_AllowWrite = buffer.m_AllowWrite;
 	}
 
-	BufferView::BufferView(const BufferView& buffer, SizeType offset, SizeType length, bool allowWrite) {
+	BufferView::BufferView(const BufferView& buffer, SizeType offset, SizeType length) {
 		ENGINE_ASSERT(offset + length <= buffer.m_Size);
 		if (offset + length > buffer.m_Size)
 			throw std::runtime_error("Buffer overflow!");
 
+		// Iam creating a non-owning, potentially mutable view from const data
+		// Mutability of the view must be respected externally
 		m_Data = const_cast<std::byte*>(static_cast<const std::byte*>(buffer.m_Data) + offset);
 		m_Size = length;
-		m_AllowWrite = allowWrite;
+		m_AllowWrite = buffer.m_AllowWrite;
 	}
 
 	bool BufferView::operator==(const BufferView& rth) const {
