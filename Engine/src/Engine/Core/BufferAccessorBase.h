@@ -150,5 +150,10 @@ namespace Engine {
 				throw std::runtime_error(fmt::format("BufferAccessorBase::AsSpan<T>: Misaligned access at offset {}", offset));
 			}
 		}
+
+	private:
+		friend Derived;
+
+		BufferAccessorBase() = default;
 	};
 }
