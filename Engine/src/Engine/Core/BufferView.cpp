@@ -63,7 +63,7 @@ namespace Engine {
 	}
 
 	BufferView BufferView::Slice(SizeType offset, SizeType length) const {
-		return BufferView(*this, offset, length, m_AllowWrite);
+		return BufferView(*this, offset, length);
 	}
 
 	void BufferView::Read(std::byte* destination, SizeType size, SizeType offset) const {
