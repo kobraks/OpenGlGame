@@ -124,39 +124,16 @@ namespace Engine {
 		return Buffer(m_Data.get(), m_Size);
 	}
 
-	std::span<std::byte> Buffer::AsSpan(SizeType offset) {
-		ENGINE_ASSERT(offset <= m_Size);
-		if (offset > m_Size)
-			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
+	void Buffer::Read(std::byte* destination, SizeType size, SizeType offset) const {
+		ENGINE_ASSERT(destination != nullptr, "Buffer::Read: Destination pointer is null");
+		if (destination == nullptr)
+			throw std::invalid_argument("Buffer::Read: Destination pointer is null");
 
-		const auto count = m_Size - offset;
+		ENGINE_ASSERT(offset + size <= m_Size);
+		if (offset + size > m_Size)
+			throw std::runtime_error("Buffer::Read: Overflow");
 
-		return { m_Data.get() + offset, count }; }
-
-	std::span<const std::byte> Buffer::AsSpan(SizeType offset) const {
-		ENGINE_ASSERT(offset <= m_Size);
-		if (offset > m_Size)
-			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
-
-		const auto count = m_Size - offset;
-
-		return { m_Data.get() + offset, count };
-	}
-
-	std::span<std::byte> Buffer::AsSpan(SizeType count, SizeType offset) {
-		ENGINE_ASSERT(count + offset <= m_Size);
-		if (count + offset > m_Size)
-			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
-
-		return { m_Data.get() + offset, count};
-	}
-
-	std::span<const std::byte> Buffer::AsSpan(SizeType count, SizeType offset) const { 
-		ENGINE_ASSERT(count + offset <= m_Size);
-		if (count + offset > m_Size)
-			throw std::out_of_range(fmt::format("Buffer::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
-
-		return { m_Data.get() + offset, count};
+		std::memcpy(destination, m_Data.get() + offset, size);
 	}
 
 	void Buffer::Write(const BufferView& buffer, SizeType offset) {
