@@ -11,7 +11,7 @@ namespace Engine {
 	template<class Derived>
 	class BufferAccessorBase {
 	public:
-		using SizeType = uint64_t;
+		using SizeType = typename Derived::SizeType;
 
 		SizeType Size() const { return DerivedThis()->Size(); }
 		const std::byte* Data() const { return DerivedThis()->Data(); }

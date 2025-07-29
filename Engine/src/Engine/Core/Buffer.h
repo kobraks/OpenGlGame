@@ -27,7 +27,7 @@ namespace Engine {
 		bool Empty() const { return m_Data == nullptr || m_Size == 0; }
 
 		static Buffer Copy(const void* data, SizeType size);
-		static Buffer Copy(const Buffer& buffer);
+		static Buffer Copy(const BufferView& buffer);
 		static Buffer FromSpan(std::span<const std::byte> span);
 
 		void Allocate(SizeType size);

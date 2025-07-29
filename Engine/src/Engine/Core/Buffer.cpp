@@ -68,21 +68,20 @@ namespace Engine {
 	}
 
 	Buffer Buffer::Copy(const void* data, SizeType size) {
-		return Buffer(data, size);
+		return { data, size };
 	}
 
-	Buffer Buffer::Copy(const Buffer& buffer) {
-		return Buffer(buffer.Data(), buffer.Size());
+	Buffer Buffer::Copy(const BufferView& buffer) {
+		return { buffer.Data(), buffer.Size() };
 	}
 
 	Buffer Buffer::FromSpan(std::span<const std::byte> span) {
-		return Buffer(span.data(), span.size_bytes());
+		return { span.data(), span.size_bytes() };
 	}
 
 	void Buffer::Allocate(SizeType size) {
 		if (size == 0) {
-			m_Data.reset();
-			m_Size = 0;
+			Release();
 			return;
 		}
 
@@ -93,6 +92,11 @@ namespace Engine {
 	void Buffer::Resize(SizeType newSize) {
 		if (newSize == m_Size)
 			return;
+
+		if (m_Size >= newSize) {
+			m_Size = newSize;
+			return;
+		}
 
 		auto newData = std::make_unique<std::byte[]>(newSize);
 		if (m_Data && m_Size > 0) {
@@ -117,11 +121,11 @@ namespace Engine {
 	}
 
 	BufferView Buffer::Slice(SizeType offset, SizeType length) const {
-		return BufferView(*this, offset, length, true);
+		return { *this, offset, length, true };
 	}
 
 	Buffer Buffer::Clone() const {
-		return Buffer(m_Data.get(), m_Size);
+		return { m_Data.get(), m_Size };
 	}
 
 	void Buffer::Read(std::byte* destination, SizeType size, SizeType offset) const {

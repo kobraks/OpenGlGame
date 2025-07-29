@@ -22,7 +22,7 @@ namespace Engine {
 		m_AllowWrite = allowWrite;
 	}
 
-	BufferView::BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite) {
+	BufferView::BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite) : m_AllowWrite(allowWrite) {
 		ENGINE_ASSERT(offset + length <= buffer.m_Size)
 		if (offset + length > buffer.m_Size)
 			throw std::runtime_error("Buffer overflow!");
@@ -31,7 +31,6 @@ namespace Engine {
 		// Mutability of the view must be respected externally
 		m_Data = const_cast<std::byte*>(buffer.Data() + offset);
 		m_Size = length;
-		m_AllowWrite = allowWrite;
 	}
 
 	BufferView::BufferView(const BufferView& buffer, SizeType offset) {
@@ -63,7 +62,7 @@ namespace Engine {
 	}
 
 	BufferView BufferView::Slice(SizeType offset, SizeType length) const {
-		return BufferView(*this, offset, length);
+		return { *this, offset, length };
 	}
 
 	void BufferView::Read(std::byte* destination, SizeType size, SizeType offset) const {
