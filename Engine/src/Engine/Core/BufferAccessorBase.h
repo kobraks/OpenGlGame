@@ -8,10 +8,10 @@
 #include <type_traits>
 
 namespace Engine {
-	template<class Derived>
+	template<class Derived, typename SizeT = uint64_t>
 	class BufferAccessorBase {
 	public:
-		using SizeType = typename Derived::SizeType;
+		using SizeType = SizeT;
 
 		SizeType Size() const { return DerivedThis()->Size(); }
 		const std::byte* Data() const { return DerivedThis()->Data(); }

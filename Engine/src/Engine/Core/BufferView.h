@@ -5,8 +5,6 @@ namespace Engine {
 	class Buffer;
 	class BufferView : public BufferAccessorBase<BufferView>{
 	public:
-		using SizeType = uint64_t;
-
 		BufferView() = default;
 
 		BufferView(std::byte* data, SizeType size, bool allowWrite = false);

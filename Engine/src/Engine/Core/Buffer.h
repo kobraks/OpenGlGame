@@ -7,8 +7,6 @@ namespace Engine {
 	class Buffer : public BufferAccessorBase<Buffer> {
 	public:
 		friend class BufferView;
-		using SizeType = uint64_t;
-
 		Buffer() = default;
 		explicit Buffer(SizeType size);
 		explicit Buffer(const BufferView& view);
