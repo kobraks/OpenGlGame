@@ -94,48 +94,11 @@ namespace Editor {
 	}
 
 	void EditorLayer::OnImGuiRender() {
-		static bool dockspaceOpen = true;
-		static bool optFullscreenPersistant = true;
-		bool optFullscreen = optFullscreenPersistant;
-		static ImGuiDockNodeFlags dockspaceFlags = ImGuiDockNodeFlags_None;
-
-		ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-		if (optFullscreen) {
-			const ImGuiViewport* viewport = ImGui::GetMainViewport();
-
-			ImGui::SetNextWindowPos(viewport->Pos);
-			ImGui::SetNextWindowSize(viewport->Size);
-			ImGui::SetNextWindowViewport(viewport->ID);
-
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-
-			windowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize |
-				ImGuiWindowFlags_NoMove;
-			windowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-		}
-
-		if (dockspaceFlags & ImGuiDockNodeFlags_PassthruCentralNode)
-			windowFlags |= ImGuiWindowFlags_NoBackground;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
-		ImGui::Begin("##DockSpace", &dockspaceOpen, windowFlags);
-		ImGui::PopStyleVar();
-
-		if (optFullscreen)
-			ImGui::PopStyleVar(2);
-
-		ImGuiIO& io = ImGui::GetIO();
+		m_DockspaceManager.BeginDockspace();
 		ImGuiStyle& style = ImGui::GetStyle();
 
 		const float minWinSizeX = style.WindowMinSize.x;
 		style.WindowMinSize.x = 370.f;
-
-		if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-			const ImGuiID dockspaceID = ImGui::GetID("MyDockSpace");
-			SetupDefaultDockSpace(dockspaceID);
-			ImGui::DockSpace(dockspaceID, ImVec2(0.f, 0.f), dockspaceFlags);
-		}
 
 		style.WindowMinSize.x = minWinSizeX;
 
@@ -179,7 +142,7 @@ namespace Editor {
 
 		UiToolbar();
 
-		ImGui::End();
+		m_DockspaceManager.EndDockspace();
 	}
 
 	void EditorLayer::OnEvent(Engine::Event& e) {
@@ -488,27 +451,5 @@ namespace Editor {
 		ImGui::PopStyleColor(3);
 
 		ImGui::End();
-	}
-
-	void EditorLayer::SetupDefaultDockSpace(ImGuiID dockSpaceID) {
-		if (ImGui::DockBuilderGetNode(dockSpaceID))
-			return;
-
-		ImGui::DockBuilderRemoveNode(dockSpaceID);
-		ImGui::DockBuilderAddNode(dockSpaceID, ImGuiDockNodeFlags_DockSpace);
-		ImGui::DockBuilderSetNodeSize(dockSpaceID, ImGui::GetMainViewport()->Size);
-
-		ImGuiID dockMainID = dockSpaceID;
-		ImGuiID dockLeft = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Left, 0.2f, nullptr, &dockMainID);
-		ImGuiID dockRight = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Right, 0.25f, nullptr, &dockMainID);
-		ImGuiID dockBottom = ImGui::DockBuilderSplitNode(dockMainID, ImGuiDir_Down, 0.25f, nullptr, &dockMainID);
-		ImGuiID dockCenter = dockMainID;
-
-		ImGui::DockBuilderDockWindow("Scene Hierarchy", dockLeft);
-		ImGui::DockBuilderDockWindow("Properties", dockRight);
-		ImGui::DockBuilderDockWindow("Content Browser", dockBottom);
-		ImGui::DockBuilderDockWindow("Viewport", dockCenter);
-
-		ImGui::DockBuilderFinish(dockSpaceID);
 	}
 }
