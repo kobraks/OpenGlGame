@@ -6,7 +6,7 @@
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/ViewportPanel.h"
 
-#include "DockspaceManager.h"
+#include "Managers/DockspaceManager.h"
 
 namespace Editor
 {
