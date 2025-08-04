@@ -2,7 +2,6 @@
 
 #include <Engine/Scene/SceneSerializer.h>
 #include <Engine/Math/Math.h>
-#include <Engine/Renderer/RendererCommand.h>
 #include <Engine/Utils/FileDialogs.h>
 #include <Engine/Project/Project.h>
 
@@ -11,9 +10,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "ImGuizmo.h"
-#include "Engine/Renderer/Builders/FramebufferBuilder.h"
-#include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
 #include "ImGui/imgui_internal.h"
 
 namespace Editor {
@@ -43,15 +39,8 @@ namespace Editor {
 
 		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
 
-		const auto depthTexture = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::Depth24Stencil8).Label("DepthStencilTestViewport");
-		const auto colorBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::RGBA8).Label("ColorBufferViewport");
-		const auto pickerBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::R32I).Label("PickerBufferViewport");
-
-		m_Framebuffer = Engine::FramebufferBuilder().AddColorAttachment(colorBuffer).
-		                                             AddColorAttachment(pickerBuffer).
-		                                             DepthAttachment(depthTexture).
-		                                             Label("Viewport").
-		                                             Build();
+		m_ViewportPanel.SetScene(m_ActiveScene);
+		m_ViewportPanel.SetEditorCamera(&m_EditorCamera);
 
 		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));
 		m_IconPause = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PauseButton.png"));
@@ -67,21 +56,7 @@ namespace Editor {
 	void EditorLayer::OnUpdate() {
 		Layer::OnUpdate();
 
-		m_ActiveScene->OnViewportResize(static_cast<uint32_t>(m_ViewportSize.x),
-		                                static_cast<uint32_t>(m_ViewportSize.y));
-
-		if (const auto size = m_Framebuffer->Size(); m_ViewportSize.x > 0.f && m_ViewportSize.y > 0.f && (size.Width
-			!= static_cast<uint32_t>(m_ViewportSize.x) || size.Height != static_cast<uint32_t>(m_ViewportSize.y))) {
-			m_Framebuffer->Resize({static_cast<uint32_t>(m_ViewportSize.x), static_cast<uint32_t>(m_ViewportSize.y)});
-			m_EditorCamera.SetViewportSize(m_ViewportSize.x, m_ViewportSize.y);
-		}
-
-		m_Framebuffer->Bind();
-		Engine::RendererCommand::SetClearColor({0.1f, 0.1f, 0.1f, 1.f});
-		Engine::RendererCommand::Clear();
-
-		m_Framebuffer->GetColorTextureAttachment()->Clear(-1);
-
+		m_ViewportPanel.OnUpdate();
 
 		switch (m_SceneState) {
 		case SceneState::Edit: {
@@ -99,25 +74,6 @@ namespace Editor {
 			break;
 		}
 		}
-
-		auto [mx, my] = ImGui::GetMousePos();
-		mx -= m_ViewportBounds[0].x;
-		my -= m_ViewportBounds[0].y;
-		const glm::vec2 viewportSize = m_ViewportBounds[1] - m_ViewportBounds[0];
-		my = viewportSize.y - my;
-
-		const int mouseX = static_cast<int>(mx);
-		const int mouseY = static_cast<int>(my);
-
-		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int>(viewportSize.x) && mouseY < static_cast<int>(
-			viewportSize.y)) {
-			const int pixelData = m_Framebuffer->ReadPixel(1, {mouseX, mouseY});
-			m_HoveredEntity = pixelData == -1
-				                  ? Engine::Entity()
-				                  : Engine::Entity(static_cast<entt::entity>(pixelData), m_ActiveScene.get());
-		}
-
-		m_Framebuffer->Unbind();
 	}
 
 	void EditorLayer::OnConstUpdate(const Engine::Time& timeStep) {
@@ -218,85 +174,8 @@ namespace Editor {
 		m_SceneHierarchyPanel.OnImGuiRender();
 		m_ContentBrowserPanel->OnImGuiRender();
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-		ImGui::Begin("Viewport");
-
-		const auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-		const auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-		const auto viewportOffset = ImGui::GetWindowPos();
-
-		m_ViewportBounds[0] = {viewportMinRegion.x + viewportOffset.x, viewportMinRegion.y + viewportOffset.y};
-		m_ViewportBounds[1] = {viewportMaxRegion.x + viewportOffset.x, viewportMaxRegion.y + viewportOffset.y};
-
-		m_ViewportFocused = ImGui::IsWindowFocused();
-		m_ViewportHovered = ImGui::IsWindowHovered();
-
-		Engine::Application::Get().GetImGuiLayer()->BlockEvents(!m_ViewportHovered);
-
-		const ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		m_ViewportSize = {viewportPanelSize.x, viewportPanelSize.y};
-
-		const auto texture = m_Framebuffer->GetColorTextureAttachment();
-		ImGui::Image(texture->RendererID(), ImVec2{m_ViewportSize.x, m_ViewportSize.y}, ImVec2{0, 1}, ImVec2{1, 0});
-
-		if (ImGui::BeginDragDropTarget()) {
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM")) {
-				auto path = static_cast<const wchar_t*>(payload->Data);
-				OpenScene(path);
-			}
-
-			ImGui::EndDragDropTarget();
-		}
-
-		Engine::Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
-
-		if (selectedEntity && m_GuizmoType != -1) {
-			ImGuizmo::SetOrthographic(false);
-			ImGuizmo::SetDrawlist();
-
-			ImGuizmo::SetRect(m_ViewportBounds[0].x, m_ViewportBounds[0].y,
-			                  m_ViewportBounds[1].x - m_ViewportBounds[0].x,
-			                  m_ViewportBounds[1].y - m_ViewportBounds[0].y);
-
-			//Camera
-			//
-			// auto cameraEntity = m_ActiveScene->GetPrimaryCameraEntity();
-			// const auto& camera = cameraEntity.GetComponent<Engine::CameraComponent>().Camera;
-			// const glm::mat4& cameraProjection = camera.GetProjectionMatrix();
-			// glm::mat4 cameraView = glm::inverse(cameraEntity.GetComponent<Engine::TransformComponent>().GetTransform());
-
-			//Editor Camera
-			const glm::mat4& cameraProjection = m_EditorCamera.GetProjectionMatrix();
-			glm::mat4 cameraView = m_EditorCamera.GetViewMatrix();
-
-			auto& tc = selectedEntity.GetComponent<Engine::TransformComponent>();
-			glm::mat4 transform = tc.GetTransform();
-
-			const bool snap = Engine::Keyboard::IsKeyPressed(Engine::Key::LeftControl);
-			float snapValue = 0.5f;
-
-			if (m_GuizmoType == ImGuizmo::OPERATION::ROTATE)
-				snapValue = 45.f;
-
-			float snapValues[3] = {snapValue, snapValue, snapValue};
-
-			Manipulate(value_ptr(cameraView), value_ptr(cameraProjection),
-			           static_cast<ImGuizmo::OPERATION>(m_GuizmoType), ImGuizmo::LOCAL, value_ptr(transform), nullptr,
-			           snap ? snapValues : nullptr);
-
-			if (ImGuizmo::IsUsing()) {
-				glm::vec3 translation, rotation, scale;
-				Engine::Math::DecomposeTransform(transform, translation, rotation, scale);
-
-				const glm::vec3 deltaRotation = rotation - tc.Rotation;
-				tc.Translation = translation;
-				tc.Rotation += deltaRotation;
-				tc.Scale = scale;
-			}
-		}
-
-		ImGui::End(); //End viewport
-		ImGui::PopStyleVar();
+		m_ViewportPanel.SetSelectedEntity(m_SceneHierarchyPanel.GetSelectedEntity());
+		m_ViewportPanel.OnImGuiRender();
 
 		UiToolbar();
 
@@ -342,27 +221,9 @@ namespace Editor {
 			if (control)
 				OnDuplicateEntity();
 			break;
-
-		case Engine::Key::Q:
-			if (!ImGuizmo::IsUsing())
-				m_GuizmoType = -1;
-			break;
-
-		case Engine::Key::W:
-			if (!ImGuizmo::IsUsing())
-				m_GuizmoType = ImGuizmo::OPERATION::TRANSLATE;
-			break;
-
-		case Engine::Key::E:
-			if (!ImGuizmo::IsUsing())
-				m_GuizmoType = ImGuizmo::OPERATION::ROTATE;
-			break;
-
-		case Engine::Key::R:
-			if (!ImGuizmo::IsUsing())
-				m_GuizmoType = ImGuizmo::OPERATION::SCALE;
-			break;
 		}
+
+		m_ViewportPanel.OnKeyPressed(e);
 
 		return false;
 	}
