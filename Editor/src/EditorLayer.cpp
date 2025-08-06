@@ -23,9 +23,10 @@ namespace Editor {
 	void EditorLayer::OnAttach() {
 		Layer::OnAttach();
 
-		m_SceneManager = Engine::MakeScope<SceneManager>();
+		m_SceneContext = Engine::MakeScope<SceneContext>();
+		m_SceneController = Engine::MakeScope<SceneStateController>(m_SceneContext.get());
 
-		m_SceneManager->New();
+		m_SceneContext->New();
 
 		if (Engine::Application::Get().GetSpecification().CommandLineArgs.Count > 1) {
 			OpenProject(Engine::Application::Get().GetSpecification().CommandLineArgs.At(1));
@@ -38,7 +39,7 @@ namespace Editor {
 
 		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
 
-		m_ViewportPanel.SetSceneManager(m_SceneManager.get());
+		m_ViewportPanel.SetSceneContext(m_SceneContext.get());
 		m_ViewportPanel.SetEditorCamera(&m_EditorCamera);
 
 		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));
@@ -57,36 +58,36 @@ namespace Editor {
 
 		m_ViewportPanel.OnUpdate();
 
-		switch (m_SceneManager->GetState()) {
-		case SceneManager::State::Edit: {
+		switch (m_SceneController->GetState()) {
+		case SceneStateController::State::Edit: {
 			m_EditorCamera.OnUpdate();
-			m_SceneManager->GetActiveScene()->OnUpdateEditor(m_EditorCamera);
+			m_SceneContext->GetActiveScene()->OnUpdateEditor(m_EditorCamera);
 			break;
 		}
-		case SceneManager::State::Simulate: {
+		case SceneStateController::State::Simulate: {
 			m_EditorCamera.OnUpdate();
-			m_SceneManager->GetActiveScene()->OnUpdateSimulation(m_EditorCamera);
+			m_SceneContext->GetActiveScene()->OnUpdateSimulation(m_EditorCamera);
 			break;
 		}
-		case SceneManager::State::Play: {
-			m_SceneManager->GetActiveScene()->OnUpdateRuntime();
+		case SceneStateController::State::Play: {
+			m_SceneContext->GetActiveScene()->OnUpdateRuntime();
 			break;
 		}
 		}
 	}
 
 	void EditorLayer::OnConstUpdate(const Engine::Time& timeStep) {
-		switch (m_SceneManager->GetState()) {
-		case SceneManager::State::Edit: {
-			m_SceneManager->GetActiveScene()->OnConstUpdateEditor(timeStep, m_EditorCamera);
+		switch (m_SceneController->GetState()) {
+		case SceneStateController::State::Edit: {
+			m_SceneContext->GetActiveScene()->OnConstUpdateEditor(timeStep, m_EditorCamera);
 			break;
 		}
-		case SceneManager::State::Simulate: {
-			m_SceneManager->GetActiveScene()->OnConstUpdateSimulation(timeStep, m_EditorCamera);
+		case SceneStateController::State::Simulate: {
+			m_SceneContext->GetActiveScene()->OnConstUpdateSimulation(timeStep, m_EditorCamera);
 			break;
 		}
-		case SceneManager::State::Play: {
-			m_SceneManager->GetActiveScene()->OnConstUpdateRuntime(timeStep);
+		case SceneStateController::State::Play: {
+			m_SceneContext->GetActiveScene()->OnConstUpdateRuntime(timeStep);
 			break;
 		}
 		}
@@ -245,8 +246,8 @@ namespace Editor {
 	}
 
 	void EditorLayer::NewScene() {
-		m_SceneManager->New();
-		m_SceneHierarchyPanel.SetContext(m_SceneManager->GetActiveScene());
+		m_SceneContext->New();
+		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OpenScene() {
@@ -256,7 +257,7 @@ namespace Editor {
 	}
 
 	void EditorLayer::OpenScene(const std::filesystem::path& path) {
-		if (m_SceneManager->GetState() != SceneManager::State::Edit)
+		if (m_SceneController->GetState() != SceneStateController::State::Edit)
 			OnSceneStop();
 
 		if (path.extension().string() != ".gscene") {
@@ -267,8 +268,8 @@ namespace Editor {
 		Engine::Ref<Engine::Scene> newScene = Engine::MakeRef<Engine::Scene>();
 		Engine::SceneSerializer serializer(newScene);
 		if (serializer.Deserialize(path)) {
-			m_SceneManager->SetScene(newScene);
-			m_SceneHierarchyPanel.SetContext(m_SceneManager->GetActiveScene());
+			m_SceneContext->Set(newScene);
+			m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 
 			m_EditorScenePath = path;
 		}
@@ -277,7 +278,7 @@ namespace Editor {
 	bool EditorLayer::SaveScene(const std::filesystem::path& path) {
 		if (!path.empty()) {
 			m_EditorScenePath = path;
-			SerializeScene(m_SceneManager->GetActiveScene(), path);
+			SerializeScene(m_SceneContext->GetActiveScene(), path);
 			return true;
 		}
 
@@ -299,42 +300,44 @@ namespace Editor {
 	}
 
 	void EditorLayer::OnScenePlay() {
-		m_SceneManager->Play();
+		m_SceneController->Play();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneManager->GetActiveScene());
+		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnSceneSimulate() {
-		m_SceneManager->Simulate();
+		m_SceneController->Simulate();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneManager->GetActiveScene());
+		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnSceneStop() {
-		m_SceneManager->Stop();
+		m_SceneController->Stop();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneManager->GetActiveScene());
+		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnScenePause() {
-		m_SceneManager->Pause();
+		m_SceneController->Pause();
 	}
 
 	void EditorLayer::OnDuplicateEntity() {
-		if (m_SceneManager->GetState() != SceneManager::State::Edit)
+		if (m_SceneController->GetState() != SceneStateController::State::Edit)
 			return;
 
 		const Engine::Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
 		if (selectedEntity) {
-			Engine::Entity newEntity = m_SceneManager->GetEditorScene()->DuplicateEntity(selectedEntity);
+			Engine::Entity newEntity = m_SceneContext->GetEditorScene()->DuplicateEntity(selectedEntity);
 			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
 		}
 	}
 
 	void EditorLayer::UiToolbar() {
-		const bool hasPlayButton = m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Play;
-		const bool hasSimulateButton = m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Simulate;
-		const bool hasPauseButton = m_SceneManager->GetState() != SceneManager::State::Edit;
+		const auto state = m_SceneController->GetState();
+
+		const bool hasPlayButton = state == SceneStateController::State::Edit || state == SceneStateController::State::Play;
+		const bool hasSimulateButton = state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate;
+		const bool hasPauseButton = state != SceneStateController::State::Edit;
 
 		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + 1;
 
@@ -363,7 +366,7 @@ namespace Editor {
 		ImGui::Begin("##toolbar", nullptr,
 		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		bool toolbarEnabled = static_cast<bool>(m_SceneManager->GetActiveScene());
+		bool toolbarEnabled = static_cast<bool>(m_SceneContext->GetActiveScene());
 
 		auto tintColor = ImVec4(1, 1, 1, 1.f);
 
@@ -374,13 +377,13 @@ namespace Editor {
 		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
 
 		if (hasPlayButton) {
-			const auto& icon = (m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Simulate)
+			const auto& icon = (state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate)
 				                   ? m_IconPlay
 				                   : m_IconStop;
 			if (DrawButtonIcon(icon, "##PlayButton", buttonSize, tintColor) && toolbarEnabled) {
-				if (m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Simulate)
+				if (state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate)
 					OnScenePlay();
-				else if (m_SceneManager->GetState() == SceneManager::State::Play)
+				else if (state == SceneStateController::State::Play)
 					OnSceneStop();
 			}
 		}
@@ -389,24 +392,24 @@ namespace Editor {
 			if (hasPlayButton)
 				ImGui::SameLine(0, spacing);
 
-			const auto& icon = (m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Play)
+			const auto& icon = (state == SceneStateController::State::Edit || state == SceneStateController::State::Play)
 				                   ? m_IconSimulate
 				                   : m_IconStop;
 			if (DrawButtonIcon(icon, "##SimulateButton", buttonSize, tintColor) && toolbarEnabled) {
-				if (m_SceneManager->GetState() == SceneManager::State::Edit || m_SceneManager->GetState() == SceneManager::State::Play)
+				if (state == SceneStateController::State::Edit || state == SceneStateController::State::Play)
 					OnSceneSimulate();
-				else if (m_SceneManager->GetState() == SceneManager::State::Simulate)
+				else if (state == SceneStateController::State::Simulate)
 					OnSceneStop();
 			}
 		}
 
 		if (hasPauseButton) {
-			const bool isPaused = m_SceneManager->GetActiveScene()->IsPaused();
+			const bool isPaused = m_SceneContext->IsPaused();
 			ImGui::SameLine(0, spacing);
 			{
 				const auto& icon = m_IconPause;
 				if (DrawButtonIcon(icon, "##PauseButton", buttonSize, tintColor) && toolbarEnabled) {
-					m_SceneManager->GetActiveScene()->SetPaused(!isPaused);
+					m_SceneContext->SetPaused(!isPaused);
 				}
 			}
 
@@ -415,7 +418,7 @@ namespace Editor {
 				{
 					const auto& icon = m_IconStep;
 					if (DrawButtonIcon(icon, "##StepButton", buttonSize, tintColor) && toolbarEnabled) {
-						m_SceneManager->GetActiveScene()->Step();
+						m_SceneContext->Step();
 					}
 				}
 			}

@@ -7,7 +7,7 @@
 #include "Panels/ViewportPanel.h"
 
 #include "Managers/DockspaceManager.h"
-#include "Managers/SceneManager.h"
+#include "SceneStateController.h"
 
 namespace Editor
 {
@@ -61,7 +61,8 @@ namespace Editor
 
 		Engine::EditorCamera m_EditorCamera;
 
-		Engine::Scope<SceneManager> m_SceneManager;
+		Engine::Scope<SceneContext> m_SceneContext;
+		Engine::Scope<SceneStateController> m_SceneController;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Engine::Scope<ContentBrowserPanel> m_ContentBrowserPanel;

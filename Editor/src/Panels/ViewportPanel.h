@@ -9,16 +9,16 @@
 #include "Engine/Events/KeyEvent.h"
 
 namespace Editor {
-	class SceneManager;
+	class SceneContext;
 
 	class ViewportPanel {
 	public:
 		ViewportPanel();
 
-		void SetSceneManager(SceneManager* manager) { m_SceneManager = manager; }
+		void SetSceneContext(SceneContext* context) { m_Context = context; }
 		void SetEditorCamera(Engine::EditorCamera* camera) { m_EditorCamera = camera; }
 
-		SceneManager* GetSceneManager() const { return m_SceneManager; }
+		SceneContext* GetSceneContext() const { return m_Context; }
 
 		Engine::Ref<Engine::Framebuffer> GetFramebuffer() const { return m_Framebuffer; }
 		Engine::EditorCamera* GetEditorCamera() const { return m_EditorCamera; }
@@ -42,9 +42,10 @@ namespace Editor {
 		void HandleGuizmo();
 
 	private:
-		SceneManager* m_SceneManager;
+		SceneContext* m_Context = nullptr;
 		Engine::EditorCamera* m_EditorCamera = nullptr;
-		Engine::Ref<Engine::Framebuffer> m_Framebuffer;
+
+		Engine::Ref<Engine::Framebuffer> m_Framebuffer = nullptr;
 
 		glm::vec2 m_Size = { 0.f, 0.f };
 		glm::vec2 m_Bounds[2];
