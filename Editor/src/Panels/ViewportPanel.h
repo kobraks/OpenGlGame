@@ -9,15 +9,18 @@
 #include "Engine/Events/KeyEvent.h"
 
 namespace Editor {
+	class SceneManager;
+
 	class ViewportPanel {
 	public:
 		ViewportPanel();
 
-		void SetScene(const Engine::Ref<Engine::Scene>& scene);
-		void SetEditorCamera(Engine::EditorCamera* camera);
+		void SetSceneManager(SceneManager* manager) { m_SceneManager = manager; }
+		void SetEditorCamera(Engine::EditorCamera* camera) { m_EditorCamera = camera; }
+
+		SceneManager* GetSceneManager() const { return m_SceneManager; }
 
 		Engine::Ref<Engine::Framebuffer> GetFramebuffer() const { return m_Framebuffer; }
-		Engine::Ref<Engine::Scene> GetScene() const { return m_Scene; }
 		Engine::EditorCamera* GetEditorCamera() const { return m_EditorCamera; }
 
 		void SetSelectedEntity(Engine::Entity entity) { m_SelectedEntity = entity; }
@@ -39,7 +42,7 @@ namespace Editor {
 		void HandleGuizmo();
 
 	private:
-		Engine::Ref<Engine::Scene> m_Scene;
+		SceneManager* m_SceneManager;
 		Engine::EditorCamera* m_EditorCamera = nullptr;
 		Engine::Ref<Engine::Framebuffer> m_Framebuffer;
 

@@ -38,7 +38,7 @@ namespace Editor {
 
 		m_EditorCamera = Engine::EditorCamera(30.f, 1.778f, 0.1f, 1000.f);
 
-		m_ViewportPanel.SetScene(m_SceneManager->GetActiveScene());
+		m_ViewportPanel.SetSceneManager(m_SceneManager.get());
 		m_ViewportPanel.SetEditorCamera(&m_EditorCamera);
 
 		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));

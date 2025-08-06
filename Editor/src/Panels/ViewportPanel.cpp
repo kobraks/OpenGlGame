@@ -11,6 +11,8 @@
 
 #include "Engine/Math/Math.h"
 
+#include "../Managers/SceneManager.h" // TODO fix include path
+
 #include <ImGui/imgui.h>
 #include "ImGuizmo.h"
 
@@ -27,14 +29,6 @@ namespace Editor {
 			DepthAttachment(depthTexture).
 			Label("Viewport").
 			Build();
-	}
-
-	void ViewportPanel::SetScene(const Engine::Ref<Engine::Scene>& scene) {
-		m_Scene = scene;
-	}
-
-	void ViewportPanel::SetEditorCamera(Engine::EditorCamera* camera) {
-		m_EditorCamera = camera;
 	}
 
 	void ViewportPanel::OnImGuiRender() {
@@ -76,7 +70,7 @@ namespace Editor {
 	}
 
 	void ViewportPanel::OnUpdate() {
-		m_Scene->OnViewportResize(static_cast<int32_t>(m_Size.x), static_cast<int32_t>(m_Size.y));
+		m_SceneManager->GetActiveScene()->OnViewportResize(static_cast<int32_t>(m_Size.x), static_cast<int32_t>(m_Size.y));
 
 		if (const auto size = m_Framebuffer->Size(); m_Size.x > 0.f && m_Size.y > 0.f && (size.Width != static_cast<uint32_t>(m_Size.x) || size.Height != static_cast<uint32_t>(m_Size.y))) {
 			m_Framebuffer->Resize({ static_cast<uint32_t>(m_Size.x), static_cast<uint32_t>(m_Size.y) });
@@ -103,7 +97,7 @@ namespace Editor {
 
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int32_t>(viewportSize.x) && mouseY < static_cast<int32_t>(viewportSize.y)) {
 			const int32_t pixelData = m_Framebuffer->ReadPixel(1, { mouseX, mouseY });
-			m_HoveredEntity = pixelData == -1 ? Engine::Entity() : Engine::Entity(static_cast<entt::entity>(pixelData), m_Scene.get());
+			m_HoveredEntity = pixelData == -1 ? Engine::Entity() : Engine::Entity(static_cast<entt::entity>(pixelData), m_SceneManager->GetActiveScene().get());
 		}
 
 		m_Framebuffer->Unbind();
