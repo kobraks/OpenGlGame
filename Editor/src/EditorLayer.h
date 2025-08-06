@@ -7,6 +7,7 @@
 #include "Panels/ViewportPanel.h"
 
 #include "Managers/DockspaceManager.h"
+#include "Managers/SceneManager.h"
 
 namespace Editor
 {
@@ -54,23 +55,13 @@ namespace Editor
 		void UiToolbar();
 
 	private:
-		enum class SceneState
-		{
-			Edit = 0,
-			Play = 1,
-			Simulate = 2
-		};
-
-		Engine::Ref<Engine::Scene> m_ActiveScene;
-		Engine::Ref<Engine::Scene> m_EditorScene;
-
 		std::filesystem::path m_EditorScenePath;
 
 		bool m_PrivateCamera = true;
 
 		Engine::EditorCamera m_EditorCamera;
 
-		SceneState m_SceneState = SceneState::Edit;
+		Engine::Scope<SceneManager> m_SceneManager;
 
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Engine::Scope<ContentBrowserPanel> m_ContentBrowserPanel;
