@@ -51,6 +51,8 @@ namespace Editor
 		void OnSceneStop();
 		void OnScenePause();
 
+		void UpdateSceneState(SceneStateController::State state);
+
 		void OnDuplicateEntity();
 	private:
 		std::filesystem::path m_EditorScenePath;

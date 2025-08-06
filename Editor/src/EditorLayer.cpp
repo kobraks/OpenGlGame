@@ -46,8 +46,8 @@ namespace Editor {
 
 		m_ToolbarPanel->SetCallbackPlay([this]() {OnScenePlay(); });
 		m_ToolbarPanel->SetCallbackSimulate([this]() {OnSceneSimulate(); });
-		m_ToolbarPanel->SetCallbackPause([this]() {OnScenePlay(); });
-		m_ToolbarPanel->SetCallbackStop([this]() {m_SceneContext->SetPaused(!m_SceneContext->IsPaused()); });
+		m_ToolbarPanel->SetCallbackPause([this]() { OnScenePause(); });
+		m_ToolbarPanel->SetCallbackStop([this]() {OnSceneStop(); });
 		m_ToolbarPanel->SetCallbackStep([this]() {m_SceneContext->Step(); });
 	}
 
@@ -142,7 +142,7 @@ namespace Editor {
 		m_ViewportPanel.SetSelectedEntity(m_SceneHierarchyPanel.GetSelectedEntity());
 		m_ViewportPanel.OnImGuiRender();
 
-		m_ToolbarPanel->OnImGuiRenderer();
+		m_ToolbarPanel->OnImGuiRender();
 
 		m_DockspaceManager.EndDockspace();
 	}
@@ -304,23 +304,48 @@ namespace Editor {
 	void EditorLayer::OnScenePlay() {
 		m_SceneController->Play();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
+		UpdateSceneState(SceneStateController::State::Play);
 	}
 
 	void EditorLayer::OnSceneSimulate() {
 		m_SceneController->Simulate();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
+		UpdateSceneState(SceneStateController::State::Simulate);
 	}
 
 	void EditorLayer::OnSceneStop() {
 		m_SceneController->Stop();
 
-		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
+		UpdateSceneState(SceneStateController::State::Edit);
 	}
 
 	void EditorLayer::OnScenePause() {
-		m_SceneController->Pause();
+		const bool paused = !m_SceneContext->IsPaused();
+
+		if (m_SceneController->GetState() != SceneStateController::State::Edit) {
+			m_SceneContext->SetPaused(paused);
+			m_ToolbarPanel->SetPaused(paused);
+		}
+	}
+
+	void EditorLayer::UpdateSceneState(SceneStateController::State state) {
+		if (m_SceneController->GetState() == state)
+			return;
+
+		switch (state) {
+		case SceneStateController::State::Edit:
+			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Edit);
+			break;
+		case SceneStateController::State::Play:
+			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Play);
+			break;
+		case SceneStateController::State::Simulate:
+			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Simulate);
+			break;
+		}
+
+		m_ToolbarPanel->SetPaused(false);
+		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnDuplicateEntity() {

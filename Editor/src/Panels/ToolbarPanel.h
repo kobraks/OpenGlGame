@@ -21,13 +21,19 @@ namespace Editor {
 
 		void SetEnabled(bool enabled) { m_Enabled = enabled; }
 
+		void SetState(SceneState state) { m_SceneState = state; }
+		void SetPaused(bool paused) { m_Paused = paused; }
+
+		[[nodiscard]] SceneState GetState() const { return m_SceneState; }
+		[[nodiscard]] bool IsPaused() const { return m_Paused; }
+
 		void SetCallbackPlay(Callback cb) { m_OnPlay = std::move(cb); }
 		void SetCallbackPause(Callback cb) { m_OnPause = std::move(cb); }
 		void SetCallbackStop(Callback cb) { m_OnStop = std::move(cb); }
 		void SetCallbackSimulate(Callback cb) { m_OnSimulate = std::move(cb); }
 		void SetCallbackStep(Callback cb) { m_OnStep = std::move(cb); }
 
-		void OnImGuiRenderer();
+		void OnImGuiRender();
 
 	private:
 		bool DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size, const ImVec4& tintColor);

@@ -11,7 +11,7 @@ namespace Editor {
 		m_IconStop = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/StopButton.png"));
 	}
 
-	void ToolbarPanel::OnImGuiRenderer() {
+	void ToolbarPanel::OnImGuiRender() {
 		const bool hasPlayButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Play;
 		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
 		const bool hasPauseButton = m_SceneState != SceneState::Edit;
