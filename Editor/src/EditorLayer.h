@@ -5,6 +5,7 @@
 #include "Panels/SceneHierarchyPanel.h"
 #include "Panels/ContentBrowserPanel.h"
 #include "Panels/ViewportPanel.h"
+#include "Panels/ToolbarPanel.h"
 
 #include "Managers/DockspaceManager.h"
 #include "SceneStateController.h"
@@ -51,9 +52,6 @@ namespace Editor
 		void OnScenePause();
 
 		void OnDuplicateEntity();
-
-		void UiToolbar();
-
 	private:
 		std::filesystem::path m_EditorScenePath;
 
@@ -67,9 +65,8 @@ namespace Editor
 		SceneHierarchyPanel m_SceneHierarchyPanel;
 		Engine::Scope<ContentBrowserPanel> m_ContentBrowserPanel;
 		ViewportPanel m_ViewportPanel;
+		Engine::Scope <ToolbarPanel> m_ToolbarPanel;
 
 		DockspaceManager m_DockspaceManager;
-
-		Engine::Ref<Engine::Texture> m_IconPlay, m_IconPause, m_IconStep, m_IconSimulate, m_IconStop;
 	};
 }

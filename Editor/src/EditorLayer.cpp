@@ -42,11 +42,13 @@ namespace Editor {
 		m_ViewportPanel.SetSceneContext(m_SceneContext.get());
 		m_ViewportPanel.SetEditorCamera(&m_EditorCamera);
 
-		m_IconPlay = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PlayButton.png"));
-		m_IconPause = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/PauseButton.png"));
-		m_IconStep = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/StepButton.png"));
-		m_IconSimulate = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/SimulateButton.png"));
-		m_IconStop = Engine::Texture::Create(Engine::Image::Load("Resources/Icons/StopButton.png"));
+		m_ToolbarPanel = Engine::MakeScope<ToolbarPanel>();
+
+		m_ToolbarPanel->SetCallbackPlay([this]() {OnScenePlay(); });
+		m_ToolbarPanel->SetCallbackSimulate([this]() {OnSceneSimulate(); });
+		m_ToolbarPanel->SetCallbackPause([this]() {OnScenePlay(); });
+		m_ToolbarPanel->SetCallbackStop([this]() {m_SceneContext->SetPaused(!m_SceneContext->IsPaused()); });
+		m_ToolbarPanel->SetCallbackStep([this]() {m_SceneContext->Step(); });
 	}
 
 	void EditorLayer::OnDetach() {
@@ -140,7 +142,7 @@ namespace Editor {
 		m_ViewportPanel.SetSelectedEntity(m_SceneHierarchyPanel.GetSelectedEntity());
 		m_ViewportPanel.OnImGuiRender();
 
-		UiToolbar();
+		m_ToolbarPanel->OnImGuiRenderer();
 
 		m_DockspaceManager.EndDockspace();
 	}
@@ -330,103 +332,5 @@ namespace Editor {
 			Engine::Entity newEntity = m_SceneContext->GetEditorScene()->DuplicateEntity(selectedEntity);
 			m_SceneHierarchyPanel.SetSelectedEntity(newEntity);
 		}
-	}
-
-	void EditorLayer::UiToolbar() {
-		const auto state = m_SceneController->GetState();
-
-		const bool hasPlayButton = state == SceneStateController::State::Edit || state == SceneStateController::State::Play;
-		const bool hasSimulateButton = state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate;
-		const bool hasPauseButton = state != SceneStateController::State::Edit;
-
-		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + 1;
-
-		constexpr float windowHeight = 32;
-
-		constexpr float spacing = 4.0f;
-		constexpr float buttonSize = windowHeight - spacing;
-
-		const float windowWidth = buttonSize * static_cast<float>(buttonCount) + static_cast<float>(buttonCount - 1) *
-			spacing;
-
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-
-		const auto& colors = ImGui::GetStyle().Colors;
-
-		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
-
-		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
-
-		ImGui::SetNextWindowSize({windowWidth, windowHeight + spacing * 2});
-		// ImGui::SetNextWindowPos();
-		ImGui::Begin("##toolbar", nullptr,
-		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-
-		bool toolbarEnabled = static_cast<bool>(m_SceneContext->GetActiveScene());
-
-		auto tintColor = ImVec4(1, 1, 1, 1.f);
-
-		if (!toolbarEnabled)
-			tintColor.w = 0.5f;
-
-
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
-
-		if (hasPlayButton) {
-			const auto& icon = (state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate)
-				                   ? m_IconPlay
-				                   : m_IconStop;
-			if (DrawButtonIcon(icon, "##PlayButton", buttonSize, tintColor) && toolbarEnabled) {
-				if (state == SceneStateController::State::Edit || state == SceneStateController::State::Simulate)
-					OnScenePlay();
-				else if (state == SceneStateController::State::Play)
-					OnSceneStop();
-			}
-		}
-
-		if (hasSimulateButton) {
-			if (hasPlayButton)
-				ImGui::SameLine(0, spacing);
-
-			const auto& icon = (state == SceneStateController::State::Edit || state == SceneStateController::State::Play)
-				                   ? m_IconSimulate
-				                   : m_IconStop;
-			if (DrawButtonIcon(icon, "##SimulateButton", buttonSize, tintColor) && toolbarEnabled) {
-				if (state == SceneStateController::State::Edit || state == SceneStateController::State::Play)
-					OnSceneSimulate();
-				else if (state == SceneStateController::State::Simulate)
-					OnSceneStop();
-			}
-		}
-
-		if (hasPauseButton) {
-			const bool isPaused = m_SceneContext->IsPaused();
-			ImGui::SameLine(0, spacing);
-			{
-				const auto& icon = m_IconPause;
-				if (DrawButtonIcon(icon, "##PauseButton", buttonSize, tintColor) && toolbarEnabled) {
-					m_SceneContext->SetPaused(!isPaused);
-				}
-			}
-
-			if (isPaused) {
-				ImGui::SameLine(0, spacing);
-				{
-					const auto& icon = m_IconStep;
-					if (DrawButtonIcon(icon, "##StepButton", buttonSize, tintColor) && toolbarEnabled) {
-						m_SceneContext->Step();
-					}
-				}
-			}
-		}
-
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor(3);
-
-		ImGui::End();
 	}
 }
