@@ -65,6 +65,10 @@ namespace Engine {
 		return { *this, offset, length };
 	}
 
+	Buffer BufferView::ToBuffer() const {
+		return { m_Data, m_Size };
+	}
+
 	void BufferView::Read(std::byte* destination, SizeType size, SizeType offset) const {
 		ENGINE_ASSERT(destination != nullptr, "BufferView::Read: Destination pointer is null");
 		if (destination == nullptr)

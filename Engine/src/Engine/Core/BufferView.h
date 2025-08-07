@@ -25,6 +25,8 @@ namespace Engine {
 
 		BufferView Slice(SizeType offset, SizeType length) const;
 
+		Buffer ToBuffer() const;
+
         SizeType Size() const { return m_Size; }
 
 		std::byte* Data() { return m_Data; }
