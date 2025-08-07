@@ -15,6 +15,8 @@ namespace Editor {
 
 		void BindContext(SceneContext* context) { m_Context = context; }
 
+		SceneContext* GetContext() const { return m_Context; }
+
 		void Play();
 		void Simulate();
 		void Stop();
