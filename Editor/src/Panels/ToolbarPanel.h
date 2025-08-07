@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../SceneState.h" //TODO fix include path
+
 #include "Engine/Renderer/Texture.h"
 
 #include <functional>
@@ -9,12 +11,6 @@
 namespace Editor {
 	class ToolbarPanel {
 	public:
-		enum class SceneState {
-			Edit = 0,
-			Play = 1,
-			Simulate = 2
-		};
-
 		using Callback = std::function<void()>;
 
 		ToolbarPanel();

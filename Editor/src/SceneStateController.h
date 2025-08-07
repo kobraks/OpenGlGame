@@ -1,15 +1,10 @@
 #pragma once
 #include "SceneContext.h"
+#include "SceneState.h"
 
 namespace Editor {
 	class SceneStateController {
 	public:
-		enum class State {
-			Edit = 0,
-			Play = 1,
-			Simulate = 2
-		};
-
 		SceneStateController() = default;
 		explicit SceneStateController(SceneContext* context);
 
@@ -22,11 +17,11 @@ namespace Editor {
 		void Stop();
 		void Pause();
 
-		State GetState() const { return m_State; }
+		SceneState GetState() const { return m_State; }
 		bool IsPaused() const { return m_Context && m_Context->IsPaused(); }
 
 	private:
-		State m_State = State::Edit;
+		SceneState m_State = SceneState::Edit;
 		SceneContext* m_Context = nullptr;
 	};
 

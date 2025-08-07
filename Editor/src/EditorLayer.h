@@ -51,7 +51,7 @@ namespace Editor
 		void OnSceneStop();
 		void OnScenePause();
 
-		void UpdateSceneState(SceneStateController::State state);
+		void UpdateSceneState(SceneState state);
 
 		void OnDuplicateEntity();
 	private:

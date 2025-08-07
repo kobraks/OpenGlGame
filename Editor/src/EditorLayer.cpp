@@ -61,17 +61,17 @@ namespace Editor {
 		m_ViewportPanel.OnUpdate();
 
 		switch (m_SceneController->GetState()) {
-		case SceneStateController::State::Edit: {
+		case SceneState::Edit: {
 			m_EditorCamera.OnUpdate();
 			m_SceneContext->GetActiveScene()->OnUpdateEditor(m_EditorCamera);
 			break;
 		}
-		case SceneStateController::State::Simulate: {
+		case SceneState::Simulate: {
 			m_EditorCamera.OnUpdate();
 			m_SceneContext->GetActiveScene()->OnUpdateSimulation(m_EditorCamera);
 			break;
 		}
-		case SceneStateController::State::Play: {
+		case SceneState::Play: {
 			m_SceneContext->GetActiveScene()->OnUpdateRuntime();
 			break;
 		}
@@ -80,15 +80,15 @@ namespace Editor {
 
 	void EditorLayer::OnConstUpdate(const Engine::Time& timeStep) {
 		switch (m_SceneController->GetState()) {
-		case SceneStateController::State::Edit: {
+		case SceneState::Edit: {
 			m_SceneContext->GetActiveScene()->OnConstUpdateEditor(timeStep, m_EditorCamera);
 			break;
 		}
-		case SceneStateController::State::Simulate: {
+		case SceneState::Simulate: {
 			m_SceneContext->GetActiveScene()->OnConstUpdateSimulation(timeStep, m_EditorCamera);
 			break;
 		}
-		case SceneStateController::State::Play: {
+		case SceneState::Play: {
 			m_SceneContext->GetActiveScene()->OnConstUpdateRuntime(timeStep);
 			break;
 		}
@@ -259,7 +259,7 @@ namespace Editor {
 	}
 
 	void EditorLayer::OpenScene(const std::filesystem::path& path) {
-		if (m_SceneController->GetState() != SceneStateController::State::Edit)
+		if (m_SceneController->GetState() != SceneState::Edit)
 			OnSceneStop();
 
 		if (path.extension().string() != ".gscene") {
@@ -304,52 +304,44 @@ namespace Editor {
 	void EditorLayer::OnScenePlay() {
 		m_SceneController->Play();
 
-		UpdateSceneState(SceneStateController::State::Play);
+		UpdateSceneState(SceneState::Play);
 	}
 
 	void EditorLayer::OnSceneSimulate() {
 		m_SceneController->Simulate();
 
-		UpdateSceneState(SceneStateController::State::Simulate);
+		UpdateSceneState(SceneState::Simulate);
 	}
 
 	void EditorLayer::OnSceneStop() {
 		m_SceneController->Stop();
 
-		UpdateSceneState(SceneStateController::State::Edit);
+		UpdateSceneState(SceneState::Edit);
 	}
 
 	void EditorLayer::OnScenePause() {
+		if (m_SceneController->GetState() == SceneState::Edit)
+			return;
+
 		const bool paused = !m_SceneContext->IsPaused();
 
-		if (m_SceneController->GetState() != SceneStateController::State::Edit) {
+		if (m_SceneController->GetState() != SceneState::Edit) {
 			m_SceneContext->SetPaused(paused);
 			m_ToolbarPanel->SetPaused(paused);
 		}
 	}
 
-	void EditorLayer::UpdateSceneState(SceneStateController::State state) {
+	void EditorLayer::UpdateSceneState(SceneState state) {
 		if (m_SceneController->GetState() == state)
 			return;
 
-		switch (state) {
-		case SceneStateController::State::Edit:
-			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Edit);
-			break;
-		case SceneStateController::State::Play:
-			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Play);
-			break;
-		case SceneStateController::State::Simulate:
-			m_ToolbarPanel->SetState(ToolbarPanel::SceneState::Simulate);
-			break;
-		}
-
+		m_ToolbarPanel->SetState(state);
 		m_ToolbarPanel->SetPaused(false);
 		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnDuplicateEntity() {
-		if (m_SceneController->GetState() != SceneStateController::State::Edit)
+		if (m_SceneController->GetState() != SceneState::Edit)
 			return;
 
 		const Engine::Entity selectedEntity = m_SceneHierarchyPanel.GetSelectedEntity();
