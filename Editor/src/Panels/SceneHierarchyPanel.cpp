@@ -122,11 +122,11 @@ namespace Editor {
 		}
 	}
 
-	SceneHierarchyPanel::SceneHierarchyPanel(const Engine::Ref<Engine::Scene>& context) {
+	SceneHierarchyPanel::SceneHierarchyPanel(const SceneContextView& context) {
 		SetContext(context);
 	}
 
-	void SceneHierarchyPanel::SetContext(const Engine::Ref<Engine::Scene>& context) {
+	void SceneHierarchyPanel::SetContext(const SceneContextView& context) {
 		m_Context = context;
 		m_SelectionContext = {};
 	}
@@ -151,7 +151,7 @@ namespace Editor {
 				ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems
 			)) {
 				if (ImGui::MenuItem("Create Empty Entity"))
-					m_Context->CreateEntity("Empty Entity");
+					m_Context.GetActiveScene()->CreateEntity("Empty Entity");
 
 				ImGui::EndPopup();
 			}
@@ -205,7 +205,7 @@ namespace Editor {
 		}
 
 		if (entityDeleted) {
-			m_Context->DestroyEntity(entity);
+			m_Context.GetActiveScene()->DestroyEntity(entity);
 			if (m_SelectionContext == entity)
 				m_SelectionContext = {};
 		}

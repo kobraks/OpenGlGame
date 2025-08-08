@@ -1,5 +1,7 @@
 #include "EditorLayer.h"
 
+#include "SceneContextView.h"
+
 #include <Engine/Scene/SceneSerializer.h>
 #include <Engine/Math/Math.h>
 #include <Engine/Utils/FileDialogs.h>
@@ -249,7 +251,7 @@ namespace Editor {
 
 	void EditorLayer::NewScene() {
 		m_SceneContext->New();
-		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
+		m_SceneHierarchyPanel.SetContext({m_SceneContext.get(), m_SceneController.get()});
 	}
 
 	void EditorLayer::OpenScene() {
@@ -271,7 +273,7 @@ namespace Editor {
 		Engine::SceneSerializer serializer(newScene);
 		if (serializer.Deserialize(path)) {
 			m_SceneContext->Set(newScene);
-			m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
+			m_SceneHierarchyPanel.SetContext({ m_SceneContext.get(), m_SceneController.get() });
 
 			m_EditorScenePath = path;
 		}
@@ -302,21 +304,22 @@ namespace Editor {
 	}
 
 	void EditorLayer::OnScenePlay() {
-		m_SceneController->Play();
-
 		UpdateSceneState(SceneState::Play);
+
+		m_SceneController->Play();
 	}
 
 	void EditorLayer::OnSceneSimulate() {
-		m_SceneController->Simulate();
-
 		UpdateSceneState(SceneState::Simulate);
+
+		m_SceneController->Simulate();
 	}
 
 	void EditorLayer::OnSceneStop() {
+		UpdateSceneState(SceneState::Edit);
+
 		m_SceneController->Stop();
 
-		UpdateSceneState(SceneState::Edit);
 	}
 
 	void EditorLayer::OnScenePause() {
@@ -337,7 +340,6 @@ namespace Editor {
 
 		m_ToolbarPanel->SetState(state);
 		m_ToolbarPanel->SetPaused(false);
-		m_SceneHierarchyPanel.SetContext(m_SceneContext->GetActiveScene());
 	}
 
 	void EditorLayer::OnDuplicateEntity() {

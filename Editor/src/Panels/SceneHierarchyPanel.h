@@ -4,18 +4,17 @@
 #include <Engine/Scene/Scene.h>
 #include <Engine/Scene/Entity.h>
 
+#include "../SceneContextView.h" // TODO fix include path
+
 namespace Editor
 {
 	class SceneHierarchyPanel
 	{
-		Engine::Ref<Engine::Scene> m_Context;
-		Engine::Entity m_SelectionContext;
-
 	public:
 		SceneHierarchyPanel() = default;
-		SceneHierarchyPanel(const Engine::Ref<Engine::Scene> &context);
+		SceneHierarchyPanel(const SceneContextView &context);
 
-		void SetContext(const Engine::Ref<Engine::Scene> &context);
+		void SetContext(const SceneContextView &context);
 
 		void OnImGuiRender();
 
@@ -27,6 +26,8 @@ namespace Editor
 		void DrawEntityNode(Engine::Entity entity);
 		void DrawComponents(Engine::Entity entity);
 
+		SceneContextView m_Context;
+		Engine::Entity m_SelectionContext;
 	private:
 		template <typename T>
 		void DisplayAddComponentEntry(const std::string &entryName);
