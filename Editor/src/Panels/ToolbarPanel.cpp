@@ -1,6 +1,7 @@
 #include "ToolbarPanel.h"
 
 #include "Engine/Core/Image.h"
+#include "Engine/ImGui/ImGuiScoped.h"
 
 namespace Editor {
 	ToolbarPanel::ToolbarPanel() {
@@ -16,40 +17,40 @@ namespace Editor {
 		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
 		const bool hasPauseButton = m_SceneState != SceneState::Edit;
 
-		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + 1;
+		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + (hasPauseButton ? m_Paused : 0) + 1;
 
-		constexpr float windowHeight = 32;
+		constexpr float windowHeight = 32.f;
 
 		constexpr float spacing = 4.0f;
 		constexpr float buttonSize = windowHeight - spacing;
 
-		const float windowWidth = buttonSize * static_cast<float>(buttonCount) + static_cast<float>(buttonCount - 1) *
-			spacing;
+		const float windowWidth = buttonSize * static_cast<float>(buttonCount) + static_cast<float>(buttonCount) * spacing;
 
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f));
-		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+		Engine::ScopedStyleVar StyleVars({
+			{ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f)},
+			{ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f)},
+			});
 
 		const auto& colors = ImGui::GetStyle().Colors;
-
 		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
-		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
-
 		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
-		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+		Engine::ScopedStyleColor styleColor({
+			{ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f)},
+			{ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f)},
+			{ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f)}
+		});
 
 		ImGui::SetNextWindowSize({ windowWidth, windowHeight + spacing * 2 });
 		// ImGui::SetNextWindowPos();
 		ImGui::Begin("##toolbar", nullptr,
 			ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-		auto tintColor = ImVec4(1, 1, 1, 1.f);
+		const auto tintColor = ImVec4(1.f, 1.f, 1.f, !m_Enabled ? 0.5f : 1.f);
 
-		if (!m_Enabled)
-			tintColor.w = 0.5f;
+		//ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
 
-		ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
-
+		ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x * 0.5f - (buttonSize * static_cast<float>(buttonCount)) * 0.5f);
 		if (hasPlayButton) {
 			const auto& icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
 				? m_IconPlay
@@ -109,13 +110,15 @@ namespace Editor {
 			}
 		}
 
-		ImGui::PopStyleVar(2);
-		ImGui::PopStyleColor(3);
-
 		ImGui::End();
 	}
 
 	bool ToolbarPanel::DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size, const ImVec4& tintColor) {
-		return ImGui::ImageButton(name.c_str(), icon->RendererID(), {size, size}, {0.0f, 0.0f}, {1.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 0.0f}, tintColor);
+		const ImVec2 imageSize{ size, size };
+		const ImVec2 uv0{ 0.0f, 0.0f };
+		const ImVec2 uv1{ 1.0f, 1.0f };
+		const ImVec4 bgColor{ 0.0f, 0.0f, 0.0f, 0.0f };
+
+		return ImGui::ImageButton(name.c_str(), icon->RendererID(), imageSize, uv0, uv1, bgColor, tintColor);
 	}
 }
