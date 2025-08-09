@@ -115,9 +115,9 @@ namespace Editor {
 
 	bool ToolbarPanel::DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size, const ImVec4& tintColor) {
 		const ImVec2 imageSize{ size, size };
-		const ImVec2 uv0{ 0.0f, 0.0f };
-		const ImVec2 uv1{ 1.0f, 1.0f };
-		const ImVec4 bgColor{ 0.0f, 0.0f, 0.0f, 0.0f };
+		constexpr ImVec2 uv0{ 0.0f, 0.0f };
+		constexpr ImVec2 uv1{ 1.0f, 1.0f };
+		constexpr ImVec4 bgColor{ 0.0f, 0.0f, 0.0f, 0.0f };
 
 		return ImGui::ImageButton(name.c_str(), icon->RendererID(), imageSize, uv0, uv1, bgColor, tintColor);
 	}
