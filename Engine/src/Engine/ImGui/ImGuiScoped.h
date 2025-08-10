@@ -43,6 +43,12 @@ namespace Engine {
 	};
 
 	struct ScopedStyleColor : NonCopyableNonMoveable {
+		template <typename ...Args>
+		ScopedStyleColor(Args&&... args) {
+			static_assert(sizeof...(Args) % 2 == 0, "Expected (idx, value) pairs: even number of arguments");
+			PushPairs(std::forward<Args>(args)...);
+		}
+
 		explicit ScopedStyleColor(std::initializer_list<std::pair<ImGuiCol, ImVec4>> colors) {
 			for (const auto& [col, val] : colors) {
 				ImGui::PushStyleColor(col, val);
@@ -88,10 +94,32 @@ namespace Engine {
 		}
 
 	private:
+		template <typename ValueType, typename... Args>
+		void PushPairs(ImGuiStyleVar idx, ValueType&& value, Args&&... args) {
+			if constexpr (std::is_same_v<ValueType, Color>) {
+				const auto fColor = value.ToFloat();
+				ImGui::PushStyleColor(idx, ImVec4(fColor.x, fColor.y, fColor.z, fColor.w));
+			} else {
+				ImGui::PushStyleColor(idx, std::forward<ValueType>(value));
+			}
+
+			++m_Count;
+
+			if constexpr (sizeof...(Args) > 0) {
+				PushPairs(std::forward<Args&&>(args)...);
+			}
+		}
+
 		int m_Count = 0;
 	};
 
 	struct ScopedStyleVar : NonCopyableNonMoveable {
+		template <typename ...Args>
+		ScopedStyleVar(Args&&... args){
+			static_assert(sizeof...(Args) % 2 == 0, "Expected (idx, value) pairs: even number of arguments");
+			PushPairs(std::forward<Args>(args)...);
+		}
+
 		explicit ScopedStyleVar(std::initializer_list<std::pair<ImGuiStyleVar, float>> vars) {
 			for (const auto& [var, val] : vars) {
 				ImGui::PushStyleVar(var, val);
@@ -120,14 +148,23 @@ namespace Engine {
 			ImGui::PopStyleVar(m_Count);
 		}
 	private:
+		template <typename ValueType, typename... Args>
+		void PushPairs(ImGuiStyleVar idx, ValueType&& value, Args&&... args) {
+			ImGui::PushStyleVar(idx, std::forward<ValueType>(value));
+			++m_Count;
+
+			if constexpr (sizeof...(Args) > 0) {
+				PushPairs(std::forward<Args&&>(args)...);
+			}
+		}
+
 		int m_Count = 0;
 	};
 
 	struct ScopedDisable : NonCopyableNonMoveable {
-		explicit ScopedDisable(bool condition = true) {
+		explicit ScopedDisable(bool condition = true) : m_Active(condition) {
 			if (condition) {
 				ImGui::BeginDisabled();
-				m_Active = true;
 			}
 		}
 
