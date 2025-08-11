@@ -17,29 +17,26 @@ namespace Editor {
 		const bool hasSimulateButton = m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate;
 		const bool hasPauseButton = m_SceneState != SceneState::Edit;
 
-		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + (hasPauseButton ? m_Paused : 0) + 1;
+		const int buttonCount = hasPlayButton + hasSimulateButton + hasPauseButton + (hasPauseButton ? m_Paused : 0);
 
 		constexpr float windowHeight = 32.f;
 
 		constexpr float spacing = 4.0f;
 		constexpr float buttonSize = windowHeight - spacing;
+		constexpr float buttonActualSize = buttonSize + 2.f;
+		const float windowWidth = (buttonActualSize) * static_cast<float>(buttonCount) + static_cast<float>(buttonCount + 1) * (spacing);
 
-		const float windowWidth = buttonSize * static_cast<float>(buttonCount) + static_cast<float>(buttonCount) * spacing;
-
-		Engine::ScopedStyleVar StyleVars({
-			{ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f)},
-			{ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f)},
-			});
+		Engine::ScopedStyleVar styleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 2.0f),
+			ImGuiStyleVar_ItemInnerSpacing, ImVec2(0.0f, 0.0f),
+			ImGuiStyleVar_FramePadding, ImVec2(0.f, 0.f));
 
 		const auto& colors = ImGui::GetStyle().Colors;
 		const auto& buttonHovered = colors[ImGuiCol_ButtonHovered];
 		const auto& buttonActive = colors[ImGuiCol_ButtonActive];
 
-		Engine::ScopedStyleColor styleColor({
-			{ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f)},
-			{ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f)},
-			{ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f)}
-		});
+		Engine::ScopedStyleColor styleColor(ImGuiCol_Button, ImVec4(0.f, 0.f, 0.f, 0.f),
+			ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f),
+			ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
 
 		ImGui::SetNextWindowSize({ windowWidth, windowHeight + spacing * 2 });
 		// ImGui::SetNextWindowPos();
@@ -48,9 +45,10 @@ namespace Editor {
 
 		const auto tintColor = ImVec4(1.f, 1.f, 1.f, !m_Enabled ? 0.5f : 1.f);
 
-		//ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
+		// ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.2f) - (buttonSize * 0.5f));
 
-		ImGui::SetCursorPosX(ImGui::GetContentRegionAvail().x * 0.5f - (buttonSize * static_cast<float>(buttonCount)) * 0.5f);
+		ImGui::SetCursorPosY(spacing * 1.5f);
+		ImGui::SetCursorPosX((ImGui::GetContentRegionAvail().x - buttonActualSize * static_cast<float>(buttonCount) - 1.5f * spacing));
 		if (hasPlayButton) {
 			const auto& icon = (m_SceneState == SceneState::Edit || m_SceneState == SceneState::Simulate)
 				? m_IconPlay

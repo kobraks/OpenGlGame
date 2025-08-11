@@ -32,7 +32,7 @@ namespace Editor {
 		void OnImGuiRender();
 
 	private:
-		bool DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size, const ImVec4& tintColor);
+		static bool DrawButtonIcon(const Engine::Ref<Engine::Texture>& icon, const std::string& name, float size, const ImVec4& tintColor);
 
 	private:
 		SceneState m_SceneState = SceneState::Edit;
