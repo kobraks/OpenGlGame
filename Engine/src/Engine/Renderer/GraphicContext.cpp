@@ -9,9 +9,23 @@
 
 #include <fmt/std.h>
 
+#include <mutex>
+
 namespace Engine {
 	static std::atomic_bool s_GladLoaded = false;
 	static std::atomic<OpenGLVersion> s_OpenGLVersion = { { 0, 0 } };
+	static GraphicInfo s_GraphicInfo = {"Unknown", "Unknown", "Unknown"};
+	static std::mutex s_Mutex;
+
+	static void SetGraphicInfo(const GraphicInfo& graphicInfo) {
+		std::lock_guard lock(s_Mutex);
+		s_GraphicInfo = graphicInfo;
+	}
+
+	static GraphicInfo GetGraphicInfo() {
+		std::lock_guard lock(s_Mutex);
+		return s_GraphicInfo;
+	}
 
 	GraphicContext::~GraphicContext() {
 		Detach();
@@ -101,17 +115,23 @@ namespace Engine {
 
 			s_GladLoaded.store(true, std::memory_order_release);
 
+			m_Info.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
+			m_Info.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
+			m_Info.Version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
+
 			LOG_ENGINE_INFO("OpenGL Info:");
-			LOG_ENGINE_INFO(" Vendor: {0}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-			LOG_ENGINE_INFO(" Renderer: {0}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-			LOG_ENGINE_INFO(" Version: {0}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+			LOG_ENGINE_INFO(" Vendor: {0}", m_Info.Vendor);
+			LOG_ENGINE_INFO(" Renderer: {0}", m_Info.Renderer);
+			LOG_ENGINE_INFO(" Version: {0}", m_Info.Version);
 
 			glGetIntegerv(GL_MAJOR_VERSION, &m_Version.Major);
 			glGetIntegerv(GL_MINOR_VERSION, &m_Version.Minor);
 
-			s_OpenGLVersion = m_Version;
+			s_GraphicInfo = m_Info;
+			SetGraphicInfo(m_Info);
 		} else {
 			m_Version = s_OpenGLVersion;
+			m_Info = GetGraphicInfo();
 		}
 	}
 

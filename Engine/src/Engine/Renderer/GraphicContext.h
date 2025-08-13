@@ -7,6 +7,12 @@
 namespace Engine {
 	class Window;
 
+	struct GraphicInfo {
+		std::string Vendor;
+		std::string Renderer;
+		std::string Version;
+	};
+
 	struct OpenGLVersion {
 		int32_t Major = 0;
 		int32_t Minor = 0;
@@ -26,6 +32,7 @@ namespace Engine {
 		static Scope<GraphicContext> CreateShared(const GraphicContext* sharedWith);
 
 		[[nodiscard]] OpenGLVersion GetVersion() const { return m_Version; }
+		[[nodiscard]] const GraphicInfo& GetInfo() const { return m_Info; }
 
 		void SwapBuffers(); //NO-OP for shared contexts
 
@@ -44,6 +51,7 @@ namespace Engine {
 		void Init(void* windowHandle);
 
 		OpenGLVersion m_Version;
+		GraphicInfo m_Info;
 
 		bool m_OwnsWindow = false;
 
