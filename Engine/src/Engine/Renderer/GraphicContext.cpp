@@ -10,17 +10,23 @@
 #include <fmt/std.h>
 
 namespace Engine {
+	static std::atomic_bool s_GladLoaded = false;
+	static std::atomic<OpenGLVersion> s_OpenGLVersion = { { 0, 0 } };
+
 	GraphicContext::~GraphicContext() {
 		Detach();
 
-		if (IsShared())
+		if (m_OwnsWindow)
 			glfwDestroyWindow(static_cast<GLFWwindow*>(m_WindowHandle));
 	}
 
 	Scope<GraphicContext> GraphicContext::Create(const Window *window) {
 		ENGINE_ASSERT(window);
 
-		return Scope<GraphicContext>(new GraphicContext(window->GetNativeHandle()));
+		auto context = Scope<GraphicContext>(new GraphicContext(window->GetNativeHandle()));
+		context->m_OwnsWindow = false;
+
+		return context;
 	}
 
 	Scope<GraphicContext> GraphicContext::CreateShared(const GraphicContext* sharedWith) {
@@ -31,12 +37,16 @@ namespace Engine {
 
 		auto context = Scope<GraphicContext>(new GraphicContext(hiddenWindow));
 		context->m_MainWindowHandle = sharedWith->m_WindowHandle;
+		context->m_OwnsWindow = true;
 
 		return context;
 	}
 
 	void GraphicContext::SwapBuffers() {
-		ENGINE_ASSERT(IsCurrent());
+		ENGINE_ASSERT(!m_OwnsWindow);
+		if (m_OwnsWindow)
+			return;
+
 		glfwSwapBuffers(static_cast<GLFWwindow *>(m_WindowHandle));
 	}
 
@@ -61,6 +71,7 @@ namespace Engine {
 		m_Thread = std::this_thread::get_id();
 
 		m_ContextBusy.clear(std::memory_order_release);
+		m_ContextBusy.notify_one();
 	}
 
 	void GraphicContext::Detach() {
@@ -73,26 +84,35 @@ namespace Engine {
 		}
 
 		m_ContextBusy.clear(std::memory_order_release);
+		m_ContextBusy.notify_one();
 	}
 
 	void GraphicContext::Init(void* windowHandle) {
 		m_WindowHandle = windowHandle;
 		MakeCurrent();
 
-		const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		if (!s_GladLoaded.load(std::memory_order_acquire)) {
+			const int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-		ENGINE_ASSERT(status, "Failed to initialize Glad!");
+			ENGINE_ASSERT(status, "Failed to initialize Glad!");
 
-		if (!status)
-			throw std::runtime_error("Failed to initialize GLAD!");
+			if (!status)
+				throw std::runtime_error("Failed to initialize GLAD!");
 
-		LOG_ENGINE_INFO("OpenGL Info:");
-		LOG_ENGINE_INFO(" Vendor: {0}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
-		LOG_ENGINE_INFO(" Renderer: {0}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
-		LOG_ENGINE_INFO(" Version: {0}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+			s_GladLoaded.store(true, std::memory_order_release);
 
-		glGetIntegerv(GL_MAJOR_VERSION, &m_Version.Major);
-		glGetIntegerv(GL_MINOR_VERSION, &m_Version.Minor);
+			LOG_ENGINE_INFO("OpenGL Info:");
+			LOG_ENGINE_INFO(" Vendor: {0}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
+			LOG_ENGINE_INFO(" Renderer: {0}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
+			LOG_ENGINE_INFO(" Version: {0}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+
+			glGetIntegerv(GL_MAJOR_VERSION, &m_Version.Major);
+			glGetIntegerv(GL_MINOR_VERSION, &m_Version.Minor);
+
+			s_OpenGLVersion = m_Version;
+		} else {
+			m_Version = s_OpenGLVersion;
+		}
 	}
 
 	bool GraphicContext::IsThreadBound() const {

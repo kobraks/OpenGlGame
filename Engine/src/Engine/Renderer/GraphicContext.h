@@ -27,7 +27,7 @@ namespace Engine {
 
 		[[nodiscard]] OpenGLVersion GetVersion() const { return m_Version; }
 
-		void SwapBuffers();
+		void SwapBuffers(); //NO-OP for shared contexts
 
 		bool IsCurrent() const;
 		bool IsValid() const;
@@ -36,6 +36,7 @@ namespace Engine {
 		void Detach();
 
 		bool IsShared() const { return m_MainWindowHandle != nullptr; }
+		bool OwnsWindow() const { return m_OwnsWindow; }
 
 		bool IsThreadBound() const;
 	private:
@@ -43,6 +44,8 @@ namespace Engine {
 		void Init(void* windowHandle);
 
 		OpenGLVersion m_Version;
+
+		bool m_OwnsWindow = false;
 
 		void *m_WindowHandle = nullptr;
 		void *m_MainWindowHandle = nullptr;
