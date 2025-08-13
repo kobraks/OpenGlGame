@@ -23,6 +23,7 @@ project "Editor"
 	
 	includedirs
 	{
+		"src",
 		"%{wks.location}/Engine/src",
 		"%{wks.location}/vendor",
 		"%{IncludeDir.Boost}",

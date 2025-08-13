@@ -4,7 +4,7 @@
 #include <Engine/Scene/Scene.h>
 #include <Engine/Scene/Entity.h>
 
-#include "../SceneContextView.h" // TODO fix include path
+#include "SceneContextView.h"
 
 namespace Editor
 {

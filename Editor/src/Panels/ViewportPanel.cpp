@@ -11,7 +11,7 @@
 
 #include "Engine/Math/Math.h"
 
-#include "../SceneContext.h" // TODO fix include path
+#include "SceneContext.h"
 
 #include <ImGui/imgui.h>
 #include "ImGuizmo.h"
