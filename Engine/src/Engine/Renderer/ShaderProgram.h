@@ -50,6 +50,7 @@ namespace Engine {
 		using UniformLocationType = int32_t;
 		using AttributeLocationType = int32_t;
 		using UniformBlockIndexType = uint32_t;
+		using UniformBlockBindingType = uint32_t;
 
 		constexpr static UniformLocationType InvalidUniformLocation = -1;
 		constexpr static AttributeLocationType InvalidAttributeLocation = -1;
@@ -57,16 +58,21 @@ namespace Engine {
 
 		struct UniformInfo {
 			std::string Name;
-			int Size;
-			uint32_t Type;
-			UniformLocationType Location;
+			int Size = 0;
+			uint32_t Type = 0;
+			UniformLocationType Location = InvalidUniformLocation;
 		};
 
 		struct UniformBlockInfo {
 			std::string Name;
-			uint32_t Size;
-			ShaderStage::Type ShaderType;
-			UniformBlockIndexType Index;
+			uint32_t Size = 0;
+			ShaderStage::Type ShaderType = ShaderStage::Type::None;
+			UniformBlockIndexType Index = 0;
+			UniformBlockBindingType Binding = 0;
+
+			bool IsReferencedBy(ShaderStage::Type stage) const {
+				return (ShaderType & stage) != ShaderStage::Type::None;
+			}
 		};
 
 		struct Reflection {
@@ -268,14 +274,22 @@ namespace Engine {
 
 		void UniformValue(UniformLocationType location, Ref<Texture> texture, uint32_t samplerUnit = 0);
 
-		void BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer);
-		void BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer, size_t size, size_t offset);
+		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer, uint32_t bindingPoint) {
+			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer, bindingPoint);
+		}
+
+		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset) {
+			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer, bindingPoint, size, offset);
+		}
+
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer, uint32_t bindingPoint);
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset);
 		
 	private:
 		ShaderProgram();
 
-		int GetParameter(uint32_t pName);
-		void GetParameter(uint32_t pName, int* params);
+		int GetParameter(uint32_t pName) const;
+		void GetParameter(uint32_t pName, int* params) const;
 
 		void FetchLog();
 
@@ -285,12 +299,12 @@ namespace Engine {
 		void PopulateUniformBlocks();
 		void PopulateUniforms();
 
-		int GetActiveUniformI(uint32_t index, uint32_t pName);
-		int GetActiveUniformBlockI(uint32_t index, uint32_t pName);
-		std::string GetActiveUniformBlockName(uint32_t index);
+		int GetActiveUniformI(uint32_t index, uint32_t pName) const;
+		int GetActiveUniformBlockI(uint32_t index, uint32_t pName) const;
+		std::string GetActiveUniformBlockName(uint32_t index) const;
 
-		UniformBlockInfo QueryUniformBlock(uint32_t index);
-		UniformInfo QueryUniform(uint32_t index);
+		UniformBlockInfo GetUniformBlockInfo(uint32_t index) const;
+		UniformInfo GetUniformInfo(uint32_t index) const;
 
 		template<class STDContainer, typename GlFunction, typename LocationType>
 		auto GetLocation(std::string_view name, STDContainer& container, GlFunction glFunction, LocationType invalidNumber) const;
@@ -345,7 +359,7 @@ namespace Engine {
 		if (location == InvalidUniformLocation)
 			return;
 
-		function(location, 1, transpose, glm::value_ptr(matrix));
+		function(m_GLState->Program, location, 1, transpose, glm::value_ptr(matrix));
 	}
 
 	template <typename VectorType, typename GLFunction>
@@ -353,6 +367,6 @@ namespace Engine {
 		if (location == InvalidUniformLocation)
 			return;
 
-		function(location, 1, &vector.x);
+		function(m_GLState->Program, location, 1, &vector.x);
 	}
 }

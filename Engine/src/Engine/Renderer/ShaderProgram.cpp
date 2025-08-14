@@ -105,6 +105,7 @@ namespace Engine {
 		if (!program->CheckIfLinked()) {
 			return nullptr;
 		}
+		program->Populate();
 
 		return program;
 	}
@@ -145,7 +146,7 @@ namespace Engine {
 
 	void ShaderProgram::Detach(Ref<ShaderStage> stage) {
 		if (!Utils::HasStage(m_GLState->Reflection.UsedStages, stage->GetType())) {
-			LOG_GL_WARN("Tryied to detach not attached shader");
+			LOG_GL_WARN("Tried to detach not attached shader");
 			return;
 		}
 
@@ -273,11 +274,11 @@ namespace Engine {
 	}
 
 	ShaderProgram::UniformLocationType ShaderProgram::GetUniformLocation(std::string_view name) const {
-		return GetLocation(name, m_GLState->Attributes, glGetUniformLocation, InvalidUniformLocation);
+		return GetLocation(name, m_GLState->UniformLocations, glGetUniformLocation, InvalidUniformLocation);
 	}
 
 	ShaderProgram::UniformBlockIndexType ShaderProgram::GetUniformBlockIndex(std::string_view name) const {
-		return GetLocation(name, m_GLState->Attributes, glGetUniformBlockIndex, InvalidUniformBlockIndex);
+		return GetLocation(name, m_GLState->UniformBlockIndices, glGetUniformBlockIndex, InvalidUniformBlockIndex);
 	}
 
 	bool ShaderProgram::HasUniform(std::string_view name) const {
@@ -344,132 +345,132 @@ namespace Engine {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform1i(location, value);
+		glProgramUniform1i(m_GLState->Program, location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value1, int32_t value2) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform2i(location, value1, value2);
+		glProgramUniform2i(m_GLState->Program, location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, int32_t value1, int32_t value2, int32_t value3) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform3i(location, value1, value2, value3);
+		glProgramUniform3i(m_GLState->Program, location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform1ui(location, value);
+		glProgramUniform1ui(m_GLState->Program, location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform2ui(location, value1, value2);
+		glProgramUniform2ui(m_GLState->Program, location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, uint32_t value1, uint32_t value2, uint32_t value3) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform3ui(location, value1, value2, value3);
+		glProgramUniform3ui(m_GLState->Program, location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform1f(location, value);
+		glProgramUniform1f(m_GLState->Program, location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value1, float value2) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform2f(location, value1, value2);
+		glProgramUniform2f(m_GLState->Program, location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, float value1, float value2, float value3) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform3f(location, value1, value2, value3);
+		glProgramUniform3f(m_GLState->Program, location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform1d(location, value);
+		glProgramUniform1d(m_GLState->Program, location, value);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value1, double value2) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform2d(location, value1, value2);
+		glProgramUniform2d(m_GLState->Program, location, value1, value2);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, double value1, double value2, double value3) {
 		if (location == InvalidUniformLocation)
 			return;
 
-		glUniform3d(location, value1, value2, value3);
+		glProgramUniform3d(m_GLState->Program, location, value1, value2, value3);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec2& vec) {
-		return UniformVector(location, vec, glUniform2fv);
+		return UniformVector(location, vec, glProgramUniform2fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec3& vec) {
-		return UniformVector(location, vec, glUniform3fv);
+		return UniformVector(location, vec, glProgramUniform3fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::vec4& vec) {
-		return UniformVector(location, vec, glUniform4fv);
+		return UniformVector(location, vec, glProgramUniform4fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x2& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix2fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x3& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2x3fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix2x3fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat2x4& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix2x4fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix2x4fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x2& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3x2fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix3x2fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x3& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix3fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat3x4& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix3x4fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix3x4fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x2& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4x2fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix4x2fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x3& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4x3fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix4x3fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, const glm::mat4x4& mat, bool transpose) {
-		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glUniformMatrix4fv);
+		return UniformMatrix(location, mat, transpose ? GL_TRUE : GL_FALSE, glProgramUniformMatrix4fv);
 	}
 
 	void ShaderProgram::UniformValue(UniformLocationType location, Ref<Texture> texture, uint32_t samplerUnit) {
@@ -478,18 +479,17 @@ namespace Engine {
 
 		texture->BindUnit(samplerUnit);
 
-		glUniform1i(location, samplerUnit);
+		glProgramUniform1i(m_GLState->Program, location, samplerUnit);
 	}
 
-	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer) {
+	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer, uint32_t bindingPoint) {
 		if (location == InvalidUniformLocation)
 			return;
 
 		//TODO
 	}
 
-	void ShaderProgram::BindUniformBuffer(UniformLocationType location, const UniformBuffer& buffer, size_t size,
-		size_t offset) {
+	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset) {
 		if (location == InvalidUniformLocation)
 			return;
 
@@ -499,14 +499,14 @@ namespace Engine {
 	ShaderProgram::ShaderProgram() : m_GLState(MakeRef<GLState>()) {
 	}
 
-	int ShaderProgram::GetParameter(uint32_t pName) {
+	int ShaderProgram::GetParameter(uint32_t pName) const {
 		int value = 0;
 		GetParameter(pName, &value);
 
 		return value;
 	}
 
-	void ShaderProgram::GetParameter(uint32_t pName, int* params) {
+	void ShaderProgram::GetParameter(uint32_t pName, int* params) const {
 		glGetProgramiv(static_cast<IDType>(*this), pName, params);
 	}
 
@@ -538,6 +538,13 @@ namespace Engine {
 	}
 
 	void ShaderProgram::Populate() {
+		m_GLState->UniformLocations.clear();
+		m_GLState->Attributes.clear();
+		m_GLState->UniformBlockIndices.clear();
+
+		m_GLState->Reflection.Uniforms.clear();
+		m_GLState->Reflection.Blocks.clear();
+
 		PopulateUniforms();
 		PopulateUniformBlocks();
 	}
@@ -550,13 +557,13 @@ namespace Engine {
 		m_GLState->Reflection.Blocks.reserve(count);
 
 		for (uint32_t i = 0; i < count; ++i) {
-			const auto info = QueryUniformBlock(i);
+			const auto info = GetUniformBlockInfo(i);
 
 			m_GLState->Reflection.Blocks.emplace_back(info);
 			m_GLState->UniformBlockIndices[info.Name] = info.Index;
 
 			LOG_GL_DEBUG(
-				"UniformBlock {}, name: {}, Size: {}, Index: {}, ReferedBy: {}",
+				"UniformBlock {}, name: {}, Size: {}, Index: {}, ReferencedBy: {}",
 				i,
 				info.Name,
 				info.Size,
@@ -571,7 +578,7 @@ namespace Engine {
 		LOG_GL_DEBUG("Shader program {} (ID: {}) has {} active uniforms", m_GLState->Label, m_GLState->Program, count);
 
 		for (uint32_t i = 0; i < count; ++i) {
-			const auto info = QueryUniform(i);
+			const auto info = GetUniformInfo(i);
 
 			m_GLState->UniformLocations.emplace(info.Name, info.Location);
 			m_GLState->Reflection.Uniforms.emplace_back(info);
@@ -600,58 +607,66 @@ namespace Engine {
 		}
 	}
 
-	int ShaderProgram::GetActiveUniformI(uint32_t index, uint32_t pName) {
+	int ShaderProgram::GetActiveUniformI(uint32_t index, uint32_t pName) const {
 		int value = 0;
 		glGetActiveUniformsiv(static_cast<IDType>(*this), 1, &index, pName, &value);
 
 		return value;
 	}
 
-	int ShaderProgram::GetActiveUniformBlockI(uint32_t index, uint32_t pName) {
+	int ShaderProgram::GetActiveUniformBlockI(uint32_t index, uint32_t pName) const {
 		int value = 0;
 		glGetActiveUniformBlockiv(static_cast<IDType>(*this), index, pName, &value);
 
 		return value;
 	}
 
-	std::string ShaderProgram::GetActiveUniformBlockName(uint32_t index) {
+	std::string ShaderProgram::GetActiveUniformBlockName(uint32_t index) const {
 		const size_t length = static_cast<size_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_NAME_LENGTH));
-		std::string name(length + 1, 0);
+		std::string name(length, '\0');
+		GLsizei written = 0;
 
-		glGetActiveUniformName(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), nullptr, name.data());
+		glGetActiveUniformBlockName(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), &written, name.data());
+
+		if (written > 0) name.resize(written);
+		// glGetActiveUniformName(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), nullptr, name.data());
 		return name;
 	}
 
-	ShaderProgram::UniformBlockInfo ShaderProgram::QueryUniformBlock(uint32_t index) {
+	ShaderProgram::UniformBlockInfo ShaderProgram::GetUniformBlockInfo(uint32_t index) const {
 		UniformBlockInfo info;
 
 		info.Name = GetActiveUniformBlockName(index);
 		info.Size = static_cast<uint32_t>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_DATA_SIZE));
-		info.Index = static_cast<UniformBlockIndexType>(GetActiveUniformI(index, GL_UNIFORM_BLOCK_BINDING));
+		info.Index = index;
+		info.Binding = static_cast<UniformBlockBindingType>(GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_BINDING));
 
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_VERTEX_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Vertex;
+			info.ShaderType |= ShaderStage::Type::Vertex;
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_CONTROL_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Control;
+			info.ShaderType |= ShaderStage::Type::Control;
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_TESS_EVALUATION_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Evaluation;
+			info.ShaderType |= ShaderStage::Type::Evaluation;
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_GEOMETRY_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Geometry;
+			info.ShaderType |= ShaderStage::Type::Geometry;
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_FRAGMENT_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Fragment;
+			info.ShaderType |= ShaderStage::Type::Fragment;
 		if (GetActiveUniformBlockI(index, GL_UNIFORM_BLOCK_REFERENCED_BY_COMPUTE_SHADER) == GL_TRUE)
-			info.ShaderType = ShaderStage::Type::Compute;
+			info.ShaderType |= ShaderStage::Type::Compute;
 
 		return info;
 	}
 
-	ShaderProgram::UniformInfo ShaderProgram::QueryUniform(uint32_t index) {
+	ShaderProgram::UniformInfo ShaderProgram::GetUniformInfo(uint32_t index) const {
 		UniformInfo info;
 
-		uint32_t length = GetActiveUniformI(index, GL_UNIFORM_NAME_LENGTH);
+		uint32_t length = static_cast<uint32_t>(GetActiveUniformI(index, GL_UNIFORM_NAME_LENGTH));
 
-		info.Name = std::string(length, 0);
-		glGetActiveUniform(static_cast<IDType>(*this), index, length, nullptr, &info.Size, &info.Type, info.Name.data());
+		info.Name = std::string(length, '\0');
+		GLsizei written = 0;
+		glGetActiveUniform(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), &written, &info.Size, &info.Type, info.Name.data());
+		if (written > 0) info.Name.resize(written);
+
 		info.Location = glGetUniformLocation(static_cast<IDType>(*this), info.Name.data());
 
 		if (info.Size > 1 && info.Name.ends_with("[0]")) {
