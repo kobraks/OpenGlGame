@@ -94,16 +94,31 @@ namespace Engine {
 		}
 
 	private:
-		template <typename ValueType, typename... Args>
-		void PushPairs(ImGuiStyleVar idx, ValueType&& value, Args&&... args) {
+		template <typename ValueType>
+		void PushColor(ImGuiStyleVar idx, ValueType&& value) {
 			if constexpr (std::is_same_v<ValueType, Color>) {
 				const auto fColor = value.ToFloat();
 				ImGui::PushStyleColor(idx, ImVec4(fColor.x, fColor.y, fColor.z, fColor.w));
-			} else {
+			}
+			else {
 				ImGui::PushStyleColor(idx, std::forward<ValueType>(value));
 			}
 
 			++m_Count;
+		}
+
+		template <typename ValueType, typename... Args>
+		void PushPairs(ImGuiStyleVar idx, ValueType&& value, Args&&... args) {
+			PushColor(idx, std::forward<ValueType>(value));
+
+			if constexpr (sizeof...(Args) > 0) {
+				PushPairs(std::forward<Args&&>(args)...);
+			}
+		}
+
+		template <typename ValueType, typename... Args>
+		void PushParis(std::pair<ImGuiStyleVar, ValueType> pair, Args&&... args) {
+			PushColor(pair.first, std::forward<ValueType>(pair.second));
 
 			if constexpr (sizeof...(Args) > 0) {
 				PushPairs(std::forward<Args&&>(args)...);
@@ -151,6 +166,16 @@ namespace Engine {
 		template <typename ValueType, typename... Args>
 		void PushPairs(ImGuiStyleVar idx, ValueType&& value, Args&&... args) {
 			ImGui::PushStyleVar(idx, std::forward<ValueType>(value));
+			++m_Count;
+
+			if constexpr (sizeof...(Args) > 0) {
+				PushPairs(std::forward<Args&&>(args)...);
+			}
+		}
+
+		template <typename ValueType, typename... Args>
+		void PushParis(std::pair<ImGuiStyleVar, ValueType> pair, Args&&... args) {
+			ImGui::PushStyleVar(pair.first, pair.second);
 			++m_Count;
 
 			if constexpr (sizeof...(Args) > 0) {
