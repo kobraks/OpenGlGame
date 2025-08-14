@@ -50,7 +50,6 @@ namespace Engine {
 		Type GetType() const { return m_GLState->Type; }
 
 		std::string_view TypeToString() const;
-		static std::string_view TypeToString(Type type);
 
 		std::string_view Log() const { return m_GLState->LogMessage; }
 
@@ -101,4 +100,22 @@ namespace Engine {
 		lhs = lhs & rhs;
 		return lhs;
 	}
+
+	namespace Utils {
+		std::string ShaderStageTypeToString(ShaderStage::Type type);
+		std::string ShaderStageMaskToString(ShaderStage::Type mask);
+	}
 }
+
+template<>
+struct fmt::formatter<Engine::ShaderStage::Type> {
+	constexpr auto parse(format_parse_context& ctx) {
+		return ctx.begin();
+	}
+
+	template<typename FormatContext>
+	auto format(Engine::ShaderStage::Type mask, FormatContext& ctx) const {
+		auto s = Engine::Utils::ShaderStageMaskToString(mask);
+		return fmt::format_to(ctx.out(), "{}", s);
+	}
+};

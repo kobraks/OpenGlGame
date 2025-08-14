@@ -568,7 +568,7 @@ namespace Engine {
 				info.Name,
 				info.Size,
 				info.Index,
-				ShaderStage::TypeToString(info.ShaderType)
+				info.ShaderType
 			);
 		}
 	}

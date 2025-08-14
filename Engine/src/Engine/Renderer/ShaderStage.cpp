@@ -33,6 +33,8 @@ namespace Engine {
 
 		constexpr std::string_view ShaderTypeString(ShaderStage::Type type) {
 			switch (type) {
+			case ShaderStage::Type::None:
+				return "None";
 			case ShaderStage::Type::Vertex:
 				return "Vertex";
 			case ShaderStage::Type::Fragment:
@@ -179,10 +181,6 @@ namespace Engine {
 		return Utils::ShaderTypeString(m_GLState->Type);
 	}
 
-	std::string_view ShaderStage::TypeToString(Type type) {
-		return Utils::ShaderTypeString(type);
-	}
-
 	ShaderStage::ShaderStage(Type type) : m_GLState(MakeRef<GLState>(type)) {
 	}
 
@@ -193,5 +191,32 @@ namespace Engine {
 
 	ShaderStage::GLState::~GLState() {
 		glDeleteShader(Shader);
+	}
+
+	std::string Utils::ShaderStageTypeToString(ShaderStage::Type type) {
+		return Utils::ShaderTypeString(type).data();
+	}
+
+	std::string Utils::ShaderStageMaskToString(ShaderStage::Type mask) {
+		using T = ShaderStage::Type;
+		if (mask == T::None)
+			return "None";
+
+		std::string out;
+		auto add = [&](T bit, std::string_view name) {
+			if ((mask & bit) != T::None) {
+				if (!out.empty())
+					out += " | ";
+				out += name;
+			}
+			};
+
+		add(T::Vertex, "Vertex");
+		add(T::Fragment, "Fragment");
+		add(T::Geometry, "Geometry");
+		add(T::Compute, "Compute");
+		add(T::Control, "Tessellation Control");
+		add(T::Evaluation, "Tessellation Evaluation");
+		return out;
 	}
 }
