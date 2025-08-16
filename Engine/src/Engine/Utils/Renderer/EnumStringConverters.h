@@ -17,6 +17,11 @@ namespace Engine::Utils {
 	const char* ToString(BufferAccess access);
 	const char* ToString(BufferStorageMode mode);
 	const char* ToString(BufferTarget target);
+
+	const char* ToString(UniformKind kind);
+	const char* ToString(ScalarKind kind);
+	const char* ToString(TextureDim texture);
+	std::string ToString(UniformTypeDesc desc);
 }
 
 template <>
@@ -107,5 +112,53 @@ template <>
 struct fmt::formatter<Engine::BufferTarget> : fmt::formatter<const char*> {
 	auto format(Engine::BufferTarget v, format_context& ctx) const {
 		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::UniformKind> : fmt::formatter<const char*> {
+	auto format(Engine::UniformKind uniform, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(uniform), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::ScalarKind> : fmt::formatter<const char*> {
+	auto format(Engine::ScalarKind scalar, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(scalar), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::TextureDim> : fmt::formatter<const char*> {
+	auto format(Engine::TextureDim texture, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(texture), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::UniformTypeDesc>{
+	char Presentation = 'g';
+
+	constexpr auto parse(fmt::format_parse_context& ctx) {
+		auto it = ctx.begin();
+		auto end = ctx.end();
+
+		if (it != end && *it != '}') {
+			Presentation = *it++;
+			if (it != end && *it != '}') {
+				throw fmt::format_error("Invalid format specifier for UniformTypeDesc");
+			}
+		}
+
+		return it;
+	}
+
+	auto format(Engine::UniformTypeDesc desc, format_context& ctx) const {
+		if (Presentation == 'v') {
+			return fmt::format_to(ctx.out(), "UniformTypeDesc {{ Kind: {}, Scalar: {}, Rows: {}, Cols: {}, Dim: {}, Shadow: {} }}", desc.Kind, desc.Scalar, desc.Rows, desc.Cols, desc.Dim, desc.Shadow);
+		}
+
+		return fmt::format_to(ctx.out(), "{}", Engine::Utils::ToString(desc));
 	}
 };

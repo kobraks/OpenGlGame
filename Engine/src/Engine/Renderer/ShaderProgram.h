@@ -2,6 +2,7 @@
 #include "Engine/Core/Base.h"
 
 #include "Engine/Renderer/ShaderStage.h"
+#include "Engine/Renderer/GraphicEnums.h"
 #include "Engine/Utils/StdUtils.h"
 
 #include <memory>
@@ -59,7 +60,7 @@ namespace Engine {
 		struct UniformInfo {
 			std::string Name;
 			int Size = 0;
-			uint32_t Type = 0;
+			UniformTypeDesc Type{};
 			UniformLocationType Location = InvalidUniformLocation;
 		};
 

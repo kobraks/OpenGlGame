@@ -263,4 +263,94 @@ namespace Engine::Utils {
 
 		return "Unknown";
 	}
+
+	const char* ToString(UniformKind kind) {
+		switch (kind) {
+		case UniformKind::Scalar:
+			return "Scalar";
+		case UniformKind::Vector:
+			return "Vector";
+		case UniformKind::Matrix:
+			return "Matrix";
+		case UniformKind::Sampler:
+			return "Sampler";
+		case UniformKind::Image:
+			return "Image";
+		case UniformKind::AtomicCounter:
+			return "AtomicCounter";
+
+		default:
+			return "Unknown";
+		}
+	}
+
+	const char* ToString(ScalarKind kind) {
+		switch (kind) {
+		case ScalarKind::Bool:
+			return "Bool";
+		case ScalarKind::Int:
+			return "Int";
+		case ScalarKind::UInt:
+			return "UInt";
+		case ScalarKind::Float:
+			return "Float";
+		case ScalarKind::Double:
+			return "Double";
+
+		default:
+			return "None";
+		}
+	}
+
+	const char* ToString(TextureDim texture) {
+		switch (texture) {
+		case TextureDim::D1:
+			return "1D";
+		case TextureDim::D2:
+			return "2D";
+		case TextureDim::D3:
+			return "3D";
+		case TextureDim::Cube:
+			return "Cube";
+		case TextureDim::Rect:
+			return "Rect";
+		case TextureDim::Buffer:
+			return "Buffer";
+		case TextureDim::D1Array:
+			return "1DArray";
+		case TextureDim::D2Array:
+			return "2DArray";
+		case TextureDim::CubeArray:
+			return "CubeArray";
+		case TextureDim::D2MS:
+			return "D2MS";
+		case TextureDim::D2MSArray:
+			return "D2MSArray";
+		default:
+			return "Unknown";
+		}
+	}
+
+	std::string ToString(UniformTypeDesc desc) {
+		using namespace std::string_literals;
+		switch (desc.Kind) {
+		case UniformKind::Scalar:
+			return ToString(desc.Scalar);
+		case UniformKind::Vector:
+			return std::string(ToString(desc.Scalar)) + " vec" + std::to_string(desc.Rows);
+		case UniformKind::Matrix:
+			return std::string(ToString(desc.Scalar)) + " mat" + std::to_string(desc.Rows) + "x" + std::to_string(desc.Cols);
+		case UniformKind::Sampler: {
+			std::string base = "Sampler"s + ToString(desc.Dim);
+			if (desc.Shadow) base += "Shadow";
+			return base;
+		}
+		case UniformKind::Image:
+			return "Image"s + ToString(desc.Dim);
+		case UniformKind::AtomicCounter:
+			return "Atomic_uInt";
+		default:
+			return "Unknown";
+		}
+	}
 }

@@ -16,4 +16,6 @@ namespace Engine::Utils {
 	uint32_t EnumToGLConstant(BufferStorageFlags flags);
 	uint32_t EnumToGLConstant(BufferTarget target);
 	uint32_t EnumToGLConstant(BufferUsage usage);
+
+	UniformTypeDesc GLToUniformTypeDesc(uint32_t glEnum);
 }

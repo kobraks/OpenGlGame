@@ -366,4 +366,83 @@ namespace Engine::Utils {
 		case BufferUsage::StreamCopy: return GL_STREAM_COPY;
 		}
 	}
+
+	static UniformTypeDesc Vec(ScalarKind s, int n) { return { UniformKind::Vector, s, static_cast<uint8_t>(n), 1 }; }
+	static UniformTypeDesc Mat(ScalarKind s, int rows, int cols) { return { UniformKind::Matrix, s, static_cast<uint8_t>(rows), static_cast<uint8_t>(cols) }; }
+
+	UniformTypeDesc GLToUniformTypeDesc(uint32_t glEnum) {
+		switch (glEnum) {
+			//Scalars
+		case GL_BOOL: return { UniformKind::Scalar, ScalarKind::Bool, 1, 1 };
+		case GL_INT: return { UniformKind::Scalar, ScalarKind::Int, 1, 1 };
+		case GL_UNSIGNED_INT: return { UniformKind::Scalar, ScalarKind::UInt, 1, 1 };
+		case GL_FLOAT: return { UniformKind::Scalar, ScalarKind::Float, 1, 1 };
+		case GL_DOUBLE: return { UniformKind::Scalar, ScalarKind::Double, 1, 1 };
+
+			//Vectors
+		case GL_BOOL_VEC2: return Vec(ScalarKind::Bool, 2);
+		case GL_BOOL_VEC3: return Vec(ScalarKind::Bool, 3);
+		case GL_BOOL_VEC4: return Vec(ScalarKind::Bool, 4);
+
+		case GL_INT_VEC2: return Vec(ScalarKind::Int, 2);
+		case GL_INT_VEC3: return Vec(ScalarKind::Int, 3);
+		case GL_INT_VEC4: return Vec(ScalarKind::Int, 4);
+
+		case GL_UNSIGNED_INT_VEC2: return Vec(ScalarKind::UInt, 2);
+		case GL_UNSIGNED_INT_VEC3: return Vec(ScalarKind::UInt, 3);
+		case GL_UNSIGNED_INT_VEC4: return Vec(ScalarKind::UInt, 4);
+
+		case GL_FLOAT_VEC2: return Vec(ScalarKind::Float, 2);
+		case GL_FLOAT_VEC3: return Vec(ScalarKind::Float, 3);
+		case GL_FLOAT_VEC4: return Vec(ScalarKind::Float, 4);
+
+		case GL_DOUBLE_VEC2: return Vec(ScalarKind::Double, 2);
+		case GL_DOUBLE_VEC3: return Vec(ScalarKind::Double, 3);
+		case GL_DOUBLE_VEC4: return Vec(ScalarKind::Double, 4);
+
+			//Matrices (float)
+		case GL_FLOAT_MAT2: return Mat(ScalarKind::Float, 2, 2);
+		case GL_FLOAT_MAT3: return Mat(ScalarKind::Float, 3, 3);
+		case GL_FLOAT_MAT4: return Mat(ScalarKind::Float, 4, 4);
+		case GL_FLOAT_MAT2x3: return Mat(ScalarKind::Float, 2, 3);
+		case GL_FLOAT_MAT3x2: return Mat(ScalarKind::Float, 3, 2);
+		case GL_FLOAT_MAT2x4: return Mat(ScalarKind::Float, 2, 4);
+		case GL_FLOAT_MAT4x2: return Mat(ScalarKind::Float, 4, 2);
+		case GL_FLOAT_MAT3x4: return Mat(ScalarKind::Float, 3, 4);
+		case GL_FLOAT_MAT4x3: return Mat(ScalarKind::Float, 4, 3);
+
+			//Matrices (double)
+		case GL_DOUBLE_MAT2: return Mat(ScalarKind::Double, 2, 2);
+		case GL_DOUBLE_MAT3: return Mat(ScalarKind::Double, 3, 3);
+		case GL_DOUBLE_MAT4: return Mat(ScalarKind::Double, 4, 4);
+		case GL_DOUBLE_MAT2x3: return Mat(ScalarKind::Double, 2, 3);
+		case GL_DOUBLE_MAT3x2: return Mat(ScalarKind::Double, 3, 2);
+		case GL_DOUBLE_MAT2x4: return Mat(ScalarKind::Double, 2, 4);
+		case GL_DOUBLE_MAT4x2: return Mat(ScalarKind::Double, 4, 2);
+		case GL_DOUBLE_MAT3x4: return Mat(ScalarKind::Double, 3, 4);
+		case GL_DOUBLE_MAT4x3: return Mat(ScalarKind::Double, 4, 3);
+
+			// Samplers
+		case GL_SAMPLER_2D: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::D2, false };
+		case GL_SAMPLER_2D_SHADOW: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::D2, true };
+		case GL_SAMPLER_CUBE: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::Cube, false };
+		case GL_SAMPLER_2D_ARRAY: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::D2Array, false };
+		case GL_SAMPLER_2D_ARRAY_SHADOW: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::D2Array, true };
+		case GL_SAMPLER_BUFFER: return { UniformKind::Sampler, ScalarKind::Float, 0, 0, TextureDim::Buffer, false };
+		case GL_INT_SAMPLER_2D: return { UniformKind::Sampler, ScalarKind::Int, 0, 0, TextureDim::D2, false };
+		case GL_UNSIGNED_INT_SAMPLER_2D: return { UniformKind::Sampler, ScalarKind::UInt, 0, 0, TextureDim::D2, false };
+
+			//Images
+		case GL_IMAGE_2D: return { UniformKind::Image, ScalarKind::Float, 0, 0, TextureDim::D2, false };
+		case GL_INT_IMAGE_2D: return { UniformKind::Image, ScalarKind::Int, 0, 0, TextureDim::D2, false };
+		case GL_UNSIGNED_INT_IMAGE_2D: return { UniformKind::Image, ScalarKind::UInt, 0, 0, TextureDim::D2, false };
+
+			//Atomic counter
+		case GL_UNSIGNED_INT_ATOMIC_COUNTER: return { UniformKind::AtomicCounter, ScalarKind::UInt, 0, 0 };
+
+		default:
+			ENGINE_ASSERT(false, "Unknown GL enum for uniform type our Unimplemented one");
+			return {};
+		}
+	}
 }

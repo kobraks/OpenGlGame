@@ -2,6 +2,9 @@
 #include "ShaderProgram.h"
 
 #include "Engine/Renderer/Texture.h"
+#include "Engine/Utils/Renderer/GLEnumConverters.h"
+#include "Engine/Utils/Renderer/EnumStringConverters.h"
+
 #include "glad/glad.h"
 
 #include <boost/algorithm/string.hpp>
@@ -664,10 +667,12 @@ namespace Engine {
 
 		info.Name = std::string(length, '\0');
 		GLsizei written = 0;
-		glGetActiveUniform(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), &written, &info.Size, &info.Type, info.Name.data());
+		GLenum glType = 0;
+		glGetActiveUniform(static_cast<IDType>(*this), index, static_cast<GLsizei>(length), &written, &info.Size, &glType, info.Name.data());
 		if (written > 0) info.Name.resize(written);
 
 		info.Location = glGetUniformLocation(static_cast<IDType>(*this), info.Name.data());
+		info.Type = Engine::Utils::GLToUniformTypeDesc(static_cast<uint32_t>(glType));
 
 		if (info.Size > 1 && info.Name.ends_with("[0]")) {
 			info.Name.resize(info.Name.size() - 3); //remove "[0]"
