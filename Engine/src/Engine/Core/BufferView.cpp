@@ -69,6 +69,26 @@ namespace Engine {
 		return { m_Data, m_Size };
 	}
 
+	void BufferView::CopyFrom(const void* data, SizeType size, SizeType offset) {
+		ENGINE_ASSERT(data != nullptr, "BufferView::CopyFrom: Data pointer is null");
+		if (data == nullptr)
+			throw std::invalid_argument("BufferView::CopyFrom: Data pointer is null");
+		ENGINE_ASSERT(offset + size <= m_Size, "BufferView::CopyFrom: Overflow");
+		if (offset + size > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::CopyFrom: Out of bounds (offset={}, size={}, buffer size={})", offset, size, m_Size));
+		std::memcpy(m_Data + offset, data, size);
+	}
+
+	void BufferView::CopyFrom(const BufferView& buffer, SizeType offset) {
+		ENGINE_ASSERT(buffer.Data() != nullptr, "BufferView::CopyFrom: BufferView data pointer is null");
+		if (buffer.Data() == nullptr)
+			throw std::invalid_argument("BufferView::CopyFrom: BufferView data pointer is null");
+		ENGINE_ASSERT(offset + buffer.Size() <= m_Size, "BufferView::CopyFrom: Overflow");
+		if (offset + buffer.Size() > m_Size)
+			throw std::out_of_range(fmt::format("BufferView::CopyFrom: Out of bounds (offset={}, size={}, buffer size={})", offset, buffer.Size(), m_Size));
+		std::memcpy(m_Data + offset, buffer.Data(), buffer.Size());
+	}
+
 	void BufferView::Read(std::byte* destination, SizeType size, SizeType offset) const {
 		ENGINE_ASSERT(destination != nullptr, "BufferView::Read: Destination pointer is null");
 		if (destination == nullptr)

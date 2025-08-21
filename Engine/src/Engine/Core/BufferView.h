@@ -32,6 +32,9 @@ namespace Engine {
 		std::byte* Data() { return m_Data; }
 		const std::byte* Data() const { return m_Data; }
 
+		void CopyFrom(const void* data, SizeType size, SizeType offset = 0);
+		void CopyFrom(const BufferView& buffer, SizeType offset = 0);
+
 		void Read(std::byte* destination, SizeType size, SizeType offset = 0) const;
 
 		void Fill(std::byte value);

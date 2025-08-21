@@ -79,6 +79,26 @@ namespace Engine {
 		return { span.data(), span.size_bytes() };
 	}
 
+	void Buffer::CopyFrom(const void* data, SizeType size, SizeType offset) {
+		ENGINE_ASSERT(data != nullptr, "Buffer::CopyFrom: Data pointer is null");
+		if (data == nullptr)
+			throw std::invalid_argument("Buffer::CopyFrom: Data pointer is null");
+		ENGINE_ASSERT(offset + size <= m_Size, "Buffer::CopyFrom: Overflow");
+		if (offset + size > m_Size)
+			throw std::runtime_error("Buffer::CopyFrom: Overflow");
+		std::memcpy(m_Data.get() + offset, data, size);
+	}
+
+	void Buffer::CopyFrom(const BufferView& buffer, SizeType offset) {
+		ENGINE_ASSERT(buffer.Data() != nullptr, "Buffer::CopyFrom: BufferView data pointer is null");
+		if (buffer.Data() == nullptr)
+			throw std::invalid_argument("Buffer::CopyFrom: BufferView data pointer is null");
+		ENGINE_ASSERT(offset + buffer.Size() <= m_Size, "Buffer::CopyFrom: Overflow");
+		if (offset + buffer.Size() > m_Size)
+			throw std::runtime_error("Buffer::CopyFrom: Overflow");
+		std::memcpy(m_Data.get() + offset, buffer.Data(), buffer.Size());
+	}
+
 	void Buffer::Allocate(SizeType size) {
 		if (size == 0) {
 			Release();

@@ -28,6 +28,9 @@ namespace Engine {
 		static Buffer Copy(const BufferView& buffer);
 		static Buffer FromSpan(std::span<const std::byte> span);
 
+		void CopyFrom(const void* data, SizeType size, SizeType offset = 0);
+		void CopyFrom(const BufferView& buffer, SizeType offset = 0);
+
 		void Allocate(SizeType size);
 		void Resize(SizeType newSize);
 		void Release();
