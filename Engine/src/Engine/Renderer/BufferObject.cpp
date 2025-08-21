@@ -82,12 +82,12 @@ namespace Engine {
 		LOG_GL_TRACE("BufferObject::Bind(): ID={}, target={}", m_State->RendererID, m_State->Target);
 	}
 
-	void BufferObject::BindTo(uint32_t bindingPoint) const {
+	void BufferObject::BindTo(BindingPointType bindingPoint) const {
 		glBindBufferBase(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID);
 		LOG_GL_TRACE("BufferObject::BindTo(): ID={}, target={}, bindingPoint={}", m_State->RendererID, m_State->Target, bindingPoint);
 	}
 
-	void BufferObject::BindRange(uint32_t bindingPoint, uint32_t size, uint32_t offset) const {
+	void BufferObject::BindRange(BindingPointType bindingPoint, uint32_t size, uint32_t offset) const {
 		ENGINE_ASSERT(offset + size <= m_State->Size);
 
 		glBindBufferRange(Utils::EnumToGLConstant(m_State->Target), bindingPoint, m_State->RendererID, offset, size);
@@ -139,12 +139,12 @@ namespace Engine {
 
 		auto stagingBuffer = Utils::CreateBuffer();
 		glNamedBufferStorage(stagingBuffer, size, nullptr, 0);
-		glCopyNamedBufferSubData(m_State->RendererID, stagingBuffer, offset, 0, m_State->Size);
+		glCopyNamedBufferSubData(m_State->RendererID, stagingBuffer, offset, 0, size);
 
 		Buffer buffer(size);
 
 		if (const void* ptr = glMapNamedBuffer(stagingBuffer, GL_MAP_READ_BIT)) {
-			std::memcpy(buffer.Data(), ptr, buffer.Size());
+			buffer.CopyFrom(ptr, size);
 		}
 
 		glDeleteBuffers(1, &stagingBuffer);

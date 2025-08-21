@@ -15,12 +15,13 @@ namespace Engine {
 	class BufferObject {
 	public:
 		using IDType = uint32_t;
+		using BindingPointType = uint32_t;
 
 		virtual ~BufferObject() = default;
 
 		void Bind() const;
-		void BindTo(uint32_t bindingPoint) const;
-		void BindRange(uint32_t bindingPoint, uint32_t size, uint32_t offset = 0) const;
+		void BindTo(BindingPointType bindingPoint) const;
+		virtual void BindRange(BindingPointType bindingPoint, uint32_t size, uint32_t offset = 0) const;
 
 		void Write(const BufferView& buffer, uint32_t offset = 0);
 		
@@ -56,7 +57,7 @@ namespace Engine {
 		void Allocate(uint32_t size, BufferUsage usageHint) { Allocate(nullptr, size, usageHint); }
 
 		void Allocate(const void* data, uint32_t size, BufferStorageFlags flags);
-		void Allocate(const void* data, uint32_t size, BufferUsage usageHit);
+		void Allocate(const void* data, uint32_t size, BufferUsage usageHint);
 
 		void ClearMapping();
 	private:
