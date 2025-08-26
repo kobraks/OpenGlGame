@@ -8,5 +8,13 @@ namespace Engine {
 		~FlagsComponent() = default;
 
 		FlagsComponent(uint32_t flags) : Flags(flags) {}
+
+		void SetFlag(uint32_t flag) {
+			Flags |= flag;
+		}
+
+		void ResetFlag(uint32_t flag) {
+			Flags &= ~flag;
+		}
 	}; 
 }

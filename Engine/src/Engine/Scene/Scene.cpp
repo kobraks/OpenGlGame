@@ -77,7 +77,7 @@ namespace Engine {
 		entity.AddComponent<TransformComponent>();
 		auto& tag = entity.AddComponent<TagComponent>();
 
-		tag.Tag = name.empty() ? "Entity" : name;
+		tag.Tag = name.empty() ? "NewEntity" : name;
 
 		m_EntityMap[id] = entity;
 
@@ -168,7 +168,7 @@ namespace Engine {
 	}
 
 	Entity Scene::DuplicateEntity(Entity entity) {
-		const std::string name = entity.GetName();
+		const std::string name = "Clone" + entity.GetName();
 		Entity newEntity = CreateEntity(name);
 		CopyComponentIfExists(AllComponents{}, newEntity, entity);
 		return newEntity;
@@ -192,7 +192,7 @@ namespace Engine {
 		return {};
 	}
 
-	void Scene::Step(int frames) {
+	void Scene::Step(uint32_t frames) {
 		m_StepFrames = frames;
 	}
 

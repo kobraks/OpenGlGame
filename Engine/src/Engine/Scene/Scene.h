@@ -55,7 +55,7 @@ namespace Engine {
 
 		void SetPaused(bool paused) { m_IsPaused = paused; }
 
-		void Step(int frames = 1);
+		void Step(uint32_t frames = 1);
 
 		std::string_view Title() const { return m_Title; }
 		void SetTitle(const std::string &title) { m_Title = title; }
@@ -74,7 +74,7 @@ namespace Engine {
 		uint32_t m_ViewportHeight = 0;
 		bool m_IsRunning = false;
 		bool m_IsPaused = false;
-		int m_StepFrames = 0;
+		uint32_t m_StepFrames = 0;
 
 		std::string m_Title = {};
 
