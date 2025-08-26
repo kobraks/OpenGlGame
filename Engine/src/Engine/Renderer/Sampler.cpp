@@ -90,7 +90,7 @@ namespace Engine {
 		spec.BorderColor = Color::White;
 
 		spec.CompareEnabled = true;
-		spec.Compare = CompareFunction::LEqual;
+		spec.CompareFun = CompareFunction::LEqual;
 
 		return spec;
 	}
@@ -136,7 +136,7 @@ namespace Engine {
 		// Compare (for shadow samplers)
 		Parameter(GL_TEXTURE_COMPARE_MODE, spec.CompareEnabled ? GL_COMPARE_REF_TO_TEXTURE : GL_NONE);
 		if (spec.CompareEnabled) {
-			Parameter(GL_TEXTURE_COMPARE_FUNC, static_cast<int32_t>(Utils::EnumToGLConstant(spec.Compare)));
+			Parameter(GL_TEXTURE_COMPARE_FUNC, static_cast<int32_t>(Utils::EnumToGLConstant(spec.CompareFun)));
 		}
 
 		Parameter(GL_TEXTURE_BORDER_COLOR, spec.BorderColor);
@@ -146,17 +146,17 @@ namespace Engine {
 	}
 
 	float Sampler::QueryMaxAnisotropy() {
+		if (!Utils::HasAsioExt()) {
+			LOG_ENGINE_WARN("Anisotropic filtering not supported!");
+			return 1.0f;
+		}
+
 		static bool initialized = false;
 		static float maxAniso = 1.0f;
 
 		if (!initialized) {
 			initialized = true;
-			if (Utils::HasAsioExt()) {
-				glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
-			}
-			else{
-				LOG_ENGINE_WARN("Anisotropic filtering not supported!");
-			}
+			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
 		}
 
 		return maxAniso;

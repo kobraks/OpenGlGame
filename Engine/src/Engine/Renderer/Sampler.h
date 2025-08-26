@@ -27,7 +27,7 @@ namespace Engine {
 
 		//Shadow comparison
 		bool CompareEnabled = false;
-		CompareFunction Compare = CompareFunction::LEqual;
+		CompareFunction CompareFun = CompareFunction::LEqual;
 
 		std::string Label;
 	};
@@ -55,6 +55,7 @@ namespace Engine {
 		static SamplerSpec HighAnisotropy(uint32_t x = 8);
 		static SamplerSpec ShadowCompare(); // Clamp to border + compare
 
+		static float QueryMaxAnisotropy();
 	private:
 		struct GLState {
 			IDType ID = 0;
@@ -66,7 +67,6 @@ namespace Engine {
 
 		Sampler();
 		void Initialize(const SamplerSpec& spec);
-		static float QueryMaxAnisotropy();
 
 		void Parameter(uint32_t name, int32_t value);
 		void Parameter(uint32_t name, float value);
