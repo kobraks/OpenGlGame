@@ -110,7 +110,7 @@ namespace Engine {
 	Buffer BufferObject::Read(uint32_t size, uint32_t offset) const {
 		if (IsMapped()) {
 			ENGINE_ASSERT(false, "failed: Buffer is currently mapped.");
-			throw std::runtime_error("Download() failed: buffer is currently mapped.");
+			throw std::runtime_error("BufferObject::Read() failed: buffer is currently mapped.");
 		}
 
 		ENGINE_ASSERT(offset + size <= Size());

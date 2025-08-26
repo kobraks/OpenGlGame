@@ -54,6 +54,22 @@ namespace Engine {
 		StreamCopy
 	};
 
+	inline constexpr BufferAccess operator|(BufferAccess a, BufferAccess b) {
+		return static_cast<BufferAccess>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+	}
+
+	inline constexpr BufferAccess operator|=(BufferAccess& a, BufferAccess b) {
+		return a = (a | b);
+	}
+
+	inline constexpr BufferAccess operator & (BufferAccess a, BufferAccess b) {
+		return static_cast<BufferAccess>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
+	}
+
+	inline constexpr BufferAccess& operator &= (BufferAccess& a, BufferAccess b) {
+		return a = a & b;
+	}
+
 	inline constexpr BufferStorageFlags operator|(BufferStorageFlags a, BufferStorageFlags b) {
 		return static_cast<BufferStorageFlags>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
 	}

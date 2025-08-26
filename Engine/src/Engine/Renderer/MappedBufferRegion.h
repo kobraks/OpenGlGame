@@ -28,18 +28,9 @@ namespace Engine {
 		}
 
 		template<typename T>
-		T Read(const uint32_t offset = 0) const {
-			const std::byte* data = Read();
-			ENGINE_ASSERT(offset + sizeof(T) <= m_Size);
+		T Read(const uint32_t offset = 0) const;
 
-			if (offset + sizeof(T) > m_Size)
-				throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, sizeof(T), m_Size));
-
-			T value;
-			std::memcpy(&value, data + offset, sizeof(T));
-
-			return value;
-		}
+		Buffer ToBuffer() const;
 
 		void Write(const BufferView& buffer, uint32_t offset = 0) { return Write(buffer.Data(), static_cast<uint32_t>(buffer.Size()), offset); }
 		void Write(std::span<std::byte> bytes, uint32_t offset = 0) { return Write(bytes.data(), static_cast<uint32_t>(bytes.size_bytes()), offset); }
@@ -107,6 +98,20 @@ namespace Engine {
 		const BufferAccess m_Access;
 		const BufferObject& m_Buffer;
 	};
+
+	template <typename T>
+	T MappedBufferRegion::Read(const uint32_t offset) const {
+		const std::byte* data = Read();
+		ENGINE_ASSERT(offset + sizeof(T) <= m_Size);
+
+		if (offset + sizeof(T) > m_Size)
+			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, sizeof(T), m_Size));
+
+		T value;
+		std::memcpy(&value, data + offset, sizeof(T));
+
+		return value;
+	}
 
 	template <typename T>
 	std::span<T> MappedBufferRegion::AsSpan(uint32_t offset) {

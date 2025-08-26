@@ -43,6 +43,14 @@ namespace Engine {
 		std::memcpy(m_Data + offset, data, size);
 	}
 
+	Buffer MappedBufferRegion::ToBuffer() const {
+		Utils::AssertAccess(m_Access, true, false);
+		Buffer buffer(m_Size);
+		std::memcpy(buffer.Data(), m_Data, m_Size);
+		LOG_GL_TRACE("MappedBufferRegion::ToBuffer(): {} bytes copied from mapped region to buffer", m_Size);
+		return buffer;
+	}
+
 	Buffer MappedBufferRegion::Copy(uint32_t size, uint32_t offset) const {
 		Buffer buffer(size);
 		CopyTo(buffer, offset);

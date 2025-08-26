@@ -19,10 +19,11 @@ namespace Engine {
 
 		virtual ~BufferObject() = default;
 
-		void Bind() const;
-		void BindTo(BindingPointType bindingPoint) const;
+		virtual void Bind() const;
+		virtual void BindTo(BindingPointType bindingPoint) const;
 		virtual void BindRange(BindingPointType bindingPoint, uint32_t size, uint32_t offset = 0) const;
 
+		void Write(const void* data, uint32_t size, uint32_t offset = 0) { Write(BufferView(data, size), offset); }
 		void Write(const BufferView& buffer, uint32_t offset = 0);
 		
 		Buffer Read(uint32_t offset = 0) const;
