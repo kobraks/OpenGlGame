@@ -18,6 +18,8 @@ namespace Engine::Utils {
 	const char* ToString(BufferStorageMode mode);
 	const char* ToString(BufferTarget target);
 
+	const char* ToString(CompareFunction function);
+
 	const char* ToString(UniformKind kind);
 	const char* ToString(ScalarKind kind);
 	const char* ToString(TextureDim texture);
@@ -111,6 +113,13 @@ struct fmt::formatter<Engine::BufferAccess> : fmt::formatter<const char*> {
 template <>
 struct fmt::formatter<Engine::BufferTarget> : fmt::formatter<const char*> {
 	auto format(Engine::BufferTarget v, format_context& ctx) const {
+		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::CompareFunction> : fmt::formatter<const char*> {
+	auto format(Engine::CompareFunction v, format_context& ctx) const {
 		return fmt::formatter<const char*>::format(Engine::Utils::ToString(v), ctx);
 	}
 };

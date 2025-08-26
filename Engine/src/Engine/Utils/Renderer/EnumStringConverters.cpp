@@ -264,6 +264,28 @@ namespace Engine::Utils {
 		return "Unknown";
 	}
 
+	const char* ToString(CompareFunction function) {
+		switch (function) {
+		case CompareFunction::Never:
+			return "Never";
+		case CompareFunction::Less:
+			return "Less";
+		case CompareFunction::LEqual:
+			return "LessOrEqual";
+		case CompareFunction::Greater:
+			return "Greater";
+		case CompareFunction::GEqual:
+			return "GreaterOrEqual";
+		case CompareFunction::Equal:
+			return "Equal";
+		case CompareFunction::NotEqual:
+			return "NotEqual";
+		case CompareFunction::Always:
+			return "Always";
+		}
+		return "Unknown";
+	}
+
 	const char* ToString(UniformKind kind) {
 		switch (kind) {
 		case UniformKind::Scalar:

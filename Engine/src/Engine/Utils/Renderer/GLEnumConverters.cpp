@@ -350,7 +350,7 @@ namespace Engine::Utils {
 		case BufferTarget::AtomicCounter:
 			return GL_ATOMIC_COUNTER_BUFFER;
 		}
-		return 0; // Invalid target
+		ENGINE_ASSERT(false); throw std::out_of_range("");
 	}
 
 	uint32_t EnumToGLConstant(BufferUsage usage) {
@@ -365,6 +365,22 @@ namespace Engine::Utils {
 		case BufferUsage::StreamRead: return GL_STREAM_READ;
 		case BufferUsage::StreamCopy: return GL_STREAM_COPY;
 		}
+		ENGINE_ASSERT(false); throw std::out_of_range("");
+	}
+
+	uint32_t EnumToGLConstant(CompareFunction function) {
+		switch (function) {
+		case CompareFunction::Never: return GL_NEVER;
+		case CompareFunction::Less: return GL_LESS;
+		case CompareFunction::LEqual: return GL_LEQUAL;
+		case CompareFunction::Greater: return GL_GREATER;
+		case CompareFunction::GEqual: return GL_GEQUAL;
+		case CompareFunction::Equal: return GL_EQUAL;
+		case CompareFunction::NotEqual: return GL_NOTEQUAL;
+		case CompareFunction::Always: return GL_ALWAYS;
+		}
+
+		ENGINE_ASSERT(false); throw std::out_of_range("");
 	}
 
 	static UniformTypeDesc Vec(ScalarKind s, int n) { return { UniformKind::Vector, s, static_cast<uint8_t>(n), 1 }; }
