@@ -275,16 +275,16 @@ namespace Engine {
 
 		void UniformValue(UniformLocationType location, Ref<Texture> texture, uint32_t samplerUnit = 0);
 
-		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer, uint32_t bindingPoint) {
-			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer, bindingPoint);
+		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer) {
+			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer);
 		}
 
-		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset) {
-			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer, bindingPoint, size, offset);
+		void BindUniformBuffer(std::string_view blockName, const UniformBuffer& buffer, uint32_t size, uint32_t offset) {
+			return BindUniformBuffer(GetUniformBlockIndex(blockName), buffer, size, offset);
 		}
 
-		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer, uint32_t bindingPoint);
-		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset);
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer);
+		void BindUniformBuffer(UniformBlockIndexType index, const UniformBuffer& buffer, uint32_t size, uint32_t offset);
 		
 	private:
 		ShaderProgram();

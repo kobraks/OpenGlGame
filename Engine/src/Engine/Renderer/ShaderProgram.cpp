@@ -2,6 +2,8 @@
 #include "ShaderProgram.h"
 
 #include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/UniformBuffer.h"
+
 #include "Engine/Utils/Renderer/GLEnumConverters.h"
 #include "Engine/Utils/Renderer/EnumStringConverters.h"
 
@@ -485,18 +487,18 @@ namespace Engine {
 		glProgramUniform1i(m_GLState->Program, location, samplerUnit);
 	}
 
-	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer, uint32_t bindingPoint) {
-		if (location == InvalidUniformLocation)
+	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer) {
+		if (location == InvalidUniformBlockIndex)
 			return;
 
-		//TODO
+		buffer.BindTo(location);
 	}
 
-	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer, uint32_t bindingPoint, size_t size, size_t offset) {
-		if (location == InvalidUniformLocation)
+	void ShaderProgram::BindUniformBuffer(UniformBlockIndexType location, const UniformBuffer& buffer, uint32_t size, uint32_t offset) {
+		if (location == InvalidUniformBlockIndex)
 			return;
 
-		//TODO
+		buffer.BindRange(location, size, offset);
 	}
 
 	ShaderProgram::ShaderProgram() : m_GLState(MakeRef<GLState>()) {
