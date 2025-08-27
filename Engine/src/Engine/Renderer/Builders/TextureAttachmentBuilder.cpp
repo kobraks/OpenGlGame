@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "TextureAttachmentBuilder.h"
 
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
+
 namespace Engine {
 	TextureAttachmentBuilder& TextureAttachmentBuilder::Format(ImageFormat format) {
 		m_Spec.Format = format;
@@ -16,13 +18,13 @@ namespace Engine {
 
 	TextureAttachmentBuilder& TextureAttachmentBuilder::Filters(FilterMode min, FilterMode mag){
 		m_Spec.MinFilter = min;
-		m_Spec.MagFilter = mag;
+		m_Spec.MagFilter = Utils::SanitizeMag(mag);
 
 		return *this;
 	}
 
 	TextureAttachmentBuilder& TextureAttachmentBuilder::MagFilter(FilterMode mag) {
-		m_Spec.MagFilter = mag;
+		m_Spec.MagFilter = Utils::SanitizeMag(mag);
 
 		return *this;
 	}

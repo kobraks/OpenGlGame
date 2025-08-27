@@ -6,6 +6,7 @@
 #include "Engine/Utils/Renderer/GLEnumConverters.h"
 #include "Engine/Utils/Renderer/EnumStringConverters.h"
 #include "Engine/Utils/Renderer/ImageFormatTraits.h"
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
 
 #include "glad/glad.h"
 
@@ -198,7 +199,7 @@ namespace Engine {
 		}
 
 		m_Internals->Wrapping.S = wrapping;
-		SetParameter(GL_TEXTURE_WRAP_S, Utils::EnumToGLConstant(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_S, static_cast<int>(Utils::EnumToGLConstant(wrapping)));
 	}
 
 	void Texture::SetWrappingT(WrapMode wrapping) {
@@ -208,7 +209,7 @@ namespace Engine {
 		}
 
 		m_Internals->Wrapping.T = wrapping;
-		SetParameter(GL_TEXTURE_WRAP_T, Utils::EnumToGLConstant(wrapping));
+		SetParameter(GL_TEXTURE_WRAP_T, static_cast<int>(Utils::EnumToGLConstant(wrapping)));
 	}
 
 	void Texture::SetFilters(FilterMode min, FilterMode mag) {
@@ -228,7 +229,7 @@ namespace Engine {
 		}
 
 		m_Internals->Filter.Min = filter;
-		SetParameter(GL_TEXTURE_MIN_FILTER, Utils::EnumToGLConstant(filter));
+		SetParameter(GL_TEXTURE_MIN_FILTER, static_cast<int>(Utils::EnumToGLConstant(filter)));
 	}
 
 	void Texture::SetMagFilter(FilterMode filter) {
@@ -242,8 +243,8 @@ namespace Engine {
 			return;
 		}
 
-		m_Internals->Filter.Mag = filter;
-		SetParameter(GL_TEXTURE_MAG_FILTER, Utils::EnumToGLConstant(filter));
+		m_Internals->Filter.Mag = Utils::SanitizeMag(filter);
+		SetParameter(GL_TEXTURE_MAG_FILTER, static_cast<int>(Utils::EnumToGLConstant(filter)));
 	}
 
 	Ref<Image> Texture::ToImage() const {

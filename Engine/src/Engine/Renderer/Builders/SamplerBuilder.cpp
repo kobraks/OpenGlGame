@@ -1,9 +1,13 @@
 #include "pch.h"
 #include "SamplerBuilder.h"
 
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
+
 #include "glad/glad.h"
 
 #include <algorithm>
+
+
 namespace Engine {
 	namespace Utils {
 		static inline bool HasAnisoExt() {
@@ -42,7 +46,7 @@ namespace Engine {
 	}
 
 	SamplerBuilder& SamplerBuilder::MagFilter(FilterMode filter) {
-		m_Spec.Mag = SanitizeMag(filter);
+		m_Spec.Mag = Utils::SanitizeMag(filter);
 		return *this;
 	}
 
@@ -115,10 +119,15 @@ namespace Engine {
 		return *this;
 	}
 
+	SamplerBuilder& SamplerBuilder::Clear() {
+		m_Spec = SamplerSpec();
+		return *this;
+	}
+
 	Ref<Sampler> SamplerBuilder::Build() const {
 		SamplerSpec spec = m_Spec;
 
-		spec.Mag = SanitizeMag(spec.Mag);
+		spec.Mag = Utils::SanitizeMag(spec.Mag);
 
 		if (HasAniso()) {
 			spec.Anisotropy = std::clamp(spec.Anisotropy, 1.f, MaxAniso());
@@ -139,9 +148,5 @@ namespace Engine {
 		}
 
 		return Sampler::QueryMaxAnisotropy();
-	}
-
-	FilterMode SamplerBuilder::SanitizeMag(FilterMode mag) {
-		return (mag == FilterMode::Nearest || mag == FilterMode::Linear) ? mag : FilterMode::Linear;
 	}
 }

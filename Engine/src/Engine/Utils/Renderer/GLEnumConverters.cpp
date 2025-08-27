@@ -48,7 +48,7 @@ namespace Engine::Utils {
 		case ImageFormat::StencilIndex8:
 			return GL_STENCIL_INDEX8;
 		case ImageFormat::StencilIndex16:
-			return GL_STENCIL_INDEX8;
+			return GL_STENCIL_INDEX16;
 		case ImageFormat::R16F:
 			return GL_R16F;
 		case ImageFormat::R16I:
@@ -92,7 +92,7 @@ namespace Engine::Utils {
 		case ImageFormat::RG8:
 			return GL_RG8;
 		case ImageFormat::RG8I:
-			return GL_RGB8I;
+			return GL_RG8I;
 		case ImageFormat::RG8SNorm:
 			return GL_RG8_SNORM;
 		case ImageFormat::RG8UI:
@@ -160,7 +160,7 @@ namespace Engine::Utils {
 		case ImageFormat::RGBA8I:
 			return GL_RGBA8I;
 		case ImageFormat::RGBA8UI:
-			return GL_RGBA8I;
+			return GL_RGBA8UI;
 		case ImageFormat::SRGB8:
 			return GL_SRGB8;
 		case ImageFormat::SRGB8A8:

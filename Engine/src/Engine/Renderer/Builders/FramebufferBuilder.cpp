@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "FramebufferBuilder.h"
 
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
+
 #include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
 #include "Engine/Renderer/Builders/RenderBufferAttachmentBuilder.h"
 #include "Engine/Renderer/Framebuffer.h"
@@ -27,7 +29,7 @@ namespace Engine {
 			textureSpecs.MipLevel = mipLevel;
 
 			textureSpecs.MinFilter = minFilter;
-			textureSpecs.MagFilter = magFilter;
+			textureSpecs.MagFilter = Utils::SanitizeMag(magFilter);
 
 			textureSpecs.UseSRGB = useSRGB;
 

@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "TextureBuilder.h"
 
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
+
 #include "imgui_internal.h"
 #include "Engine/Core/Image.h"
 
@@ -19,7 +21,7 @@ namespace Engine {
 
 	TextureBuilder& TextureBuilder::Filter(FilterMode min, FilterMode mag) {
 		m_FilterMin = min;
-		m_FilterMag = mag;
+		m_FilterMag = Utils::SanitizeMag(mag);
 
 		return *this;
 	}
@@ -140,7 +142,7 @@ namespace Engine {
 		auto texture = Texture::Create(BuildSpecification());
 
 		if (!texture->IsMultisampled()) {
-			texture->SetFilters(m_FilterMin, m_FilterMag);
+			texture->SetFilters(m_FilterMin, Utils::SanitizeMag(m_FilterMag));
 			texture->SetWrapping(m_WrapS, m_WrapT);
 		}
 

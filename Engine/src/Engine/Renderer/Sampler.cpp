@@ -2,6 +2,7 @@
 #include "Sampler.h"
 
 #include "Engine/Utils/Renderer/GLEnumConverters.h"
+#include "Engine/Utils/Renderer/FilterModeUtils.h"
 
 #include "glad/glad.h"
 
@@ -13,7 +14,7 @@ namespace Engine {
 			return static_cast<Sampler::IDType>(id);
 		}
 
-		static bool HasAsioExt() {
+		static bool HasAnsioExt() {
 			return GLAD_GL_EXT_texture_filter_anisotropic != 0;
 		}
 	}
@@ -24,6 +25,7 @@ namespace Engine {
 
 	Ref<Sampler> Sampler::Create(const SamplerSpec& spec) {
 		Ref<Sampler> sampler = Ref<Sampler>(new Sampler());
+		sampler->Initialize(spec);
 
 		return sampler;
 	}
@@ -108,10 +110,11 @@ namespace Engine {
 
 	void Sampler::Initialize(const SamplerSpec& spec) {
 		m_GLState->Specs = spec;
+		m_GLState->Specs.Mag = Utils::SanitizeMag(spec.Mag);
 
 		// Filters
 		Parameter(GL_TEXTURE_MIN_FILTER, static_cast<int32_t>(Utils::EnumToGLConstant(spec.Min)));
-		Parameter(GL_TEXTURE_MIN_FILTER, static_cast<int32_t>(Utils::EnumToGLConstant(spec.Mag)));
+		Parameter(GL_TEXTURE_MAG_FILTER, static_cast<int32_t>(Utils::EnumToGLConstant(spec.Mag)));
 
 		// Wrap
 		Parameter(GL_TEXTURE_WRAP_S, static_cast<int32_t>(Utils::EnumToGLConstant(spec.WrapS)));
@@ -124,7 +127,7 @@ namespace Engine {
 		Parameter(GL_TEXTURE_MAX_LOD, spec.MaxLod);
 
 		// Anisotropy
-		if (Utils::HasAsioExt()) {
+		if (Utils::HasAnsioExt()) {
 			const float clamped = std::max(1.0f, std::min(spec.Anisotropy, QueryMaxAnisotropy()));
 			Parameter(GL_TEXTURE_MAX_ANISOTROPY, clamped);
 
@@ -146,7 +149,7 @@ namespace Engine {
 	}
 
 	float Sampler::QueryMaxAnisotropy() {
-		if (!Utils::HasAsioExt()) {
+		if (!Utils::HasAnsioExt()) {
 			LOG_ENGINE_WARN("Anisotropic filtering not supported!");
 			return 1.0f;
 		}
@@ -156,7 +159,7 @@ namespace Engine {
 
 		if (!initialized) {
 			initialized = true;
-			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+			glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &maxAniso);
 		}
 
 		return maxAniso;

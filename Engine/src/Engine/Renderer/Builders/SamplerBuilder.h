@@ -36,13 +36,13 @@ namespace Engine {
 
 		SamplerBuilder& Label(const std::string& label);
 
+		SamplerBuilder& Clear();
+
 		const SamplerSpec& Spec() const { return m_Spec; }
 		Ref<Sampler> Build() const;
 	private:
 		static bool HasAniso();
 		static float MaxAniso();
-
-		static FilterMode SanitizeMag(FilterMode mag);
 
 		SamplerSpec m_Spec;
 	};
