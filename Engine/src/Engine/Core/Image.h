@@ -95,7 +95,7 @@ namespace Engine {
 		void Reset(uint32_t width, uint32_t height);
 	private:
 		void LoadToMemory(void* buffer);
-		void Prepare(uint32_t width, uint32_t height);
+		void Allocate(uint32_t width, uint32_t height);
 
 		static void FillFreeImagePixels(void* handler, const std::vector<Color>& pixels, uint32_t width, uint32_t height);
 

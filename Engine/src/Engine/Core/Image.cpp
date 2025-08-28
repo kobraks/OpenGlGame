@@ -37,17 +37,6 @@ namespace Engine {
 			}
 		}
 
-		static constexpr Color GetColorFromFreeImage(BYTE* pixels, size_t i) {
-			Color color;
-
-			color.R = pixels[i * 4 + FI_RGBA_RED];
-			color.G = pixels[i * 4 + FI_RGBA_GREEN];
-			color.B = pixels[i * 4 + FI_RGBA_BLUE];
-			color.A = pixels[i * 4 + FI_RGBA_ALPHA];
-
-			return color;
-		}
-
 		const char* ToString(ImageType type) {
 			switch (type) {
 			case ImageType::BMP:     return "BMP";
@@ -83,7 +72,7 @@ namespace Engine {
 	Ref<Image> Image::Create(uint32_t width, uint32_t height, const Color& background) {
 		Ref<Image> image = Ref<Image>(new Image());
 
-		image->Prepare(width, height);
+		image->Allocate(width, height);
 		image->Fill(background);
 
 		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, filled with color: {}", width, height, background);
@@ -95,7 +84,7 @@ namespace Engine {
 		ENGINE_ASSERT(pixels);
 		Ref<Image> image = Ref<Image>(new Image());
 
-		image->Prepare(width, height);
+		image->Allocate(width, height);
 		image->CopyFromRawBuffer(pixels);
 
 		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from Color buffer", width, height);
@@ -107,7 +96,7 @@ namespace Engine {
 		ENGINE_ASSERT(pixels);
 		Ref<Image> image = Ref<Image>(new Image());
 
-		image->Prepare(width, height);
+		image->Allocate(width, height);
 		image->CopyFromRawBuffer(pixels);
 
 		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from uint8_t buffer", width, height);
@@ -119,7 +108,7 @@ namespace Engine {
 		ENGINE_ASSERT(pixels);
 		Ref<Image> image = Ref<Image>(new Image());
 
-		image->Prepare(width, height);
+		image->Allocate(width, height);
 		image->CopyFromRawBuffer(pixels);
 
 		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from glm::vec4 buffer", width, height);
@@ -131,7 +120,7 @@ namespace Engine {
 		ENGINE_ASSERT(pixels);
 		Ref<Image> image = Ref<Image>(new Image());
 
-		image->Prepare(width, height);
+		image->Allocate(width, height);
 		image->CopyFromRawBuffer(pixels);
 
 		LOG_ENGINE_DEBUG("Creating Image - size: {}x{}, from float buffer", width, height);
@@ -218,7 +207,7 @@ namespace Engine {
 			throw std::runtime_error(fmt::format("'{}' is not regular file", sPath));
 
 		if (!std::filesystem::exists(path))
-			throw std::runtime_error(fmt::format("'{}' does not exists", sPath));
+			throw std::runtime_error(fmt::format("'{}' does not exist", sPath));
 
 		const auto format = FreeImage_GetFileType(sPath.c_str());
 
@@ -411,7 +400,7 @@ namespace Engine {
 
 	void Image::Reset(uint32_t width, uint32_t height) {
 		Clear();
-		Prepare(width, height);
+		Allocate(width, height);
 	}
 
 	void Image::LoadToMemory(void *buffer) {
@@ -423,18 +412,25 @@ namespace Engine {
 
 		const auto width = FreeImage_GetWidth(converted);
 		const auto height = FreeImage_GetHeight(converted);
+		const auto pitch = FreeImage_GetPitch(converted);
 
-		Prepare(width, height);
+		FreeImage_FlipVertical(converted);
 
-		const auto pixels = FreeImage_GetBits(converted);
-		for(size_t i = 0; i < m_Pixels.size(); ++i) {
-			m_Pixels[i] = Utils::GetColorFromFreeImage(pixels, i);
+		Allocate(width, height);
+
+		const auto bits = FreeImage_GetBits(converted);
+		for (size_t y = 0; y < height; ++y) {
+			const auto row = bits + y * pitch;
+			for (size_t x = 0; x < width; ++x) {
+				const auto pixel = row + x * 4;
+				m_Pixels[x + y * width] = Color(pixel[FI_RGBA_RED], pixel[FI_RGBA_GREEN], pixel[FI_RGBA_BLUE], pixel[FI_RGBA_ALPHA]);
+			}
 		}
 
 		FreeImage_Unload(converted);
 	}
 
-	void Image::Prepare(uint32_t width, uint32_t height) {
+	void Image::Allocate(uint32_t width, uint32_t height) {
 		const auto size = static_cast<size_t>(width) * static_cast<size_t>(height);
 		m_Width  = width;
 		m_Height = height;
@@ -443,19 +439,23 @@ namespace Engine {
 	}
 
 	void Image::FillFreeImagePixels(void* handler, const std::vector<Color>& pixels, uint32_t width, uint32_t height) {
-		for (uint32_t i = 0; i < width; ++i)
-			for (uint32_t j = 0; j < height; ++j) {
-				RGBQUAD c;
+		FIBITMAP* bmp = static_cast<FIBITMAP*>(handler);
+		const uint32_t pitch = FreeImage_GetPitch(bmp);
+		BYTE* bits = FreeImage_GetBits(bmp);
 
-				const auto pixel = pixels[i + j * width];
-
-				c.rgbRed = static_cast<BYTE>(pixel.R);
-				c.rgbGreen = static_cast<BYTE>(pixel.G);
-				c.rgbBlue = static_cast<BYTE>(pixel.B);
-				c.rgbReserved = static_cast<BYTE>(pixel.A);
-
-				FreeImage_SetPixelColor(static_cast<FIBITMAP*>(handler), i, j, &c);
+		for (size_t y = 0; y < height; ++y) {
+			BYTE* row = bits + y * pitch;
+			for (size_t x = 0; x < width; ++x) {
+				const Color& color = pixels[x + y * width];
+				BYTE* pixel = row + x * 4;
+				pixel[FI_RGBA_RED] = color.R;
+				pixel[FI_RGBA_GREEN] = color.G;
+				pixel[FI_RGBA_BLUE] = color.B;
+				pixel[FI_RGBA_ALPHA] = color.A;
 			}
+		}
+
+		FreeImage_FlipVertical(bmp);
 	}
 
 	void Image::CopyFromRawBuffer(const Color* src) {
