@@ -28,13 +28,13 @@ namespace Engine {
 
 		~Texture() = default;
 
-		[[nodiscard]] explicit operator IDType() const { return m_Internals->ID; }
-		[[nodiscard]] IDType RendererID() const { return m_Internals->ID; }
+		[[nodiscard]] explicit operator IDType() const { return m_GLState->ID; }
+		[[nodiscard]] IDType RendererID() const { return m_GLState->ID; }
 
 		void GenerateMipMaps() const;
 
-		[[nodiscard]] bool HasMipMapsGenerated() const { return m_Internals->MipMapGenerated; }
-		[[nodiscard]] bool IsMultisampled() const { return m_Internals->Multisampled; }
+		[[nodiscard]] bool HasMipMapsGenerated() const { return m_GLState->MipMapGenerated; }
+		[[nodiscard]] bool IsMultisampled() const { return m_GLState->Multisampled; }
 
 		void Bind() const;
 		void BindUnit(uint32_t sampler = 0) const;
@@ -54,21 +54,21 @@ namespace Engine {
 		void SetWrappingS(WrapMode wrapping);
 		void SetWrappingT(WrapMode wrapping);
 
-		[[nodiscard]] WrapMode GetWrappingS() const { return m_Internals->Wrapping.S; }
-		[[nodiscard]] WrapMode GetWrappingT() const { return m_Internals->Wrapping.T; }
+		[[nodiscard]] WrapMode GetWrappingS() const { return m_GLState->Wrapping.S; }
+		[[nodiscard]] WrapMode GetWrappingT() const { return m_GLState->Wrapping.T; }
 
 		void SetFilters(FilterMode min, FilterMode mag);
 		void SetMinFilter(FilterMode filter);
 		void SetMagFilter(FilterMode filter);
 
-		[[nodiscard]] FilterMode GetMagFilter() const { return m_Internals->Filter.Mag; }
-		[[nodiscard]] FilterMode GetMinFilter() const { return m_Internals->Filter.Min; }
+		[[nodiscard]] FilterMode GetMagFilter() const { return m_GLState->Filter.Mag; }
+		[[nodiscard]] FilterMode GetMinFilter() const { return m_GLState->Filter.Min; }
 
-		[[nodiscard]] Vector2u Size() const { return m_Internals->Size; }
-		[[nodiscard]] uint32_t Width() const { return m_Internals->Size.Width; }
-		[[nodiscard]] uint32_t Height() const { return m_Internals->Size.Height; }
+		[[nodiscard]] Vector2u Size() const { return m_GLState->Size; }
+		[[nodiscard]] uint32_t Width() const { return m_GLState->Size.Width; }
+		[[nodiscard]] uint32_t Height() const { return m_GLState->Size.Height; }
 
-		[[nodiscard]] uint32_t Samples() const { return m_Internals->Samples; }
+		[[nodiscard]] uint32_t Samples() const { return m_GLState->Samples; }
 
 		Ref<Image> ToImage() const;
 		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
@@ -94,25 +94,25 @@ namespace Engine {
 
 		void Swap(Texture& to);
 
-		TextureUsage GetUsage() const { return m_Internals->Usage; }
-		void SetUsage(TextureUsage usage) { m_Internals->Usage = usage; }
+		TextureUsage GetUsage() const { return m_GLState->Usage; }
+		void SetUsage(TextureUsage usage) { m_GLState->Usage = usage; }
 
-		[[nodiscard]] bool IsSRGB() const { return m_Internals->ImageFormat == ImageFormat::SRGB8 || m_Internals->ImageFormat == ImageFormat::SRGB8A8 || m_Internals->ImageFormat == ImageFormat::SRGBA; }
-		[[nodiscard]] bool IsValid() const { return m_Internals && m_Internals->ID != 0; }
+		[[nodiscard]] bool IsSRGB() const { return m_GLState->ImageFormat == ImageFormat::SRGB8 || m_GLState->ImageFormat == ImageFormat::SRGB8A8 || m_GLState->ImageFormat == ImageFormat::SRGBA; }
+		[[nodiscard]] bool IsValid() const { return m_GLState && m_GLState->ID != 0; }
 
-		[[nodiscard]] std::string_view Label() const { return m_Internals->Label; }
+		[[nodiscard]] std::string_view Label() const { return m_GLState->Label; }
 
 		static Vector2u GetMaxDim() { return {GetMaxSize(), GetMaxSize()}; }
 		static uint32_t GetMaxSize();
 
 		bool operator==(const Texture& texture) const {
-			return m_Internals->ID == texture.m_Internals->ID;
+			return m_GLState->ID == texture.m_GLState->ID;
 		}
 
 		void Resize(const Vector2u& size);
 		void ResizeNoCopy(const Vector2u& size);
 
-		[[nodiscard]] ImageFormat ImageFormat() const { return m_Internals->ImageFormat; }
+		[[nodiscard]] ImageFormat ImageFormat() const { return m_GLState->ImageFormat; }
 
 		void Invalidate();
 		void Recreate(const Vector2u& size);
@@ -139,6 +139,8 @@ namespace Engine {
 
 		static void ValidateSize(Vector2u size);
 
+		void ReapplyParameters();
+
 	private:
 		struct InternalWrapping {
 			WrapMode S = WrapMode::Repeat;
@@ -150,7 +152,7 @@ namespace Engine {
 			FilterMode Min = FilterMode::NearestMipmapLinear;
 		};
 
-		struct Internals {
+		struct GLState {
 			IDType ID;
 			Vector2u Size;
 
@@ -167,12 +169,12 @@ namespace Engine {
 
 			std::string Label = {};
 
-			Internals(bool multisampled = false);
-			~Internals();
+			GLState(bool multisampled = false);
+			~GLState();
 
 			void Invalidate();
 		};
 
-		Ref<Internals> m_Internals;
+		Ref<GLState> m_GLState;
 	};
 }
