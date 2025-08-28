@@ -6,8 +6,8 @@
 namespace Engine {
 	struct SamplerSpec {
 		// Filters
-		FilterMode Min = FilterMode::LinearMipmapLinear;
-		FilterMode Mag = FilterMode::Linear;
+		FilterMode MinFilterMode = FilterMode::LinearMipmapLinear;
+		FilterMode MagFilterMode = FilterMode::Linear;
 
 		// Wrap
 		WrapMode WrapS = WrapMode::Repeat;

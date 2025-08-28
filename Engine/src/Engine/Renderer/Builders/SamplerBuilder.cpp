@@ -41,12 +41,12 @@ namespace Engine {
 	}
 
 	SamplerBuilder& SamplerBuilder::MinFilter(FilterMode filter) {
-		m_Spec.Min = filter;
+		m_Spec.MinFilterMode = filter;
 		return *this;
 	}
 
 	SamplerBuilder& SamplerBuilder::MagFilter(FilterMode filter) {
-		m_Spec.Mag = Utils::SanitizeMag(filter);
+		m_Spec.MagFilterMode = Utils::SanitizeMag(filter);
 		return *this;
 	}
 
@@ -127,7 +127,7 @@ namespace Engine {
 	Ref<Sampler> SamplerBuilder::Build() const {
 		SamplerSpec spec = m_Spec;
 
-		spec.Mag = Utils::SanitizeMag(spec.Mag);
+		spec.MagFilterMode = Utils::SanitizeMag(spec.MagFilterMode);
 
 		if (HasAniso()) {
 			spec.Anisotropy = std::clamp(spec.Anisotropy, 1.f, MaxAniso());
