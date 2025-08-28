@@ -12,8 +12,8 @@
 namespace Editor {
 	static bool DrawButton(std::string name, Engine::Ref<Engine::Texture> icon, float size) {
 		const ImVec2 buttonSize = { size, size };
-		constexpr ImVec2 uv0 = { 0, 1 };
-		constexpr ImVec2 uv1 = { 1, 0 };
+		constexpr ImVec2 uv0 = { 0, 0 };
+		constexpr ImVec2 uv1 = { 1, 1 };
 
 		return ImGui::ImageButton(name.c_str(), static_cast<ImTextureID>(icon->RendererID()), buttonSize, uv0, uv1);
 	}
