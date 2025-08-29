@@ -93,6 +93,8 @@ namespace Engine {
 
 		RG,
 		RG16,
+		RG16I,
+		RG16UI,
 		RG16F,
 		RG16SNorm,
 		RG32F,

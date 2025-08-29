@@ -79,6 +79,10 @@ namespace Engine::Utils {
 			return GL_RG;
 		case ImageFormat::RG16:
 			return GL_RG16;
+		case ImageFormat::RG16I:
+			return GL_RG16I;
+		case ImageFormat::RG16UI:
+			return GL_RG16UI;
 		case ImageFormat::RG16F:
 			return GL_RG16F;
 		case ImageFormat::RG16SNorm:

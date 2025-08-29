@@ -102,6 +102,8 @@ namespace Engine::Utils {
 			CASE(Red);
 			CASE(RG);
 			CASE(RG16);
+			CASE(RG16I);
+			CASE(RG16UI);
 			CASE(RG16F);
 			CASE(RG16SNorm);
 			CASE(RG32F);

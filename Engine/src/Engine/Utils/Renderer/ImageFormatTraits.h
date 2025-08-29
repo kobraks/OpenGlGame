@@ -8,6 +8,13 @@ namespace Engine::Utils {
 	bool IsStencilOnlyFormat(ImageFormat format);
 	bool IsDepthStencilFormat(ImageFormat format);
 
+	bool IsDepthOnlyFormat(ImageFormat format);
+	bool HasDepthAspect(ImageFormat format);
+	bool HasStencilAspect(ImageFormat format);
+
+	bool IsIntegerColorFormat(ImageFormat format);
+	bool IsSRGBFormat(ImageFormat format);
+
 	bool IsColorFormat(ImageFormat format);
 
 	TextureUsage FormatUsageMapping(ImageFormat format);

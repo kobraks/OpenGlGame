@@ -61,6 +61,70 @@ namespace Engine::Utils {
 		}
 	}
 
+	bool IsDepthOnlyFormat(ImageFormat format) {
+		return IsDepthFormat(format) && !IsDepthStencilFormat(format) && !IsStencilOnlyFormat(format);
+	}
+
+	bool HasDepthAspect(ImageFormat format) {
+		return IsDepthOnlyFormat(format) || IsDepthStencilFormat(format);
+	}
+
+	bool HasStencilAspect(ImageFormat format) {
+		return IsStencilOnlyFormat(format) || IsDepthStencilFormat(format);
+	}
+
+	bool IsIntegerColorFormat(ImageFormat format) {
+		switch (format) {
+			// Signed
+			// 8-bit
+		case ImageFormat::R8I:
+		case ImageFormat::RG8I:
+		case ImageFormat::RGB8I:
+		case ImageFormat::RGBA8I:
+			// 16-bit
+		case ImageFormat::R16I:
+		case ImageFormat::RG16I:
+		case ImageFormat::RGB16I:
+		case ImageFormat::RGBA16I:
+			// 32-bit
+		case ImageFormat::R32I:
+		case ImageFormat::RG32I:
+		case ImageFormat::RGB32I:
+		case ImageFormat::RGBA32I:
+			// Unsigned
+			// 8-bit
+		case ImageFormat::R8UI:
+		case ImageFormat::RG8UI:
+		case ImageFormat::RGB8UI:
+		case ImageFormat::RGBA8UI:
+			// 16-bit
+		case ImageFormat::R16UI:
+		case ImageFormat::RG16UI:
+		case ImageFormat::RGB16UI:
+		case ImageFormat::RGBA16UI:
+			// 32-bit
+		case ImageFormat::R32UI:
+		case ImageFormat::RG32UI:
+		case ImageFormat::RGB32UI:
+		case ImageFormat::RGBA32UI:
+			return true;
+
+		default:
+			return false;
+		}
+	}
+
+	bool IsSRGBFormat(ImageFormat format) {
+		switch (format) {
+		case ImageFormat::SRGB8:
+		case ImageFormat::SRGB8A8:
+		case ImageFormat::SRGBA:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	bool IsColorFormat(ImageFormat format) {
 		return !IsDepthFormat(format);
 	}
@@ -114,20 +178,45 @@ namespace Engine::Utils {
 
 			// Integer formats
 		case ImageFormat::R8I:
+		case ImageFormat::R16I:
 		case ImageFormat::R32I:
 			return { DataFormat::RedInteger, DataType::Int };
 
 		case ImageFormat::RG8I:
+		case ImageFormat::RG16I:
 		case ImageFormat::RG32I:
 			return { DataFormat::RGInteger, DataType::Int };
 
 		case ImageFormat::RGB8I:
+		case ImageFormat::RGB16I:
 		case ImageFormat::RGB32I:
 			return { DataFormat::RGBInteger, DataType::Int };
 
 		case ImageFormat::RGBA8I:
+		case ImageFormat::RGBA16I:
 		case ImageFormat::RGBA32I:
 			return { DataFormat::RGBAInteger, DataType::Int };
+
+			// Unsigned integer formats
+		case ImageFormat::R8UI:
+		case ImageFormat::R16UI:
+		case ImageFormat::R32UI:
+			return { DataFormat::RedInteger, DataType::UnsignedInt };
+
+		case ImageFormat::RG8UI:
+		case ImageFormat::RG16UI:
+		case ImageFormat::RG32UI:
+			return { DataFormat::RGInteger, DataType::UnsignedInt };
+
+		case ImageFormat::RGB8UI:
+		case ImageFormat::RGB16UI:
+		case ImageFormat::RGB32UI:
+			return { DataFormat::RGBInteger, DataType::UnsignedInt };
+
+		case ImageFormat::RGBA8UI:
+		case ImageFormat::RGBA16UI:
+		case ImageFormat::RGBA32UI:
+			return { DataFormat::RGBAInteger, DataType::UnsignedInt };
 
 			// Depth formats
 		case ImageFormat::DepthComponent:
