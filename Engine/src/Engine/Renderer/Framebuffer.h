@@ -31,8 +31,8 @@ namespace Engine {
 
 		static Ref<Framebuffer> Create(const FramebufferSpecification& specification);
 
-		explicit operator IDType() const { return m_Internals->ID; }
-		uint32_t RendererID() const { return m_Internals->ID;  }
+		explicit operator IDType() const { return m_GLState->ID; }
+		uint32_t RendererID() const { return m_GLState->ID;  }
 
 		void Bind(bool adjustViewport = true) const;
 
@@ -41,31 +41,31 @@ namespace Engine {
 
 		void Unbind() const;
 
-		uint32_t GetColorAttachmentCount() const { return m_Internals->ColorAttachmentCount; }
+		uint32_t GetColorAttachmentCount() const { return m_GLState->ColorAttachmentCount; }
 
 		int ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const;
 
-		const Vector2u& Size() const { return m_Internals->Specification.Size;  }
-		uint32_t Width() const { return m_Internals->Specification.Size.Width; }
-		uint32_t Height() const { return m_Internals->Specification.Size.Height; }
+		const Vector2u& Size() const { return m_GLState->Specification.Size;  }
+		uint32_t Width() const { return m_GLState->Specification.Size.Width; }
+		uint32_t Height() const { return m_GLState->Specification.Size.Height; }
 
-		uint32_t AttachmentCount() const { return static_cast<uint32_t>(m_Internals->ColorAttachments.size()) + (m_Internals->DepthBuffer ? 1 : 0); }
+		uint32_t AttachmentCount() const { return static_cast<uint32_t>(m_GLState->ColorAttachments.size()) + (m_GLState->DepthBuffer ? 1 : 0); }
 
 		void Invalidate();
 		void Resize(const Vector2u& size);
 
 		[[nodiscard]] Status GetStatus() const;
 
-		uint32_t SamplesCount() const { return m_Internals->Specification.Samples; }
-		bool IsMultisampled() const { return m_Internals->Specification.Samples > 1; }
+		uint32_t SamplesCount() const { return m_GLState->Specification.Samples; }
+		bool IsMultisampled() const { return m_GLState->Specification.Samples > 1; }
 
-		bool HasStencilTest() const { return m_Internals->Stencil; }
-		bool HasDepthBuffer() const { return m_Internals->DepthBuffer; }
-		bool HasDepthStencil() const { return m_Internals->Stencil && m_Internals->DepthBuffer; }
+		bool HasStencilTest() const { return m_GLState->Stencil; }
+		bool HasDepthBuffer() const { return m_GLState->DepthBuffer; }
+		bool HasDepthStencil() const { return m_GLState->Stencil && m_GLState->DepthBuffer; }
 
-		bool HasColorAttachment() const { return m_Internals->ColorAttachmentCount > 0; }
+		bool HasColorAttachment() const { return m_GLState->ColorAttachmentCount > 0; }
 
-		const FramebufferSpecification& GetSpecification() const { return m_Internals->Specification; }
+		const FramebufferSpecification& GetSpecification() const { return m_GLState->Specification; }
 
 		void SetDrawBuffers(uint32_t drawBuffers);
 
@@ -79,7 +79,7 @@ namespace Engine {
 
 		AttachmentType GetDepthAttachment() const;
 
-		std::string_view Label() const { return m_Internals->Specification.Label; }
+		std::string_view Label() const { return m_GLState->Specification.Label; }
 
 		void Present(const Ref<Framebuffer>& source, BlitMask mask, BlitFilter filter);
 		void BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter);
@@ -114,7 +114,7 @@ namespace Engine {
 
 		void FinalizeAttachment(const Ref<Texture>& texture, const FramebufferTextureAttachmentSpecification& specs, bool isDepth, uint32_t attachmentPoint);
 
-		class Internals {
+		class GLState {
 		public:
 			IDType ID;
 
@@ -131,14 +131,14 @@ namespace Engine {
 
 			Status Status = Status::Undefined;
 
-			Internals(const FramebufferSpecification& specification);
-			~Internals();
+			GLState(const FramebufferSpecification& specification);
+			~GLState();
 
 			void Invalidate();
 
 			enum Status CheckStatus();
 		};
 
-		Ref<Internals> m_Internals;
+		Ref<GLState> m_GLState;
 	};
 }

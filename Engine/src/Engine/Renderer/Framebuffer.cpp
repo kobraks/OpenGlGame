@@ -50,7 +50,7 @@ namespace Engine {
 					GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE
 				};
 			case Framebuffer::Status::IncompleteLayerTargets: return {
-					"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS", "Any of attachment is layerd.",
+					"GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS", "One or more attachments are layered",
 					GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS
 				};
 			}
@@ -80,7 +80,7 @@ namespace Engine {
 			}
 		}
 
-		static std::vector<uint32_t> PrepareBuffersTable() {
+		static std::vector<uint32_t>& PrepareBuffersTable() {
 			static std::vector<uint32_t> buffers;
 
 			if (buffers.empty()) {
@@ -110,19 +110,15 @@ namespace Engine {
 			if (!IsDepthFormat(format))
 				throw std::invalid_argument("Format is not a depth/stencil format");
 
-			if (format <= ImageFormat::Depth32FStencil8) {
+			info.HasDepth = Utils::HasDepthAspect(format);
+			info.HasStencil = Utils::HasStencilAspect(format);
+
+			if (info.HasDepth && info.HasStencil)
 				info.AttachmentPoint = GL_DEPTH_STENCIL_ATTACHMENT;
-				info.HasDepth = true;
-				info.HasStencil = true;
-			}
-			else if (format <= ImageFormat::StencilIndex16) {
+			else if (info.HasStencil)
 				info.AttachmentPoint = GL_STENCIL_ATTACHMENT;
-				info.HasStencil = true;
-			}
-			else {
+			else
 				info.AttachmentPoint = GL_DEPTH_ATTACHMENT;
-				info.HasDepth = true;
-			}
 
 			return info;
 		}
@@ -149,10 +145,10 @@ namespace Engine {
 	}
 
 	void Framebuffer::Bind(bool adjustViewport) const {
-		glBindFramebuffer(GL_FRAMEBUFFER, m_Internals->Specification.SwapchainTarget ? 0u : static_cast<IDType>(*this));
+		glBindFramebuffer(GL_FRAMEBUFFER, m_GLState->Specification.SwapchainTarget ? 0u : static_cast<IDType>(*this));
 
 		if (adjustViewport) {
-			SetViewport({0, 0}, m_Internals->Specification.Size);
+			SetViewport({0, 0}, m_GLState->Specification.Size);
 		}
 	}
 
@@ -169,7 +165,7 @@ namespace Engine {
 	}
 
 	int Framebuffer::ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const {
-		ENGINE_ASSERT(attachmentIndex < m_Internals->ColorAttachmentCount);
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 		int pixelData;
@@ -178,7 +174,7 @@ namespace Engine {
 	}
 
 	void Framebuffer::Invalidate() {
-		m_Internals->Invalidate();
+		m_GLState->Invalidate();
 		CreateFramebuffer();
 	}
 
@@ -189,39 +185,39 @@ namespace Engine {
 			return;
 		}
 
-		m_Internals->Specification.Size = size;
+		m_GLState->Specification.Size = size;
 		Invalidate();
 	}
 
 	Framebuffer::Status Framebuffer::GetStatus() const {
-		return m_Internals->Status;
+		return m_GLState->Status;
 	}
 
 	void Framebuffer::SetDrawBuffers(uint32_t drawBuffers) {
 		if (drawBuffers > 1) {
 			ENGINE_ASSERT(drawBuffers <= MaxDrawBuffersCount());
 
-			const auto buffers = Utils::PrepareBuffersTable();
-			ENGINE_ASSERT(drawBuffers < buffers.size());
+			const auto& buffers = Utils::PrepareBuffersTable();
+			ENGINE_ASSERT(drawBuffers <= buffers.size());
 
-			if (drawBuffers > m_Internals->ColorAttachmentCount) {
+			if (drawBuffers > m_GLState->ColorAttachmentCount) {
 				ENGINE_ASSERT(false);
 
 				throw std::runtime_error(fmt::format(
 					"SetDrawBuffers failed: Number of draw buffers ({}) exceeds available color attachments ({})",
-					drawBuffers, m_Internals->ColorAttachmentCount));
+					drawBuffers, m_GLState->ColorAttachmentCount));
 			}
 
-			if (drawBuffers >= buffers.size())
+			if (drawBuffers > buffers.size())
 				throw std::runtime_error(
 					fmt::format(
 						"SetDrawBuffers failed: Number of draw buffers ({}) exceeds available draw buffers count ({})",
-						drawBuffers, buffers.size()).c_str());
+						drawBuffers, buffers.size()));
 
 			glNamedFramebufferDrawBuffers(static_cast<IDType>(*this), static_cast<GLsizei>(drawBuffers), buffers.data());
 		}
 		else {
-			if (m_Internals->ColorAttachmentCount > 0)
+			if (m_GLState->ColorAttachmentCount > 0)
 				glNamedFramebufferDrawBuffer(static_cast<IDType>(*this), GL_COLOR_ATTACHMENT0);
 			else
 				glNamedFramebufferDrawBuffer(static_cast<IDType>(*this), GL_NONE);
@@ -249,8 +245,8 @@ namespace Engine {
 	}
 
 	Framebuffer::AttachmentType Framebuffer::GetColorAttachment(uint32_t attachmentIndex) const {
-		if (attachmentIndex < m_Internals->ColorAttachments.size()) {
-			return m_Internals->ColorAttachments[attachmentIndex];
+		if (attachmentIndex < m_GLState->ColorAttachments.size()) {
+			return m_GLState->ColorAttachments[attachmentIndex];
 		}
 
 		ENGINE_ASSERT(false);
@@ -278,15 +274,15 @@ namespace Engine {
 	}
 
 	Framebuffer::AttachmentType Framebuffer::GetDepthAttachment() const {
-		if (m_Internals->DepthBuffer)
-			return m_Internals->DepthAttachment;
+		if (m_GLState->DepthBuffer)
+			return m_GLState->DepthAttachment;
 
 		ENGINE_ASSERT(false);
 		throw std::runtime_error("No depth buffer attachment");
 	}
 
 	void Framebuffer::Present(const Ref<Framebuffer>& source, BlitMask mask, BlitFilter filter) {
-		ENGINE_ASSERT(m_Internals->Specification.SwapchainTarget,
+		ENGINE_ASSERT(m_GLState->Specification.SwapchainTarget,
 		              "Present() must be called on a swapchain framebuffer");
 		ENGINE_ASSERT(source->GetSpecification().AllowBlit, "Source framebuffer must have AllowBlit = true");
 
@@ -296,13 +292,13 @@ namespace Engine {
 	}
 
 	void Framebuffer::BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter) {
-		ENGINE_ASSERT(m_Internals->Specification.AllowBlit, "Source framebuffer must allow blit!");
+		ENGINE_ASSERT(m_GLState->Specification.AllowBlit, "Source framebuffer must allow blit!");
 		ENGINE_ASSERT(target->GetSpecification().AllowBlit, "target framebuffer must allow blit!");
-		ENGINE_ASSERT(target->GetSpecification().SwapchainTarget, "Use Present() for blitting to swapchain!");
+		ENGINE_ASSERT(!target->GetSpecification().SwapchainTarget, "Use Present() for blitting to swapchain!");
 
-		glBlitNamedFramebuffer(static_cast<IDType>(*this), static_cast<IDType>(*target), 0, 0, static_cast<GLint>(target->Width()),
-		                       static_cast<GLint>(target->Height()), 0, 0, static_cast<GLint>(Width()),
-		                       static_cast<GLint>(Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
+		glBlitNamedFramebuffer(static_cast<IDType>(*this), static_cast<IDType>(*target), 0, 0, static_cast<GLint>(Width()),
+		                       static_cast<GLint>(Height()), 0, 0, static_cast<GLint>(target->Width()),
+		                       static_cast<GLint>(target->Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
 	}
 
 	Vector2u Framebuffer::MaxViewportSize() {
@@ -320,7 +316,7 @@ namespace Engine {
 	}
 
 	uint32_t Framebuffer::MaxColorAttachmentsCount() {
-		uint32_t maxAttachmentCount = 0;
+		static uint32_t maxAttachmentCount = 0;
 
 		if (maxAttachmentCount == 0) {
 			int value = 0;
@@ -333,7 +329,7 @@ namespace Engine {
 	}
 
 	uint32_t Framebuffer::MaxDrawBuffersCount() {
-		uint32_t maxDrawBuffers = 0;
+		static uint32_t maxDrawBuffers = 0;
 
 		if (maxDrawBuffers == 0) {
 			int value = 0;
@@ -345,12 +341,12 @@ namespace Engine {
 		return maxDrawBuffers;
 	}
 
-	Framebuffer::Framebuffer(const FramebufferSpecification& specification) : m_Internals(
-		MakeRef<Internals>(specification)) {
+	Framebuffer::Framebuffer(const FramebufferSpecification& specification) : m_GLState(
+		MakeRef<GLState>(specification)) {
 	}
 
 	void Framebuffer::CreateFramebuffer() {
-		const auto& specs = m_Internals->Specification;
+		const auto& specs = m_GLState->Specification;
 
 		if (specs.SwapchainTarget)
 			return;
@@ -359,17 +355,17 @@ namespace Engine {
 			glObjectLabel(GL_FRAMEBUFFER, static_cast<IDType>(*this), -1, specs.Label.c_str());
 
 		SetUpAttachments();
-		SetDrawBuffers(m_Internals->ColorAttachmentCount);
+		SetDrawBuffers(m_GLState->ColorAttachmentCount);
 		CheckCompleteness();
 
 		LOG_GL_INFO("Framebuffer '{}' created with {} color and {} depth attachments",
 			Label(),
-			m_Internals->ColorAttachmentCount,
-			m_Internals->DepthBuffer ? 1 : 0);
+			m_GLState->ColorAttachmentCount,
+			m_GLState->DepthBuffer ? 1 : 0);
 	}
 
 	void Framebuffer::CheckCompleteness() const {
-		const auto status = m_Internals->CheckStatus();
+		const auto status = m_GLState->CheckStatus();
 
 		if (status != Status::Complete) {
 			const auto error = Utils::GetErrorMessage(status);
@@ -379,7 +375,7 @@ namespace Engine {
 
 			LOG_GL_ERROR("Framebuffer '{}' incomplete: {} - {}", Label(), error.Name, error.Desc);
 			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", buffer.data()));
-			throw std::exception(fmt::format("Unable to create framebuffer: {}", buffer.data()).c_str());
+			throw std::runtime_error(fmt::format("Unable to create framebuffer: {}", buffer.data()));
 		}
 
 		LOG_GL_DEBUG("Framebuffer '{}' is complete", Label());
@@ -398,19 +394,20 @@ namespace Engine {
 	}
 
 	void Framebuffer::CreateColorAttachment(const FramebufferAttachmentSpecification& specification) {
-		const auto attachmentPoint = m_Internals->ColorAttachmentCount++;
-		ENGINE_ASSERT(attachmentPoint < MaxColorAttachmentsCount());
-		if (attachmentPoint >= MaxColorAttachmentsCount())
+		const auto attachmentPoint = m_GLState->ColorAttachmentCount++;
+		const auto maxColorAttachments = MaxColorAttachmentsCount();
+		ENGINE_ASSERT(attachmentPoint <= maxColorAttachments);
+		if (attachmentPoint > maxColorAttachments)
 			throw std::runtime_error(
 				fmt::format("Failed to create next color attachment ({}) exceeded available attachment points ({})",
-				            attachmentPoint, MaxColorAttachmentsCount()).c_str());
+				            attachmentPoint, maxColorAttachments));
 
 		if (std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification)) {
 			const auto& specs = *std::get_if<FramebufferRenderBufferAttachmentSpecification>(&specification);
 			auto attachment = CreateAttachment(specs);
 			Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, attachment);
 
-			m_Internals->ColorAttachments.emplace_back(attachment);
+			m_GLState->ColorAttachments.emplace_back(attachment);
 		}
 		else { //if its not RenderBuffer its must be Texture
 			auto specs = std::get<FramebufferTextureAttachmentSpecification>(specification);
@@ -463,15 +460,15 @@ namespace Engine {
 
 	uint32_t Framebuffer::DepthAttachmentPoint(ImageFormat format) const {
 		const auto& info = Utils::ToGLDepthAttachmentPoint(format);
-		m_Internals->DepthBuffer = info.HasDepth;
-		m_Internals->Stencil = info.HasStencil;
+		m_GLState->DepthBuffer = info.HasDepth;
+		m_GLState->Stencil = info.HasStencil;
 
 		return info.AttachmentPoint;
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel);
-		m_Internals->DepthAttachment = attachment;
+		m_GLState->DepthAttachment = attachment;
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=false)",
 			Label(), attachment->Label(), format, mipLevel);
@@ -479,7 +476,7 @@ namespace Engine {
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel, layer);
-		m_Internals->DepthAttachment = attachment;
+		m_GLState->DepthAttachment = attachment;
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=true, layer={})",
 			Label(), attachment->Label(), format, mipLevel, layer);
@@ -489,7 +486,7 @@ namespace Engine {
 		Attach(DepthAttachmentPoint(format), attachment);
 		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer as depth attachment (format={})",
 			Label(), format);
-		m_Internals->DepthAttachment = attachment;
+		m_GLState->DepthAttachment = attachment;
 	}
 
 	TextureSpec Framebuffer::CreateAttachmentSpec(const FramebufferSpecification fb,
@@ -534,49 +531,54 @@ namespace Engine {
 			texture->IsMultisampled());
 
 		if (isDepth) {
-			if (m_Internals->Specification.Layered) {
+			if (m_GLState->Specification.Layered) {
 				AttachDepth(specs.Format, texture, specs.MipLevel, specs.Layer);
 			}
 			else {
 				AttachDepth(specs.Format, texture, specs.MipLevel);
 			}
 
-			m_Internals->DepthAttachment = texture;
+			m_GLState->DepthAttachment = texture;
 		}
 		else {
-			if (m_Internals->Specification.Layered) {
+			if (m_GLState->Specification.Layered) {
 				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, texture, specs.MipLevel, specs.Layer);
 			}
 			else {
 				Attach(GL_COLOR_ATTACHMENT0 + attachmentPoint, texture, specs.MipLevel);
 			}
 
-			m_Internals->ColorAttachments.emplace_back(texture);
+			m_GLState->ColorAttachments.emplace_back(texture);
 		}
 	}
 
-	Framebuffer::Internals::Internals(const FramebufferSpecification& specification) : Specification(specification) {
+	Framebuffer::GLState::GLState(const FramebufferSpecification& specification) : Specification(specification) {
 		if (!specification.SwapchainTarget)
 			glCreateFramebuffers(1, &ID);
 		else
 			ID = 0;
 	}
 
-	Framebuffer::Internals::~Internals() {
+	Framebuffer::GLState::~GLState() {
 		glDeleteFramebuffers(1, &ID);
 	}
 
-	void Framebuffer::Internals::Invalidate() {
+	void Framebuffer::GLState::Invalidate() {
 		glDeleteFramebuffers(1, &ID);
 		ColorAttachmentCount = 0;
 		ColorAttachments.clear();
+
+		DepthAttachment = {};
+		DepthBuffer = false;
+		Stencil = false;
+
 		if (!Specification.SwapchainTarget)
 			glCreateFramebuffers(1, &ID);
 		else
 			ID = 0;
 	}
 
-	Framebuffer::Status Framebuffer::Internals::CheckStatus() {
+	Framebuffer::Status Framebuffer::GLState::CheckStatus() {
 		return Status = Utils::GlGetStatus(ID);
 	}
 }
