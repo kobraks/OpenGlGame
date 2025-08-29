@@ -30,7 +30,7 @@ namespace Engine {
 			return;
 
 		glObjectLabel(GL_RENDERBUFFER, *this, -1, label.c_str());
-		m_Internals->Label = label;
+		m_GLState->Label = label;
 	}
 
 	void RenderBuffer::Bind() const {
@@ -41,13 +41,37 @@ namespace Engine {
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	}
 
-	RenderBuffer::RenderBuffer(bool multisampled) : m_Internals(MakeRef<Internals>(multisampled)){
+	uint32_t RenderBuffer::QueryMaxSamples() {
+		static uint32_t maxSamples = 0;
+
+		if (maxSamples == 0) {
+			GLint tmp = 0;
+			glGetIntegerv(GL_MAX_SAMPLES, &tmp);
+			maxSamples = static_cast<uint32_t>(tmp);
+		}
+
+		return maxSamples;
 	}
 
-	RenderBuffer::Internals::Internals(bool multisampled) : ID(Utils::GenRenderBuffer()), Multisampled(multisampled) {
+	Vector2u RenderBuffer::QueryMaxSize() {
+		static Vector2u maxSize = {};
+
+		if (maxSize == Vector2u()) {
+			GLint tmp = 0;
+			glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE, &tmp);
+			maxSize = {static_cast<uint32_t>(tmp), static_cast<uint32_t>(tmp)};
+		}
+
+		return maxSize;
 	}
 
-	RenderBuffer::Internals::~Internals() {
+	RenderBuffer::RenderBuffer(bool multisampled) : m_GLState(MakeRef<GLState>(multisampled)){
+	}
+
+	RenderBuffer::GLState::GLState(bool multisampled) : ID(Utils::GenRenderBuffer()), Multisampled(multisampled) {
+	}
+
+	RenderBuffer::GLState::~GLState() {
 		glDeleteRenderbuffers(1, &ID);
 	}
 
@@ -58,10 +82,22 @@ namespace Engine {
 		if (size.Width == 0 || size.Height == 0)
 			throw std::runtime_error(fmt::format("Invalid size of RenderBuffer {}!", size));
 
+		const auto maxSize = QueryMaxSize();
+		ENGINE_ASSERT(size.Width <= maxSize.Width && size.Height <= maxSize.Height);
+		if (size.Width > maxSize.Width || size.Height > maxSize.Height) {
+			throw std::out_of_range(fmt::format("Requested size {} exceeds maximum supported size {}!", size, QueryMaxSize()));
+		}
+
 		if (samples == 0)
 			throw std::runtime_error("Samples must be at least 1 in RenderBuffer!");
 
 		if (samples > 1) {
+			const auto maxSamples = QueryMaxSamples();
+			ENGINE_ASSERT(samples <= maxSamples);
+			if (samples > maxSamples) {
+				throw std::out_of_range("Requested samples exceed maximum supported samples!");
+			}
+
 			Allocate(samples, size, imageFormat);
 		}
 		else {
@@ -70,17 +106,17 @@ namespace Engine {
 	}
 
 	void RenderBuffer::Allocate(uint32_t samples, const Vector2u& size, enum Engine::ImageFormat imageFormat) {
-		m_Internals->Samples = samples;
-		m_Internals->ImageFormat = imageFormat;
-		m_Internals->Size = size;
+		m_GLState->Samples = samples;
+		m_GLState->ImageFormat = imageFormat;
+		m_GLState->Size = size;
 
 		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), Utils::EnumToGLConstant(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
 	void RenderBuffer::Allocate(const Vector2u& size, enum Engine::ImageFormat imageFormat) {
-		m_Internals->Samples = 1;
-		m_Internals->ImageFormat = imageFormat;
-		m_Internals->Size = size;
+		m_GLState->Samples = 1;
+		m_GLState->ImageFormat = imageFormat;
+		m_GLState->Size = size;
 
 		glNamedRenderbufferStorage(*this, Utils::EnumToGLConstant(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}

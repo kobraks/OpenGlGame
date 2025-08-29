@@ -367,6 +367,42 @@ namespace Engine {
 		return static_cast<uint32_t>(size);
 	}
 
+	uint32_t Texture::QueryMaxColorSamples() {
+		static uint32_t maxSamples = 0;
+
+		if (maxSamples == 0) {
+			GLint tmp = 0;
+			glGetIntegerv(GL_MAX_COLOR_TEXTURE_SAMPLES, &tmp);
+			maxSamples = static_cast<uint32_t>(tmp);
+		}
+
+		return maxSamples;
+	}
+
+	uint32_t Texture::QueryMaxIntegerSamples() {
+		static uint32_t maxSamples = 0;
+
+		if (maxSamples == 0) {
+			GLint tmp = 0;
+			glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &tmp);
+			maxSamples = static_cast<uint32_t>(tmp);
+		}
+
+		return maxSamples;
+	}
+
+	uint32_t Texture::QueryMaxDepthSamples() {
+		static uint32_t maxSamples = 0;
+
+		if (maxSamples == 0) {
+			GLint tmp = 0;
+			glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tmp);
+			maxSamples = static_cast<uint32_t>(tmp);
+		}
+
+		return maxSamples;
+	}
+
 	void Texture::Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat,
 	                     DataType dataType) {
 		UploadPixels(pixels, size, offset, dataFormat, dataType);

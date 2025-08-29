@@ -104,6 +104,9 @@ namespace Engine {
 
 		static Vector2u GetMaxDim() { return {GetMaxSize(), GetMaxSize()}; }
 		static uint32_t GetMaxSize();
+		static uint32_t QueryMaxColorSamples();
+		static uint32_t QueryMaxIntegerSamples();
+		static uint32_t QueryMaxDepthSamples();
 
 		bool operator==(const Texture& texture) const {
 			return m_GLState->ID == texture.m_GLState->ID;
