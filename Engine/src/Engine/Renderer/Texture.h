@@ -11,9 +11,13 @@ namespace Engine {
 	struct TextureSpec {
 		Vector2u Size;
 		ImageFormat ImageFormat = ImageFormat::RGBA8;
+
 		uint32_t Samples = 1;
+		uint32_t Levels = 1; // Only valid for samples == 1; 0 means auto
+
 		std::string Label;
 		const void* InitialData = nullptr;
+
 		std::optional<DataType> DataType = std::nullopt;
 		std::optional<DataFormat> DataFormat = std::nullopt;
 
@@ -43,8 +47,8 @@ namespace Engine {
 		void UnbindUnit(uint32_t sampler = 0) const;
 
 		[[nodiscard]] static Ref<Texture> Create(const TextureSpec& spec);
-		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t samples = 1, const std::string& label = {});
-		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, TextureUsage usage, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t samples = 1, const std::string& label = {});
+		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
+		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, TextureUsage usage, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
 
 		void SetLabel(const std::string& label);
 
@@ -69,6 +73,7 @@ namespace Engine {
 		[[nodiscard]] uint32_t Height() const { return m_GLState->Size.Height; }
 
 		[[nodiscard]] uint32_t Samples() const { return m_GLState->Samples; }
+		[[nodiscard]] uint32_t Levels() const { return m_GLState->Levels; }
 
 		Ref<Image> ToImage() const;
 		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
@@ -124,11 +129,11 @@ namespace Engine {
 	protected:
 		Texture(bool multisampled = false);
 
-		void Initialize(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, TextureUsage usage = TextureUsage::Default, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
+		void Initialize(uint32_t levels, uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, TextureUsage usage = TextureUsage::Default, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
 
 		void ReAlloc(const Vector2u& size);
-		void SetupStorage(uint32_t samples = 1, const Vector2u& size = {1, 1}, TextureUsage usage = TextureUsage::Default, enum ImageFormat imageFormat = ImageFormat::RGBA8);
+		void SetupStorage(uint32_t levels = 1, uint32_t samples = 1, const Vector2u& size = {1, 1}, TextureUsage usage = TextureUsage::Default, enum ImageFormat imageFormat = ImageFormat::RGBA8);
 
 		void UploadPixels(const void* pixels, const Vector2u& size = {}, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
 
@@ -163,6 +168,7 @@ namespace Engine {
 			bool Multisampled = false;
 
 			uint32_t Samples = 1;
+			uint32_t Levels = 1;
 
 			InternalWrapping Wrapping;
 			InternalFilter Filter;

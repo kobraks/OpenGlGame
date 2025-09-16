@@ -6,6 +6,8 @@
 #include "imgui_internal.h"
 #include "Engine/Core/Image.h"
 
+#include <cmath>
+
 namespace Engine {
 	TextureBuilder& TextureBuilder::Size(const Vector2u& size) {
 		m_Size = size;
@@ -51,6 +53,16 @@ namespace Engine {
 		return *this;
 	}
 
+	TextureBuilder& TextureBuilder::Levels(uint32_t levels) {
+		m_Levels = levels;
+		return *this;
+	}
+
+	TextureBuilder& TextureBuilder::LevelsAuto() {
+		m_Levels = 0;
+		return *this;
+	}
+
 	TextureBuilder& TextureBuilder::Usage(TextureUsage usage) {
 		m_Usage = usage;
 
@@ -84,7 +96,9 @@ namespace Engine {
 	TextureBuilder& TextureBuilder::Clear() {
 		m_Size = { 1, 1 };
 		m_ImageFormat = ImageFormat::RGBA8;
+
 		m_Samples = 1;
+		m_Levels = 1;
 
 		m_Usage = TextureUsage::Default;
 
@@ -133,6 +147,19 @@ namespace Engine {
 		}
 		else {
 			spec.Size = m_Size;
+		}
+
+		if (spec.Samples > 1) {
+			if (m_Levels > 1) {
+				LOG_ENGINE_WARN("TextureBuilder: Ignoring builder-set levels {} for multisampled texture (samples = {})", m_Levels, spec.Samples);
+			}
+		} else {
+			if (m_Levels == 0) {
+				// Auto levels
+				spec.Levels = static_cast<uint32_t>(std::floor(std::log2(std::max(spec.Size.Width, spec.Size.Height)))) + 1;
+			} else {
+				spec.Levels = m_Levels;
+			}
 		}
 
 		return spec;

@@ -10,13 +10,19 @@
 
 #include "glad/glad.h"
 
+#include <cmath>
+
 namespace Engine {
 	namespace Utils {
-		constexpr GLenum GetTextureTarget(bool multisampled) {
+		static uint32_t CalculateMaxMipLevels(const Vector2u size) {
+			return 1u + static_cast<uint32_t>(std::floor(std::log2(std::max(size.Width, size.Height))));
+		}
+
+		constexpr static GLenum GetTextureTarget(bool multisampled) {
 			return multisampled ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D;
 		}
 
-		Texture::IDType GenTexture(bool multisampled) {
+		static Texture::IDType GenTexture(bool multisampled) {
 			Texture::IDType name;
 
 			glCreateTextures(GetTextureTarget(multisampled), 1, &name);
@@ -24,7 +30,7 @@ namespace Engine {
 			return name;
 		}
 
-		void inline CheckIfValidSize(const Vector2u& size) {
+		void inline static CheckIfValidSize(const Vector2u& size) {
 			const uint32_t maxSize = Texture::GetMaxSize();
 			const uint32_t buffSize = size.Width * size.Height;
 
@@ -42,14 +48,14 @@ namespace Engine {
 			}
 		}
 
-		void inline CheckSubRegionSize(const Vector2i& offset, const Vector2u& size, const Vector2u& texSize) {
+		void inline static CheckSubRegionSize(const Vector2i& offset, const Vector2u& size, const Vector2u& texSize) {
 			ENGINE_ASSERT(offset.X >= 0 && offset.Y >= 0);
 			if (offset.X < 0 || offset.Y < 0) throw std::out_of_range("Negative subimage offset");
 
 			const uint32_t width = size.Width + offset.X;
 			const uint32_t height = size.Height + offset.Y;
 
-			ENGINE_ASSERT(texSize.Width >= width && texSize.Height >= height );
+			ENGINE_ASSERT(texSize.Width >= width && texSize.Height >= height);
 			if (texSize.Width < width || texSize.Height < height)
 				throw std::out_of_range("SubImage out of range");
 		}
@@ -78,9 +84,10 @@ namespace Engine {
 	}
 
 	std::string Texture::DebugInfo() const {
-		return fmt::format("Texture: {}x{}, format: {}, samples: {}, usage: {}, label: '{}'",
+		return fmt::format("Texture: {}x{}, format: {}, levels: {}, samples: {}, usage: {}, label: '{}'",
 		                   m_GLState->Size.Width, m_GLState->Size.Height,
 		                   m_GLState->ImageFormat,
+		                   m_GLState->Levels,
 		                   m_GLState->Samples,
 		                   m_GLState->Usage,
 		                   m_GLState->Label);
@@ -89,11 +96,10 @@ namespace Engine {
 	Texture::Texture(bool multisampled) : m_GLState(MakeRef<GLState>(multisampled)) {
 	}
 
-	void Texture::Initialize(uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
+	void Texture::Initialize(uint32_t levels, uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
 	                         TextureUsage usage, const void* pixels, DataType dataType, DataFormat dataFormat) {
 		Utils::CheckIfValidSize(size);
-		ValidateSize(size);
-		SetupStorage(samples, size, usage, ImageFormat);
+		SetupStorage(levels, samples, size, usage, ImageFormat);
 		SetupDefaultParameters(usage);
 
 		if (pixels)
@@ -107,7 +113,7 @@ namespace Engine {
 	}
 
 	void Texture::GenerateMipMaps() const {
-		if (m_GLState->Multisampled)
+		if (m_GLState->Multisampled || m_GLState->Levels <= 1)
 			return;
 
 		m_GLState->MipMapGenerated = true;
@@ -144,21 +150,27 @@ namespace Engine {
 			typeUsed = *spec.DataType;
 		}
 
-		texture->Initialize(spec.Samples, spec.Size, spec.ImageFormat, spec.Usage, spec.InitialData, typeUsed,
+		texture->Initialize(spec.Levels, spec.Samples, spec.Size, spec.ImageFormat, spec.Usage, spec.InitialData,
+		                    typeUsed,
 		                    formatUsed);
 		texture->SetLabel(spec.Label);
+
+		if (spec.InitialData)
+			texture->GenerateMipMaps();
 
 		LOG_ENGINE_DEBUG("Created texture: {}", texture->DebugInfo());
 		return texture;
 	}
 
-	Ref<Texture> Texture::Create(const Ref<Image>& image, Engine::ImageFormat imageFormat, uint32_t samples,
+	Ref<Texture> Texture::Create(const Ref<Image>& image, Engine::ImageFormat imageFormat, uint32_t levels,
+	                             uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
 
 		spec.Size = image->Size();
 		spec.ImageFormat = imageFormat;
 		spec.Samples = samples;
+		spec.Levels = levels;
 		spec.Label = label;
 		spec.InitialData = image->GetPixels().data();
 		spec.Usage = TextureUsage::Default;
@@ -167,13 +179,14 @@ namespace Engine {
 	}
 
 	Ref<Texture> Texture::Create(const Ref<Image>& image, TextureUsage usage, Engine::ImageFormat imageFormat,
-	                             uint32_t samples,
+	                             uint32_t levels, uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
 
 		spec.Size = image->Size();
 		spec.ImageFormat = imageFormat;
 		spec.Samples = samples;
+		spec.Levels = levels;
 		spec.Label = label;
 		spec.InitialData = image->GetPixels().data();
 		spec.Usage = usage;
@@ -284,7 +297,8 @@ namespace Engine {
 	}
 
 	void Texture::Clear(const void* pixels, DataFormat dataFormat, DataType dataType) {
-		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::EnumToGLConstant(dataFormat), Utils::EnumToGLConstant(dataType),
+		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::EnumToGLConstant(dataFormat),
+		                Utils::EnumToGLConstant(dataType),
 		                pixels);
 
 		// LOG_GL_TRACE("Clearing texture: label='{}', full size={}, format={}, type={}", Label(), Size(), dataFormat, dataType);
@@ -302,12 +316,13 @@ namespace Engine {
 	                          DataType dataType) {
 		Utils::CheckSubRegionSize(offset, size, Size());
 
-		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), 1,
+		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width),
+		                   static_cast<GLsizei>(size.Height), 1,
 		                   Utils::EnumToGLConstant(dataFormat),
 		                   Utils::EnumToGLConstant(dataType), pixels);
 
 		LOG_GL_TRACE("Clearing texture region: offset={}, size={}, format={}, type={}",
-			offset, size, dataFormat, dataType);
+		             offset, size, dataFormat, dataType);
 	}
 
 	void Texture::GetPixels(void* pixels, uint32_t size) const {
@@ -317,7 +332,8 @@ namespace Engine {
 		if (!pixels || size == 0)
 			throw std::runtime_error("Uninitialized memory access");
 
-		const uint64_t expected = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size.Height) * 4;
+		const uint64_t expected = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size.
+			Height) * 4;
 		if (static_cast<uint64_t>(size) >= expected)
 			GetImage(pixels, size);
 		else
@@ -384,7 +400,7 @@ namespace Engine {
 
 		if (maxSamples == 0) {
 			GLint tmp = 0;
-			glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &tmp);
+			glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tmp);
 			maxSamples = static_cast<uint32_t>(tmp);
 		}
 
@@ -396,7 +412,7 @@ namespace Engine {
 
 		if (maxSamples == 0) {
 			GLint tmp = 0;
-			glGetIntegerv(GL_MAX_INTEGER_SAMPLES, &tmp);
+			glGetIntegerv(GL_MAX_DEPTH_TEXTURE_SAMPLES, &tmp);
 			maxSamples = static_cast<uint32_t>(tmp);
 		}
 
@@ -412,17 +428,37 @@ namespace Engine {
 		const auto& samples = m_GLState->Samples;
 		const auto& imageFormat = m_GLState->ImageFormat;
 		const auto& usage = m_GLState->Usage;
+		const auto& levels = m_GLState->Levels;
 
-		SetupStorage(samples, size, usage, imageFormat);
+		SetupStorage(levels, samples, size, usage, imageFormat);
 	}
 
-	void Texture::SetupStorage(uint32_t samples, const Vector2u& size, TextureUsage usage,
+	void Texture::SetupStorage(uint32_t levels, uint32_t samples, const Vector2u& size, TextureUsage usage,
 	                           enum ImageFormat imageFormat) {
+		m_GLState->MipMapGenerated = false;
 		m_GLState->Size = size;
 		m_GLState->ImageFormat = imageFormat;
 		m_GLState->Samples = samples;
 		m_GLState->Usage = usage;
 		const auto& imageFormatGL = m_GLState->ImageFormatGL = Utils::EnumToGLConstant(imageFormat);
+
+		if (m_GLState->Multisampled) {
+			if (levels > 1) {
+				LOG_ENGINE_WARN("Multisampled textures do not support mipmaps, ignoring levels > 1");
+			}
+		}
+		else if (levels == 0) {
+			levels = Utils::CalculateMaxMipLevels(size);
+		}
+		else if (levels > 1) {
+			const uint32_t maxLevels = Utils::CalculateMaxMipLevels(size);
+			if (levels > maxLevels) {
+				LOG_ENGINE_WARN(
+					"Requested {} mip levels, but only {} are possible for texture size of {}. Clamping to {}",
+					levels, maxLevels, size, maxLevels);
+				levels = maxLevels;
+			}
+		}
 
 		if (usage == TextureUsage::DepthStencil) {
 			ENGINE_ASSERT(Utils::IsDepthFormat(imageFormat), "DepthStencil usage requires a depth-capable format.");
@@ -436,14 +472,19 @@ namespace Engine {
 			glTextureStorage2DMultisample(static_cast<GLuint>(*this), static_cast<GLsizei>(samples), imageFormatGL,
 			                              static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height),
 			                              GL_FALSE);
+
+			m_GLState->Levels = 1;
 		}
 		else {
-			glTextureStorage2D(static_cast<GLuint>(*this), 1, imageFormatGL, static_cast<GLsizei>(size.Width),
+			glTextureStorage2D(static_cast<GLuint>(*this), static_cast<GLsizei>(levels), imageFormatGL,
+			                   static_cast<GLsizei>(size.Width),
 			                   static_cast<GLsizei>(size.Height));
+
+			m_GLState->Levels = levels;
 		}
 
 		LOG_GL_DEBUG("Allocating texture storage: {}x{}, format: {}, usage: {}, samples: {}",
-			size.Width, size.Height, imageFormat, usage, samples);
+		             size.Width, size.Height, imageFormat, usage, samples);
 	}
 
 	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
@@ -458,15 +499,17 @@ namespace Engine {
 		                    static_cast<GLsizei>(size.Height), Utils::EnumToGLConstant(format),
 		                    Utils::EnumToGLConstant(dataType), pixels);
 
-		LOG_GL_TRACE("Uploading texture data: size={}x{}, format={}, type={}", size.Width, size.Height, format, dataType);
+		LOG_GL_TRACE("Uploading texture data: size={}x{}, format={}, type={}", size.Width, size.Height, format,
+		             dataType);
 	}
 
 	void Texture::GetImage(void* pixels, uint32_t size) const {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
-			throw std::runtime_error("Recived uninitialized pointer to memory");
+			throw std::runtime_error("Received uninitialized pointer to memory");
 
-		const uint64_t neededSize = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size.Height) * 4;
+		const uint64_t neededSize = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size
+			.Height) * 4;
 
 		ENGINE_ASSERT(static_cast<uint64_t>(size) >= neededSize);
 		if (static_cast<uint64_t>(size) < neededSize)
@@ -482,7 +525,7 @@ namespace Engine {
 		const uint64_t neededSize = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height) * 4;
 
 		if (!pixels)
-			throw std::runtime_error("Recived uninitialized pointer to memory");
+			throw std::runtime_error("Received uninitialized pointer to memory");
 
 		ENGINE_ASSERT(bufSize >= neededSize);
 		if (bufSize < neededSize)
@@ -490,7 +533,8 @@ namespace Engine {
 
 		Utils::CheckSubRegionSize(offset, size, Size());
 
-		glGetTextureSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height), 1, GL_RGBA,
+		glGetTextureSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width),
+		                     static_cast<GLsizei>(size.Height), 1, GL_RGBA,
 		                     GL_UNSIGNED_BYTE,
 		                     static_cast<GLsizei>(bufSize), pixels);
 	}
@@ -516,7 +560,8 @@ namespace Engine {
 	}
 
 	void Texture::ReapplyParameters() {
-		if (!m_GLState->Multisampled && (m_GLState->Usage != TextureUsage::DepthStencil && m_GLState->Usage != TextureUsage::Storage)) {
+		if (!m_GLState->Multisampled && (m_GLState->Usage != TextureUsage::DepthStencil && m_GLState->Usage !=
+			TextureUsage::Storage)) {
 			SetFilters(m_GLState->Filter.Min, m_GLState->Filter.Mag);
 			SetWrapping(m_GLState->Wrapping.S, m_GLState->Wrapping.T);
 		}
