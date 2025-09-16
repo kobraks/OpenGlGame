@@ -7,8 +7,11 @@
 #include "Engine/Utils/Renderer/ImageFormatTraits.h"
 #include "Engine/Utils/Renderer/GLEnumConverters.h"
 #include "Engine/Utils/Renderer/EnumStringConverters.h"
+#include "Engine/Utils/Renderer/PixelStoreScope.h"
 
 #include "glad/glad.h"
+
+#include <array>
 
 namespace Engine {
 	namespace Utils {
@@ -23,7 +26,7 @@ namespace Engine {
 			default: return {"", "", 0};
 
 			case Framebuffer::Status::Undefined: return {
-					"GL_FRAMEBUFFER_UNDEFINED", "Default framebuffer does not exists.", GL_FRAMEBUFFER_UNDEFINED
+					"GL_FRAMEBUFFER_UNDEFINED", "Default framebuffer does not exist.", GL_FRAMEBUFFER_UNDEFINED
 				};
 			case Framebuffer::Status::IncompleteAttachment: return {
 					"GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT", "Framebuffer attachment points are incomplete.",
@@ -98,7 +101,7 @@ namespace Engine {
 		}
 
 		struct DepthAttachmentInfo {
-			uint32_t AttachmentPoint;
+			uint32_t AttachmentPoint = 0;
 			bool HasDepth = false;
 			bool HasStencil = false;
 		};
@@ -110,8 +113,8 @@ namespace Engine {
 			if (!IsDepthFormat(format))
 				throw std::invalid_argument("Format is not a depth/stencil format");
 
-			info.HasDepth = Utils::HasDepthAspect(format);
-			info.HasStencil = Utils::HasStencilAspect(format);
+			info.HasDepth = HasDepthAspect(format);
+			info.HasStencil = HasStencilAspect(format);
 
 			if (info.HasDepth && info.HasStencil)
 				info.AttachmentPoint = GL_DEPTH_STENCIL_ATTACHMENT;
@@ -134,9 +137,195 @@ namespace Engine {
 			default: return fmt::format("0x{:X}", point);
 			}
 		}
+
+		static constexpr uint8_t ChannelsFor(DataFormat df) {
+			switch (df) {
+			case DataFormat::RGBA:
+			case DataFormat::RGBAInteger:
+			case DataFormat::BGRA:
+			case DataFormat::BGRAInteger:
+				return 4;
+
+			case DataFormat::RGB:
+			case DataFormat::RGBInteger:
+			case DataFormat::BGR:
+			case DataFormat::BGRInteger:
+				return 3;
+
+			case DataFormat::RG:
+			case DataFormat::RGInteger:
+				return 2;
+
+			default:
+				return 1;
+			}
+		}
+
+		static constexpr uint32_t BytesPerChannel(DataType dt) {
+			switch (dt) {
+			case DataType::Byte:
+			case DataType::UnsignedByte:
+				return 1u;
+			case DataType::Short:
+			case DataType::UnsignedShort:
+				return 2u;
+			case DataType::Int:
+			case DataType::UnsignedInt:
+			case DataType::Float:
+				return 4u;
+			case DataType::Double:
+				return 8u;
+			default:
+				return 0u;
+			}
+		}
+
+		static constexpr int IndexForChannel(DataFormat df, Framebuffer::Channel channel) {
+			switch (df) {
+			case DataFormat::RGBA:
+			case DataFormat::RGBAInteger:
+				switch (channel) {
+				case Framebuffer::Channel::Red: return 0;
+				case Framebuffer::Channel::Green: return 1;
+				case Framebuffer::Channel::Blue: return 2;
+				case Framebuffer::Channel::Alpha: return 3;
+				}
+
+			case DataFormat::BGRA:
+			case DataFormat::BGRAInteger:
+				switch (channel) {
+				case Framebuffer::Channel::Red: return 2;
+				case Framebuffer::Channel::Green: return 1;
+				case Framebuffer::Channel::Blue: return 0;
+				case Framebuffer::Channel::Alpha: return 3;
+				}
+
+			case DataFormat::RGB:
+			case DataFormat::RGBInteger:
+				switch (channel) {
+				case Framebuffer::Channel::Red: return 0;
+				case Framebuffer::Channel::Green: return 1;
+				case Framebuffer::Channel::Blue: return 2;
+				case Framebuffer::Channel::Alpha: return -1;
+				}
+
+			case DataFormat::BGR:
+			case DataFormat::BGRInteger:
+				switch (channel) {
+				case Framebuffer::Channel::Red: return 2;
+				case Framebuffer::Channel::Green: return 1;
+				case Framebuffer::Channel::Blue: return 0;
+				case Framebuffer::Channel::Alpha: return -1;
+				}
+
+			case DataFormat::RG:
+			case DataFormat::RGInteger:
+				switch (channel) {
+				case Framebuffer::Channel::Red: return 0;
+				case Framebuffer::Channel::Green: return 1;
+				default:
+					return -1;
+				}
+
+			default:
+				return (channel == Framebuffer::Channel::Red) ? 0 : -1;
+			}
+		}
+
+		static Buffer ReadPixels(uint32_t bufferIndex, uint8_t channelsCount, DataFormat dataFormat, DataType dataType,
+		                         const Vector2u& pos, const Vector2u& size) {
+
+			const auto glFormat = EnumToGLConstant(dataFormat);
+			const auto glType = EnumToGLConstant(dataType);
+
+			Buffer buffer;
+			buffer.Allocate(static_cast<Buffer::SizeType>(size.Width) * size.Height * channelsCount * BytesPerChannel(dataType));
+
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + bufferIndex);
+			PackAlignmentScope packScope(1);
+			glReadPixels(static_cast<GLint>(pos.X), static_cast<GLint>(pos.Y), static_cast<GLsizei>(size.Width),
+			             static_cast<GLsizei>(size.Height), glFormat, glType, buffer.Data());
+
+			return buffer;
+		}
+
+		template <typename T>
+		static std::array<T, 4> ReadPixel(uint32_t bufferIndex, DataFormat dataFormat, DataType dataType, const Vector2u& pos) {
+			const auto glFormat = EnumToGLConstant(dataFormat);
+			const auto glType = EnumToGLConstant(dataType);
+
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + bufferIndex);
+			std::array<T, 4> pixelData = {0, 0, 0, 0};
+
+			PackAlignmentScope packScope(1);
+			glReadPixels(static_cast<GLint>(pos.X), static_cast<GLint>(pos.Y), 1, 1, glFormat, glType,
+			             pixelData.data());
+
+			return pixelData;
+		}
+	}
+
+	template <typename Out>
+	static inline Out MissingDefault(Framebuffer::Channel channel) {
+		if constexpr (std::is_same_v<Out, int32_t> || std::is_same_v<Out, uint32_t>)
+			return channel == Framebuffer::Channel::Alpha ? Out(255) : Out(0);
+		else if constexpr (std::is_same_v<Out, float> || std::is_same_v<Out, double>)
+			return channel == Framebuffer::Channel::Alpha ? Out(1) : Out(0);
+	}
+
+	template <typename Out, typename In>
+	static inline Out ConvertComponent(In v) {
+		if constexpr (std::is_same_v<Out, float> || std::is_same_v<Out, double>) {
+			if constexpr (std::is_same_v<In, uint8_t>) return static_cast<Out>(v) / static_cast<Out>(255);
+			return static_cast<Out>(v);
+		} else {
+			if constexpr (std::is_floating_point_v<In>) {
+				return static_cast<Out>(std::lround(static_cast<double>(v)));
+			}
+			return static_cast<Out>(v);
+		}
+	}
+
+	template <typename Out>
+	static Out ReadScalarChannel(uint32_t attachmentIndex, const Vector2u& position, ImageFormat internalFormat, DataFormat dataFormat, DataType dataType, Framebuffer::Channel channel) {
+		const int idx = Utils::IndexForChannel(dataFormat, channel);
+
+		if (idx < 0) {
+			return MissingDefault<Out>(channel);
+		}
+
+		switch (dataType) {
+		case DataType::UnsignedByte: {
+			const auto v = Utils::ReadPixel<uint8_t>(attachmentIndex, dataFormat, dataType, position);
+			return ConvertComponent<Out>(v[idx]);
+		}
+		case DataType::Int: {
+			const auto v = Utils::ReadPixel<int32_t>(attachmentIndex, dataFormat, dataType, position);
+			return ConvertComponent<Out>(v[idx]);
+		}
+		case DataType::UnsignedInt: {
+			const auto v = Utils::ReadPixel<uint32_t>(attachmentIndex, dataFormat, dataType, position);
+			return ConvertComponent<Out>(v[idx]);
+		}
+		case DataType::Float: {
+			const auto v = Utils::ReadPixel<float>(attachmentIndex, dataFormat, dataType, position);
+			return ConvertComponent<Out>(v[idx]);
+		}
+		case DataType::Double: {
+			const auto v = Utils::ReadPixel<double>(attachmentIndex, dataFormat, dataType, position);
+			return ConvertComponent<Out>(v[idx]);
+		}
+
+		default:
+			ENGINE_ASSERT(false, "Unsupported data type for ReadPixel");
+			return Out{};
+		}
 	}
 
 	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& specification) {
+		//TODO support layered framebuffers
+		ENGINE_ASSERT(!specification.Layered, "Layered Framebuffers are not supported yet!");
+
 		auto framebuffer = Ref<Framebuffer>(new Framebuffer(specification));
 
 		framebuffer->CreateFramebuffer();
@@ -164,14 +353,14 @@ namespace Engine {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	}
 
-	int Framebuffer::ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const {
+	/*int Framebuffer::ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 
 		glReadBuffer(GL_COLOR_ATTACHMENT0 + attachmentIndex);
 		int pixelData;
 		glReadPixels(position.X, position.Y, 1, 1, GL_RED_INTEGER, GL_INT, &pixelData);
 		return pixelData;
-	}
+	}*/
 
 	void Framebuffer::Invalidate() {
 		m_GLState->Invalidate();
@@ -214,7 +403,8 @@ namespace Engine {
 						"SetDrawBuffers failed: Number of draw buffers ({}) exceeds available draw buffers count ({})",
 						drawBuffers, buffers.size()));
 
-			glNamedFramebufferDrawBuffers(static_cast<IDType>(*this), static_cast<GLsizei>(drawBuffers), buffers.data());
+			glNamedFramebufferDrawBuffers(static_cast<IDType>(*this), static_cast<GLsizei>(drawBuffers),
+			                              buffers.data());
 		}
 		else {
 			if (m_GLState->ColorAttachmentCount > 0)
@@ -288,7 +478,8 @@ namespace Engine {
 
 		glBlitNamedFramebuffer(static_cast<IDType>(*source), 0, 0, 0, static_cast<GLint>(source->Width()),
 		                       static_cast<GLint>(source->Height()), 0, 0, static_cast<GLint>(Width()),
-		                       static_cast<GLint>(Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
+		                       static_cast<GLint>(Height()), Utils::EnumToGLConstant(mask),
+		                       Utils::EnumToGLConstant(filter));
 	}
 
 	void Framebuffer::BlitTo(const Ref<Framebuffer>& target, BlitMask mask, BlitFilter filter) {
@@ -296,9 +487,11 @@ namespace Engine {
 		ENGINE_ASSERT(target->GetSpecification().AllowBlit, "target framebuffer must allow blit!");
 		ENGINE_ASSERT(!target->GetSpecification().SwapchainTarget, "Use Present() for blitting to swapchain!");
 
-		glBlitNamedFramebuffer(static_cast<IDType>(*this), static_cast<IDType>(*target), 0, 0, static_cast<GLint>(Width()),
+		glBlitNamedFramebuffer(static_cast<IDType>(*this), static_cast<IDType>(*target), 0, 0,
+		                       static_cast<GLint>(Width()),
 		                       static_cast<GLint>(Height()), 0, 0, static_cast<GLint>(target->Width()),
-		                       static_cast<GLint>(target->Height()), Utils::EnumToGLConstant(mask), Utils::EnumToGLConstant(filter));
+		                       static_cast<GLint>(target->Height()), Utils::EnumToGLConstant(mask),
+		                       Utils::EnumToGLConstant(filter));
 	}
 
 	Vector2u Framebuffer::MaxViewportSize() {
@@ -341,6 +534,18 @@ namespace Engine {
 		return maxDrawBuffers;
 	}
 
+	Buffer Framebuffer::ReadPixels(uint32_t attachmentIndex, const Vector2u& position, const Vector2u& size) const {
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+
+		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
+		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
+
+		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
+
+		return Utils::ReadPixels(attachmentIndex, Utils::ChannelsFor(dataFormat), dataFormat, dataType, position, size);
+	}
+
 	Framebuffer::Framebuffer(const FramebufferSpecification& specification) : m_GLState(
 		MakeRef<GLState>(specification)) {
 	}
@@ -359,9 +564,9 @@ namespace Engine {
 		CheckCompleteness();
 
 		LOG_GL_INFO("Framebuffer '{}' created with {} color and {} depth attachments",
-			Label(),
-			m_GLState->ColorAttachmentCount,
-			m_GLState->DepthBuffer ? 1 : 0);
+		            Label(),
+		            m_GLState->ColorAttachmentCount,
+		            m_GLState->DepthBuffer ? 1 : 0);
 	}
 
 	void Framebuffer::CheckCompleteness() const {
@@ -369,13 +574,11 @@ namespace Engine {
 
 		if (status != Status::Complete) {
 			const auto error = Utils::GetErrorMessage(status);
-
-			fmt::memory_buffer buffer;
-			fmt::format_to(std::back_inserter(buffer), "{:#x}: '{}'->{}\0", error.Code, error.Name, error.Desc);
+			const std::string msg = fmt::format("{:#x}: '{}'->{}", error.Code, error.Name, error.Desc);
 
 			LOG_GL_ERROR("Framebuffer '{}' incomplete: {} - {}", Label(), error.Name, error.Desc);
-			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", buffer.data()));
-			throw std::runtime_error(fmt::format("Unable to create framebuffer: {}", buffer.data()));
+			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", msg));
+			throw std::runtime_error(fmt::format("Unable to create framebuffer: {}", msg));
 		}
 
 		LOG_GL_DEBUG("Framebuffer '{}' is complete", Label());
@@ -396,8 +599,8 @@ namespace Engine {
 	void Framebuffer::CreateColorAttachment(const FramebufferAttachmentSpecification& specification) {
 		const auto attachmentPoint = m_GLState->ColorAttachmentCount++;
 		const auto maxColorAttachments = MaxColorAttachmentsCount();
-		ENGINE_ASSERT(attachmentPoint <= maxColorAttachments);
-		if (attachmentPoint > maxColorAttachments)
+		ENGINE_ASSERT(attachmentPoint < maxColorAttachments);
+		if (attachmentPoint >= maxColorAttachments)
 			throw std::runtime_error(
 				fmt::format("Failed to create next color attachment ({}) exceeded available attachment points ({})",
 				            attachmentPoint, maxColorAttachments));
@@ -440,7 +643,7 @@ namespace Engine {
 		                          static_cast<GLint>(mipLevel));
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' to point {} (mip={})",
-			Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel);
+		             Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel);
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
@@ -449,13 +652,13 @@ namespace Engine {
 		                               static_cast<GLint>(layer));
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached layered texture '{}' to point {} (mip={}, layer={})",
-			Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel, layer);
+		             Label(), attachment->Label(), Utils::AttachmentPointToString(attachmentPoint), mipLevel, layer);
 	}
 
 	void Framebuffer::Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment) {
 		glNamedFramebufferRenderbuffer(static_cast<IDType>(*this), attachmentPoint, GL_RENDERBUFFER, *attachment);
 		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer to point {}",
-			Label(), Utils::AttachmentPointToString(attachmentPoint));
+		             Label(), Utils::AttachmentPointToString(attachmentPoint));
 	}
 
 	uint32_t Framebuffer::DepthAttachmentPoint(ImageFormat format) const {
@@ -471,21 +674,22 @@ namespace Engine {
 		m_GLState->DepthAttachment = attachment;
 
 		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=false)",
-			Label(), attachment->Label(), format, mipLevel);
+		             Label(), attachment->Label(), format, mipLevel);
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel, layer);
 		m_GLState->DepthAttachment = attachment;
 
-		LOG_GL_DEBUG("Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=true, layer={})",
+		LOG_GL_DEBUG(
+			"Framebuffer '{}': Attached texture '{}' as depth attachment (format={}, mip={}, layered=true, layer={})",
 			Label(), attachment->Label(), format, mipLevel, layer);
 	}
 
 	void Framebuffer::AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment) {
 		Attach(DepthAttachmentPoint(format), attachment);
 		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer as depth attachment (format={})",
-			Label(), format);
+		             Label(), format);
 		m_GLState->DepthAttachment = attachment;
 	}
 
@@ -498,6 +702,7 @@ namespace Engine {
 		spec.Samples = fb.Samples;
 		spec.Label = tex.Label;
 		spec.Usage = Utils::FormatUsageMapping(tex.Format);
+		spec.Levels = std::max<uint32_t>(1, tex.MipLevel + 1);
 
 		return spec;
 	}
@@ -524,11 +729,11 @@ namespace Engine {
 		}
 
 		LOG_GL_TRACE("Finalized texture attachment '{}': size={}x{}, format={}, usage={}, multisampled={}",
-			specs.Label,
-			texture->Width(), texture->Height(),
-			specs.Format,
-			texture->GetUsage(),
-			texture->IsMultisampled());
+		             specs.Label,
+		             texture->Width(), texture->Height(),
+		             specs.Format,
+		             texture->GetUsage(),
+		             texture->IsMultisampled());
 
 		if (isDepth) {
 			if (m_GLState->Specification.Layered) {
@@ -550,6 +755,70 @@ namespace Engine {
 
 			m_GLState->ColorAttachments.emplace_back(texture);
 		}
+	}
+
+	int32_t Framebuffer::ReadPixelInt32Impl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const {
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
+
+		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
+
+		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
+		return ReadScalarChannel<int32_t>(attachmentIndex, position, format, dataFormat, dataType, channel);
+	}
+
+	uint32_t Framebuffer::ReadPixelUInt32Impl(uint32_t attachmentIndex, const Vector2u& position,
+	                                          Channel channel) const {
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
+
+		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
+
+		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
+		return ReadScalarChannel<uint32_t>(attachmentIndex, position, format, dataFormat, dataType, channel);
+	}
+
+	float Framebuffer::ReadPixelFloatImpl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const {
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
+
+		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
+
+		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
+		return ReadScalarChannel<float>(attachmentIndex, position, format, dataFormat, dataType, channel);
+	}
+
+	double Framebuffer::ReadPixelDoubleImpl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const {
+		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
+
+		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
+
+		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
+		return ReadScalarChannel<double>(attachmentIndex, position, format, dataFormat, dataType, channel);
+	}
+
+	Color Framebuffer::ReadPixelColorImpl(uint32_t attachmentIndex, const Vector2u& position) const {
+		const int32_t r = ReadPixelInt32Impl(attachmentIndex, position, Channel::Red);
+		const int32_t g = ReadPixelInt32Impl(attachmentIndex, position, Channel::Green);
+		const int32_t b = ReadPixelInt32Impl(attachmentIndex, position, Channel::Blue);
+		const int32_t a = ReadPixelInt32Impl(attachmentIndex, position, Channel::Alpha);
+
+		return {r, g, b, a};
+	}
+
+	ImageFormat Framebuffer::GetColorAttachmentFormat(uint32_t attachmentIndex) const {
+		const auto& attachment = GetColorAttachment(attachmentIndex);
+
+		if (const auto tex = std::get_if<Ref<Texture>>(&attachment)) return (*tex)->ImageFormat();
+		if (const auto rb = std::get_if<Ref<RenderBuffer>>(&attachment)) return (*rb)->ImageFormat();
+
+		ENGINE_ASSERT(false && "Invalid color attachment");
+		return ImageFormat::RGBA8;
 	}
 
 	Framebuffer::GLState::GLState(const FramebufferSpecification& specification) : Specification(specification) {

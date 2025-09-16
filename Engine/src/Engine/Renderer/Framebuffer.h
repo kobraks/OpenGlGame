@@ -1,21 +1,29 @@
 #pragma once
 #include <Engine/Core/Base.h>
+
 #include <Engine/Core/Vector2.h>
+#include <Engine/Core/Color.h>
+#include "Engine/Core/Buffer.h"
+
 #include <Engine/Renderer/FramebufferSpecification.h>
 
 #include <variant>
-
-#include "Texture.h"
+#include <concepts>
 
 namespace Engine {
 	struct TextureSpec;
 	class Texture;
 	class RenderBuffer;
 
+	template<typename T>
+	concept ReadablePixel = std::same_as<T, int32_t> || std::same_as<T, uint32_t> || std::same_as<T, float> || std::same_as<T, double> || std::same_as<T, Color>;
+
 	class Framebuffer {
 	public:
 		using IDType = uint32_t;
 		using AttachmentType = std::variant<Ref<RenderBuffer>, Ref<Texture>>;
+
+		enum class Channel { Red, Green, Blue, Alpha };
 
 		enum class Status : uint32_t {
 			Complete = 0,
@@ -43,7 +51,7 @@ namespace Engine {
 
 		uint32_t GetColorAttachmentCount() const { return m_GLState->ColorAttachmentCount; }
 
-		int ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const;
+		// int ReadPixel(uint32_t attachmentIndex, const Vector2i& position) const;
 
 		const Vector2u& Size() const { return m_GLState->Specification.Size;  }
 		uint32_t Width() const { return m_GLState->Specification.Size.Width; }
@@ -87,6 +95,31 @@ namespace Engine {
 		static Vector2u MaxViewportSize();
 		static uint32_t MaxColorAttachmentsCount();
 		static uint32_t	MaxDrawBuffersCount();
+
+		[[nodiscard]] Buffer ReadPixels(uint32_t attachmentIndex, const Vector2u& position, const Vector2u& size) const;
+
+		template<ReadablePixel T>
+		[[nodiscard]] T ReadPixel(uint32_t attachmentIndex, const Vector2u& position, Channel channel = Channel::Red) const {
+			ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
+			if (attachmentIndex >= m_GLState->ColorAttachmentCount) {
+				throw std::out_of_range("Attachment index out of range");
+			}
+
+			if constexpr (std::same_as<T, int32_t>) {
+				return ReadPixelInt32Impl(attachmentIndex, position, channel);
+			} else if constexpr (std::same_as<T, uint32_t>) {
+				return ReadPixelUInt32Impl(attachmentIndex, position, channel);
+			} else if constexpr (std::same_as<T, double>) {
+				return ReadPixelDoubleImpl(attachmentIndex, position, channel);
+			} else if constexpr (std::same_as<T, float>) {
+				return ReadPixelFloatImpl(attachmentIndex, position, channel);
+			} else if constexpr (std::same_as<T, Color>) {
+				return ReadPixelColorImpl(attachmentIndex, position);
+			}
+			else {
+				static_assert(false, "Unsupported pixel type");
+			}
+		}
 	protected:
 		Framebuffer(const FramebufferSpecification& specification);
 
@@ -113,6 +146,14 @@ namespace Engine {
 		Ref<RenderBuffer> CreateAttachment(const FramebufferRenderBufferAttachmentSpecification& specs) const;
 
 		void FinalizeAttachment(const Ref<Texture>& texture, const FramebufferTextureAttachmentSpecification& specs, bool isDepth, uint32_t attachmentPoint);
+
+		int32_t ReadPixelInt32Impl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const;
+		uint32_t ReadPixelUInt32Impl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const;
+		float ReadPixelFloatImpl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const;
+		double ReadPixelDoubleImpl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const;
+		Color ReadPixelColorImpl(uint32_t attachmentIndex, const Vector2u& position) const;
+
+		ImageFormat GetColorAttachmentFormat(uint32_t attachmentIndex) const;
 
 		class GLState {
 		public:
