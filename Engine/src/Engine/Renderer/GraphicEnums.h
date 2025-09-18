@@ -167,7 +167,14 @@ namespace Engine {
 		Equal,
 		NotEqual,
 		Always
-	}; 
+	};
+
+	enum class Channel : uint8_t {
+		Red = 0,
+		Green,
+		Blue,
+		Alpha
+	};
 
 	enum class UniformKind : uint8_t { Unknown = 0, Scalar, Vector, Matrix, Sampler, Image, AtomicCounter };
 	enum class ScalarKind : uint8_t { None = 0, Bool, Int, UInt, Float, Double };

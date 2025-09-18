@@ -23,8 +23,6 @@ namespace Engine {
 		using IDType = uint32_t;
 		using AttachmentType = std::variant<Ref<RenderBuffer>, Ref<Texture>>;
 
-		enum class Channel { Red, Green, Blue, Alpha };
-
 		enum class Status : uint32_t {
 			Complete = 0,
 			IncompleteAttachment,

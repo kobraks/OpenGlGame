@@ -8,6 +8,7 @@
 #include "Engine/Utils/Renderer/GLEnumConverters.h"
 #include "Engine/Utils/Renderer/EnumStringConverters.h"
 #include "Engine/Utils/Renderer/PixelStoreScope.h"
+#include "Engine/Utils/Renderer/ChannelUtils.h"
 
 #include "glad/glad.h"
 
@@ -138,100 +139,6 @@ namespace Engine {
 			}
 		}
 
-		static constexpr uint8_t ChannelsFor(DataFormat df) {
-			switch (df) {
-			case DataFormat::RGBA:
-			case DataFormat::RGBAInteger:
-			case DataFormat::BGRA:
-			case DataFormat::BGRAInteger:
-				return 4;
-
-			case DataFormat::RGB:
-			case DataFormat::RGBInteger:
-			case DataFormat::BGR:
-			case DataFormat::BGRInteger:
-				return 3;
-
-			case DataFormat::RG:
-			case DataFormat::RGInteger:
-				return 2;
-
-			default:
-				return 1;
-			}
-		}
-
-		static constexpr uint32_t BytesPerChannel(DataType dt) {
-			switch (dt) {
-			case DataType::Byte:
-			case DataType::UnsignedByte:
-				return 1u;
-			case DataType::Short:
-			case DataType::UnsignedShort:
-				return 2u;
-			case DataType::Int:
-			case DataType::UnsignedInt:
-			case DataType::Float:
-				return 4u;
-			case DataType::Double:
-				return 8u;
-			default:
-				return 0u;
-			}
-		}
-
-		static constexpr int IndexForChannel(DataFormat df, Framebuffer::Channel channel) {
-			switch (df) {
-			case DataFormat::RGBA:
-			case DataFormat::RGBAInteger:
-				switch (channel) {
-				case Framebuffer::Channel::Red: return 0;
-				case Framebuffer::Channel::Green: return 1;
-				case Framebuffer::Channel::Blue: return 2;
-				case Framebuffer::Channel::Alpha: return 3;
-				}
-
-			case DataFormat::BGRA:
-			case DataFormat::BGRAInteger:
-				switch (channel) {
-				case Framebuffer::Channel::Red: return 2;
-				case Framebuffer::Channel::Green: return 1;
-				case Framebuffer::Channel::Blue: return 0;
-				case Framebuffer::Channel::Alpha: return 3;
-				}
-
-			case DataFormat::RGB:
-			case DataFormat::RGBInteger:
-				switch (channel) {
-				case Framebuffer::Channel::Red: return 0;
-				case Framebuffer::Channel::Green: return 1;
-				case Framebuffer::Channel::Blue: return 2;
-				case Framebuffer::Channel::Alpha: return -1;
-				}
-
-			case DataFormat::BGR:
-			case DataFormat::BGRInteger:
-				switch (channel) {
-				case Framebuffer::Channel::Red: return 2;
-				case Framebuffer::Channel::Green: return 1;
-				case Framebuffer::Channel::Blue: return 0;
-				case Framebuffer::Channel::Alpha: return -1;
-				}
-
-			case DataFormat::RG:
-			case DataFormat::RGInteger:
-				switch (channel) {
-				case Framebuffer::Channel::Red: return 0;
-				case Framebuffer::Channel::Green: return 1;
-				default:
-					return -1;
-				}
-
-			default:
-				return (channel == Framebuffer::Channel::Red) ? 0 : -1;
-			}
-		}
-
 		static Buffer ReadPixels(uint32_t bufferIndex, uint8_t channelsCount, DataFormat dataFormat, DataType dataType,
 		                         const Vector2u& pos, const Vector2u& size) {
 
@@ -266,11 +173,11 @@ namespace Engine {
 	}
 
 	template <typename Out>
-	static inline Out MissingDefault(Framebuffer::Channel channel) {
+	static inline Out MissingDefault(Channel channel) {
 		if constexpr (std::is_same_v<Out, int32_t> || std::is_same_v<Out, uint32_t>)
-			return channel == Framebuffer::Channel::Alpha ? Out(255) : Out(0);
+			return channel == Channel::Alpha ? Out(255) : Out(0);
 		else if constexpr (std::is_same_v<Out, float> || std::is_same_v<Out, double>)
-			return channel == Framebuffer::Channel::Alpha ? Out(1) : Out(0);
+			return channel == Channel::Alpha ? Out(1) : Out(0);
 	}
 
 	template <typename Out, typename In>
@@ -287,7 +194,7 @@ namespace Engine {
 	}
 
 	template <typename Out>
-	static Out ReadScalarChannel(uint32_t attachmentIndex, const Vector2u& position, ImageFormat internalFormat, DataFormat dataFormat, DataType dataType, Framebuffer::Channel channel) {
+	static Out ReadScalarChannel(uint32_t attachmentIndex, const Vector2u& position, ImageFormat internalFormat, DataFormat dataFormat, DataType dataType, Channel channel) {
 		const int idx = Utils::IndexForChannel(dataFormat, channel);
 
 		if (idx < 0) {
