@@ -7,6 +7,7 @@
 #include "Engine/Core/Image.h"
 
 #include <cmath>
+#include <algorithm>
 
 namespace Engine {
 	TextureBuilder& TextureBuilder::Size(const Vector2u& size) {
@@ -93,6 +94,21 @@ namespace Engine {
 		return *this;
 	}
 
+	TextureBuilder& TextureBuilder::RowStrideBytes(uint32_t bytes) {
+		m_RowStrideBytes = bytes;
+		return *this;
+	}
+
+	TextureBuilder& TextureBuilder::FlipY(bool flip) {
+		m_FlipY = flip;
+		return *this;
+	}
+
+	TextureBuilder& TextureBuilder::PictureMip(uint32_t level) {
+		m_PictureMipLevel = level;
+		return *this;
+	}
+
 	TextureBuilder& TextureBuilder::Clear() {
 		m_Size = { 1, 1 };
 		m_ImageFormat = ImageFormat::RGBA8;
@@ -118,14 +134,18 @@ namespace Engine {
 		m_DataType = DataType::UnsignedByte;
 		m_UseRawData = false;
 
+		m_RowStrideBytes = 0;
+		m_PictureMipLevel = 0;
+		m_FlipY = false;
+
 		return *this;
 	}
 
 	TextureSpec TextureBuilder::BuildSpecification() const {
 		TextureSpec spec;
 
-		if (!m_UseRawData && m_Image && m_Size != m_Image->Size()) {
-			LOG_ENGINE_WARN("TextureBuilder: Ignoring builder-set size {} and using Image::Size() = {}", m_Size, m_Image->Size());
+		if (!m_UseRawData && m_Image && (m_Size.Width < m_Image->Width() || m_Size.Height < m_Image->Height())) {
+			LOG_ENGINE_WARN("Image provided (Image::Size() = {}) is smaller than builder-set size {}. Using Image::Size() instead.", m_Image->Size(), m_Size);
 		}
 
 		spec.ImageFormat = m_ImageFormat;
@@ -133,33 +153,66 @@ namespace Engine {
 		spec.Label = m_Label;
 		spec.Usage = m_Usage;
 
-		if (m_UseRawData) {
-			spec.Size = m_Size;
-			spec.InitialData = m_Buffer.As<uint8_t>();
-			spec.DataFormat = m_DataFormat;
-			spec.DataType = m_DataType;
-		}
+		if (m_UseRawData) spec.Size = m_Size;
 		else if (m_Image) {
-			spec.Size = m_Image->Size();
-			spec.InitialData = m_Image->GetPixels().data();
-			spec.DataFormat = DataFormat::RGBA;
-			spec.DataType = DataType::UnsignedByte;
+			Vector2u size;
+
+			size.Width = std::max(m_Size.Width, m_Image->Width());
+			size.Height = std::max(m_Size.Height, m_Image->Height());
+
+			spec.Size = size;
 		}
-		else {
-			spec.Size = m_Size;
+		else spec.Size = m_Size;
+
+		if (spec.Samples > 1) {
+			if (m_UseRawData || m_Image) {
+				LOG_ENGINE_WARN("TextureBuilder: Ignoring provided image or raw data for multisampled texture (samples = {})", spec.Samples);
+			}
+			spec.Picture = std::nullopt;
+		} else if (m_UseRawData) {
+			TextureSpec::InitialPixels pic{};
+
+			pic.Pixels = m_Buffer.Data();
+			pic.Size = m_Size;
+			pic.RowStrideBytes = m_RowStrideBytes;
+			pic.Format = m_DataFormat;
+			pic.DataType = m_DataType;
+			pic.FlipY = m_FlipY;
+			pic.MipLevel = m_PictureMipLevel;
+
+			spec.Picture = pic;
+		} else if (m_Image) {
+			TextureSpec::InitialPixels pic{};
+
+			pic.Pixels = m_Image->GetPixels().data();
+			pic.Size = m_Image->Size();
+			pic.RowStrideBytes = 0;
+			pic.Format = DataFormat::RGBA;
+			pic.DataType = DataType::UnsignedByte;
+			pic.FlipY = m_FlipY;
+			pic.MipLevel = m_PictureMipLevel;
+
+			spec.Picture = pic;
+		} else {
+			spec.Picture = std::nullopt;
 		}
 
 		if (spec.Samples > 1) {
 			if (m_Levels > 1) {
 				LOG_ENGINE_WARN("TextureBuilder: Ignoring builder-set levels {} for multisampled texture (samples = {})", m_Levels, spec.Samples);
 			}
+			spec.Levels = 1;
 		} else {
 			if (m_Levels == 0) {
 				// Auto levels
-				spec.Levels = static_cast<uint32_t>(std::floor(std::log2(std::max(spec.Size.Width, spec.Size.Height)))) + 1;
+				const uint32_t longer = std::max(spec.Size.Width, spec.Size.Height);
+				spec.Levels = static_cast<uint32_t>(std::floor(std::log2(longer))) + 1;
 			} else {
 				spec.Levels = m_Levels;
 			}
+
+			if (spec.Levels > 1)
+				spec.GenerateMips = m_GenerateMipMaps;
 		}
 
 		return spec;
@@ -172,9 +225,6 @@ namespace Engine {
 			texture->SetFilters(m_FilterMin, Utils::SanitizeMag(m_FilterMag));
 			texture->SetWrapping(m_WrapS, m_WrapT);
 		}
-
-		if (m_GenerateMipMaps)
-			texture->GenerateMipMaps();
 
 		return texture;
 	}

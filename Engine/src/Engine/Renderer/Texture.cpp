@@ -7,10 +7,16 @@
 #include "Engine/Utils/Renderer/EnumStringConverters.h"
 #include "Engine/Utils/Renderer/ImageFormatTraits.h"
 #include "Engine/Utils/Renderer/FilterModeUtils.h"
+#include "Engine/Utils/Renderer/PixelStoreScope.h"
+#include "Engine/Utils/Renderer/ChannelUtils.h"
 
 #include "glad/glad.h"
 
+#include <fmt/format.h>
+
 #include <cmath>
+#include <array>
+#include <cstddef>
 
 namespace Engine {
 	namespace Utils {
@@ -59,6 +65,13 @@ namespace Engine {
 			if (texSize.Width < width || texSize.Height < height)
 				throw std::out_of_range("SubImage out of range");
 		}
+
+		inline Engine::Vector2u MipSize(const Engine::Vector2u& size, uint32_t level) {
+			auto width = std::max(1u, size.Width >> level);
+			auto height = std::max(1u, size.Height >> level);
+
+			return { width, height };
+		}
 	}
 
 	void Texture::Resize(const Vector2u& size) {
@@ -96,14 +109,25 @@ namespace Engine {
 	Texture::Texture(bool multisampled) : m_GLState(MakeRef<GLState>(multisampled)) {
 	}
 
-	void Texture::Initialize(uint32_t levels, uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat,
-	                         TextureUsage usage, const void* pixels, DataType dataType, DataFormat dataFormat) {
-		Utils::CheckIfValidSize(size);
-		SetupStorage(levels, samples, size, usage, ImageFormat);
-		SetupDefaultParameters(usage);
+	void Texture::Initialize(const TextureSpec& spec) {
+		SetupStorage(spec.Levels, spec.Samples, spec.Size, spec.Usage, spec.ImageFormat);
+		SetupDefaultParameters(spec.Usage);
 
-		if (pixels)
-			UploadPixels(pixels, size, {0, 0}, dataFormat, dataType);
+		if (!spec.Picture) return;
+
+		ENGINE_ASSERT(spec.Samples == 1, "Initial pixels cannot be uploaded to multisampled textures");
+
+		const auto picture = *spec.Picture;
+
+		auto [defFormat, defType] = Utils::GetDefaultFormatAndType(spec.ImageFormat);
+		const DataFormat dataFormat = picture.Format.value_or(defFormat);
+		const DataType dataType = picture.DataType.value_or(defType);
+
+		if (picture.Pixels) {
+			const auto size = picture.Size == Vector2u{ 0, 0 } ? spec.Size : picture.Size;
+
+			UploadPixels(picture.Pixels, size, { 0, 0 }, dataFormat, dataType, picture.MipLevel, picture.RowStrideBytes, picture.FlipY);
+		}
 	}
 
 	void Texture::Recreate(const Vector2u& size) {
@@ -137,25 +161,12 @@ namespace Engine {
 	}
 
 	Ref<Texture> Texture::Create(const TextureSpec& spec) {
-		auto texture = Ref<Texture>(new Texture());
+		auto texture = Ref<Texture>(new Texture(spec.Samples > 1));
 
-		DataType typeUsed;
-		DataFormat formatUsed;
-
-		if (!spec.DataFormat.has_value() || !spec.DataType.has_value()) {
-			std::tie(formatUsed, typeUsed) = Utils::GetDefaultFormatAndType(spec.ImageFormat);
-		}
-		else {
-			formatUsed = *spec.DataFormat;
-			typeUsed = *spec.DataType;
-		}
-
-		texture->Initialize(spec.Levels, spec.Samples, spec.Size, spec.ImageFormat, spec.Usage, spec.InitialData,
-		                    typeUsed,
-		                    formatUsed);
+		texture->Initialize(spec);
 		texture->SetLabel(spec.Label);
 
-		if (spec.InitialData)
+		if (spec.Levels > 1 && spec.Samples == 1 && spec.GenerateMips)
 			texture->GenerateMipMaps();
 
 		LOG_ENGINE_DEBUG("Created texture: {}", texture->DebugInfo());
@@ -166,13 +177,18 @@ namespace Engine {
 	                             uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
+		TextureSpec::InitialPixels initialPicture;
 
+		initialPicture.Format = DataFormat::RGBA;
+		initialPicture.DataType = DataType::UnsignedByte;
+		initialPicture.Pixels = image->GetPixels().data();
+
+		spec.Picture = initialPicture;
 		spec.Size = image->Size();
 		spec.ImageFormat = imageFormat;
 		spec.Samples = samples;
 		spec.Levels = levels;
 		spec.Label = label;
-		spec.InitialData = image->GetPixels().data();
 		spec.Usage = TextureUsage::Default;
 
 		return Create(spec);
@@ -182,13 +198,18 @@ namespace Engine {
 	                             uint32_t levels, uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
+		TextureSpec::InitialPixels initialPicture;
 
+		initialPicture.Format = DataFormat::RGBA;
+		initialPicture.DataType = DataType::UnsignedByte;
+		initialPicture.Pixels = image->GetPixels().data();
+
+		spec.Picture = initialPicture;
 		spec.Size = image->Size();
 		spec.ImageFormat = imageFormat;
 		spec.Samples = samples;
 		spec.Levels = levels;
 		spec.Label = label;
-		spec.InitialData = image->GetPixels().data();
 		spec.Usage = usage;
 
 		return Create(spec);
@@ -267,36 +288,49 @@ namespace Engine {
 		SetParameter(GL_TEXTURE_MAG_FILTER, static_cast<int>(Utils::EnumToGLConstant(Utils::SanitizeMag(filter))));
 	}
 
-	Ref<Image> Texture::ToImage() const {
-		const uint64_t size = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size.
-			Height);
+	Ref<Image> Texture::ToImage(uint32_t mipLevel) const {
+		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->ImageFormat) && !Utils::IsIntegerColorFormat(m_GLState->ImageFormat))
+
+		const Vector2u mipSize = Utils::MipSize(m_GLState->Size, mipLevel);
+		const uint64_t pixelCount = static_cast<uint64_t>(mipSize.Width) * static_cast<uint64_t>(mipSize.Height);
 
 		std::vector<Color> pixels;
-		pixels.resize(size);
+		pixels.resize(pixelCount);
+		constexpr uint32_t bytesPerPixel = Utils::ChannelsFor(DataFormat::RGBA) * Utils::BytesPerChannel(DataType::UnsignedByte);
+		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
-		GetImage(pixels.data(), static_cast<uint32_t>(size * 4));
-		return Image::Create(m_GLState->Size, pixels.data());
+		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
+
+		GetImage(pixels.data(), bufSize, DataFormat::RGBA, DataType::UnsignedByte, mipLevel);
+		return Image::Create(mipSize, pixels.data());
 	}
 
-	Ref<Image> Texture::GetImage(const Vector2u& size, const Vector2i& offset) const {
+	Ref<Image> Texture::GetImage(const Vector2u& size, const Vector2i& offset, uint32_t mipLevel) const {
+		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->ImageFormat) && !Utils::IsIntegerColorFormat(m_GLState->ImageFormat))
 		const uint64_t pixelCount = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height);
 
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
+		constexpr uint32_t bytesPerPixel = Utils::ChannelsFor(DataFormat::RGBA) * Utils::BytesPerChannel(DataType::UnsignedByte);
+		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
-		GetImage(pixels.data(), static_cast<uint32_t>(pixelCount * 4), size, offset);
+		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
+
+		GetImage(pixels.data(), bufSize, size, offset, DataFormat::RGBA, DataType::UnsignedByte, mipLevel);
 		return Image::Create(size, pixels.data());
 	}
 
 	void Texture::Clear(const Color& color) {
-		return Clear(&color.Code, DataFormat::RGBA, DataType::UnsignedByte);
+		Clear(&color.Code, DataFormat::RGBA, DataType::UnsignedByte);
 	}
 
 	void Texture::Clear(int value) {
-		return Clear(&value, DataFormat::RGBA, DataType::Int);
+		std::array vArray = { value, value, value, value };
+		Clear(vArray.data(), DataFormat::RGBA, DataType::Int);
 	}
 
 	void Texture::Clear(const void* pixels, DataFormat dataFormat, DataType dataType) {
+		Utils::UnpackAlignmentScope unpack(1);
 		glClearTexImage(static_cast<GLuint>(*this), 0, Utils::EnumToGLConstant(dataFormat),
 		                Utils::EnumToGLConstant(dataType),
 		                pixels);
@@ -309,12 +343,14 @@ namespace Engine {
 	}
 
 	void Texture::ClearRegion(int value, const Vector2i& offset, const Vector2u& size) {
-		ClearRegion(&value, offset, size, DataFormat::RGBA, DataType::Int);
+		std::array vArray = { value, value, value, value };
+		ClearRegion(vArray.data(), offset, size, DataFormat::RGBA, DataType::Int);
 	}
 
 	void Texture::ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
 	                          DataType dataType) {
 		Utils::CheckSubRegionSize(offset, size, Size());
+		Utils::UnpackAlignmentScope unpack(1);
 
 		glClearTexSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width),
 		                   static_cast<GLsizei>(size.Height), 1,
@@ -325,19 +361,45 @@ namespace Engine {
 		             offset, size, dataFormat, dataType);
 	}
 
-	void Texture::GetPixels(void* pixels, uint32_t size) const {
-		ENGINE_ASSERT(pixels);
-		ENGINE_ASSERT(size != 0);
+	void Texture::GetPixels(void* pixels, uint32_t bufSize, DataFormat format, DataType type, uint32_t mipLevel, uint32_t rowStrideBytes) const {
+		ENGINE_ASSERT(pixels && bufSize != 0);
+		if (!pixels || bufSize == 0)
+			throw std::invalid_argument("Invalid pixel buffer");
 
-		if (!pixels || size == 0)
-			throw std::runtime_error("Uninitialized memory access");
+		ENGINE_ASSERT(!IsMultisampled(), "Resolve MSAA texture before reading pixels");
 
-		const uint64_t expected = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size.
-			Height) * 4;
-		if (static_cast<uint64_t>(size) >= expected)
-			GetImage(pixels, size);
-		else
-			throw std::out_of_range("Specified buffer is too small");
+		const Vector2u mipSize = Utils::MipSize(m_GLState->Size, mipLevel);
+		const uint32_t channels = Utils::ChannelsFor(format);
+		const uint32_t bpc = Utils::BytesPerChannel(type);
+		const uint32_t bpp = channels * bpc;
+
+		const uint64_t tightRowBytes = static_cast<uint64_t>(mipSize.Width) * static_cast<uint64_t>(bpp);
+		const uint64_t tightTotal = tightRowBytes * static_cast<uint64_t>(mipSize.Height);
+
+		if (rowStrideBytes != 0) {
+			ENGINE_ASSERT((rowStrideBytes % bpp) == 0, "RowStrideBytes must be a multiple of bytes-per-pixel");
+			ENGINE_ASSERT(rowStrideBytes >= tightRowBytes, "RowStrideBytes smaller than tight row size");
+
+			const uint64_t minBuf = static_cast<uint64_t>(rowStrideBytes) * static_cast<uint64_t>(mipSize.Height);
+			ENGINE_ASSERT(bufSize >= minBuf)
+			if (bufSize < minBuf)
+				throw std::out_of_range("Pixel buffer too small for requested row stride");
+		} else {
+			ENGINE_ASSERT(bufSize >= tightTotal)
+			if (bufSize < tightTotal)
+				throw std::out_of_range("Pixel buffer too small for requested image size");
+		}
+
+		const GLenum glFormat = Utils::EnumToGLConstant(format);
+		const GLenum glType = Utils::EnumToGLConstant(type);
+
+		Utils::PackAlignmentScope pack(1);
+		if (rowStrideBytes == 0) {
+			glGetTextureImage(static_cast<GLuint>(*this), static_cast<GLint>(mipLevel), glFormat, glType, static_cast<GLsizei>(bufSize), pixels);
+		} else {
+			Utils::PackRowLengthScope pack(static_cast<int>(rowStrideBytes / bpp));
+			glGetTextureSubImage(static_cast<GLuint>(*this), static_cast<GLint>(mipLevel), 0, 0, 0, static_cast<GLsizei>(mipSize.Width), static_cast<GLsizei>(mipSize.Height), 1, glFormat, glType, static_cast<GLsizei>(bufSize), pixels);
+		}
 	}
 
 	void Texture::Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
@@ -435,6 +497,8 @@ namespace Engine {
 
 	void Texture::SetupStorage(uint32_t levels, uint32_t samples, const Vector2u& size, TextureUsage usage,
 	                           enum ImageFormat imageFormat) {
+		Utils::CheckIfValidSize(size);
+
 		m_GLState->MipMapGenerated = false;
 		m_GLState->Size = size;
 		m_GLState->ImageFormat = imageFormat;
@@ -489,53 +553,120 @@ namespace Engine {
 
 	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
 	                           DataType dataType) {
+		UploadPixels(pixels, size, offset, format, dataType, 0, 0, false);
+	}
+
+	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
+		DataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes, bool flipY) {
+
 		ENGINE_ASSERT(pixels);
 
 		if (!pixels)
 			return;
 
-		Utils::CheckSubRegionSize(offset, size, Size());
-		glTextureSubImage2D(static_cast<GLuint>(*this), 0, offset.X, offset.Y, static_cast<GLsizei>(size.Width),
-		                    static_cast<GLsizei>(size.Height), Utils::EnumToGLConstant(format),
-		                    Utils::EnumToGLConstant(dataType), pixels);
+		ENGINE_ASSERT(!IsMultisampled(), "Cannot upload pixels to multisampled texture");
+		if (IsMultisampled())
+			throw std::runtime_error("Resolve MSAA texture before upload pixels");
 
-		LOG_GL_TRACE("Uploading texture data: size={}x{}, format={}, type={}", size.Width, size.Height, format,
-		             dataType);
+		ENGINE_ASSERT(mipLevel < m_GLState->Levels, fmt::format("Mip level {} out of range for texture with {} levels", mipLevel,
+			m_GLState->Levels));
+
+		if (mipLevel >= m_GLState->Levels) {
+			throw std::out_of_range(fmt::format("Mip level {} out of range for texture with {} levels", mipLevel, m_GLState->Levels));
+		}
+
+		const Vector2u targetSize = Utils::MipSize(m_GLState->Size, mipLevel);
+		Utils::CheckSubRegionSize(offset, size, targetSize);
+
+
+		Utils::UnpackAlignmentScope unpack(1);
+
+		std::unique_ptr<std::byte[]> flipped = nullptr;
+		const uint32_t bpc = Utils::BytesPerChannel(dataType);
+		const uint32_t channels = Utils::ChannelsFor(format);
+		const uint32_t bpp = bpc * channels;
+		const uint32_t tightBytes = size.Width * bpp;
+
+		const void* uploadPtr = pixels;
+
+		if (flipY) {
+			flipped.reset(new std::byte[static_cast<std::size_t>(tightBytes) * size.Height]);
+			auto* dst = flipped.get();
+
+			const uint8_t* srcBase = static_cast<const uint8_t*>(pixels);
+			const uint32_t stride = (rowStrideBytes != 0) ? rowStrideBytes : tightBytes;
+
+			for (uint32_t y = 0; y < size.Height; ++y) {
+				const uint32_t srcY = (size.Height - 1 - y);
+				const auto* srcRow = srcBase + static_cast<std::size_t>(srcY) * stride;
+				auto* dstRow = reinterpret_cast<uint8_t*>(dst) + static_cast<std::size_t>(y) * tightBytes;
+				std::memcpy(dstRow, srcRow, tightBytes);
+			}
+
+			uploadPtr = flipped.get();
+			rowStrideBytes = 0;
+		}
+
+		Scope<Utils::UnpackRowLengthScope> rowLengthScope;
+		if (rowStrideBytes != 0) {
+			ENGINE_ASSERT((rowStrideBytes % bpp) == 0, "RowStrideBytes must be  a multiple of bytes-per-pixel");
+
+			const int rowLengthPixels = static_cast<int>(rowStrideBytes / bpp);
+			rowLengthScope = MakeScope<Utils::UnpackRowLengthScope>(rowLengthPixels);
+		}
+
+		glTextureSubImage2D(static_cast<GLuint>(*this), static_cast<GLint>(mipLevel), offset.X, offset.Y, static_cast<GLsizei>(size.Width),
+			static_cast<GLsizei>(size.Height), Utils::EnumToGLConstant(format),
+			Utils::EnumToGLConstant(dataType), uploadPtr);
+
+		LOG_GL_TRACE("Uploading texture data: size={}x{}, offset={}x{}, format={}, type={}, stride={} bytes, flipY={}", size.Width, size.Height, offset.X, offset.Y, format,
+			dataType, rowStrideBytes, flipY);
 	}
 
-	void Texture::GetImage(void* pixels, uint32_t size) const {
+	void Texture::GetImage(void* pixels, uint32_t bufSize, DataFormat format, DataType dataType, uint32_t mipLevel) const {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			throw std::runtime_error("Received uninitialized pointer to memory");
 
-		const uint64_t neededSize = static_cast<uint64_t>(m_GLState->Size.Width) * static_cast<uint64_t>(m_GLState->Size
-			.Height) * 4;
+		ENGINE_ASSERT(!IsMultisampled(), "Resolve MSAA texture before reading pixels");
+		if (IsMultisampled())
+			throw std::runtime_error("Resolve MSAA texture before reading pixels");
 
-		ENGINE_ASSERT(static_cast<uint64_t>(size) >= neededSize);
-		if (static_cast<uint64_t>(size) < neededSize)
+		const Vector2u targetSize = Utils::MipSize(m_GLState->Size, mipLevel);
+		const uint32_t bpp = Utils::ChannelsFor(format) * Utils::BytesPerChannel(dataType);
+		const uint64_t bufSizeNeeded = static_cast<uint64_t>(targetSize.Width) * static_cast<uint64_t>(targetSize.Height) * bpp;
+
+		ENGINE_ASSERT(bufSize >= bufSizeNeeded);
+		if (bufSize < bufSizeNeeded)
 			throw std::out_of_range("Buffer is too small");
 
-		glGetTextureImage(static_cast<GLuint>(*this), 0, GL_RGBA, GL_UNSIGNED_BYTE, static_cast<GLsizei>(size),
+		Utils::PackAlignmentScope pack(1);
+		glGetTextureImage(static_cast<GLuint>(*this), static_cast<GLint>(mipLevel), Utils::EnumToGLConstant(format), Utils::EnumToGLConstant(dataType), static_cast<GLsizei>(bufSize),
 		                  pixels);
 	}
 
-	void Texture::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset) const {
+	void Texture::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset, DataFormat format, DataType dataType, uint32_t mipLevel) const {
 		ENGINE_ASSERT(pixels);
-
-		const uint64_t neededSize = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height) * 4;
-
 		if (!pixels)
 			throw std::runtime_error("Received uninitialized pointer to memory");
 
-		ENGINE_ASSERT(bufSize >= neededSize);
-		if (bufSize < neededSize)
+		ENGINE_ASSERT(!IsMultisampled(), "Resolve MSAA texture before reading pixels");
+		if (IsMultisampled())
+			throw std::runtime_error("Resolve MSAA texture before reading pixels");
+
+		const Vector2u targetSize = Utils::MipSize(m_GLState->Size, mipLevel);
+		const uint32_t bpp = Utils::ChannelsFor(format) * Utils::BytesPerChannel(dataType);
+		const uint64_t bufSizeNeeded = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height) * bpp;
+
+		ENGINE_ASSERT(bufSize >= bufSizeNeeded);
+		if (bufSize < bufSizeNeeded)
 			throw std::out_of_range("Buffer is too small");
 
-		Utils::CheckSubRegionSize(offset, size, Size());
+		Utils::CheckSubRegionSize(offset, size, targetSize);
+		Utils::PackAlignmentScope pack(1);
 
-		glGetTextureSubImage(static_cast<GLuint>(*this), 0, offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width),
-		                     static_cast<GLsizei>(size.Height), 1, GL_RGBA,
-		                     GL_UNSIGNED_BYTE,
+		glGetTextureSubImage(static_cast<GLuint>(*this), static_cast<GLint>(mipLevel), offset.X, offset.Y, 0, static_cast<GLsizei>(size.Width),
+		                     static_cast<GLsizei>(size.Height), 1, Utils::EnumToGLConstant(format), Utils::EnumToGLConstant(dataType),
 		                     static_cast<GLsizei>(bufSize), pixels);
 	}
 

@@ -5,23 +5,36 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Renderer/GraphicEnums.h"
 
+#include <optional>
+
 namespace Engine {
 	class Image;
 
 	struct TextureSpec {
+		struct InitialPixels {
+			const void* Pixels = nullptr;
+			Vector2u Size{}; // 0, 0 -> default to texture size
+			uint32_t RowStrideBytes = 0; // 0 -> tightly packed (width * bpp)
+
+			std::optional<DataFormat> Format = std::nullopt; // if empty -> derive from ImageFormat
+			std::optional<DataType> DataType = std::nullopt; // if empty -> derive from ImageFormat
+
+			bool FlipY = false; // flip the image data before upload
+			uint32_t MipLevel = 0; // which mip level to upload to
+		};
+
 		Vector2u Size;
 		ImageFormat ImageFormat = ImageFormat::RGBA8;
 
-		uint32_t Samples = 1;
+		uint32_t Samples = 1; // multisampled (no pixel upload)
 		uint32_t Levels = 1; // Only valid for samples == 1; 0 means auto
 
 		std::string Label;
-		const void* InitialData = nullptr;
-
-		std::optional<DataType> DataType = std::nullopt;
-		std::optional<DataFormat> DataFormat = std::nullopt;
-
+		
 		TextureUsage Usage = TextureUsage::Default;
+		bool GenerateMips = false; // After upload; ignored when Levels <= 1 or Samples > 1
+
+		std::optional<InitialPixels> Picture;
 	};
 
 	class Texture {
@@ -75,8 +88,8 @@ namespace Engine {
 		[[nodiscard]] uint32_t Samples() const { return m_GLState->Samples; }
 		[[nodiscard]] uint32_t Levels() const { return m_GLState->Levels; }
 
-		Ref<Image> ToImage() const;
-		Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset) const;
+		[[nodiscard]] Ref<Image> ToImage(uint32_t mipLevel = 0) const;
+		[[nodiscard]] Ref<Image> GetImage(const Vector2u& size, const Vector2i& offset, uint32_t mipLevel = 0) const;
 
 		void Clear(const Color& color);
 		void Clear(int value = 0);
@@ -86,7 +99,7 @@ namespace Engine {
 		void ClearRegion(int value, const Vector2i& offset, const Vector2u& size);
 		void ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType);
 
-		void GetPixels(void* pixels, uint32_t size) const;
+		void GetPixels(void* pixels, uint32_t bufSize, DataFormat format, DataType type, uint32_t mipLevel = 0, uint32_t rowStrideBytes = 0) const;
 
 		void Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
 		void Update(const Color* pixels, const Vector2u& size, const Vector2i& offset);
@@ -129,16 +142,17 @@ namespace Engine {
 	protected:
 		Texture(bool multisampled = false);
 
-		void Initialize(uint32_t levels, uint32_t samples, const Vector2u& size, enum ImageFormat ImageFormat, TextureUsage usage = TextureUsage::Default, const void* pixels = nullptr, DataType dataType = DataType::UnsignedByte, DataFormat dataFormat = DataFormat::RGBA);
+		void Initialize(const TextureSpec& spec);
 		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
 
 		void ReAlloc(const Vector2u& size);
 		void SetupStorage(uint32_t levels = 1, uint32_t samples = 1, const Vector2u& size = {1, 1}, TextureUsage usage = TextureUsage::Default, enum ImageFormat imageFormat = ImageFormat::RGBA8);
 
 		void UploadPixels(const void* pixels, const Vector2u& size = {}, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
+		void UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format, DataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes = 0, bool flipY = false);
 
-		void GetImage(void* pixels, uint32_t size) const;
-		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }) const;
+		void GetImage(void* pixels, uint32_t bufSize, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte, uint32_t mipLevel = 0) const;
+		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte, uint32_t mipLevel = 0) const;
 
 		void SetParameter(uint32_t name, int parameter);
 		void GetParameter(uint32_t name, int* parameter) const;

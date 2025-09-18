@@ -21,6 +21,10 @@ namespace Engine {
 		TextureBuilder& FromImage(const Ref<Image>& image, TextureUsage usage);
 		TextureBuilder& FromRawData(const Buffer& buffer, DataFormat format, DataType type);
 
+		TextureBuilder& RowStrideBytes(uint32_t bytes);
+		TextureBuilder& FlipY(bool flip = true);
+		TextureBuilder& PictureMip(uint32_t level);
+
 		TextureBuilder& Clear();
 
 		TextureSpec BuildSpecification() const;
@@ -49,5 +53,9 @@ namespace Engine {
 		DataFormat m_DataFormat = DataFormat::RGBA;
 		DataType m_DataType = DataType::UnsignedByte;
 		bool m_UseRawData = false;
+
+		uint32_t m_RowStrideBytes = 0;
+		uint32_t m_PictureMipLevel = 0;
+		bool m_FlipY = false;
 	};
 }
