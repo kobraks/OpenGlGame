@@ -5,6 +5,7 @@
 
 #include "Engine/Devices/Keyboard.h"
 
+#include "Engine/Renderer/Texture.h"
 #include "Engine/Renderer/RendererCommand.h"
 #include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
 #include "Engine/Renderer/Builders/FramebufferBuilder.h"
@@ -98,7 +99,7 @@ namespace Editor {
 		const int32_t mouseY = static_cast<int32_t>(my);
 
 		if (mouseX >= 0 && mouseY >= 0 && mouseX < static_cast<int32_t>(viewportSize.x) && mouseY < static_cast<int32_t>(viewportSize.y)) {
-			const int32_t pixelData = m_Framebuffer->ReadPixel(1, { mouseX, mouseY });
+			const int32_t pixelData = m_Framebuffer->ReadPixel<int32_t>(1, { static_cast<uint32_t>(mouseX), static_cast<uint32_t>(mouseY) });
 			m_HoveredEntity = pixelData == -1 ? Engine::Entity() : Engine::Entity(static_cast<entt::entity>(pixelData), activeScene.get());
 		}
 
