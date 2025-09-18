@@ -29,4 +29,32 @@ namespace Engine::Utils {
 	private:
 		int m_Prev = 0;
 	};
+
+	class UnpackRowLengthScope {
+	public:
+		explicit UnpackRowLengthScope(int newRowLength) noexcept;
+		~UnpackRowLengthScope() noexcept;
+
+		UnpackRowLengthScope(const UnpackRowLengthScope&) = delete;
+		UnpackRowLengthScope& operator=(const UnpackRowLengthScope&) = delete;
+		UnpackRowLengthScope(UnpackRowLengthScope&&) = delete;
+		UnpackRowLengthScope& operator=(UnpackRowLengthScope&&) = delete;
+
+	private:
+		int m_Prev = 0;
+	};
+
+	class PackRowLengthScope {
+	public:
+		explicit PackRowLengthScope(int newRowLength) noexcept;
+		~PackRowLengthScope() noexcept;
+
+		PackRowLengthScope(const PackRowLengthScope&) = delete;
+		PackRowLengthScope& operator=(const PackRowLengthScope&) = delete;
+		PackRowLengthScope(PackRowLengthScope&&) = delete;
+		PackRowLengthScope& operator=(PackRowLengthScope&&) = delete;
+
+	private:
+		int m_Prev = 0;
+	};
 }
