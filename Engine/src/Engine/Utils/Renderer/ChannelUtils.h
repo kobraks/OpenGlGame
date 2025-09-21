@@ -2,8 +2,8 @@
 #include "Engine/Renderer/GraphicEnums.h"
 
 namespace Engine::Utils {
-	static constexpr uint8_t ChannelsFor(DataFormat df) {
-		switch (df) {
+	static constexpr uint8_t ChannelsFor(DataFormat dataFormat) {
+		switch (dataFormat) {
 		case DataFormat::RGBA:
 		case DataFormat::RGBAInteger:
 		case DataFormat::BGRA:
@@ -25,8 +25,8 @@ namespace Engine::Utils {
 		}
 	}
 
-	static constexpr uint32_t BytesPerChannel(DataType dt) {
-		switch (dt) {
+	static constexpr uint8_t BytesPerChannel(DataType dataType) {
+		switch (dataType) {
 		case DataType::Byte:
 		case DataType::UnsignedByte:
 			return 1u;
@@ -44,8 +44,8 @@ namespace Engine::Utils {
 		}
 	}
 
-	static constexpr int IndexForChannel(DataFormat df, Channel channel) {
-		switch (df) {
+	static constexpr int32_t IndexForChannel(DataFormat dataFormat, Channel channel) {
+		switch (dataFormat) {
 		case DataFormat::RGBA:
 		case DataFormat::RGBAInteger:
 			switch (channel) {
@@ -94,5 +94,9 @@ namespace Engine::Utils {
 		default:
 			return (channel == Channel::Red) ? 0 : -1;
 		}
+	}
+
+	static constexpr uint32_t BytesPerPixel(DataFormat dataFormat, DataType dataType) {
+		return ChannelsFor(dataFormat) * BytesPerChannel(dataType);
 	}
 }

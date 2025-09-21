@@ -296,7 +296,7 @@ namespace Engine {
 
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
-		constexpr uint32_t bytesPerPixel = Utils::ChannelsFor(DataFormat::RGBA) * Utils::BytesPerChannel(DataType::UnsignedByte);
+		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(DataFormat::RGBA, DataType::UnsignedByte);
 		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
 		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
@@ -311,7 +311,7 @@ namespace Engine {
 
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
-		constexpr uint32_t bytesPerPixel = Utils::ChannelsFor(DataFormat::RGBA) * Utils::BytesPerChannel(DataType::UnsignedByte);
+		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(DataFormat::RGBA, DataType::UnsignedByte);
 		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
 		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
@@ -633,7 +633,7 @@ namespace Engine {
 			throw std::runtime_error("Resolve MSAA texture before reading pixels");
 
 		const Vector2u targetSize = Utils::MipSize(m_GLState->Size, mipLevel);
-		const uint32_t bpp = Utils::ChannelsFor(format) * Utils::BytesPerChannel(dataType);
+		const uint32_t bpp = Utils::BytesPerPixel(format, dataType);
 		const uint64_t bufSizeNeeded = static_cast<uint64_t>(targetSize.Width) * static_cast<uint64_t>(targetSize.Height) * bpp;
 
 		ENGINE_ASSERT(bufSize >= bufSizeNeeded);
@@ -655,7 +655,7 @@ namespace Engine {
 			throw std::runtime_error("Resolve MSAA texture before reading pixels");
 
 		const Vector2u targetSize = Utils::MipSize(m_GLState->Size, mipLevel);
-		const uint32_t bpp = Utils::ChannelsFor(format) * Utils::BytesPerChannel(dataType);
+		const uint32_t bpp = Utils::BytesPerPixel(format, dataType);
 		const uint64_t bufSizeNeeded = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height) * bpp;
 
 		ENGINE_ASSERT(bufSize >= bufSizeNeeded);
