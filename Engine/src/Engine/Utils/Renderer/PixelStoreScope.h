@@ -1,60 +1,36 @@
 #pragma once
 #include <cstdint>
+#include <glad/glad.h>
 
 namespace Engine::Utils {
-	class PackAlignmentScope {
+	template <uint32_t Param>
+	class PixelStoreScope {
 	public:
-		explicit PackAlignmentScope(int newAlignment = 1) noexcept;
-		~PackAlignmentScope() noexcept;
+		explicit PixelStoreScope(int newValue) noexcept;
+		~PixelStoreScope() noexcept;
 
-		PackAlignmentScope(const PackAlignmentScope&) = delete;
-		PackAlignmentScope& operator=(const PackAlignmentScope&) = delete;
-		PackAlignmentScope(PackAlignmentScope&&) = delete;
-		PackAlignmentScope& operator=(PackAlignmentScope&&) = delete;
+		PixelStoreScope(const PixelStoreScope&) = delete;
+		PixelStoreScope& operator=(const PixelStoreScope&) = delete;
+		PixelStoreScope(PixelStoreScope&&) = delete;
+		PixelStoreScope& operator=(PixelStoreScope&&) = delete;
 
 	private:
-		int m_Prev = 0;
+		int32_t m_Prev;
 	};
 
-	class UnpackAlignmentScope {
-	public:
-		explicit UnpackAlignmentScope(int newAlignment = 1) noexcept;
-		~UnpackAlignmentScope() noexcept;
+	template <uint32_t Param>
+	PixelStoreScope<Param>::PixelStoreScope(int newValue) noexcept {
+		glGetIntegerv(Param, &m_Prev);
+		glPixelStorei(Param, newValue);
+	}
 
-		UnpackAlignmentScope(const UnpackAlignmentScope&) = delete;
-		UnpackAlignmentScope& operator=(const UnpackAlignmentScope&) = delete;
-		UnpackAlignmentScope(UnpackAlignmentScope&&) = delete;
-		UnpackAlignmentScope& operator=(UnpackAlignmentScope&&) = delete;
+	template <uint32_t Param>
+	PixelStoreScope<Param>::~PixelStoreScope() noexcept {
+		glPixelStorei(Param, m_Prev);
+	}
 
-	private:
-		int m_Prev = 0;
-	};
-
-	class UnpackRowLengthScope {
-	public:
-		explicit UnpackRowLengthScope(int newRowLength) noexcept;
-		~UnpackRowLengthScope() noexcept;
-
-		UnpackRowLengthScope(const UnpackRowLengthScope&) = delete;
-		UnpackRowLengthScope& operator=(const UnpackRowLengthScope&) = delete;
-		UnpackRowLengthScope(UnpackRowLengthScope&&) = delete;
-		UnpackRowLengthScope& operator=(UnpackRowLengthScope&&) = delete;
-
-	private:
-		int m_Prev = 0;
-	};
-
-	class PackRowLengthScope {
-	public:
-		explicit PackRowLengthScope(int newRowLength) noexcept;
-		~PackRowLengthScope() noexcept;
-
-		PackRowLengthScope(const PackRowLengthScope&) = delete;
-		PackRowLengthScope& operator=(const PackRowLengthScope&) = delete;
-		PackRowLengthScope(PackRowLengthScope&&) = delete;
-		PackRowLengthScope& operator=(PackRowLengthScope&&) = delete;
-
-	private:
-		int m_Prev = 0;
-	};
+	using PackAlignmentScope = PixelStoreScope<GL_PACK_ALIGNMENT>;
+	using UnpackAlignmentScope = PixelStoreScope<GL_UNPACK_ALIGNMENT>;
+	using PackRowLengthScope = PixelStoreScope<GL_PACK_ROW_LENGTH>;
+	using UnpackRowLengthScope = PixelStoreScope<GL_UNPACK_ROW_LENGTH>;
 }
