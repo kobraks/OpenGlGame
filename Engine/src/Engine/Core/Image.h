@@ -3,7 +3,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Vector2.h"
-#include "Engine/Core/Buffer.h"
+#include "Engine/Core/BufferView.h"
 
 #include <filesystem>
 #include <vector>
@@ -29,7 +29,7 @@ namespace Engine {
 
 	class Image {
 	public:
-		Image(const Image& img) noexcept;
+		Image(const Image& img);
 		Image(Image&& img) noexcept;
 
 		~Image() = default;
@@ -46,18 +46,18 @@ namespace Engine {
 		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const glm::vec4* pixels);
 		[[nodiscard]] static Ref<Image> Create(const Vector2u& size, const float* pixels);
 
-		[[nodiscard]] static Ref<Image> Load(const Buffer& buffer);
+		[[nodiscard]] static Ref<Image> Load(const BufferView& buffer);
 		[[nodiscard]] static Ref<Image> Load(const std::filesystem::path& path);
 
-		static bool Save(const Ref<Image>& image, const std::filesystem::path& path, ImageType type);
+		[[nodiscard]] static bool Save(const Ref<Image>& image, const std::filesystem::path& path, ImageType type);
 
 		void Clear();
 
 		void Copy(const Ref<Image>& image);
 
-		uint32_t Width() const { return m_Width; }
-		uint32_t Height() const { return m_Height; }
-		Vector2u Size() const { return {m_Width, m_Height}; }
+		[[nodiscard]] uint32_t Width() const noexcept { return m_Width; }
+		[[nodiscard]] uint32_t Height() const noexcept { return m_Height; }
+		[[nodiscard]] Vector2u Size() const noexcept { return {m_Width, m_Height}; }
 
 		void FlipVertical();
 
@@ -67,27 +67,27 @@ namespace Engine {
 		void Crop(const Vector2u& start, const Vector2u& size);
 		void Crop(uint32_t startX, uint32_t startY, uint32_t width, uint32_t height);
 
-		Color GetAverageColor() const;
+		[[nodiscard]] Color GetAverageColor() const;
 
 		void Fill(const Color& color);
 
-		const auto& GetPixels() const { return m_Pixels; }
+		[[nodiscard]] const auto& GetPixels() const { return m_Pixels; }
 
-		Color& GetPixel(const Vector2u& pos) { return GetPixel(pos.X, pos.Y); }
-		const Color& GetPixel(const Vector2u& pos) const { return GetPixel(pos.X, pos.Y); }
+		[[nodiscard]] Color& GetPixel(const Vector2u& pos) { return GetPixel(pos.X, pos.Y); }
+		[[nodiscard]] const Color& GetPixel(const Vector2u& pos) const { return GetPixel(pos.X, pos.Y); }
 
-		Color& GetPixel(uint32_t x, uint32_t y);
-		const Color& GetPixel(uint32_t x, uint32_t y) const;
+		[[nodiscard]] Color& GetPixel(uint32_t x, uint32_t y);
+		[[nodiscard]] const Color& GetPixel(uint32_t x, uint32_t y) const;
 
 		void SetPixel(const Vector2u& pos, const Color& color) { SetPixel(pos.X, pos.Y, color); }
 		void SetPixel(uint32_t x, uint32_t y, const Color& color);
 
 		[[nodiscard]] std::unique_ptr<uint8_t[]> CopyAsRGBA8() const;
 
-		std::string DebugInfo() const;
+		[[nodiscard]] std::string DebugInfo() const;
 
-		Image& operator=(Image&& img) noexcept;
-		Image& operator=(const Image& img) noexcept;
+		[[nodiscard]] Image& operator=(Image&& img) noexcept;
+		[[nodiscard]] Image& operator=(const Image& img);
 
 	protected:
 		Image() = default;
