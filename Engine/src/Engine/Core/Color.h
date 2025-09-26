@@ -13,6 +13,8 @@
 namespace Engine {
 	class Color {
 	public:
+		using ValueType = uint8_t;
+
 		enum class Channel { Red, Green, Blue, Alpha };
 
 #pragma warning(push)
@@ -30,88 +32,101 @@ namespace Engine {
 		};
 #pragma warning(pop)
 
-		consteval static size_t Size() { return 4; }
+		[[nodiscard]] consteval static size_t Size() noexcept { return 4; }
 
-		constexpr static Color FromRGBA(uint32_t rgba) {
+		[[nodiscard]] constexpr static Color FromRGBA(uint32_t rgba) noexcept {
 			const uint8_t r = (rgba >> 24) & 0xFF;
 			const uint8_t g = (rgba >> 16) & 0xFF;
 			const uint8_t b = (rgba >> 8) & 0xFF;
 			const uint8_t a = (rgba >> 0) & 0xFF;
 
-			return Color(r, g, b, a);
+			return {r, g, b, a};
 		}
 
 		constexpr Color() : Code(0) { A = 0xff; }
 
-		constexpr Color(float red, float green, float blue, float alpha = 1.f) : A(Translate(alpha)),
-			B(Translate(blue)),
+		constexpr Color(float red, float green, float blue, float alpha = 1.f) noexcept : R(Translate(red)),
 			G(Translate(green)),
-			R(Translate(red)) {}
+			B(Translate(blue)),
+			A(Translate(alpha)) {
+		}
 
-		constexpr Color(int red, int green, int blue, int alpha = 255) : A(Translate(alpha)),
-		                                                                 B(Translate(blue)),
-		                                                                 G(Translate(green)),
-		                                                                 R(Translate(red)) {}
+		constexpr Color(int red, int green, int blue, int alpha = 255) noexcept : R(Translate(red)),
+			G(Translate(green)),
+			B(Translate(blue)),
+			A(Translate(alpha)) {
+		}
 
-		explicit constexpr Color(glm::vec4 color) : Color(color.r, color.g, color.b, color.a) {}
+		explicit constexpr Color(glm::vec4 color) noexcept : Color(color.r, color.g, color.b, color.a) {
+		}
 
-		constexpr operator glm::vec4() const { return TranslateToFloat(Code); }
+		[[nodiscard]] constexpr operator glm::vec4() const noexcept { return TranslateToFloat(Code); }
 
-		constexpr Color& operator=(const glm::vec4 &vec) {
+		[[nodiscard]] constexpr Color& operator=(const glm::vec4& vec) noexcept {
 			return (*this) = Color(vec);
 		}
 
-		constexpr uint8_t& operator[](const std::ptrdiff_t i) {
+		constexpr bool operator==(const Color& other) const noexcept {
+			return Code == other.Code;
+		}
+
+		constexpr bool operator!=(const Color& other) const noexcept {
+			return !(*this==other);
+		}
+
+		constexpr std::strong_ordering operator<=>(const Color& other) const noexcept {
+			return Code <=> other.Code;
+		}
+
+		[[nodiscard]] constexpr uint8_t& operator[](const std::ptrdiff_t i) noexcept {
 			ENGINE_ASSERT(i >= 0 && i < static_cast<std::ptrdiff_t>(Size()));
 
 			return (&R)[i];
 		}
 
-		constexpr uint8_t const& operator[](std::ptrdiff_t i) const {
+		[[nodiscard]] constexpr const uint8_t& operator[](std::ptrdiff_t i) const noexcept {
 			ENGINE_ASSERT(i >= 0 && i < static_cast<std::ptrdiff_t>(Size()));
 
 			return (&R)[i];
 		}
 
-		constexpr uint8_t& operator[](Channel channel) {
-			return (&R)[static_cast<int>(channel)];
+		[[nodiscard]] constexpr uint8_t& operator[](Channel channel) noexcept {
+			const auto i = static_cast<std::size_t>(channel);
+			ENGINE_ASSERT(i < Size());
+
+			return (&R)[i];
 		}
 
-		constexpr const uint8_t& operator[](Channel channel) const {
-			return (&R)[static_cast<int>(channel)];
+		[[nodiscard]] constexpr const uint8_t& operator[](Channel channel) const noexcept {
+			const auto i = static_cast<std::size_t>(channel);
+			ENGINE_ASSERT(i < Size());
+
+			return (&R)[i];
 		}
 
-		uint8_t GetChannel(Channel ch) const {
-			switch (ch) {
-			case Channel::Red:   return static_cast<uint8_t>((Code & RedFlag) >> RedBit);
-			case Channel::Green: return static_cast<uint8_t>((Code & GreenFlag) >> GreenBit);
-			case Channel::Blue:  return static_cast<uint8_t>((Code & BlueFlag) >> BlueBit);
-			case Channel::Alpha: return static_cast<uint8_t>((Code & AlphaFlag) >> AlphaBit);
-			}
-			ENGINE_ASSERT(false);
-			throw std::out_of_range("Out of range");
+		[[nodiscard]] uint8_t GetChannel(Channel channel) const noexcept {
+			return operator[](channel);
 		}
 
-		void SetChannel(Channel ch, uint8_t value) {
-			switch (ch) {
+		void SetChannel(Channel channel, uint8_t value) noexcept {
+			switch (channel) {
 			case Channel::Red:
-				Code = (Code & ~RedFlag) | (value << RedBit); break;
+				Code = (Code & ~RedFlag) | (value << RedBit);
+				break;
 			case Channel::Green:
-				Code = (Code & ~GreenFlag) | (value << GreenBit); break;
+				Code = (Code & ~GreenFlag) | (value << GreenBit);
+				break;
 			case Channel::Blue:
-				Code = (Code & ~BlueFlag) | (value << BlueBit); break;
+				Code = (Code & ~BlueFlag) | (value << BlueBit);
+				break;
 			case Channel::Alpha:
-				Code = (Code & ~AlphaFlag) | (value << AlphaBit); break;
+				Code = (Code & ~AlphaFlag) | (value << AlphaBit);
+				break;
 			}
 		}
 
-		std::string ToString() const {
-			const uint32_t formatted = (static_cast<uint32_t>(R) << RedBit) |
-				(static_cast<uint32_t>(G) << GreenBit) |
-				(static_cast<uint32_t>(B) << BlueBit) |
-				(static_cast<uint32_t>(A) << AlphaBit);
-
-			return fmt::format("{:#010X}", formatted);
+		[[nodiscard]] std::string ToString() const {
+			return fmt::format("{:#010X}", ToRGBA());
 		}
 
 		static const Color Black;
@@ -138,33 +153,41 @@ namespace Engine {
 		static constexpr uint32_t AlphaBit = 0;
 
 	private:
-		constexpr static uint8_t Translate(float color) {
+		constexpr static uint8_t Translate(float color) noexcept {
 			return static_cast<uint8_t>(std::clamp(color, 0.f, 1.f) * 255);
 		}
 
-		constexpr static uint8_t Translate(int32_t color) {
+		constexpr static uint8_t Translate(int32_t color) noexcept {
 			return static_cast<uint8_t>(std::clamp(color, 0, 255));
 		}
 
-		constexpr static auto ExtractChannel(uint32_t color, uint32_t flag, uint32_t bits) {
+		constexpr static auto ExtractChannel(uint32_t color, uint32_t flag, uint32_t bits) noexcept {
 			return (color & flag) >> bits;
 		}
 
-		constexpr static glm::vec4 TranslateToFloat(uint32_t color) {
-			constexpr auto GetR = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, RedFlag, RedBit)) / 255.f; };
-			constexpr auto GetG = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, GreenFlag, GreenBit)) / 255.f; };
-			constexpr auto GetB = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, BlueFlag, BlueBit)) / 255.f; };
-			constexpr auto GetA = [](uint32_t color){ return static_cast<float>(ExtractChannel(color, AlphaFlag, AlphaBit)) / 255.f; };
+		constexpr static glm::vec4 TranslateToFloat(uint32_t color) noexcept {
+			constexpr auto GetR = [](uint32_t color) {
+				return static_cast<float>(ExtractChannel(color, RedFlag, RedBit)) / 255.f;
+			};
+			constexpr auto GetG = [](uint32_t color) {
+				return static_cast<float>(ExtractChannel(color, GreenFlag, GreenBit)) / 255.f;
+			};
+			constexpr auto GetB = [](uint32_t color) {
+				return static_cast<float>(ExtractChannel(color, BlueFlag, BlueBit)) / 255.f;
+			};
+			constexpr auto GetA = [](uint32_t color) {
+				return static_cast<float>(ExtractChannel(color, AlphaFlag, AlphaBit)) / 255.f;
+			};
 
-			return glm::vec4(GetR(color), GetG(color), GetB(color), GetA(color));
+			return {GetR(color), GetG(color), GetB(color), GetA(color)};
 		}
 
 	public:
-		constexpr auto ToFloat() const {
+		[[nodiscard]] constexpr auto ToFloat() const noexcept {
 			return TranslateToFloat(Code);
 		}
 
-		static constexpr Color Lerp(const Color& a, const Color& b, float t) {
+		[[nodiscard]] static constexpr Color Lerp(const Color& a, const Color& b, float t) noexcept {
 			const glm::vec4 af = a.ToFloat();
 			const glm::vec4 bf = b.ToFloat();
 
@@ -172,44 +195,78 @@ namespace Engine {
 			return Color(result);
 		}
 
-		constexpr Color GrayScale() const {
-			const float gray = 0.299f * static_cast<float>(R) / 255.0f + 0.587f * static_cast<float>(G) / 255.0f + 0.114f * static_cast<float>(B) / 255.0f;
-			return { gray, gray, gray, static_cast<float>(A) / 255.0f };
+		[[nodiscard]] constexpr Color GrayScale() const noexcept {
+			const float gray = 0.299f * static_cast<float>(R) / 255.0f + 0.587f * static_cast<float>(G) / 255.0f +
+				0.114f * static_cast<float>(B) / 255.0f;
+			return {gray, gray, gray, static_cast<float>(A) / 255.0f};
 		}
 
-		constexpr glm::vec4 ToLinear() const {
+		[[nodiscard]] glm::vec4 ToLinear() const noexcept {
 			const auto c = ToFloat();
-			return glm::vec4{ glm::pow(c.r, 2.2f), glm::pow(c.g, 2.2f), glm::pow(c.b, 2.2f), c.a };
+			return glm::vec4{glm::pow(c.r, 2.2f), glm::pow(c.g, 2.2f), glm::pow(c.b, 2.2f), c.a};
 		}
 
-		constexpr static Color FromLinear(glm::vec4 color) {
-			color = glm::vec4(glm::pow(color.r, 1.0f / 2.2f), glm::pow(color.g, 1.0f / 2.2f), glm::pow(color.b, 1.0f / 2.2f), color.a);
+		[[nodiscard]] static Color FromLinear(glm::vec4 color) noexcept {
+			color = glm::vec4(glm::pow(color.r, 1.0f / 2.2f), glm::pow(color.g, 1.0f / 2.2f),
+			                  glm::pow(color.b, 1.0f / 2.2f), color.a);
 			return Color(color);
 		}
+
+		[[nodiscard]] constexpr uint32_t ToRGBA() const noexcept {
+			return static_cast<uint32_t>(R) << RedBit |
+				static_cast<uint32_t>(G) << GreenBit |
+				static_cast<uint32_t>(B) << BlueBit |
+				static_cast<uint32_t>(A) << AlphaBit;
+		}
+
+		[[nodiscard]] constexpr Color WithRed(uint8_t r) const noexcept { auto c = *this; c.R = r; return c; }
+		[[nodiscard]] constexpr Color WithGreen(uint8_t g) const noexcept { auto c = *this; c.G = g; return c; }
+		[[nodiscard]] constexpr Color WithBlue(uint8_t b) const noexcept { auto c = *this; c.B = b; return c; }
+		[[nodiscard]] constexpr Color WithAlpha(uint8_t a) const noexcept { auto c = *this; c.A = a; return c; }
+
+		[[nodiscard]] constexpr Color Premultiplied() const noexcept {
+			const auto f = ToFloat();
+			return {f.r * f.a, f.g * f.a, f.b * f.a, f.a};
+		}
+
+		[[nodiscard]] static constexpr Color Unpremultiplied(const glm::vec4& pma) noexcept {
+			if (pma.a == 0.f) {
+				return Color{0, 0, 0, 0};
+			}
+			return { pma.r / pma.a, pma.g / pma.a, pma.b / pma.a, pma.a };
+		}
+
+		[[nodiscard]] static Color BlendOver(const Color& sourceColor, const Color& destinationColor) noexcept {
+			const auto src = sourceColor.ToFloat();
+			const auto dsc = destinationColor.ToFloat();
+			const float outA = src.a + dsc.a * (1.f - src.a);
+			glm::vec4 out { (src.r * src.a + dsc.r * dsc.a * (1.f - src.a)) / (outA > 0.f ? outA : 1.f),
+							(src.g * src.a + dsc.g * dsc.a * (1.f - src.a)) / (outA > 0.f ? outA : 1.f),
+							(src.b * src.a + dsc.b * dsc.a * (1.f - src.a)) / (outA > 0.f ? outA : 1.f),
+							outA };
+
+			return Color(out);
+		}
 	};
+
 	static_assert(sizeof(Color) == sizeof(uint32_t), "Color must be 4 bytes");
+	static_assert(std::is_trivially_copyable_v<Color>);
 
-	constexpr bool operator==(const Color &lth, const Color &rth) {
-		return lth.Code == rth.Code;
-	}
-
-	constexpr bool operator!=(const Color &lth, const Color &rth) {
-		return !(lth == rth);
-	}
 }
 
 namespace std {
-	template<>
-	struct tuple_size<Engine::Color> : std::integral_constant<std::size_t, 4>{};
+	template <>
+	struct tuple_size<Engine::Color> : std::integral_constant<std::size_t, 4> {
+	};
 
-	template<std::size_t N>
+	template <std::size_t N>
 	struct tuple_element<N, Engine::Color> {
 		using type = uint8_t;
 	};
 }
 
 namespace Engine {
-	template<std::size_t N>
+	template <std::size_t N>
 	constexpr uint8_t& get(Color& color) noexcept {
 		static_assert(N < 4, "Color index out of range");
 
@@ -219,7 +276,7 @@ namespace Engine {
 		else return color.A;
 	}
 
-	template<std::size_t N>
+	template <std::size_t N>
 	constexpr const uint8_t& get(const Color& color) noexcept {
 		static_assert(N < 4, "Color index out of range");
 
@@ -231,19 +288,12 @@ namespace Engine {
 }
 
 template <>
-struct fmt::formatter<Engine::Color>: formatter<uint32_t> {
-	auto format(const Engine::Color &c, format_context &ctx) const {
-
-		const uint32_t formatted = (static_cast<uint32_t>(c.R) << Engine::Color::RedBit) |
-			(static_cast<uint32_t>(c.G) << Engine::Color::GreenBit) |
-			(static_cast<uint32_t>(c.B) << Engine::Color::BlueBit) |
-			(static_cast<uint32_t>(c.A) << Engine::Color::AlphaBit);
-
-		return fmt::format_to(ctx.out(), "{:#010X}", formatted);
-		// return fmt::formatter<uint32_t>::format(formatted, ctx);
+struct fmt::formatter<Engine::Color> : formatter<uint32_t> {
+	auto format(const Engine::Color& c, format_context& ctx) const {
+		return format_to(ctx.out(), "{:#010X}", c.ToRGBA());
 	}
 
-	constexpr auto parse(format_parse_context &ctx) {
+	constexpr auto parse(format_parse_context& ctx) {
 		return ctx.begin();
 	}
 };
