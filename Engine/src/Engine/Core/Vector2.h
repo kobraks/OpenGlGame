@@ -3,6 +3,11 @@
 #include "Engine/Core/Base.h"
 
 #include <cstdint>
+#include <algorithm>
+#include <stdexcept>
+#include <type_traits>
+#include <tuple>
+
 #include <glm/vec2.hpp>
 #include <fmt/format.h>
 
@@ -25,31 +30,50 @@ namespace Engine {
 		};
 
 
-		constexpr Vector2(ValueType x, ValueType y) : X{x}, Y{y} {} 
-		constexpr Vector2(const ValueType scalar) : Vector2(scalar, scalar) {}
-		constexpr Vector2() : X{}, Y{} {}
+		constexpr Vector2(ValueType x, ValueType y) noexcept : X{x}, Y{y} {}
+		constexpr explicit Vector2(const ValueType scalar) noexcept : Vector2(scalar, scalar) {}
+		constexpr Vector2() noexcept : X{}, Y{} {}
 
-		//template <typename = std::enable_if_t<std::is_floating_point_v<T>>>
-		Vector2(const glm::vec2& v) requires std::is_floating_point_v<T> : Vector2(v.x, v.y) {}
+		template<typename R, glm::qualifier Q>
+			requires (std::is_floating_point_v<T>&& std::is_floating_point_v<R>)
+		constexpr explicit Vector2(const glm::vec<2, R, Q>& v) noexcept : Vector2(static_cast<T>(v.x), static_cast<T>(v.y)) {}
 
-		constexpr bool operator==(const Vector2<T> &vec) const {
+		[[nodiscard]] constexpr bool operator==(const Vector2<T> &vec) const noexcept {
 			return X == vec.X && Y == vec.Y;
 		}
 
-		constexpr bool operator!=(const Vector2<T> &vec) const {
+		[[nodiscard]] constexpr bool operator!=(const Vector2<T> &vec) const noexcept {
 			return !(*this == vec);
 		}
 
-		//template<typename = std::enable_if_t<std::is_floating_point_v<T>>>
-		Vector2& operator=(const glm::vec2& v) requires std::is_floating_point_v<T> {
-			X = v.x;
-			Y = v.y;
-
+		template<typename R, glm::qualifier Q>
+			requires (std::is_floating_point_v<T>&& std::is_floating_point_v<R>)
+		Vector2& operator=(const glm::vec<2, R, Q>& v) noexcept {
+			X = static_cast<T>(v.x);
+			Y = static_cast<T>(v.y);
 			return *this;
 		}
 
+		template<typename R, glm::qualifier Q>
+			requires (std::is_floating_point_v<T>&& std::is_floating_point_v<R>)
+		[[nodiscard]] bool operator==(const glm::vec<2, R, Q>& v) const noexcept {
+			return X == static_cast<T>(v.x) && Y == static_cast<T>(v.y);
+		}
+
+		template<typename R, glm::qualifier Q>
+			requires (std::is_floating_point_v<T>&& std::is_floating_point_v<R>)
+		[[nodiscard]] bool operator!=(const glm::vec<2, R, Q>& v) const noexcept {
+			return !(*this == v);
+		}
+
+		template<typename R, glm::qualifier Q>
+			requires (std::is_floating_point_v<T>&& std::is_floating_point_v<R>)
+		constexpr explicit operator glm::vec<2, R, Q>() const noexcept {
+			return { static_cast<R>(X), static_cast<R>(Y) };
+		}
+
 		template<typename R>
-		constexpr operator Vector2<R>() const {
+		constexpr explicit operator Vector2<R>() const noexcept {
 			return { static_cast<R>(X), static_cast<R>(Y) };
 		}
 
@@ -67,6 +91,43 @@ namespace Engine {
 				case 1: return Y;
 				default: throw std::out_of_range("Vector2 index out of range (expected 0 or 1)");
 			}
+		}
+
+		constexpr void Clamp(ValueType minVal, ValueType maxVal) noexcept {
+			X = std::clamp(X, minVal, maxVal);
+			Y = std::clamp(Y, minVal, maxVal);
+		}
+
+		constexpr void Clamp(const Vector2& minVec, const Vector2& maxVec) noexcept {
+			X = std::clamp(X, minVec.X, maxVec.X);
+			Y = std::clamp(Y, minVec.Y, maxVec.Y);
+		}
+
+		constexpr void ClampToBounds(const Vector2& minVec, const Vector2& maxVec) noexcept {
+			Clamp(minVec, maxVec);
+		}
+
+		[[nodiscard]] constexpr Vector2 Clamped(ValueType minVal, ValueType maxVal) const noexcept {
+			return { std::clamp(X, minVal, maxVal), std::clamp(Y, minVal, maxVal) };
+		}
+		[[nodiscard]] constexpr Vector2 Clamped(const Vector2& minVec, const Vector2& maxVec) const noexcept {
+			return { std::clamp(X, minVec.X, maxVec.X), std::clamp(Y, minVec.Y, maxVec.Y) };
+		}
+
+		[[nodiscard]] constexpr Vector2 Min(const Vector2& other) const noexcept {
+			return { std::min(X, other.X), std::min(Y, other.Y) };
+		}
+
+		[[nodiscard]] constexpr Vector2 Max(const Vector2& other) const noexcept {
+			return { std::max(X, other.X), std::max(Y, other.Y) };
+		}
+
+		[[nodiscard]] constexpr static Vector2 Min(const Vector2& a, const Vector2& b) noexcept {
+			return { std::min(a.X, b.X), std::min(a.Y, b.Y) };
+		}
+
+		[[nodiscard]] constexpr static Vector2 Max(const Vector2& a, const Vector2& b) noexcept {
+			return { std::max(a.X, b.X), std::max(a.Y, b.Y) };
 		}
 	};
 
@@ -112,6 +173,13 @@ namespace Engine {
 
 		if constexpr (I == 0) return v.X;
 		else return v.Y;
+	}
+
+	template<std::size_t I, typename T>
+	constexpr T&& get(Vector2<T>&& v) noexcept {
+		static_assert(I < 2, "Index out of bounds for Vector2");
+		if constexpr (I == 0) return std::move(v.X);
+		else return std::move(v.Y);
 	}
 }
 

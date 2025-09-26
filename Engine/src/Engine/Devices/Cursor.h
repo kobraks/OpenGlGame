@@ -83,7 +83,7 @@ namespace Engine {
 
 	class CustomCursor : public Cursor {
 	public:
-		explicit CustomCursor(Ref<Image> image, const Vector2i &hotspot = {0});
+		explicit CustomCursor(Ref<Image> image, const Vector2i &hotspot = {});
 
 		~CustomCursor() override = default;
 
