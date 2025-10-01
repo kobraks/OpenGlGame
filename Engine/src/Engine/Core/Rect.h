@@ -37,11 +37,11 @@ namespace Engine {
 		                                     Width(static_cast<T>(rect.Width)),
 		                                     Height(static_cast<T>(rect.Height)) {}
 
-		constexpr bool Contains(const Vector2<T>& point) const {
+		[[nodiscard]] constexpr bool Contains(const Vector2<T>& point) const noexcept {
 			return Contains(point.X, point.Y);
 		}
 
-		constexpr bool Contains(ValueType x, ValueType y) const {
+		[[nodiscard]] constexpr bool Contains(ValueType x, ValueType y) const noexcept {
 			const ValueType minX = std::min(X, X + Width);
 			const ValueType maxX = std::max(X, X + Width);
 
@@ -51,34 +51,30 @@ namespace Engine {
 			return (x >= minX) && (x < maxX) && (y >= minY) && (y < maxY);
 		}
 
-		constexpr Vector2<T> GetSize() const { return {Width, Height}; }
-		constexpr Vector2<T> GetPos() const { return {X, Y}; }
+		[[nodiscard]] constexpr Vector2<T> GetSize() const noexcept { return {Width, Height}; }
+		[[nodiscard]] constexpr Vector2<T> GetPos() const noexcept { return {X, Y}; }
 
-		constexpr ValueType GetWidth() const { return Width; }
-		constexpr ValueType GetHeight() const { return Height; }
+		[[nodiscard]] constexpr ValueType GetWidth() const noexcept { return Width; }
+		[[nodiscard]] constexpr ValueType GetHeight() const noexcept { return Height; }
 
-		constexpr ValueType GetX() const { return X; }
-		constexpr ValueType GetY() const { return Y; }
+		[[nodiscard]] constexpr ValueType GetX() const noexcept { return X; }
+		[[nodiscard]] constexpr ValueType GetY() const noexcept { return Y; }
 
-		constexpr void SetSize(const Vector2<T> &size) {
+		constexpr void SetSize(const Vector2<T> &size) noexcept {
 			Width  = size.Width;
 			Height = size.Height;
 		}
 
-		constexpr void SetPos(const Vector2<T> &pos) {
+		constexpr void SetPos(const Vector2<T> &pos) noexcept {
 			X = pos.X;
 			Y = pos.Y;
 		}
 
-		constexpr bool Contains(const Vector2<T> &point) {
-			return Contains(point.X, point.Y);
-		}
-
-		constexpr Vector2<T> GetCenter() const {
+		[[nodiscard]] constexpr Vector2<T> GetCenter() const noexcept {
 			return { X + Width / static_cast<T>(2), Y + Height / static_cast<T>(2) };
 		}
 
-		constexpr Rect<T> Normalized() const {
+		[[nodiscard]] constexpr Rect<T> Normalized() const noexcept {
 			T newX = X;
 			T newY = Y;
 			T newW = Width;
@@ -96,31 +92,31 @@ namespace Engine {
 			return Rect{ newX, newY, newW, newH };
 		}
 
-		constexpr void Offset(const Vector2<T>& offset) {
+		constexpr void Offset(const Vector2<T>& offset) noexcept {
 			X += offset.X;
 			Y += offset.Y;
 		}
 
-		constexpr void Offset(ValueType dx, ValueType dy) {
+		constexpr void Offset(ValueType dx, ValueType dy) noexcept {
 			X += dx;
 			Y += dy;
 		}
 
-		constexpr void Inflate(const Vector2<T>& amount) {
+		constexpr void Inflate(const Vector2<T>& amount) noexcept {
 			X -= amount.X;
 			Y -= amount.Y;
 			Width += amount.X * static_cast<T>(2);
 			Height += amount.Y * static_cast<T>(2);
 		}
 
-		constexpr void Inflate(ValueType dx, ValueType dy) {
+		constexpr void Inflate(ValueType dx, ValueType dy) noexcept {
 			X -= dx;
 			Y -= dy;
 			Width += dx * static_cast<T>(2);
 			Height += dy * static_cast<T>(2);
 		}
 
-		constexpr std::optional<Rect<T>> FindIntersection(const Rect<T> &rect) const {
+		[[nodiscard]] constexpr std::optional<Rect<T>> FindIntersection(const Rect<T> &rect) const noexcept {
 			const auto r1MinX = std::min(X, X + Width);
 			const auto r1MaxX = std::max(X, X + Width);
 			const auto r1MinY = std::min(Y, Y + Height);
@@ -143,20 +139,32 @@ namespace Engine {
 			return std::nullopt;
 		}
 
+		[[nodiscard]] constexpr bool IsEmpty() const noexcept {
+			return (Width <= T(0)) || (Height <= T(0));
+		}
+
+		[[nodiscard]] constexpr Vector2<T> GetMin() const noexcept {
+			return { std::min(X, X + Width), std::min(Y, Y + Height) };
+		}
+
+		[[nodiscard]] constexpr Vector2<T> GetMax() const noexcept {
+			return { std::max(X, X + Width), std::max(Y, Y + Height) };
+		}
+
 		template <typename R>
-		constexpr operator Rect<R>() const {
+		explicit constexpr operator Rect<R>() const noexcept {
 			return { static_cast<R>(X), static_cast<R>(Y), static_cast<R>(Width), static_cast<R>(Height) };
 		} 
 	};
 
 	template <typename T>
-	constexpr bool operator==(const Rect<T> &lth, const Rect<T> &rth) {
-		return (lth.X == rth.X) && (lth.Y == rth.Y) && (lth.Width == rth.Width) && (lth.Height == rth.Height);
+	[[nodiscard]] constexpr bool operator==(const Rect<T> &lhs, const Rect<T> &rhs) noexcept {
+		return (lhs.X == rhs.X) && (lhs.Y == rhs.Y) && (lhs.Width == rhs.Width) && (lhs.Height == rhs.Height);
 	}
 
 	template <typename T>
-	constexpr bool operator!=(const Rect<T> &lth, const Rect<T> &rth) {
-		return !(lth == rth);
+	[[nodiscard]] constexpr bool operator!=(const Rect<T> &lhs, const Rect<T> &rhs) noexcept {
+		return !(lhs == rhs);
 	}
 
 	using UIntRect  = Rect<uint32_t>;
