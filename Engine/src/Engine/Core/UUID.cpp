@@ -4,59 +4,36 @@
 #include <random>
 
 namespace Engine {
-	static std::mt19937_64 s_Engine(std::random_device{}());
-	static std::uniform_int_distribution<uint64_t> s_Uniform;
+	thread_local std::mt19937_64 th_Engine{ std::random_device{}() };
 
-	static uint64_t Random() noexcept {
-		return s_Uniform(s_Engine);
+	static uint64_t Random64() noexcept {
+		std::uniform_int_distribution<uint64_t> dist;
+		return dist(th_Engine);
 	}
 
-	template<typename R, typename Arg>
-	static constexpr R Combine(const Arg lth) noexcept {
-		return lth;
+	inline UUID::Type Combine(uint64_t hi, uint64_t lo) noexcept {
+		return (static_cast<UUID::Type>(hi) << 64) | static_cast<UUID::Type>(lo);
 	}
 
-	template <typename R, typename Arg, typename ...Args>
-	static constexpr R Combine(const Arg lth, const Args &&... args) noexcept {
-		return (R(lth) << 64) + Combine<R, Args...>(args...);
-	}
 
-	template<typename T>
-	static T GetRandom();
+	UUID::UUID() noexcept : m_ID(Combine(Random64(), Random64())){}
 
-	template<>
-	static UUID::Type GetRandom() {
-		return Combine<UUID::Type>(Random(), Random());
-	}
-
-	UUID::UUID() : m_ID(GetRandom<UUID::Type>()){}
-
-	UUID::UUID(Type id) : m_ID(id) {
-	}
-
-	UUID& UUID::operator=(const UUID& rth) {
-		m_ID = rth.m_ID;
-
-		return *this;
-	}
-
-	UUID& UUID::operator=(const Type& rth) {
-		m_ID = rth;
-
-		return *this;
-	}
+	UUID::UUID(Type id) noexcept : m_ID(id) {}
 
 	UUID UUID::FromString(const std::string& name) {
-		std::hash<std::string> hasher;
-		const std::string salt = "ENIGNE_ASSET_SALT";
+		static constexpr char salt[] = "ENGINE_ASSET_SALT";
+		boost::hash<std::string> hasher;
 
-		return UUID(Combine<UUID::Type>(hasher(name), hasher(name + salt)));
+		uint64_t hi = hasher(name);
+		uint64_t lo = hasher(name + salt);
+		return UUID(Combine(hi, lo));
+
 	}
 
-	std::istream &operator>>(std::istream &in, UUID &rth) {
-		std::string number;
-		in >> number;
-		rth.m_ID = UUID::Type(number);
+	std::istream &operator>>(std::istream &in, UUID &rhs) {
+		boost::multiprecision::cpp_int temp;
+		in >> temp;
+		rhs.m_ID = static_cast<UUID::Type>(temp);
 
 		return in;
 	}

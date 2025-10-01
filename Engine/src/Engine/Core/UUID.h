@@ -10,37 +10,41 @@ namespace Engine {
 	public:
 		using Type = boost::multiprecision::uint128_t;
 
-		UUID();
-		explicit UUID(Type id);
+		UUID() noexcept;
+		explicit UUID(Type id) noexcept;
 
-		operator Type() const { return m_ID; }
+		explicit operator Type() const noexcept { return m_ID; }
 
-		UUID& operator=(const UUID& rth);
-		UUID& operator=(const Type& rth);
+		UUID& operator=(const UUID& rhs) noexcept = default;
+		UUID& operator=(const Type& rhs) noexcept { m_ID = rhs; return *this; }
 
-		constexpr bool operator==(Type rth) const { return m_ID == rth; }
+		[[nodiscard]] constexpr bool operator==(Type rhs) const noexcept { return m_ID == rhs; }
 
-		constexpr auto operator<=>(Type rth) const {
-			if (m_ID == rth)
+		[[nodiscard]] constexpr auto operator<=>(Type rhs) const noexcept {
+			if (m_ID == rhs)
 				return std::strong_ordering::equal;
-			if (m_ID > rth)
+			if (m_ID > rhs)
 				return std::strong_ordering::greater;
 			return std::strong_ordering::less;
 		}
 
-		constexpr bool operator==(const UUID &rth) const { return m_ID == rth.m_ID; }
+		[[nodiscard]] constexpr bool operator==(const UUID &rhs) const { return m_ID == rhs.m_ID; }
 
-		constexpr auto operator<=>(const UUID &rth) const {
-			if (m_ID == rth.m_ID)
+		[[nodiscard]] constexpr auto operator<=>(const UUID &rhs) const {
+			if (m_ID == rhs.m_ID)
 				return std::strong_ordering::equal;
-			if (m_ID > rth.m_ID)
+			if (m_ID > rhs.m_ID)
 				return std::strong_ordering::greater;
 			return std::strong_ordering::less;
+
 		}
 
-		static UUID FromString(const std::string& name);
+		[[nodiscard]] static UUID FromString(const std::string& name);
 
-		friend std::istream &operator>>(std::istream &in, UUID &rth);
+		friend std::istream &operator>>(std::istream &in, UUID &rhs);
+
+		static UUID Invalid() noexcept { return UUID(0); }
+		[[nodiscard]] constexpr bool IsValid() const noexcept { return m_ID != 0; }
 	private:
 		Type m_ID;
 	};
@@ -48,30 +52,32 @@ namespace Engine {
 
 template<>
 struct fmt::formatter<Engine::UUID> {
-	uint8_t ShowBase : 1 = 0, Hex : 1 = 0, Upper : 1 = 0;
+	bool ShowBase = false;
+	bool Hex = false;
+	bool Upper = false;
 
 	auto constexpr parse(auto& ctx) {
-		auto e = std::find(ctx.begin(), ctx.end(), '}');
-		if (std::string_view f{ ctx.begin(), e }; f == "#x")
-			ShowBase = Hex = true;
-		else if (f == "#X")
-			ShowBase = Hex = Upper = true;
-		else {
-			Hex = (f == "x") || (f == "X");
-			Upper = (f == "X");
-		}
+		auto it = ctx.begin(), end = ctx.end();
+		std::string_view spec{ it, static_cast<size_t>(std::distance(it, end)) };
 
-		return e;
+		if (spec == "#x") { ShowBase = true; Hex = true; }
+		else if (spec == "#X") { ShowBase = true; Hex = true; Upper = true; }
+		else if (spec == "x") { Hex = true; }
+		else if (spec == "X") { Hex = true; Upper = true; }
+		else if (!spec.empty())
+			throw fmt::format_error("invalid format specifier");
+
+		return end;
 	}
 
 	auto format(const Engine::UUID& i, auto& ctx) const {
-		auto f = Hex ? std::ios::hex : std::ios::dec;
+		std::ios_base::fmtflags flags = Hex ? std::ios::hex : std::ios::dec;
 		if (ShowBase)
-			f |= std::ios::showbase;
+			flags |= std::ios::showbase;
 		if (Upper)
-			f |= std::ios::uppercase;
+			flags |= std::ios::uppercase;
 
-		const auto s = static_cast<Engine::UUID::Type>(i).str(0, f);
+		const auto s = static_cast<Engine::UUID::Type>(i).str(0, flags);
 		return std::copy(s.begin(), s.end(), ctx.out());
 	}
 };
