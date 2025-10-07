@@ -2,6 +2,7 @@
 
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Vector2.h"
+#include "Engine/Core/Flags.h"
 
 #include <string>
 #include <string_view>
@@ -14,6 +15,16 @@ namespace Engine {
 	class Cursor;
 	class Monitor;
 	class GraphicContext;
+
+	enum class WindowStateFlags : uint8_t {
+		None = 0,
+		Visible = 1 << 0,
+		Focused = 1 << 1,
+		Minimized = 1 << 2,
+		Maximized = 1 << 3,
+		Fullscreen = 1 << 4,
+		Vsync = 1 << 5
+	};
 
 	enum class InputMode {
 		StickyKeys,
@@ -34,8 +45,10 @@ namespace Engine {
 		uint32_t Width;
 		uint32_t Height;
 
-		WindowProperties(std::string title, uint32_t width, uint32_t height) : Title(std::move(title)), Width(width), Height(height) {}
-		WindowProperties(std::string title, const Vector2u &size) : Title(std::move(title)), Width(size.Width), Height(size.Height) {}
+		Flags<WindowStateFlags> InitialFlags { WindowStateFlags::None };
+
+		WindowProperties(std::string title, uint32_t width, uint32_t height, WindowStateFlags flags = WindowStateFlags::None) : Title(std::move(title)), Width(width), Height(height), InitialFlags(flags) {}
+		WindowProperties(std::string title, const Vector2u &size, WindowStateFlags flags = WindowStateFlags::None) : Title(std::move(title)), Width(size.Width), Height(size.Height), InitialFlags(flags) {}
 	};
 
 	class Window {
@@ -45,7 +58,7 @@ namespace Engine {
 	public:
 		using EventCallbackFunction = std::move_only_function<void(Event &)>;
 
-		static Scope<Window> Create(const WindowProperties &props);
+		[[nodiscard]] static Scope<Window> Create(const WindowProperties &props);
 		virtual ~Window();
 
 		void OnUpdate();
@@ -62,58 +75,58 @@ namespace Engine {
 		void SetEventCallback(EventCallbackFunction &&callback) { m_Data.EventCallback = std::move(callback); }
 		void SetVSync(bool enabled = true);
 
-		void SetTitle(std::string title);
+		void SetTitle(std::string_view title);
 
 		void Visible(bool visible = true);
 
 		template<typename T>
-		T* GetNativeHandle() const { return static_cast<T*>(m_Window); }
+		[[nodiscard]] T* GetNativeHandle() const { return static_cast<T*>(m_Window); }
 
-		void* GetNativeHandle() const { return m_Window; }
+		[[nodiscard]] void* GetNativeHandle() const { return m_Window; }
 
-		std::string_view GetTitle() const { return m_Data.Title; }
+		[[nodiscard]] std::string_view GetTitle() const { return m_Data.Title; }
 
-		uint32_t GetWidth() const { return m_Data.Width; }
-		uint32_t GetHeight() const { return m_Data.Height; }
-		Vector2u GetSize() const { return Vector2u{m_Data.Width, m_Data.Height}; }
+		[[nodiscard]] uint32_t GetWidth() const { return m_Data.Width; }
+		[[nodiscard]] uint32_t GetHeight() const { return m_Data.Height; }
+		[[nodiscard]] Vector2u GetSize() const { return Vector2u{m_Data.Width, m_Data.Height}; }
 
-		int32_t GetX() const { return m_Data.X; }
-		int32_t GetY() const { return m_Data.Y; }
-		Vector2i GetPos() const { return {m_Data.X, m_Data.Y}; }
+		[[nodiscard]] int32_t GetX() const { return m_Data.X; }
+		[[nodiscard]] int32_t GetY() const { return m_Data.Y; }
+		[[nodiscard]] Vector2i GetPos() const { return {m_Data.X, m_Data.Y}; }
 
-		CursorMode GetCursorMode() const;
-		bool GetInputMode(InputMode mode) const;
+		[[nodiscard]] CursorMode GetCursorMode() const;
+		[[nodiscard]] bool GetInputMode(InputMode mode) const;
 
-		Vector2i GetRelativePos(const Vector2i &pos) const;
+		[[nodiscard]] Vector2i GetRelativePos(const Vector2i &pos) const;
 
-		Monitor *GetMonitor() const { return m_Monitor; }
+		[[nodiscard]] Monitor *GetMonitor() const { return m_Monitor; }
 
-		bool IsVSync() const;
-		bool IsVisible() const;
-		bool IsFullscreen() const;
+		[[nodiscard]] bool IsVSync() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Vsync); }
+		[[nodiscard]] bool IsVisible() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Visible); }
+		[[nodiscard]] bool IsFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Fullscreen); }
 
 		void AttentionRequest() const;
 
 		void ToggleFullscreen(Monitor *monitor = nullptr);
 		void ToggleFullscreen(Monitor *monitor, const VideoMode *mode);
 
-		Cursor* GetCursor() const;
+		[[nodiscard]] Cursor* GetCursor() const;
 		void SetCursor(Scope<Cursor> cursor);
 
 		void Invalidate();
 
-		void Minimalize();
+		void Minimize();
 		void Restore();
 		void Maximize();
 
-		static bool IsRawMouseInputSupported();
+		[[nodiscard]] static bool IsRawMouseInputSupported();
 	protected:
 		static void InitializeGlfw();
 
 		void Init(const WindowProperties &props);
 		void Shutdown();
 
-		static void* Create(int width, int height, std::string_view name, void* monitor, void* share);
+		static void* Create(int width, int height, const std::string& name, void* monitor, void* share);
 	private:
 		explicit Window(const WindowProperties &props);
 
@@ -128,18 +141,25 @@ namespace Engine {
 			int32_t X = 0;
 			int32_t Y = 0;
 
-			bool VSync = false;
+			uint32_t FramebufferWidth = 0;
+			uint32_t FramebufferHeight = 0;
+
+			float ContentScaleX = 1.f;
+			float ContentScaleY = 1.f;
+
+			Flags<WindowStateFlags> State{ WindowStateFlags::None };
 			EventCallbackFunction EventCallback = {};
+		};
+
+		struct BackupData {
+			Vector2i Pos;
+			Vector2u Size;
 		};
 
 		static WindowData *GetData(void *window);
 
-		Vector2i m_BackupPos;
-		Vector2u m_BackupSize;
-
-		bool m_Fullscreen = false;
-
 		WindowData m_Data;
+		BackupData m_Backup;
 
 		void *m_Window;
 
@@ -148,4 +168,17 @@ namespace Engine {
 		Scope<Cursor> m_Cursor;
 		Scope<GraphicContext> m_Context;
 	};
+
+	constexpr WindowStateFlags operator|(WindowStateFlags a, WindowStateFlags b) noexcept {
+		return static_cast<WindowStateFlags>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+	}
+
+	constexpr WindowStateFlags operator&(WindowStateFlags a, WindowStateFlags b) noexcept {
+		return static_cast<WindowStateFlags>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+	}
+
+	constexpr WindowStateFlags& operator|=(WindowStateFlags& a, WindowStateFlags b) noexcept {
+		a = a | b;
+		return a;
+	}
 }

@@ -6,60 +6,70 @@
 #include "Engine/Devices/Cursor.h"
 #include "Engine/Devices/Monitor.h"
 
-#include <GLFW/glfw3.h>
-
 #include "Engine/Events/ApplicationEvent.h"
 #include "Engine/Events/KeyEvent.h"
 #include "Engine/Events/MouseEvent.h"
 
+#include <GLFW/glfw3.h>
+
+#include <atomic>
+#include <mutex>
+
 namespace Engine {
-	static uint8_t s_GLFWWindowCount = 0;
-	static bool s_GLFWInitialized = false;
+	namespace Utils {
+		static int32_t ToGLFWInputMode(InputMode mode) {
+			switch (mode) {
+			case InputMode::StickyKeys:
+				return GLFW_STICKY_KEYS;
+			case InputMode::StickyMouseButtons:
+				return GLFW_STICKY_MOUSE_BUTTONS;
+			case InputMode::LockKeyModes:
+				return GLFW_LOCK_KEY_MODS;
+			case InputMode::RawMouseMotion:
+				return GLFW_RAW_MOUSE_MOTION;
+			}
 
-	static int32_t ToGLFWInputMode(InputMode mode) {
-		switch (mode) {
-		case InputMode::StickyKeys:
+			ENGINE_ASSERT(false, "Unknown InputMode!");
 			return GLFW_STICKY_KEYS;
-		case InputMode::StickyMouseButtons:
-			return GLFW_STICKY_MOUSE_BUTTONS;
-		case InputMode::LockKeyModes:
-			return GLFW_LOCK_KEY_MODS;
-		case InputMode::RawMouseMotion:
-			return GLFW_RAW_MOUSE_MOTION;
 		}
-	}
 
-	static int32_t ToGLFWCursorMode(CursorMode mode) {
-		switch (mode) {
-		case CursorMode::Normal:
+		static int32_t ToGLFWCursorMode(CursorMode mode) {
+			switch (mode) {
+			case CursorMode::Normal:
+				return GLFW_CURSOR_NORMAL;
+			case CursorMode::Hidden:
+				return GLFW_CURSOR_HIDDEN;
+			case CursorMode::Disabled:
+				return GLFW_CURSOR_DISABLED;
+			case CursorMode::Captured:
+				return GLFW_CURSOR_CAPTURED;
+			}
+			ENGINE_ASSERT(false, "Unknown CursorMode!");
 			return GLFW_CURSOR_NORMAL;
-		case CursorMode::Hidden:
-			return GLFW_CURSOR_HIDDEN;
-		case CursorMode::Disabled:
-			return GLFW_CURSOR_DISABLED;
-		case CursorMode::Captured:
-			return GLFW_CURSOR_CAPTURED;
+		}
+
+		static CursorMode FromGLFWCursorMode(int mode) {
+			switch (mode) {
+			case GLFW_CURSOR_NORMAL:
+				return CursorMode::Normal;
+			case GLFW_CURSOR_HIDDEN:
+				return CursorMode::Hidden;
+			case GLFW_CURSOR_DISABLED:
+				return CursorMode::Disabled;
+			case GLFW_CURSOR_CAPTURED:
+				return CursorMode::Captured;
+			default:
+				return CursorMode::Normal;
+			}
+		}
+
+		static void GLFWErrorCallback(int error, const char* desc) {
+			LOG_ENGINE_ERROR("GLFW Error ({0}): {1}", error, desc);
 		}
 	}
 
-	static CursorMode FromGLFWCursorMode(int mode) {
-		switch (mode) {
-		case GLFW_CURSOR_NORMAL:
-			return CursorMode::Normal;
-		case GLFW_CURSOR_HIDDEN:
-			return CursorMode::Hidden;
-		case GLFW_CURSOR_DISABLED:
-			return CursorMode::Disabled;
-		case GLFW_CURSOR_CAPTURED:
-			return CursorMode::Captured;
-		default:
-			return CursorMode::Normal;
-		}
-	}
-
-	static void GLFWErrorCallback(int error, const char* desc) {
-		LOG_ENGINE_ERROR("GLFW Error ({0}): {1}", error, desc);
-	}
+	static std::atomic<uint8_t> s_GLFWWindowCount = 0;
+	static std::atomic_bool s_GLFWInitialized = false;
 
 	Scope<Window> Window::Create(const WindowProperties& props) {
 		return Scope<Window>(new Window(props));
@@ -78,11 +88,11 @@ namespace Engine {
 	}
 
 	void Window::SetInputMode(InputMode mode, bool enabled) {
-		glfwSetInputMode(GetNativeHandle<GLFWwindow>(), ToGLFWInputMode(mode), enabled ? GLFW_TRUE : GLFW_FALSE);
+		glfwSetInputMode(GetNativeHandle<GLFWwindow>(), Utils::ToGLFWInputMode(mode), enabled ? GLFW_TRUE : GLFW_FALSE);
 	}
 
 	void Window::SetCursorMode(CursorMode mode) {
-		glfwSetInputMode(GetNativeHandle<GLFWwindow>(), GLFW_CURSOR, ToGLFWCursorMode(mode));
+		glfwSetInputMode(GetNativeHandle<GLFWwindow>(), GLFW_CURSOR, Utils::ToGLFWCursorMode(mode));
 	}
 
 	void Window::SetSize(const Vector2u& size) {
@@ -108,17 +118,14 @@ namespace Engine {
 	}
 
 	void Window::SetVSync(bool enabled) {
-		if (enabled)
-			glfwSwapInterval(1);
-		else
-			glfwSwapInterval(0);
+		glfwSwapInterval(enabled ? 1 : 0);
 
-		m_Data.VSync = enabled;
+		m_Data.State.Set(WindowStateFlags::Vsync, enabled);
 	}
 
-	void Window::SetTitle(std::string title) {
-		glfwSetWindowTitle(GetNativeHandle<GLFWwindow>(), title.c_str());
-		m_Data.Title = std::move(title);
+	void Window::SetTitle(std::string_view title) {
+		m_Data.Title.assign(title);
+		glfwSetWindowTitle(GetNativeHandle<GLFWwindow>(), m_Data.Title.c_str());
 	}
 
 	void Window::Visible(bool visible) {
@@ -126,31 +133,24 @@ namespace Engine {
 			glfwShowWindow(GetNativeHandle<GLFWwindow>());
 		else
 			glfwHideWindow(GetNativeHandle<GLFWwindow>());
+		m_Data.State.Set(WindowStateFlags::Visible, visible);
 	}
 
 	CursorMode Window::GetCursorMode() const {
-		return FromGLFWCursorMode(glfwGetInputMode(GetNativeHandle<GLFWwindow>(), GLFW_CURSOR));
+		return Utils::FromGLFWCursorMode(glfwGetInputMode(GetNativeHandle<GLFWwindow>(), GLFW_CURSOR));
 	}
 
 	bool Window::GetInputMode(InputMode mode) const {
-		return glfwGetInputMode(GetNativeHandle<GLFWwindow>(), ToGLFWInputMode(mode)) == GLFW_TRUE;
+		return glfwGetInputMode(GetNativeHandle<GLFWwindow>(), Utils::ToGLFWInputMode(mode)) == GLFW_TRUE;
 	}
 
 	Vector2i Window::GetRelativePos(const Vector2i& pos) const {
 		return {m_Data.X + pos.X, m_Data.Y + pos.Y};
 	}
 
-	bool Window::IsVSync() const {
-		return m_Data.VSync;
-	}
-
-	bool Window::IsVisible() const {
+	/*bool Window::IsVisible() const {
 		return glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_VISIBLE);
-	}
-
-	bool Window::IsFullscreen() const {
-		return m_Fullscreen;
-	}
+	}*/
 
 	void Window::AttentionRequest() const {
 		glfwRequestWindowAttention(GetNativeHandle<GLFWwindow>());
@@ -165,9 +165,9 @@ namespace Engine {
 
 	void Window::ToggleFullscreen(Monitor* monitor, const VideoMode* mode) {
 		if (glfwGetWindowMonitor(GetNativeHandle<GLFWwindow>()) == nullptr) {
-			m_Fullscreen = true;
-			m_BackupPos = {m_Data.X, m_Data.Y};
-			m_BackupSize = {m_Data.Width, m_Data.Height};
+			m_Data.State.Enable(WindowStateFlags::Fullscreen);
+			m_Backup.Pos = { m_Data.X, m_Data.Y };
+			m_Backup.Size = { m_Data.Width, m_Data.Height };
 
 			m_Monitor = monitor;
 
@@ -182,19 +182,19 @@ namespace Engine {
 			);
 		}
 		else {
-			m_Fullscreen = false;
+			m_Data.State.Disable(WindowStateFlags::Fullscreen);
 			glfwSetWindowMonitor(
 				GetNativeHandle<GLFWwindow>(),
 				nullptr,
-				m_BackupPos.X,
-				m_BackupPos.Y,
-				static_cast<int>(m_BackupSize.Width),
-				static_cast<int>(m_BackupSize.Height),
+				m_Backup.Pos.X,
+				m_Backup.Pos.Y,
+				static_cast<int>(m_Backup.Size.Width),
+				static_cast<int>(m_Backup.Size.Height),
 				GLFW_DONT_CARE
 			);
 
-			SetPos(m_BackupPos);
-			SetSize(m_BackupSize);
+			SetPos(m_Backup.Pos);
+			SetSize(m_Backup.Size);
 		}
 	}
 
@@ -218,7 +218,7 @@ namespace Engine {
 		glfwPostEmptyEvent();
 	}
 
-	void Window::Minimalize() {
+	void Window::Minimize() {
 		glfwIconifyWindow(GetNativeHandle<GLFWwindow>());
 	}
 
@@ -236,24 +236,26 @@ namespace Engine {
 	}
 
 	void Window::InitializeGlfw() {
-		if (s_GLFWInitialized)
-			return;
+		static std::once_flag glfwInitFlag;
 
-		int success = glfwInit();
+		std::call_once(glfwInitFlag, []() {
+			const int success = glfwInit();
+			ENGINE_ASSERT(success, "Unable to initialize GLFW!");
+			if (success == GLFW_TRUE)
+				s_GLFWInitialized = true;
+			else
+				throw std::runtime_error("Unable to initialize GLFW");
 
-		ENGINE_ASSERT(success, "Unable to initialize GLFW!");
-		if (success == GLFW_TRUE)
-			s_GLFWInitialized = true;
-		else
-			throw std::runtime_error("Unable to initialize GLFW");
-
-		glfwSetErrorCallback(GLFWErrorCallback);
+			glfwSetErrorCallback(Utils::GLFWErrorCallback);
+			LOG_ENGINE_INFO("GLFW initialized!");
+		});
 	}
 
 	void Window::Init(const WindowProperties& props) {
 		m_Data.Width = props.Width;
 		m_Data.Height = props.Height;
 		m_Data.Title = props.Title;
+		m_Data.State = props.InitialFlags;
 
 		m_Window = Create(static_cast<int>(props.Width), static_cast<int>(props.Height), m_Data.Title, nullptr,
 		                  nullptr);
@@ -268,26 +270,37 @@ namespace Engine {
 		m_Data.Y = pos.Y;
 
 		glfwSetWindowUserPointer(GetNativeHandle<GLFWwindow>(), &m_Data);
-		SetVSync(true);
+		SetVSync(m_Data.State.HasAny(WindowStateFlags::Vsync));
+
+		m_Data.State.Set(WindowStateFlags::Visible, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_VISIBLE) == GLFW_TRUE);
+		m_Data.State.Set(WindowStateFlags::Focused, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_FOCUSED) == GLFW_TRUE);
+
+		int fbw, fbh;
+		glfwGetFramebufferSize(GetNativeHandle<GLFWwindow>(), &fbw, &fbh);
+		m_Data.FramebufferWidth = static_cast<uint32_t>(fbw);
+		m_Data.FramebufferHeight = static_cast<uint32_t>(fbh);
+
+		glfwGetWindowContentScale(GetNativeHandle<GLFWwindow>(), &m_Data.ContentScaleX, &m_Data.ContentScaleY);
 
 		InstallCallbacks();
 	}
 
 	void Window::Shutdown() {
 		glfwDestroyWindow(GetNativeHandle<GLFWwindow>());
+		m_Window = nullptr;
 		--s_GLFWWindowCount;
 
-		if (s_GLFWWindowCount == 0) {
+		if (s_GLFWInitialized && s_GLFWWindowCount == 0) {
 			glfwTerminate();
 			s_GLFWInitialized = false;
 		}
 	}
 
-	void* Window::Create(int width, int height, std::string_view name, void* monitor, void* share) {
+	void* Window::Create(int width, int height, const std::string& name, void* monitor, void* share) {
 		if (s_GLFWWindowCount == 0)
 			InitializeGlfw();
 
-		auto window = glfwCreateWindow(width, height, name.data(), static_cast<GLFWmonitor*>(monitor),
+		auto window = glfwCreateWindow(width, height, name.c_str(), static_cast<GLFWmonitor*>(monitor),
 		                               static_cast<GLFWwindow*>(share));
 
 		ENGINE_ASSERT(window);
@@ -304,10 +317,59 @@ namespace Engine {
 	}
 
 	void Window::InstallCallbacks() {
+		glfwSetFramebufferSizeCallback(GetNativeHandle<GLFWwindow>(), [](GLFWwindow* window, int width, int height) {
+			auto data = GetData(window);
+			data->FramebufferWidth = static_cast<uint32_t>(width);
+			data->FramebufferHeight = static_cast<uint32_t>(height);
+
+			if (!data->EventCallback) 
+				return;
+
+			WindowFramebufferResizeEnvent e(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+			data->EventCallback(e);
+		});
+
+		glfwSetWindowContentScaleCallback(GetNativeHandle<GLFWwindow>(), [](GLFWwindow* window, float xScale, float yScale) {
+			auto data = GetData(window);
+			data->ContentScaleX = xScale;
+			data->ContentScaleY = yScale;
+
+			if (!data->EventCallback)
+				return;
+
+			WindowContentScaleChangeEvent e(xScale, yScale);
+			data->EventCallback(e);
+		});
+
+		glfwSetWindowIconifyCallback(GetNativeHandle<GLFWwindow>(), [](GLFWwindow* window, int iconified) {
+			auto data = GetData(window);
+			data->State.Set(WindowStateFlags::Minimized, iconified == GLFW_TRUE);
+
+			if (!data->EventCallback)
+				return;
+
+			if (iconified == GLFW_TRUE) { WindowMinimizedEvent e; data->EventCallback(e); }
+			else { WindowRestoredEvent e; data->EventCallback(e); }
+		});
+
+		glfwSetWindowMaximizeCallback(GetNativeHandle<GLFWwindow>(), [](GLFWwindow* window, int maximized) {
+			auto data = GetData(window);
+			data->State.Set(WindowStateFlags::Maximized, maximized == GLFW_TRUE);
+
+			if (!data->EventCallback)
+				return;
+
+			if (maximized == GLFW_TRUE) { WindowMaximizedEvent e; data->EventCallback(e); }
+			else { WindowUnmaximizedEvent e; data->EventCallback(e); }
+		});
+
 		glfwSetWindowFocusCallback(
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, int focused) {
 				auto data = GetData(window);
+				data->State.Set(WindowStateFlags::Focused, focused == GLFW_TRUE);
+				if (!data->EventCallback)
+					return;
 
 				if (focused) {
 					WindowGainFocusEvent event;
@@ -327,6 +389,8 @@ namespace Engine {
 
 				data->X = x;
 				data->Y = y;
+				if (!data->EventCallback)
+					return;
 
 				WindowMovedEvent event(x, y);
 				data->EventCallback(event);
@@ -340,6 +404,8 @@ namespace Engine {
 
 				data->Width = static_cast<uint32_t>(width);
 				data->Height = static_cast<uint32_t>(height);
+				if (!data->EventCallback)
+					return;
 
 				WindowResizeEvent event(data->Width, data->Height);
 				data->EventCallback(event);
@@ -350,6 +416,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				WindowCloseEvent event;
 				data->EventCallback(event);
@@ -360,6 +428,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, int key, int scanCode, int action, int mods) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				switch (action) {
 				case GLFW_PRESS: {
@@ -389,6 +459,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, unsigned int keyCode) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				KeyTypedEvent event(static_cast<KeyCode>(keyCode));
 				data->EventCallback(event);
@@ -399,6 +471,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, int button, int action, int mods) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				switch (action) {
 				case GLFW_PRESS: {
@@ -420,6 +494,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, double xOffset, double yOffset) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				MouseScrolledEvent event(static_cast<float>(xOffset), static_cast<float>(yOffset));
 				data->EventCallback(event);
@@ -430,6 +506,8 @@ namespace Engine {
 			GetNativeHandle<GLFWwindow>(),
 			[](GLFWwindow* window, double xPos, double yPos) {
 				auto data = GetData(window);
+				if (!data->EventCallback)
+					return;
 
 				MouseMovedEvent event(static_cast<float>(xPos), static_cast<float>(yPos));
 				data->EventCallback(event);
