@@ -12,8 +12,8 @@ namespace Engine {
 		using UnderlyingType = std::underlying_type_t<Enum>;
 
 		constexpr Flags() = default;
-		constexpr Flags(Enum e) : m_Value(static_cast<UnderlyingType>(e)) {}
-		constexpr Flags(UnderlyingType e) : m_Value(e) {}
+		constexpr explicit Flags(Enum e) : m_Value(static_cast<UnderlyingType>(e)) {}
+		constexpr explicit Flags(UnderlyingType e) : m_Value(e) {}
 
 		constexpr bool operator==(Enum e) const noexcept { return m_Value == static_cast<UnderlyingType>(e); }
 		constexpr bool operator!=(Enum e) const noexcept { return !(*this == e); }
