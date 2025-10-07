@@ -76,6 +76,68 @@ namespace Engine {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
+	class WindowMaximizedEvent : public Event {
+	public:
+		WindowMaximizedEvent() = default;
+
+		EVENT_CLASS_TYPE(WindowMaximized)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class WindowUnmaximizedEvent : public Event {
+	public:
+		WindowUnmaximizedEvent() = default;
+
+		EVENT_CLASS_TYPE(WindowUnmaximized)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class WindowMinimizedEvent : public Event {
+	public:
+		WindowMinimizedEvent() = default;
+
+		EVENT_CLASS_TYPE(WindowMinimized)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class WindowRestoredEvent : public Event {
+	public:
+		WindowRestoredEvent() = default;
+
+		EVENT_CLASS_TYPE(WindowRestored)
+		EVENT_CLASS_CATEGORY(EventCategoryApplication)
+	};
+
+	class WindowFramebufferResizeEnvent : public Event {
+	public:
+		WindowFramebufferResizeEnvent(uint32_t width, uint32_t height) : m_Size{width, height} {}
+
+		uint32_t GetWidth() const { return m_Size.Width; }
+		uint32_t GetHeight() const { return m_Size.Height; }
+		Vector2u GetSize() const { return m_Size; }
+
+		EVENT_CLASS_TYPE(WindowFramebufferResize);
+		EVENT_CLASS_CATEGORY(EventCategoryApplication);
+
+	private:
+		Vector2u m_Size;
+	};
+
+	class WindowContentScaleChangeEvent : public Event {
+	public:
+		WindowContentScaleChangeEvent(float xScale, float yScale) : m_Scale{ xScale, yScale } {}
+
+		float GetXScale() const { return m_Scale.X; }
+		float GetYScale() const { return m_Scale.Y; }
+		Vector2f GetScale() const { return m_Scale; }
+
+		EVENT_CLASS_TYPE(WindowContentScaleChange);
+		EVENT_CLASS_CATEGORY(EventCategoryApplication);
+
+	private:
+		Vector2f m_Scale;
+	};
+
 	class MonitorAddedEvent : public Event {
 	public:
 		MonitorAddedEvent(const std::string& name, uint32_t index) : m_Name(name), m_Index(index) {}
@@ -88,7 +150,7 @@ namespace Engine {
 
 	private:
 		std::string m_Name;
-		uint64_t m_Index;
+		uint32_t m_Index;
 	};
 
 	class MonitorRemovedEvent : public Event {
@@ -121,6 +183,7 @@ namespace Engine {
 	};
 
 	class AppRenderEvent: public Event {
+	public:
 		AppRenderEvent() = default;
 
 		EVENT_CLASS_TYPE(AppRender)

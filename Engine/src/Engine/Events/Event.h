@@ -17,6 +17,14 @@ namespace Engine {
 		WindowLostFocus,
 		WindowMoved,
 
+		WindowMaximized,
+		WindowUnmaximized,
+		WindowMinimized,
+		WindowRestored,
+
+		WindowFramebufferResize,
+		WindowContentScaleChange,
+
 		MonitorAdded,
 		MonitorRemoved,
 
