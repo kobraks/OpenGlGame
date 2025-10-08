@@ -89,22 +89,33 @@ namespace Engine {
 		Initialize();
 	}
 
+	void MonitorRegistry::OnMonitorConnect(void* monitor) {
+		std::lock_guard guard(m_Mutex);
+		const auto added = AddNewMonitorUnlocked(monitor);
+		if (glfwGetPrimaryMonitor() == monitor) {
+			m_Primary = added;
+		}
+	}
+
+	void MonitorRegistry::OnMonitorDisconnect(void* monitor) {
+		std::lock_guard guard(m_Mutex);
+		RemoveMonitorUnlocked(monitor);
+	}
+
 	void MonitorRegistry::RegisterCallbacks() {
 		glfwSetMonitorCallback([](GLFWmonitor* monitor, int event) {
 			auto& registry = MonitorRegistry::Get();
 			if (event == GLFW_CONNECTED) {
-				std::lock_guard guard(registry.m_Mutex);
-				const auto newMonitor = registry.AddNewMonitorUnlocked(monitor);
+				registry.OnMonitorConnect(monitor);
 				if (registry.m_EventCallback) {
-					MonitorAddedEvent event(std::string(newMonitor->GetName()), registry.m_Monitors.size() - 1);
+					MonitorAddedEvent event(glfwGetMonitorName(monitor), registry.m_Monitors.size() - 1);
 					registry.m_EventCallback(event);
 				}
 			}
 			else if (event == GLFW_DISCONNECTED) {
-				std::lock_guard guard(registry.m_Mutex);
-				const auto removed = registry.RemoveMonitorUnlocked(monitor);
+				registry.OnMonitorDisconnect(monitor);
 				if (registry.m_EventCallback) {
-					MonitorRemovedEvent event(std::string(removed->GetName()));
+					MonitorRemovedEvent event(glfwGetMonitorName(monitor));
 					registry.m_EventCallback(event);
 				}
 			}

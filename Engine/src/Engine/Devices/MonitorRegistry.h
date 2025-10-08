@@ -31,6 +31,9 @@ namespace Engine {
 
 		void Refresh();
 	protected:
+		void OnMonitorConnect(void* monitor);
+		void OnMonitorDisconnect(void* monitor);
+
 		void RegisterCallbacks();
 		Ref<Monitor> AddNewMonitorUnlocked(void* pointer);
 		Ref<Monitor> RemoveMonitorUnlocked(void* pointer);
