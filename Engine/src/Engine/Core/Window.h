@@ -53,6 +53,7 @@ namespace Engine {
 
 	class Window {
 		friend class Monitor;
+		friend class MonitorRegistry;
 		friend class GraphicContext;
 
 	public:
@@ -99,7 +100,7 @@ namespace Engine {
 
 		[[nodiscard]] Vector2i GetRelativePos(const Vector2i &pos) const;
 
-		[[nodiscard]] Monitor *GetMonitor() const { return m_Monitor; }
+		[[nodiscard]] Ref<Monitor> GetMonitor() const { return m_Monitor; }
 
 		[[nodiscard]] bool IsVSync() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Vsync); }
 		[[nodiscard]] bool IsVisible() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Visible); }
@@ -122,8 +123,8 @@ namespace Engine {
 
 		void AttentionRequest() const;
 
-		void ToggleFullscreen(Monitor *monitor = nullptr);
-		void ToggleFullscreen(Monitor *monitor, const VideoMode *mode);
+		void ToggleFullscreen(Ref<Monitor> monitor = nullptr);
+		void ToggleFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode);
 
 		[[nodiscard]] Cursor* GetCursor() const;
 		void SetCursor(Scope<Cursor> cursor);
@@ -137,6 +138,9 @@ namespace Engine {
 		[[nodiscard]] static bool IsRawMouseInputSupported();
 	protected:
 		static void InitializeGlfw();
+
+		void EnableFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode);
+		void DisableFullscreen();
 
 		void Init(const WindowProperties &props);
 		void Shutdown();
@@ -178,7 +182,7 @@ namespace Engine {
 
 		void *m_Window;
 
-		Monitor *m_Monitor;
+		Ref<Monitor> m_Monitor;
 
 		Scope<Cursor> m_Cursor;
 		Scope<GraphicContext> m_Context;

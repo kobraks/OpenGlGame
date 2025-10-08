@@ -5,6 +5,7 @@
 
 #include "Engine/Devices/Cursor.h"
 #include "Engine/Devices/Monitor.h"
+#include "Engine/Devices/MonitorRegistry.h"
 
 #include "Engine/Events/ApplicationEvent.h"
 #include "Engine/Events/KeyEvent.h"
@@ -159,45 +160,22 @@ namespace Engine {
 		glfwRequestWindowAttention(GetNativeHandle<GLFWwindow>());
 	}
 
-	void Window::ToggleFullscreen(Monitor* monitor) {
+	void Window::ToggleFullscreen(Ref<Monitor> monitor) {
 		if (!monitor)
-			monitor = Monitor::GetPrimary();
+			monitor = MonitorRegistry::Get().GetPrimary();
 
 		ToggleFullscreen(monitor, monitor->GetVideoMode());
 	}
 
-	void Window::ToggleFullscreen(Monitor* monitor, const VideoMode* mode) {
+	void Window::ToggleFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode) {
+		if (!monitor->IsConnected())
+			return;
+
 		if (glfwGetWindowMonitor(GetNativeHandle<GLFWwindow>()) == nullptr) {
-			m_Data.State.Enable(WindowStateFlags::Fullscreen);
-			m_Backup.Pos = { m_Data.X, m_Data.Y };
-			m_Backup.Size = { m_Data.Width, m_Data.Height };
-
-			m_Monitor = monitor;
-
-			glfwSetWindowMonitor(
-				GetNativeHandle<GLFWwindow>(),
-				monitor->GetNativeHandle<GLFWmonitor>(),
-				0,
-				0,
-				static_cast<int>(mode->Size.Width),
-				static_cast<int>(mode->Size.Height),
-				mode->RefreshRate
-			);
+			EnableFullscreen(monitor, mode);
 		}
 		else {
-			m_Data.State.Disable(WindowStateFlags::Fullscreen);
-			glfwSetWindowMonitor(
-				GetNativeHandle<GLFWwindow>(),
-				nullptr,
-				m_Backup.Pos.X,
-				m_Backup.Pos.Y,
-				static_cast<int>(m_Backup.Size.Width),
-				static_cast<int>(m_Backup.Size.Height),
-				GLFW_DONT_CARE
-			);
-
-			SetPos(m_Backup.Pos);
-			SetSize(m_Backup.Size);
+			DisableFullscreen();
 		}
 	}
 
@@ -252,6 +230,42 @@ namespace Engine {
 			glfwSetErrorCallback(Utils::GLFWErrorCallback);
 			LOG_ENGINE_INFO("GLFW initialized!");
 		});
+	}
+
+	void Window::EnableFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode) {
+		if (glfwGetWindowMonitor(GetNativeHandle<GLFWwindow>()) == nullptr) {
+			m_Data.State.Enable(WindowStateFlags::Fullscreen);
+			m_Backup.Pos = { m_Data.X, m_Data.Y };
+			m_Backup.Size = { m_Data.Width, m_Data.Height };
+
+			m_Monitor = monitor;
+
+			glfwSetWindowMonitor(
+				GetNativeHandle<GLFWwindow>(),
+				monitor->GetNativeHandle<GLFWmonitor>(),
+				0,
+				0,
+				static_cast<int>(mode->Size.Width),
+				static_cast<int>(mode->Size.Height),
+				mode->RefreshRate
+			);
+		}
+	}
+
+	void Window::DisableFullscreen() {
+		m_Data.State.Disable(WindowStateFlags::Fullscreen);
+		glfwSetWindowMonitor(
+			GetNativeHandle<GLFWwindow>(),
+			nullptr,
+			m_Backup.Pos.X,
+			m_Backup.Pos.Y,
+			static_cast<int>(m_Backup.Size.Width),
+			static_cast<int>(m_Backup.Size.Height),
+			GLFW_DONT_CARE
+		);
+
+		SetPos(m_Backup.Pos);
+		SetSize(m_Backup.Size);
 	}
 
 	void Window::Init(const WindowProperties& props) {

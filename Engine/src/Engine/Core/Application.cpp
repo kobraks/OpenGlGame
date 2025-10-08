@@ -13,6 +13,7 @@
 #include "Engine/Events/MouseEvent.h"
 
 #include "Engine/Devices/Mouse.h"
+#include "Engine/Devices/MonitorRegistry.h"
 
 #include <GLFW/glfw3.h>
 
@@ -27,6 +28,8 @@ namespace Engine {
 	}
 
 	Application::~Application() {
+		MonitorRegistry::Get().Shutdown();
+
 		Renderer::Shutdown();
 		JobSystem::Shutdown();
 	}
@@ -132,6 +135,8 @@ namespace Engine {
 		auto logLayer = MakeRef<LogLayer>();
 		m_Window = Window::Create(WindowProperties(m_Specification.Name, m_Specification.WindowSize));
 		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+		MonitorRegistry::Get().Initialize();
+		MonitorRegistry::Get().SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
 		InitializeSettings();
 		InitializeLua();
