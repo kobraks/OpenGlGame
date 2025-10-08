@@ -277,7 +277,7 @@ namespace Engine {
 	void Framebuffer::Resize(const Vector2u& size) {
 		if (size.Width == 0 || size.Height == 0 || size.Width > MaxViewportSize().Width || size.Height >
 			MaxViewportSize().Height) {
-			LOG_GL_WARN("Attempted to resize framebuffer to {0}, {1}", size.Width, size.Height);
+			LOG_GL_WARN("Attempted to resize framebuffer to {:x}", size);
 			return;
 		}
 

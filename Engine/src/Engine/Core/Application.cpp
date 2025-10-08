@@ -142,10 +142,9 @@ namespace Engine {
 		InitializeLua();
 
 		LOG_ENGINE_INFO(
-		                "Created window [Title: \"{}\", Width: {}, Height: {}, Fullscreen: {}]",
+		                "Created window [Title: \"{}\", {:x}, Fullscreen: {}]",
 		                m_Window->GetTitle(),
-		                m_Window->GetWidth(),
-		                m_Window->GetHeight(),
+		                m_Window->GetSize(),
 		                m_Window->IsFullscreen()
 		               );
 

@@ -123,9 +123,9 @@ struct fmt::formatter<Engine::VideoMode> {
 	template <typename FormatContext>
 	auto format(const Engine::VideoMode& vm, FormatContext& ctx) const {
 		if (Presentation == 'l') {
-			return format_to(ctx.out(), "{}x{}@{}Hz ({}R, {}G, {}B)", vm.Size.Width, vm.Size.Height, vm.RefreshRate, vm.RedBits, vm.GreenBits, vm.BlueBits);
+			return format_to(ctx.out(), "{:x}@{}Hz ({}R, {}G, {}B)", vm.Size, vm.RefreshRate, vm.RedBits, vm.GreenBits, vm.BlueBits);
 		}
 
-		return format_to(ctx.out(), "{}x{}@{}Hz", vm.Size.Width, vm.Size.Height, vm.RefreshRate);
+		return format_to(ctx.out(), "{:x}@{}Hz", vm.Size, vm.RefreshRate);
 	}
 };

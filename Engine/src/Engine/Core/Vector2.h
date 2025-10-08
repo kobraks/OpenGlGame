@@ -183,22 +183,65 @@ namespace Engine {
 	}
 }
 
-#define ENGINE_VECTOR2_FMT_IMPL(type)\
-template<>\
-struct fmt::formatter<Engine::type>: public fmt::nested_formatter<Engine::type::ValueType> { \
-	auto format(const Engine::type &vec, format_context& ctx) const { \
-		return write_padded(ctx, [=, this](auto out) { \
-			return format_to(out, "({}, {})", nested(vec.X), nested(vec.Y)); \
-		}); \
-	} \
-};
+template <typename T>
+struct fmt::formatter<Engine::Vector2<T>> : fmt::nested_formatter<T> {
+	enum class Style : uint8_t { Paren, Bracket, Comma, Space, WxH, Json };
+	Style Style = Style::Paren;
 
-ENGINE_VECTOR2_FMT_IMPL(Vector2u);
-ENGINE_VECTOR2_FMT_IMPL(Vector2ul);
-ENGINE_VECTOR2_FMT_IMPL(Vector2i);
-ENGINE_VECTOR2_FMT_IMPL(Vector2il);
-ENGINE_VECTOR2_FMT_IMPL(Vector2f);
-ENGINE_VECTOR2_FMT_IMPL(Vector2d);
+	//Parse [{:<align><width>}:]<style>[|<component_spec>]
+	template<typename ParseContext>
+	constexpr auto parse(ParseContext& ctx) {
+		auto it = ctx.begin();
+		const auto end = ctx.end();
+
+		if (it != end) {
+			switch (*it) {
+			case 'p': Style = Style::Paren; ++it; break;
+			case 'b': Style = Style::Bracket; ++it; break;
+			case 'c': Style = Style::Comma; ++it; break;
+			case 's': Style = Style::Space; ++it; break;
+			case 'x': Style = Style::WxH; ++it; break;
+			case 'j': Style = Style::Json; ++it; break;
+			default: break;
+			}
+		}
+
+		// if there's a '|', parse component format spec
+		if (it != end && *it == '|') {
+			++it;
+			ctx.advance_to(it);
+			// Delegate to nested formatter for the rest of the format spec
+			return fmt::nested_formatter<T>::parse(ctx);
+		}
+
+		// No component format spec, just advance to the end
+		ctx.advance_to(it);
+		return it;
+	}
+
+	template <typename FormatContext>
+	auto format(const Engine::Vector2<T>& vec, FormatContext& ctx) const {
+		return fmt::nested_formatter<T>::write_padded(ctx, [this, &vec](auto out) {
+			switch (Style) {
+			case Style::Paren:
+				return format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
+			case Style::Bracket:
+				return format_to(out, "[{}, {}]", this->nested(vec.X), this->nested(vec.Y));
+			case Style::Comma:
+				return format_to(out, "{}, {}", this->nested(vec.X), this->nested(vec.Y));
+			case Style::Space:
+				return format_to(out, "{} {}", this->nested(vec.X), this->nested(vec.Y));
+			case Style::WxH:
+				return format_to(out, "{}x{}", this->nested(vec.X), this->nested(vec.Y));
+			case Style::Json:
+				return format_to(out, "{{\"x\": {}, \"y\": {}}}", this->nested(vec.X), this->nested(vec.Y));
+			}
+
+			return format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
+		});
+
+	}
+};
 
 namespace std {
 	//Hash support

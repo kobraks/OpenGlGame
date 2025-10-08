@@ -76,7 +76,7 @@ namespace Engine {
 
 	void Texture::Resize(const Vector2u& size) {
 		if (size != m_GLState->Size) {
-			LOG_ENGINE_INFO("Resizing texture '{}' from {} to {}", Label(), m_GLState->Size, size);
+			LOG_ENGINE_INFO("Resizing texture '{}' from {:x} to [{:x}]", Label(), m_GLState->Size, size);
 			const auto Image = ToImage();
 
 			Recreate(size);
@@ -87,7 +87,7 @@ namespace Engine {
 
 	void Texture::ResizeNoCopy(const Vector2u& size) {
 		if (size != m_GLState->Size) {
-			LOG_ENGINE_INFO("Resizing texture '{}' from {} to {}", Label(), m_GLState->Size, size);
+			LOG_ENGINE_INFO("Resizing texture '{}' from [{:x}] to [{:x}]", Label(), m_GLState->Size, size);
 			Recreate(size);
 		}
 	}
@@ -97,8 +97,8 @@ namespace Engine {
 	}
 
 	std::string Texture::DebugInfo() const {
-		return fmt::format("Texture: {}x{}, format: {}, levels: {}, samples: {}, usage: {}, label: '{}'",
-		                   m_GLState->Size.Width, m_GLState->Size.Height,
+		return fmt::format("Texture: {:x}, format: {}, levels: {}, samples: {}, usage: {}, label: '{}'",
+		                   m_GLState->Size,
 		                   m_GLState->ImageFormat,
 		                   m_GLState->Levels,
 		                   m_GLState->Samples,
@@ -357,7 +357,7 @@ namespace Engine {
 		                   Utils::EnumToGLConstant(dataFormat),
 		                   Utils::EnumToGLConstant(dataType), pixels);
 
-		LOG_GL_TRACE("Clearing texture region: offset={}, size={}, format={}, type={}",
+		LOG_GL_TRACE("Clearing texture region: offset={:x}, size={:x}, format={}, type={}",
 		             offset, size, dataFormat, dataType);
 	}
 
@@ -547,8 +547,8 @@ namespace Engine {
 			m_GLState->Levels = levels;
 		}
 
-		LOG_GL_DEBUG("Allocating texture storage: {}x{}, format: {}, usage: {}, samples: {}",
-		             size.Width, size.Height, imageFormat, usage, samples);
+		LOG_GL_DEBUG("Allocating texture storage: {:x}, format: {}, usage: {}, samples: {}",
+		             size, imageFormat, usage, samples);
 	}
 
 	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
@@ -619,8 +619,7 @@ namespace Engine {
 			static_cast<GLsizei>(size.Height), Utils::EnumToGLConstant(format),
 			Utils::EnumToGLConstant(dataType), uploadPtr);
 
-		LOG_GL_TRACE("Uploading texture data: size={}x{}, offset={}x{}, format={}, type={}, stride={} bytes, flipY={}", size.Width, size.Height, offset.X, offset.Y, format,
-			dataType, rowStrideBytes, flipY);
+		LOG_GL_TRACE("Uploading texture data: size={:x}, offset={:x}, format={}, type={}, stride={} bytes, flipY={}", size, offset, format,	dataType, rowStrideBytes, flipY);
 	}
 
 	void Texture::GetImage(void* pixels, uint32_t bufSize, DataFormat format, DataType dataType, uint32_t mipLevel) const {
