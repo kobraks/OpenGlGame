@@ -124,6 +124,9 @@ namespace Engine {
 	}
 
 	void Window::SetTitle(std::string_view title) {
+		if (m_Data.Title == title)
+			return;
+
 		m_Data.Title.assign(title);
 		glfwSetWindowTitle(GetNativeHandle<GLFWwindow>(), m_Data.Title.c_str());
 	}
@@ -325,7 +328,7 @@ namespace Engine {
 			if (!data->EventCallback) 
 				return;
 
-			WindowFramebufferResizeEnvent e(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+			WindowFramebufferResizeEvent e(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
 			data->EventCallback(e);
 		});
 
@@ -337,7 +340,7 @@ namespace Engine {
 			if (!data->EventCallback)
 				return;
 
-			WindowContentScaleChangeEvent e(xScale, yScale);
+			WindowContentScaleChangedEvent e(xScale, yScale);
 			data->EventCallback(e);
 		});
 

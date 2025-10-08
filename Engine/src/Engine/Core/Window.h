@@ -105,6 +105,21 @@ namespace Engine {
 		[[nodiscard]] bool IsVisible() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Visible); }
 		[[nodiscard]] bool IsFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Fullscreen); }
 
+		[[nodiscard]] float GetContentScaleWidth() const noexcept { return m_Data.ContentScaleX; }
+		[[nodiscard]] float GetContentScaleHeight() const noexcept { return m_Data.ContentScaleY; }
+		[[nodiscard]] Vector2f GetContentScale() const noexcept { return { m_Data.ContentScaleX, m_Data.ContentScaleY }; }
+
+		[[nodiscard]] uint32_t GetFramebufferWidth() const noexcept { return m_Data.FramebufferWidth; }
+		[[nodiscard]] uint32_t GetFramebufferHeight() const noexcept { return m_Data.FramebufferHeight; }
+		[[nodiscard]] Vector2u GetFramebufferSize() const noexcept { return { m_Data.FramebufferWidth, m_Data.FramebufferHeight }; }
+
+		[[nodiscard]] bool IsFocused() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Focused); }
+		[[nodiscard]] bool IsMinimized() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Minimized); }
+		[[nodiscard]] bool IsMaximized() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Maximized); }
+
+		[[nodiscard]] bool IsOpen() const noexcept { return m_Window != nullptr; }
+		[[nodiscard]] GraphicContext* GetContext() const { return m_Context.get(); }
+
 		void AttentionRequest() const;
 
 		void ToggleFullscreen(Monitor *monitor = nullptr);
