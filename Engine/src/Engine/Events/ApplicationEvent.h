@@ -108,9 +108,9 @@ namespace Engine {
 		EVENT_CLASS_CATEGORY(EventCategoryApplication)
 	};
 
-	class WindowFramebufferResizeEnvent : public Event {
+	class WindowFramebufferResizeEvent : public Event {
 	public:
-		WindowFramebufferResizeEnvent(uint32_t width, uint32_t height) : m_Size{width, height} {}
+		WindowFramebufferResizeEvent(uint32_t width, uint32_t height) : m_Size{width, height} {}
 
 		uint32_t GetWidth() const { return m_Size.Width; }
 		uint32_t GetHeight() const { return m_Size.Height; }
@@ -123,9 +123,9 @@ namespace Engine {
 		Vector2u m_Size;
 	};
 
-	class WindowContentScaleChangeEvent : public Event {
+	class WindowContentScaleChangedEvent : public Event {
 	public:
-		WindowContentScaleChangeEvent(float xScale, float yScale) : m_Scale{ xScale, yScale } {}
+		WindowContentScaleChangedEvent(float xScale, float yScale) : m_Scale{ xScale, yScale } {}
 
 		float GetXScale() const { return m_Scale.X; }
 		float GetYScale() const { return m_Scale.Y; }
