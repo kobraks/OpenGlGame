@@ -4,14 +4,24 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Core/Rect.h"
 
+#include <vector>
+#include <string>
+#include <string_view>
+#include <atomic>
+#include <mutex>
+
 namespace Engine {
+	class MonitorRegistry;
+
 	struct GammaRamp {
 		uint32_t Size = 0;
-		uint16_t *Red = nullptr;
-		uint16_t *Green = nullptr;
-		uint16_t *Blue = nullptr;
+		Ref<uint16_t[]> Red = nullptr;
+		Ref<uint16_t[]> Green = nullptr;
+		Ref<uint16_t[]> Blue = nullptr;
 
-		~GammaRamp();
+
+		GammaRamp() = default;
+		explicit GammaRamp(uint32_t size);
 	};
 
 	struct VideoMode {
@@ -23,11 +33,13 @@ namespace Engine {
 		int RefreshRate = 0;
 	};
 
-	inline bool operator==(const VideoMode &lth, const VideoMode &rth) {
+	constexpr bool operator==(const VideoMode &lth, const VideoMode &rth) noexcept {
 		return lth.Size == rth.Size && lth.RedBits == rth.RedBits && lth.GreenBits == rth.GreenBits && lth.BlueBits == rth.BlueBits && lth.RefreshRate == rth.RefreshRate;
 	}
 
 	class Monitor {
+		friend class MonitorRegistry;
+
 	public:
 		Monitor(const Monitor &) = delete;
 		Monitor(Monitor &&) = delete;
@@ -35,53 +47,47 @@ namespace Engine {
 		Monitor& operator=(const Monitor &) = delete;
 		Monitor& operator=(Monitor &&) = delete;
 
-		std::string_view GetName() const { return m_Name; }
+		[[nodiscard]] std::string_view GetName() const { return m_Name; }
 
-		Vector2u GetPhysicalSize() const { return m_Size; }
-		Vector2f GetScale() const { return m_Scale; }
-		Vector2i GetPosition() const { return m_Pos; }
-		IntRect GetWorkArea() const {return m_WorkArea; }
+		[[nodiscard]] Vector2u GetPhysicalSize() const { return m_Size; }
+		[[nodiscard]] Vector2f GetScale() const { return m_Scale; }
+		[[nodiscard]] Vector2i GetPosition() const { return m_Pos; }
+		[[nodiscard]] IntRect GetWorkArea() const {return m_WorkArea; }
 
-		Vector2f GetDPI() const;
-		Vector2f GetContentScale() const;
+		[[nodiscard]] Vector2f GetDPI() const;
+		[[nodiscard]] Vector2f GetContentScale() const;
 
-		void *GetUserData() const { return m_UserData; }
+		[[nodiscard]] void *GetUserData() const { return m_UserData; }
 
 		template<typename T>
-		T* GetNativeHandle() const { return static_cast<T*>(m_NativePointer); }
+		[[nodiscard]] T* GetNativeHandle() const { return static_cast<T*>(m_NativePointer); }
 
-		void *GetNativeHandle() const { return m_NativePointer; }
+		[[nodiscard]] void *GetNativeHandle() const { return m_NativePointer; }
 
-		const VideoMode* GetVideoMode() const { return m_VideoMode; }
-		const std::vector<Scope<VideoMode>> &GetVideoModes() const;
+		[[nodiscard]] Ref<VideoMode> GetVideoMode() const { return m_VideoMode; }
+		[[nodiscard]] const std::vector<Ref<VideoMode>> &GetVideoModes() const;
 
-		const VideoMode* FindClosestMode(const Vector2u& size, int refreshRate) const;
+		[[nodiscard]] Ref<VideoMode> FindClosestMode(const Vector2u& size, int refreshRate) const;
 
-		int32_t GetCurrentRefreshRate() const { return m_VideoMode ? m_VideoMode->RefreshRate : 0; }
+		[[nodiscard]] int32_t GetCurrentRefreshRate() const { return m_VideoMode ? m_VideoMode->RefreshRate : 0; }
 
-		std::vector<int32_t> GetAvailableRefreshRates(const Vector2u& resolution) const;
+		[[nodiscard]] std::vector<int32_t> GetAvailableRefreshRates(const Vector2u& resolution) const;
 
 		void SetUserData(void *userData);
 		void SetGamma(float gamma);
 		void SetGammaRamp(const GammaRamp &ramp);
 
-		GammaRamp GetGammaRamp() const;
+		[[nodiscard]] GammaRamp GetGammaRamp() const;
 
-		bool IsSameMonitor(const Monitor& other) const { return m_NativePointer == other.m_NativePointer; }
-		bool IsPrimary() const { return this == GetPrimary(); }
+		[[nodiscard]] bool IsSameMonitor(const Monitor& other) const { return m_NativePointer == other.m_NativePointer; }
+		[[nodiscard]] bool IsConnected() const { return m_NativePointer != nullptr; }
+		[[nodiscard]] bool IsPrimary() const;
+	protected:
+		void Invalidate();
+		static Ref<Monitor> Create(void* pointer);
 
-		static Monitor* GetPrimary();
-		static Monitor* Get(const size_t monitor);
-		static const std::vector<Scope<Monitor>>& GetAll();
 	private:
 		Monitor() = default;
-
-		static Scope<Monitor> Create(void *pointer);
-		static void Populate();
-		static void RegisterCallbacks();
-		static void Refresh();
-		static Monitor* AddNewMonitor(void* pointer);
-		static void RemoveMonitor(void* pointer);
 
 		std::string m_Name;
 
@@ -93,12 +99,33 @@ namespace Engine {
 		void *m_NativePointer = nullptr;
 		void *m_UserData = nullptr;
 
-		VideoMode* m_VideoMode;
-		std::vector<Scope<VideoMode>> m_VideoModes;
-
-		static std::vector<Scope<Monitor>> s_Monitors;
-		static Monitor* s_PrimaryMonitor;
-		static bool s_Initialized;
-		static bool s_RegisteredCallbacks;
+		Ref<VideoMode> m_VideoMode;
+		std::vector<Ref<VideoMode>> m_VideoModes;
 	};
 }
+
+template<>
+struct fmt::formatter<Engine::VideoMode> {
+	char Presentation = 'c';
+
+	constexpr auto parse(format_parse_context& ctx) {
+		auto it = ctx.begin(), end = ctx.end();
+
+		if (it != end && (*it == 'c' || *it == 'l')) {
+			Presentation = *it++;
+		}
+		if (it != end && *it != '}')
+			throw format_error("invalid format spec for Engine::VideoMode");
+
+		return it;
+	}
+
+	template <typename FormatContext>
+	auto format(const Engine::VideoMode& vm, FormatContext& ctx) const {
+		if (Presentation == 'l') {
+			return format_to(ctx.out(), "{}x{}@{}Hz ({}R, {}G, {}B)", vm.Size.Width, vm.Size.Height, vm.RefreshRate, vm.RedBits, vm.GreenBits, vm.BlueBits);
+		}
+
+		return format_to(ctx.out(), "{}x{}@{}Hz", vm.Size.Width, vm.Size.Height, vm.RefreshRate);
+	}
+};

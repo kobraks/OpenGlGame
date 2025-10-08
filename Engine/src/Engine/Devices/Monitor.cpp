@@ -1,61 +1,73 @@
 #include "pch.h"
 #include "Engine/Devices/Monitor.h"
 
-#include "Engine/Core/Window.h"
-#include "Engine/Core/Application.h"
+#include "Engine/Devices/MonitorRegistry.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/common.hpp>
 
 #include <set>
 
-#include "Engine/Events/ApplicationEvent.h"
-
 namespace Engine {
-	std::vector<Scope<Monitor>> Monitor::s_Monitors;
-	Monitor* Monitor::s_PrimaryMonitor;
-	bool Monitor::s_Initialized = false;
-	bool Monitor::s_RegisteredCallbacks = false;
+	namespace Utils {
+		static bool Equal(GLFWvidmode a, VideoMode b) {
+			return a.width == static_cast<int>(b.Size.X)
+				&& a.height == static_cast<int>(b.Size.Y)
+				&& a.redBits == b.RedBits
+				&& a.greenBits == b.GreenBits
+				&& a.blueBits == b.BlueBits
+				&& a.refreshRate == b.RefreshRate;
+		}
 
-	static Scope<VideoMode> CreateVideoMode(GLFWvidmode mode) {
-		auto result = MakeScope<VideoMode>();
+		static Ref<VideoMode> CreateVideoMode(GLFWvidmode mode) {
+			auto result = MakeRef<VideoMode>();
 
-		result->BlueBits = mode.blueBits;
-		result->GreenBits = mode.greenBits;
-		result->RedBits = mode.redBits;
-		result->RefreshRate = mode.refreshRate;
+			result->BlueBits = mode.blueBits;
+			result->GreenBits = mode.greenBits;
+			result->RedBits = mode.redBits;
+			result->RefreshRate = mode.refreshRate;
 
-		result->Size = Vector2(static_cast<Vector2u::ValueType>(mode.width),
-		                       static_cast<Vector2u::ValueType>(mode.height));
+			result->Size = Vector2u(static_cast<Vector2u::ValueType>(mode.width),
+				static_cast<Vector2u::ValueType>(mode.height));
 
-		return result;
+			LOG_ENGINE_DEBUG("Created video mode: {:l}", *result);
+
+			return result;
+		}
+
+		static std::pair<std::vector<Ref<VideoMode>>, Ref<VideoMode>> CreateVideoModes(GLFWmonitor* monitor) {
+			std::vector<Ref<VideoMode>> modes;
+			Ref<VideoMode> current = nullptr;
+
+			int count = 0;
+			const GLFWvidmode* vModes = glfwGetVideoModes(monitor, &count);
+			const GLFWvidmode* currentMode = glfwGetVideoMode(monitor);
+
+			ENGINE_ASSERT(count != 0);
+
+			if (count == 0)
+				throw std::runtime_error("Unable to get video modes for monitor");
+
+			modes.reserve(static_cast<std::vector<VideoMode>::size_type>(count));
+
+			for (int i = 0; i < count; ++i) {
+				modes.emplace_back(CreateVideoMode(vModes[i]));
+
+				if (Equal(*currentMode, *modes[i]))
+					current = modes[i];
+
+			}
+
+			return { std::move(modes), current };
+		}
 	}
 
-	static std::vector<Scope<VideoMode>> CreateVideoModes(GLFWmonitor* monitor) {
-		std::vector<Scope<VideoMode>> modes;
+	GammaRamp::GammaRamp(uint32_t size) {
+		Size = size;
 
-		int count = 0;
-		const GLFWvidmode* vModes = glfwGetVideoModes(monitor, &count);
-
-		ENGINE_ASSERT(count != 0);
-
-		if (count == 0)
-			throw std::runtime_error("Unable to get video modes for monitor");
-
-		modes.reserve(static_cast<std::vector<VideoMode>::size_type>(count));
-
-		for (int i = 0; i < count; ++i)
-			modes.emplace_back(CreateVideoMode(vModes[i]));
-
-		return modes;
-	}
-
-	GammaRamp::~GammaRamp() {
-		delete[] Red;
-		delete[] Green;
-		delete[] Blue;
-
-		Red = Green = Blue = nullptr;
+		Red = MakeRef<uint16_t[]>(size);
+		Green = MakeRef<uint16_t[]>(size);
+		Blue = MakeRef<uint16_t[]>(size);
 	}
 
 	Vector2f Monitor::GetDPI() const {
@@ -71,12 +83,12 @@ namespace Engine {
 		return Vector2f{xScale, yScale};
 	}
 
-	const std::vector<Scope<VideoMode>>& Monitor::GetVideoModes() const {
+	const std::vector<Ref<VideoMode>>& Monitor::GetVideoModes() const {
 		return m_VideoModes;
 	}
 
-	const VideoMode* Monitor::FindClosestMode(const Vector2u& size, int refreshRate) const {
-		const VideoMode* best = nullptr;
+	Ref<VideoMode> Monitor::FindClosestMode(const Vector2u& size, int refreshRate) const {
+		Ref<VideoMode> best = nullptr;
 		uint32_t bestScore = UINT32_MAX;
 
 		for (const auto& mode : m_VideoModes) {
@@ -85,7 +97,7 @@ namespace Engine {
 				+ glm::abs(mode->RefreshRate - refreshRate) * 2;
 
 			if (score < bestScore) {
-				best = mode.get();
+				best = mode;
 				bestScore = score;
 			}
 		}
@@ -121,91 +133,66 @@ namespace Engine {
 		if (!ramp.Blue || !ramp.Green || !ramp.Red)
 			return;
 
-		gammaRamp.blue = ramp.Blue;
-		gammaRamp.green = ramp.Green;
-		gammaRamp.red = ramp.Red;
+		gammaRamp.blue = ramp.Blue.get();
+		gammaRamp.green = ramp.Green.get();
+		gammaRamp.red = ramp.Red.get();
 
 		glfwSetGammaRamp(static_cast<GLFWmonitor*>(m_NativePointer), &gammaRamp);
 	}
 
 	GammaRamp Monitor::GetGammaRamp() const {
-		GammaRamp gammaRamp;
 		const auto ramp = glfwGetGammaRamp(static_cast<GLFWmonitor*>(m_NativePointer));
 
-		gammaRamp.Size = ramp->size;
-		gammaRamp.Red = new uint16_t[ramp->size];
-		gammaRamp.Green = new uint16_t[ramp->size];
-		gammaRamp.Blue = new uint16_t[ramp->size];
+		if (!ramp || ramp->size == 0) return{};
 
-		memcpy_s(gammaRamp.Red, gammaRamp.Size * sizeof(uint16_t), ramp->red, ramp->size * sizeof(decltype(ramp->red)));
-		memcpy_s(gammaRamp.Green, gammaRamp.Size * sizeof(uint16_t), ramp->green,
-		         ramp->size * sizeof(decltype(ramp->green)));
-		memcpy_s(gammaRamp.Blue, gammaRamp.Size * sizeof(uint16_t), ramp->blue,
-		         ramp->size * sizeof(decltype(ramp->blue)));
+		GammaRamp gammaRamp(ramp->size);
+
+		std::memcpy(gammaRamp.Red.get(), ramp->red, ramp->size * sizeof(uint16_t));
+		std::memcpy(gammaRamp.Green.get(), ramp->green, ramp->size * sizeof(uint16_t));
+		std::memcpy(gammaRamp.Blue.get(), ramp->blue, ramp->size * sizeof(uint16_t));
 
 		return gammaRamp;
 	}
 
-	Monitor* Monitor::GetPrimary() {
-		Populate();
-
-		return s_PrimaryMonitor;
+	bool Monitor::IsPrimary() const {
+		return MonitorRegistry::Get().GetPrimary().get() == this;
 	}
 
-	Monitor* Monitor::Get(const size_t monitor) {
-		Populate();
-
-		return s_Monitors[monitor].get();
+	void Monitor::Invalidate() {
+		m_NativePointer = nullptr;
+		m_UserData = nullptr;
 	}
 
-	const std::vector<Scope<Monitor>>& Monitor::GetAll() {
-		Populate();
-
-		return s_Monitors;
-	}
-
-	Scope<Monitor> Monitor::Create(void* pointer) {
-		auto monitor = Scope<Monitor>(new Monitor());
+	Ref<Monitor> Monitor::Create(void* pointer) {
+		auto newMonitor = Ref<Monitor>(new Monitor());
 
 		if (!pointer)
-			return monitor;
+			return newMonitor;
+
+		GLFWmonitor* glfwMonitor = static_cast<GLFWmonitor*>(pointer);
 
 		int x, y;
-		glfwGetMonitorPhysicalSize(static_cast<GLFWmonitor*>(pointer), &x, &y);
+		glfwGetMonitorPhysicalSize(glfwMonitor, &x, &y);
 
-		monitor->m_Size = Vector2u(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
+		newMonitor->m_Size = Vector2u(static_cast<uint32_t>(x), static_cast<uint32_t>(y));
 
-		glfwGetMonitorContentScale(static_cast<GLFWmonitor*>(pointer), &monitor->m_Scale.X, &monitor->m_Scale.Y);
-		glfwGetMonitorPos(static_cast<GLFWmonitor*>(pointer), &monitor->m_Pos.X, &monitor->m_Pos.Y);
-		glfwGetMonitorWorkarea(static_cast<GLFWmonitor*>(pointer), &monitor->m_WorkArea.X, &monitor->m_WorkArea.Y,
-		                       &monitor->m_WorkArea.Width, &monitor->m_WorkArea.Height);
+		glfwGetMonitorContentScale(glfwMonitor, &newMonitor->m_Scale.X, &newMonitor->m_Scale.Y);
+		glfwGetMonitorPos(glfwMonitor, &newMonitor->m_Pos.X, &newMonitor->m_Pos.Y);
+		glfwGetMonitorWorkarea(glfwMonitor, &newMonitor->m_WorkArea.X, &newMonitor->m_WorkArea.Y,
+		                       &newMonitor->m_WorkArea.Width, &newMonitor->m_WorkArea.Height);
 
-		monitor->m_Name = glfwGetMonitorName(static_cast<GLFWmonitor*>(pointer));
-		monitor->m_UserData = glfwGetMonitorUserPointer(static_cast<GLFWmonitor*>(pointer));
-		monitor->m_VideoModes = CreateVideoModes(static_cast<GLFWmonitor*>(pointer));
-		monitor->m_NativePointer = pointer;
+		newMonitor->m_Name = glfwGetMonitorName(glfwMonitor);
+		newMonitor->m_UserData = glfwGetMonitorUserPointer(glfwMonitor);
+		newMonitor->m_NativePointer = pointer;
 
-		return monitor;
+		auto [modes, current] = Utils::CreateVideoModes(glfwMonitor);
+		newMonitor->m_VideoMode = current;
+		newMonitor->m_VideoModes = std::move(modes);
+
+		return newMonitor;
 	}
 
-	void Monitor::Populate() {
-		if (s_Initialized)
-			return;
-
-		s_Initialized = true;
-		Window::InitializeGlfw();
-		RegisterCallbacks();
-
-		int count = 0;
-		const auto monitors = glfwGetMonitors(&count);
-		const auto primaryMonitor = glfwGetPrimaryMonitor();
-
-		for (int i = 0; i < count; ++i) {
-			AddNewMonitor(monitors[i]);
-		}
-	}
-
-	void Monitor::RegisterCallbacks() {
+	/*void Monitor::RegisterCallbacks() {
 		if (s_RegisteredCallbacks)
 			return;
 
@@ -223,41 +210,5 @@ namespace Engine {
 				Application::Get().OnEvent(event); //TODO Crude fix think on something better
 			}
 			});
-	}
-
-	void Monitor::Refresh() {
-		s_Monitors.clear();
-		s_Initialized = false;
-		Populate();
-	}
-
-	Monitor* Monitor::AddNewMonitor(void* pointer) {
-		const auto primaryMonitor = glfwGetPrimaryMonitor();
-		const auto monitor = s_Monitors.emplace_back(Create(pointer)).get();
-
-		if (pointer == primaryMonitor)
-			s_PrimaryMonitor = monitor;
-
-		return monitor;
-	}
-
-	void Monitor::RemoveMonitor(void* pointer) {
-		auto it = std::ranges::find_if(s_Monitors, [=](const Scope<Monitor>& monitor) { return monitor->GetNativeHandle() == pointer; });
-
-		if (it != s_Monitors.end()) {
-			auto monitor = std::move(*it);
-			s_Monitors.erase(it);
-
-			if (s_PrimaryMonitor->GetNativeHandle() == pointer) {
-				const auto primaryMonitor = glfwGetPrimaryMonitor();
-
-				for (const auto& monitor : s_Monitors) {
-					if (monitor->GetNativeHandle<GLFWmonitor>() == primaryMonitor) {
-						s_PrimaryMonitor = monitor.get();
-						break;
-					}
-				}
-			}
-		}
-	}
+	} */
 }
