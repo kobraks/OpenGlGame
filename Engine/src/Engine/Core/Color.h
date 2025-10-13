@@ -288,12 +288,134 @@ namespace Engine {
 }
 
 template <>
-struct fmt::formatter<Engine::Color> : formatter<uint32_t> {
-	auto format(const Engine::Color& c, format_context& ctx) const {
-		return format_to(ctx.out(), "{:#010X}", c.ToRGBA());
+struct fmt::formatter<Engine::Color> : fmt::formatter<std::string_view> {
+	enum class Style : uint8_t { Hex, Int, Float, Linear, Vec, Css, CssA, SingleChannel };
+
+	Style Mode = Style::Hex;
+	char Channel = '\0';
+	bool Alt = false;
+	bool LowerCase = false;
+	int Precision = 3;
+
+	// parse: [#][type][.precision]
+	template <typename ParseContext>
+	constexpr auto parse(ParseContext& ctx) {
+		auto it = ctx.begin();
+		const auto end = ctx.end();
+
+		if (it != end && *it == '#') { Alt = true; ++it; }
+
+		if (it != end && *it != '}' && *it != '.') {
+			const char t = *it++;
+			switch (t) {
+			case 'x': Mode = Style::Hex; LowerCase = true; break; // hex (default)
+			case 'X': Mode = Style::Hex; LowerCase = false; break; // hex (default)
+			case 'i': Mode = Style::Int; break; // integer 0-255
+			case 'f': Mode = Style::Float; break; // float 0.0-1.0
+			case 'l': Mode = Style::Linear; break; // normalized linear float 0.0-1.0
+			case 'v': Mode = Style::Vec; break; // vec4(r, g, b, a)
+			case 's': Mode = Style::Css; break; // rgb(r, g, b)
+			case 'S': Mode = Style::CssA; break; // rgba(r, g, b, a)
+			case 'r': case 'g': case 'b': case 'a':
+			case 'R': case 'G': case 'B': case 'A':
+				Mode = Style::SingleChannel; Channel = t; break;
+			default: break;
+			}
+		}
+
+		if (it != end && *it == '.') {
+			++it;
+			if (it == end || *it == '}')
+				throw fmt::format_error("Missing precision value after '.'");
+
+			auto [pos, ec] = std::from_chars(it, end, Precision);
+			it = pos;
+		}
+
+		return it;
 	}
 
-	constexpr auto parse(format_parse_context& ctx) {
-		return ctx.begin();
+	template <typename FormatContext>
+	constexpr auto format(const Engine::Color& color, FormatContext& ctx) const {
+		fmt::memory_buffer buf;
+		buf.reserve(64);
+		switch (Mode) {
+		case Style::Hex: {
+			if (Alt) {
+				if (LowerCase)
+					fmt::format_to(std::back_inserter(buf), "{:#010x}", color.ToRGBA());
+				else
+					fmt::format_to(std::back_inserter(buf), "{:#010X}", color.ToRGBA());
+			} else {
+				if (LowerCase)
+					fmt::format_to(std::back_inserter(buf), "{:08x}", color.ToRGBA());
+				else
+					fmt::format_to(std::back_inserter(buf), "{:08X}", color.ToRGBA());
+			}
+
+			break;
+		}
+		case Style::Int: {
+			if (Alt) {
+				fmt::format_to(std::back_inserter(buf), "R={} G={} B={} A={}", color.R, color.G, color.B, color.A);
+			} else {
+				fmt::format_to(std::back_inserter(buf), "{}, {}, {}, {}", color.R, color.G, color.B, color.A);
+			}
+			break;
+		}
+		case Style::Float: {
+			const auto v = color.ToFloat();
+			if (Alt) {
+				fmt::format_to(std::back_inserter(buf), "R={:.{}f} G={:.{}f} B={:.{}f} A={:.{}f}", v.r, Precision, v.g, Precision, v.b, Precision, v.a, Precision);
+			} else {
+				fmt::format_to(std::back_inserter(buf), "{:.{}f}, {:.{}f}, {:.{}f}, {:.{}f}", v.r, Precision, v.g, Precision, v.b, Precision, v.a, Precision);
+			}
+			break;
+		}
+		case Style::Linear: {
+			const auto v = color.ToLinear();
+			if (Alt) {
+				fmt::format_to(std::back_inserter(buf), "R={:.{}f} G={:.{}f} B={:.{}f} A={:.{}f}", v.r, Precision, v.g, Precision, v.b, Precision, v.a, Precision);
+			} else {
+				fmt::format_to(std::back_inserter(buf), "{:.{}f}, {:.{}f}, {:.{}f}, {:.{}f}", v.r, Precision, v.g, Precision, v.b, Precision, v.a, Precision);
+			}
+			break;
+		}
+		case Style::Vec: {
+			const auto v = color.ToFloat();
+			fmt::format_to(std::back_inserter(buf), "vec4({:.{}f}, {:.{}f}, {:.{}f}, {:.{}f})", v.r, Precision, v.g, Precision, v.b, Precision, v.a, Precision);
+			break;
+		}
+		case Style::Css: {
+			fmt::format_to(std::back_inserter(buf), "rgb({}, {}, {})", color.R, color.G, color.B);
+			break;
+		}
+		case Style::CssA: {
+			const auto v = color.ToFloat();
+			fmt::format_to(std::back_inserter(buf), "rgba({}, {}, {}, {:.{}f})", color.R, color.G, color.B, std::clamp(v.a, 0.f, 1.f), Precision);
+			break;
+		}
+		case Style::SingleChannel: {
+			const auto v = color.ToFloat();
+
+			switch (Channel) {
+			case 'r': fmt::format_to(std::back_inserter(buf), "{}", color.R); break;
+			case 'g': fmt::format_to(std::back_inserter(buf), "{}", color.G); break;
+			case 'b': fmt::format_to(std::back_inserter(buf), "{}", color.B); break;
+			case 'a': fmt::format_to(std::back_inserter(buf), "{}", color.A); break;
+			case 'R': fmt::format_to(std::back_inserter(buf), "{:.{}f}", v.r, Precision); break;
+			case 'G': fmt::format_to(std::back_inserter(buf), "{:.{}f}", v.g, Precision); break;
+			case 'B': fmt::format_to(std::back_inserter(buf), "{:.{}f}", v.b, Precision); break;
+			case 'A': fmt::format_to(std::back_inserter(buf), "{:.{}f}", v.a, Precision); break;
+			default:
+				fmt::format_to(std::back_inserter(buf), "{:#010X}", color.ToRGBA()); break;
+			}
+		}
+		default:
+			fmt::format_to(std::back_inserter(buf), "{:#010X}", color.ToRGBA());
+			break;
+		}
+
+		return fmt::formatter<std::string_view>::format({ buf.data(), buf.size() }, ctx);
 	}
 };
