@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <type_traits>
 #include <tuple>
+#include <functional>
+#include <bit>
 
 #include <glm/vec2.hpp>
 #include <fmt/format.h>
@@ -78,6 +80,7 @@ namespace Engine {
 		}
 
 		constexpr auto operator[](std::ptrdiff_t i) -> ValueType& {
+			ENGINE_ASSERT(i == 0 || i == 1);
 			switch(i) {
 				case 0: return X;
 				case 1: return Y;
@@ -86,6 +89,7 @@ namespace Engine {
 		}
 
 		constexpr auto operator[](std::ptrdiff_t i) const -> ValueType const& {
+			ENGINE_ASSERT(i == 0 || i == 1);
 			switch(i) {
 				case 0: return X;
 				case 1: return Y;
@@ -186,7 +190,7 @@ namespace Engine {
 template <typename T>
 struct fmt::formatter<Engine::Vector2<T>> : fmt::nested_formatter<T> {
 	enum class Style : uint8_t { Paren, Bracket, Comma, Space, WxH, Json };
-	Style Style = Style::Paren;
+	Style Mode = Style::Paren;
 
 	//Parse [{:<align><width>}:]<style>[|<component_spec>]
 	template<typename ParseContext>
@@ -196,12 +200,12 @@ struct fmt::formatter<Engine::Vector2<T>> : fmt::nested_formatter<T> {
 
 		if (it != end) {
 			switch (*it) {
-			case 'p': Style = Style::Paren; ++it; break;
-			case 'b': Style = Style::Bracket; ++it; break;
-			case 'c': Style = Style::Comma; ++it; break;
-			case 's': Style = Style::Space; ++it; break;
-			case 'x': Style = Style::WxH; ++it; break;
-			case 'j': Style = Style::Json; ++it; break;
+			case 'p': Mode = Style::Paren; ++it; break;
+			case 'b': Mode = Style::Bracket; ++it; break;
+			case 'c': Mode = Style::Comma; ++it; break;
+			case 's': Mode = Style::Space; ++it; break;
+			case 'x': Mode = Style::WxH; ++it; break;
+			case 'j': Mode = Style::Json; ++it; break;
 			default: break;
 			}
 		}
@@ -222,22 +226,22 @@ struct fmt::formatter<Engine::Vector2<T>> : fmt::nested_formatter<T> {
 	template <typename FormatContext>
 	auto format(const Engine::Vector2<T>& vec, FormatContext& ctx) const {
 		return fmt::nested_formatter<T>::write_padded(ctx, [this, &vec](auto out) {
-			switch (Style) {
+			switch (Mode) {
 			case Style::Paren:
-				return format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
 			case Style::Bracket:
-				return format_to(out, "[{}, {}]", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "[{}, {}]", this->nested(vec.X), this->nested(vec.Y));
 			case Style::Comma:
-				return format_to(out, "{}, {}", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "{}, {}", this->nested(vec.X), this->nested(vec.Y));
 			case Style::Space:
-				return format_to(out, "{} {}", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "{} {}", this->nested(vec.X), this->nested(vec.Y));
 			case Style::WxH:
-				return format_to(out, "{}x{}", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "{}x{}", this->nested(vec.X), this->nested(vec.Y));
 			case Style::Json:
-				return format_to(out, "{{\"x\": {}, \"y\": {}}}", this->nested(vec.X), this->nested(vec.Y));
+				return fmt::format_to(out, "{{\"x\": {}, \"y\": {}}}", this->nested(vec.X), this->nested(vec.Y));
 			}
 
-			return format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
+			return fmt::format_to(out, "({}, {})", this->nested(vec.X), this->nested(vec.Y));
 		});
 
 	}
@@ -247,12 +251,36 @@ namespace std {
 	//Hash support
 	template<typename T>
 	struct hash<Engine::Vector2<T>> {
-		size_t operator()(const Engine::Vector2<T>& v) const noexcept {
-			size_t h1 = std::hash<T>{}(v.X);
-			size_t h2 = std::hash<T>{}(v.Y);
+		std::size_t operator()(const Engine::Vector2<T>& v) const noexcept {
+			const std::size_t hx = ComponentHash(v.X);
+			const std::size_t hy = ComponentHash(v.Y);
 
-			//Combine hashes
-			return h1 ^ (h2 << 1);
+			return HashCombine(hx, hy);
+		}
+
+	private:
+		static constexpr std::size_t ComponentHash(const T& value) noexcept {
+			if constexpr (std::is_floating_point_v<T>) {
+				T x = (value == T(0)) ? T(0) : value;
+				if constexpr (std::is_same_v<T, float>) {
+					const std::uint32_t bits = std::bit_cast<std::uint32_t>(x);
+					return std::hash<uint32_t>{}(bits);
+				} else if constexpr (std::is_same_v<T, double>) {
+					const std::uint64_t bits = std::bit_cast<std::uint64_t>(x);
+					return std::hash<uint64_t>{}(bits);
+				} else {
+					return std::hash<long double>{}(static_cast<long double>(x));
+				}
+			} else {
+				return std::hash<T>{}(value);
+			}
+		}
+
+		static constexpr std::size_t HashCombine(std::size_t seed, std::size_t v) noexcept {
+			if constexpr (sizeof(std::size_t) == 8)
+				return seed ^ (v + 0x9e3779b97f4a7c15ull + (seed << 6) + (seed >> 2));
+			else
+				return seed ^ (v + 0x9e3779b9u + (seed << 6) + (seed >> 2));
 		}
 	};
 }

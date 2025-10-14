@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <cstdint>
 
+#include "KeyCode.h"
+
 namespace Engine {
 	class Color {
 	public:
@@ -262,6 +264,14 @@ namespace std {
 	template <std::size_t N>
 	struct tuple_element<N, Engine::Color> {
 		using type = uint8_t;
+	};
+
+	//Hash support
+	template<>
+	struct hash<Engine::Color> {
+		std::size_t operator()(const Engine::Color& color) const noexcept {
+			return std::hash<uint32_t>{}(color.ToRGBA());
+		}
 	};
 }
 
