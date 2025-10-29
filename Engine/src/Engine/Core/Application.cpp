@@ -89,7 +89,7 @@ namespace Engine {
 					layer->OnUpdate();
 				}
 
-				m_TimeStepController.BeginUpdates();
+				m_TimeStepController.BeginFixedStepPhase();
 				while(m_TimeStepController.ShouldFixedUpdate()) {
 					for(auto &layer : m_LayerStack)
 						layer->OnConstUpdate(m_TimeStepController.GetScaledFixedDeltaTime());
@@ -148,8 +148,8 @@ namespace Engine {
 		                m_Window->IsFullscreen()
 		               );
 
-		LOG_ENGINE_INFO("Max updates: {}", m_TimeStepController.GetMaxUpdates());
-		LOG_ENGINE_INFO("Update rate: {}", m_TimeStepController.GetUpdateRate());
+		LOG_ENGINE_INFO("Max updates: {}", m_TimeStepController.GetMaxFixedSteps());
+		LOG_ENGINE_INFO("Update rate: {}ms", m_TimeStepController.GetFixedStepIntervalMs());
 
 		PushOverlay(m_ImGuiLayer = MakeRef<ImGuiLayer>());
 		PushOverlay(MakeRef<StatisticLayer>());
