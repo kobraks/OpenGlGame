@@ -60,6 +60,13 @@ namespace Engine {
 		return true;
 	}
 
+	void TimeStepController::SetFixedStepHz(double hz) {
+		hz = std::clamp(hz, 1.0, 1000.0);
+
+		const uint32_t intervalMs = static_cast<uint32_t>(std::lround(1000.0 / hz));
+		SetFixedStepIntervalMs(intervalMs);
+	}
+
 	void TimeStepController::SetFixedStepIntervalMs(uint32_t ms) {
 		m_FixedStepIntervalMs = ms;
 		m_NextFixedTimeMs = m_FixedClock.GetElapsedTime().AsMilliseconds64();

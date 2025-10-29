@@ -13,6 +13,9 @@ namespace Engine {
 
 		Time GetFrameDelta() const { return m_FrameDelta; }
 
+		double GetFixedStepHz() const { return m_FixedStepIntervalMs > 0 ? 1000.0 / static_cast<double>(m_FixedStepIntervalMs) : 0.0; }
+		void SetFixedStepHz(double hz);
+
 		uint32_t GetFixedStepIntervalMs() const { return m_FixedStepIntervalMs; }
 		void SetFixedStepIntervalMs(uint32_t ms);
 
