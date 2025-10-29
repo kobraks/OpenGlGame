@@ -10,9 +10,9 @@
 namespace Engine {
 	class Clock {
 	public:
-		Time GetElapsedTime() const;
+		[[nodiscard]] Time GetElapsedTime() const;
 
-		bool IsRunning() const;
+		[[nodiscard]] bool IsRunning() const;
 
 		void Start();
 		void Stop();

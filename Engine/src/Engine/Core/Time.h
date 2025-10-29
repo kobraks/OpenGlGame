@@ -22,20 +22,20 @@ namespace Engine {
 			return std::chrono::duration_cast<ToDuration>(m_Microseconds);
 		}
 
-		constexpr float AsSeconds() const { return std::chrono::duration<float>(m_Microseconds).count(); }
-		constexpr double AsSecondsD() const { return std::chrono::duration<double>(m_Microseconds).count(); }
+		[[nodiscard]] constexpr float AsSeconds() const { return std::chrono::duration<float>(m_Microseconds).count(); }
+		[[nodiscard]] constexpr double AsSecondsD() const { return std::chrono::duration<double>(m_Microseconds).count(); }
 
-		constexpr int32_t AsMilliseconds() const { return std::chrono::duration_cast<std::chrono::duration<int32_t, std::milli>>(m_Microseconds).count(); }
-		constexpr int64_t AsMilliseconds64() const { return std::chrono::duration_cast<std::chrono::milliseconds>(m_Microseconds).count(); }
+		[[nodiscard]] constexpr int32_t AsMilliseconds() const { return std::chrono::duration_cast<std::chrono::duration<int32_t, std::milli>>(m_Microseconds).count(); }
+		[[nodiscard]] constexpr int64_t AsMilliseconds64() const { return std::chrono::duration_cast<std::chrono::milliseconds>(m_Microseconds).count(); }
 
-		constexpr int64_t AsMicroseconds() const { return m_Microseconds.count(); }
+		[[nodiscard]] constexpr int64_t AsMicroseconds() const { return m_Microseconds.count(); }
 
-		constexpr std::chrono::microseconds ToDuration() const { return m_Microseconds; }
+		[[nodiscard]] constexpr std::chrono::microseconds ToDuration() const { return m_Microseconds; }
 
 		static const Time Zero;
 
 		template<class Rep, typename Period>
-		static constexpr Time FromChrono(std::chrono::duration<Rep, Period> duration) {
+		[[nodiscard]] static constexpr Time FromChrono(std::chrono::duration<Rep, Period> duration) {
 			return Time{ std::chrono::duration_cast<std::chrono::microseconds>(duration) };
 		}
 
@@ -48,51 +48,51 @@ namespace Engine {
 		friend constexpr Time Microseconds(int64_t);
 	};
 
-	constexpr Time Seconds(float seconds) {
+	[[nodiscard]] constexpr Time Seconds(float seconds) {
 		return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<float>(seconds));
 	}
 
-	constexpr Time Seconds(double seconds) {
+	[[nodiscard]] constexpr Time Seconds(double seconds) {
 		return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::duration<double>(seconds));
 	}
 
-	constexpr Time Milliseconds(int32_t milliseconds) {
+	[[nodiscard]] constexpr Time Milliseconds(int32_t milliseconds) {
 		return std::chrono::milliseconds(milliseconds);
 	}
 
-	constexpr Time Microseconds(int64_t microseconds) {
+	[[nodiscard]] constexpr Time Microseconds(int64_t microseconds) {
 		return std::chrono::microseconds(microseconds);
 	}
 
-	constexpr bool operator==(Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator==(Time lth, Time rth) {
 		return lth.AsMicroseconds() == rth.AsMicroseconds();
 	}
 
-	constexpr bool operator!=(Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator!=(Time lth, Time rth) {
 		return lth.AsMicroseconds() != rth.AsMicroseconds();
 	}
 
-	constexpr bool operator< (Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator< (Time lth, Time rth) {
 		return lth.AsMicroseconds() < rth.AsMicroseconds();
 	}
 
-	constexpr bool operator> (Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator> (Time lth, Time rth) {
 		return lth.AsMicroseconds() > rth.AsMicroseconds();
 	}
 
-	constexpr bool operator<= (Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator<= (Time lth, Time rth) {
 		return lth.AsMicroseconds() <= rth.AsMicroseconds();
 	}
 
-	constexpr bool operator>= (Time lth, Time rth) {
+	[[nodiscard]] constexpr bool operator>= (Time lth, Time rth) {
 		return lth.AsMicroseconds() >= rth.AsMicroseconds();
 	}
 
-	constexpr Time operator-(Time rth) {
+	[[nodiscard]] constexpr Time operator-(Time rth) {
 		return Microseconds(-rth.AsMicroseconds());
 	}
 
-	constexpr Time operator+ (Time lth, Time rth) {
+	[[nodiscard]] constexpr Time operator+ (Time lth, Time rth) {
 		return Microseconds(lth.AsMicroseconds() + rth.AsMicroseconds());
 	}
 
@@ -100,7 +100,7 @@ namespace Engine {
 		return lth = lth + rth;
 	}
 
-	constexpr Time operator-(Time lth, Time rth) {
+	[[nodiscard]] constexpr Time operator-(Time lth, Time rth) {
 		return Microseconds(lth.AsMicroseconds() - rth.AsMicroseconds());
 	}
 
@@ -108,27 +108,27 @@ namespace Engine {
 		return lth = lth - rth;
 	}
 
-	constexpr Time operator*(Time lth, float rth) {
+	[[nodiscard]] constexpr Time operator*(Time lth, float rth) {
 		return Seconds(lth.AsSeconds() * rth);
 	}
 
-	constexpr Time operator*(Time lth, double rth) {
+	[[nodiscard]] constexpr Time operator*(Time lth, double rth) {
 		return Seconds(lth.AsSecondsD() * rth);
 	}
 
-	constexpr Time operator*(Time lth, int64_t rth) {
+	[[nodiscard]] constexpr Time operator*(Time lth, int64_t rth) {
 		return Microseconds(lth.AsMicroseconds() * rth);
 	}
 
-	constexpr Time operator*(float lth, Time rth) {
+	[[nodiscard]] constexpr Time operator*(float lth, Time rth) {
 		return rth * lth;
 	}
 
-	constexpr Time operator*(double lth, Time rth) {
+	[[nodiscard]] constexpr Time operator*(double lth, Time rth) {
 		return rth * lth;
 	}
 
-	constexpr Time operator*(int64_t lth, Time rth) {
+	[[nodiscard]] constexpr Time operator*(int64_t lth, Time rth) {
 		return rth * lth;
 	}
 
@@ -144,19 +144,19 @@ namespace Engine {
 		return lth = lth * rth;
 	}
 
-	constexpr Time operator/(Time lth, float rth) {
+	[[nodiscard]] constexpr Time operator/(Time lth, float rth) {
 		ENGINE_ASSERT(rth != 0);
 
 		return Seconds(lth.AsSeconds() / rth);
 	}
 
-	constexpr Time operator/(Time lth, double rth) {
+	[[nodiscard]] constexpr Time operator/(Time lth, double rth) {
 		ENGINE_ASSERT(rth != 0);
 
 		return Seconds(lth.AsSecondsD() / rth);
 	}
 
-	constexpr Time operator/(Time lth, int64_t rth) {
+	[[nodiscard]] constexpr Time operator/(Time lth, int64_t rth) {
 		ENGINE_ASSERT(rth != 0);
 
 		return Microseconds(lth.AsMicroseconds() / rth);
@@ -180,13 +180,13 @@ namespace Engine {
 		return lth = lth / rth;
 	}
 
-	constexpr double operator/(Time lth, Time rth) {
+	[[nodiscard]] constexpr double operator/(Time lth, Time rth) {
 		ENGINE_ASSERT(rth.AsMicroseconds() != 0);
 
 		return lth.AsSecondsD() / rth.AsSecondsD();
 	}
 
-	constexpr Time operator%(Time lth, Time rth) {
+	[[nodiscard]] constexpr Time operator%(Time lth, Time rth) {
 		ENGINE_ASSERT(rth.AsMicroseconds() != 0);
 
 		return Microseconds(lth.AsMicroseconds() % rth.AsMicroseconds());
