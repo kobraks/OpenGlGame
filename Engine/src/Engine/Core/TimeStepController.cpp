@@ -6,6 +6,11 @@ namespace Engine {
 
 	}
 
+	TimeStepController::TimeStepController(double fixedStepHz, uint64_t maxFixedSteps) : m_MaxFixedSteps(maxFixedSteps) {
+		fixedStepHz = std::clamp(fixedStepHz, 1.0, 1000.);
+		m_FixedStepIntervalMs = static_cast<uint32_t>(std::lround(1000.0 / fixedStepHz));
+	}
+
 	void TimeStepController::BeginFrame() {
 		if (m_Paused && m_StepOneFrame) {
 			m_Paused = false;
@@ -31,6 +36,17 @@ namespace Engine {
 	}
 
 	bool TimeStepController::ShouldFixedUpdate() {
+		if (m_QueuedFixedSteps > 0) {
+			if (m_FixedStepCount >= m_MaxFixedSteps) {
+				return false;
+			}
+
+			--m_QueuedFixedSteps;
+			m_NextFixedTimeMs += m_FixedStepIntervalMs;
+			++m_FixedStepCount;
+			return true;
+		}
+
 		if (m_Paused && !m_StepOneFrame)
 			return false;
 
@@ -58,6 +74,14 @@ namespace Engine {
 		++m_FixedStepCount;
 
 		return true;
+	}
+
+	void TimeStepController::StepFixedUpdates(uint32_t count) {
+		if (!m_Paused || count == 0)
+			return;
+
+		const uint64_t maxAdd = std::numeric_limits<uint32_t>::max() - m_QueuedFixedSteps;
+		m_QueuedFixedSteps += static_cast<uint32_t>(std::min<uint64_t>(count, maxAdd));
 	}
 
 	void TimeStepController::SetFixedStepHz(double hz) {
@@ -91,6 +115,8 @@ namespace Engine {
 
 	void TimeStepController::Restart() {
 		m_FixedStepCount = 0;
+		m_QueuedFixedSteps = 0;
+
 		m_FrameDelta = Time::Zero;
 
 		m_FrameClock.Restart();
