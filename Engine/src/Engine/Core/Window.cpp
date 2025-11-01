@@ -289,8 +289,8 @@ namespace Engine {
 		glfwSetWindowUserPointer(GetNativeHandle<GLFWwindow>(), &m_Data);
 		SetVSync(m_Data.State.HasAny(WindowStateFlags::Vsync));
 
-		m_Data.State.Set(WindowStateFlags::Visible, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_VISIBLE) == GLFW_TRUE);
-		m_Data.State.Set(WindowStateFlags::Focused, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_FOCUSED) == GLFW_TRUE);
+		// m_Data.State.Set(WindowStateFlags::Visible, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_VISIBLE) == GLFW_TRUE);
+		// m_Data.State.Set(WindowStateFlags::Focused, glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_FOCUSED) == GLFW_TRUE);
 
 		int fbw, fbh;
 		glfwGetFramebufferSize(GetNativeHandle<GLFWwindow>(), &fbw, &fbh);
@@ -300,6 +300,39 @@ namespace Engine {
 		glfwGetWindowContentScale(GetNativeHandle<GLFWwindow>(), &m_Data.ContentScaleX, &m_Data.ContentScaleY);
 
 		InstallCallbacks();
+
+		if (!m_Data.State.HasAny(WindowStateFlags::Visible)) {
+			glfwHideWindow(GetNativeHandle<GLFWwindow>());
+			m_Data.State.Disable(WindowStateFlags::Visible);
+		} else {
+			glfwShowWindow(GetNativeHandle<GLFWwindow>());
+			m_Data.State.Enable(WindowStateFlags::Visible);
+		}
+
+		if (m_Data.State.HasAny(WindowStateFlags::Minimized)) {
+			glfwIconifyWindow(GetNativeHandle<GLFWwindow>());
+		}
+
+		if (m_Data.State.HasAny(WindowStateFlags::Maximized) && !m_Data.State.HasAny(WindowStateFlags::Fullscreen)) {
+			glfwMaximizeWindow(GetNativeHandle<GLFWwindow>());
+		}
+
+		if (m_Data.State.HasAny(WindowStateFlags::Fullscreen)) {
+			if (auto primary = MonitorRegistry::Get().GetPrimary()) {
+				EnableFullscreen(primary, primary->GetVideoMode());
+			} else if (auto *mon = glfwGetPrimaryMonitor()) {
+				if (const GLFWvidmode* vm = glfwGetVideoMode(mon)) {
+					m_Backup.Pos = { m_Data.X, m_Data.Y };
+					m_Backup.Size = {m_Data.Width, m_Data.Height };
+					m_Data.State.Enable(WindowStateFlags::Fullscreen);
+					glfwSetWindowMonitor(GetNativeHandle<GLFWwindow>(), mon, 0, 0, vm->width, vm->height, vm->refreshRate);
+				}
+			}
+		}
+
+		if (m_Data.State.HasAny(WindowStateFlags::Focused) && m_Data.State.HasAny(WindowStateFlags::Visible)) {
+			glfwFocusWindow(GetNativeHandle<GLFWwindow>());
+		}
 	}
 
 	void Window::Shutdown() {

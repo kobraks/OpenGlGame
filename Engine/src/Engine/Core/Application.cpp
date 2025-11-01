@@ -133,10 +133,18 @@ namespace Engine {
 
 	void Application::Initialize() {
 		auto logLayer = MakeRef<LogLayer>();
-		m_Window = Window::Create(WindowProperties(m_Specification.Name, m_Specification.WindowSize));
-		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 		MonitorRegistry::Get().Initialize();
 		MonitorRegistry::Get().SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
+
+		WindowStateFlags flags = WindowStateFlags::Visible;
+
+		if (m_Specification.FullScreen)
+			flags = flags | WindowStateFlags::Fullscreen;
+		if (m_Specification.FullWindow)
+			flags = flags | WindowStateFlags::Maximized;
+
+		m_Window = Window::Create(WindowProperties(m_Specification.Name, m_Specification.WindowSize, flags));
+		m_Window->SetEventCallback(BIND_EVENT_FN(Application::OnEvent));
 
 		InitializeSettings();
 		InitializeLua();
@@ -177,12 +185,6 @@ namespace Engine {
 	}
 
 	void Application::InitializeSettings() {
-		if (m_Specification.FullScreen)
-			m_Window->ToggleFullscreen();
-
-		if (!m_Specification.FullScreen && m_Specification.FullWindow) {
-			m_Window->Maximize();
-		}
 	}
 
 	void Application::InitializeLua() {
