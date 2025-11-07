@@ -122,7 +122,7 @@ namespace Engine {
 			m_Specification.FullScreen = true;
 
 		if (m_CmdParser->Has("maximize"))
-			m_Specification.FullWindow = true;
+			m_Specification.Maximized = true;
 
 		const auto width = m_CmdParser->Get("width", "1027");
 		const auto height = m_CmdParser->Get("height", "768");
@@ -138,9 +138,13 @@ namespace Engine {
 
 		WindowStateFlags flags = WindowStateFlags::Visible;
 
+		if (m_Specification.BorderlessFullScreen)
+			flags = flags | WindowStateFlags::BorderlessFullscreen;
+		if (m_Specification.Bordered)
+			flags = flags | WindowStateFlags::Bordered;
 		if (m_Specification.FullScreen)
-			flags = flags | WindowStateFlags::Fullscreen;
-		if (m_Specification.FullWindow)
+			flags = flags | WindowStateFlags::ExclusiveFullscreen;
+		if (m_Specification.Maximized)
 			flags = flags | WindowStateFlags::Maximized;
 
 		m_Window = Window::Create(WindowProperties(m_Specification.Name, m_Specification.WindowSize, flags));

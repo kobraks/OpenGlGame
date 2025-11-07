@@ -21,7 +21,9 @@ namespace Engine {
 		std::filesystem::path WorkingDirectory;
 
 		bool FullScreen = false;
-		bool FullWindow = false;
+		bool Maximized = false;
+		bool BorderlessFullScreen= false;
+		bool Bordered = true;
 
 		Vector2u WindowSize{1027, 768};
 
