@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 #include <functional>
+#include <optional>
 
 namespace Engine {
 	struct VideoMode;
@@ -18,12 +19,14 @@ namespace Engine {
 
 	enum class WindowStateFlags : uint8_t {
 		None = 0,
-		Visible = 1 << 0,
-		Focused = 1 << 1,
-		Minimized = 1 << 2,
-		Maximized = 1 << 3,
-		Fullscreen = 1 << 4,
-		Vsync = 1 << 5
+		Visible = BIT(0),
+		Focused = BIT(1),
+		Minimized = BIT(2),
+		Maximized = BIT(3),
+		ExclusiveFullscreen = BIT(4),
+		BorderlessFullscreen = BIT(5),
+		Vsync = BIT(6),
+		Bordered = BIT(7)
 	};
 
 	enum class InputMode {
@@ -44,6 +47,13 @@ namespace Engine {
 		std::string Title;
 		uint32_t Width;
 		uint32_t Height;
+
+		bool StartCentered = false;
+		bool SRGBCapable = true;
+		int Samples = 0;
+		bool TransparentFrameBuffer = false;
+
+		std::optional <CursorMode> InitialCursorMode = std::nullopt;
 
 		Flags<WindowStateFlags> InitialFlags { WindowStateFlags::None };
 
@@ -104,7 +114,8 @@ namespace Engine {
 
 		[[nodiscard]] bool IsVSync() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Vsync); }
 		[[nodiscard]] bool IsVisible() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Visible); }
-		[[nodiscard]] bool IsFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Fullscreen); }
+		[[nodiscard]] bool IsFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen); }
+		[[nodiscard]] bool IsBorderlessFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::BorderlessFullscreen); }
 
 		[[nodiscard]] float GetContentScaleWidth() const noexcept { return m_Data.ContentScaleX; }
 		[[nodiscard]] float GetContentScaleHeight() const noexcept { return m_Data.ContentScaleY; }
@@ -121,10 +132,15 @@ namespace Engine {
 		[[nodiscard]] bool IsOpen() const noexcept { return m_Window != nullptr; }
 		[[nodiscard]] GraphicContext* GetContext() const { return m_Context.get(); }
 
+		void DisableBorders();
+		void EnableBorders();
+
 		void AttentionRequest() const;
 
 		void ToggleFullscreen(Ref<Monitor> monitor = nullptr);
 		void ToggleFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode);
+
+		void ToggleBorderlessFullscreen(Ref<Monitor> monitor = nullptr);
 
 		[[nodiscard]] Cursor* GetCursor() const;
 		void SetCursor(Scope<Cursor> cursor);

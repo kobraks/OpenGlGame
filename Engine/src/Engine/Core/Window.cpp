@@ -67,6 +67,33 @@ namespace Engine {
 		static void GLFWErrorCallback(int error, const char* desc) {
 			LOG_ENGINE_ERROR("GLFW Error ({0}): {1}", error, desc);
 		}
+
+		static void ApplyWindowHints(const WindowProperties& props, const Flags<WindowStateFlags>& flags) {
+			glfwDefaultWindowHints();
+
+			const bool newVisible = flags.HasAny(WindowStateFlags::Visible);
+			glfwWindowHint(GLFW_VISIBLE, newVisible ? GLFW_TRUE : GLFW_FALSE);
+
+			if (flags.HasAny(WindowStateFlags::Bordered)) {
+				glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+			} else {
+				glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+			}
+
+			//sRGB 
+			glfwWindowHint(GLFW_SRGB_CAPABLE, props.SRGBCapable ? GLFW_TRUE : GLFW_FALSE);
+
+			//MSAA samples
+			glfwWindowHint(GLFW_SAMPLES, props.Samples);
+
+			//Transparent window
+			glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, props.TransparentFrameBuffer ? GLFW_TRUE : GLFW_FALSE);
+
+			//Borderless-fullscreen
+			if (flags.HasAny(WindowStateFlags::BorderlessFullscreen) && !flags.HasAny(WindowStateFlags::ExclusiveFullscreen)) {
+				glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+			}
+		}
 	}
 
 	static std::atomic<uint8_t> s_GLFWWindowCount = 0;
@@ -156,6 +183,16 @@ namespace Engine {
 		return glfwGetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_VISIBLE);
 	}*/
 
+	void Window::DisableBorders() {
+		glfwSetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_DECORATED, GLFW_FALSE);
+		m_Data.State.Disable(WindowStateFlags::Bordered);
+	}
+
+	void Window::EnableBorders() {
+		glfwSetWindowAttrib(GetNativeHandle<GLFWwindow>(), GLFW_DECORATED, GLFW_TRUE);
+		m_Data.State.Enable(WindowStateFlags::Bordered);
+	}
+
 	void Window::AttentionRequest() const {
 		glfwRequestWindowAttention(GetNativeHandle<GLFWwindow>());
 	}
@@ -168,7 +205,7 @@ namespace Engine {
 	}
 
 	void Window::ToggleFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode) {
-		if (!monitor->IsConnected())
+		if (!monitor || !monitor->IsConnected())
 			return;
 
 		if (glfwGetWindowMonitor(GetNativeHandle<GLFWwindow>()) == nullptr) {
@@ -176,6 +213,53 @@ namespace Engine {
 		}
 		else {
 			DisableFullscreen();
+		}
+	}
+
+	void Window::ToggleBorderlessFullscreen(Ref<Monitor> monitor) {
+		if (!monitor)
+			monitor = MonitorRegistry::Get().GetPrimary();
+
+		if (!monitor || !monitor->IsConnected())
+			return;
+
+		if (!m_Data.State.HasAny(WindowStateFlags::BorderlessFullscreen)) {
+			if (!m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen)) {
+				m_Backup.Size = { m_Data.Width, m_Data.Height };
+				m_Backup.Pos = { m_Data.X, m_Data.Y };
+			}
+
+			m_Data.State.Disable(WindowStateFlags::ExclusiveFullscreen);
+			DisableBorders();
+
+			const auto wa = monitor->GetWorkArea();
+			glfwSetWindowMonitor(GetNativeHandle<GLFWwindow>(), nullptr, wa.X, wa.Y, wa.Width, wa.Height, GLFW_DONT_CARE);
+
+			m_Data.X = wa.X;
+			m_Data.Y = wa.Y;
+
+			m_Data.Width = wa.Width;
+			m_Data.Height = wa.Height;
+
+			m_Data.State.Enable(WindowStateFlags::BorderlessFullscreen);
+
+		} else {
+			EnableBorders();
+
+			glfwSetWindowMonitor(
+				GetNativeHandle<GLFWwindow>(),
+				nullptr,
+				m_Backup.Pos.X,
+				m_Backup.Pos.Y,
+				static_cast<int>(m_Backup.Size.Width),
+				static_cast<int>(m_Backup.Size.Height),
+				GLFW_DONT_CARE
+			);
+
+			SetPos(m_Backup.Pos);
+			SetSize(m_Backup.Size);
+
+			m_Data.State.Disable(WindowStateFlags::BorderlessFullscreen);
 		}
 	}
 
@@ -234,11 +318,20 @@ namespace Engine {
 
 	void Window::EnableFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode) {
 		if (glfwGetWindowMonitor(GetNativeHandle<GLFWwindow>()) == nullptr) {
-			m_Data.State.Enable(WindowStateFlags::Fullscreen);
+			m_Data.State.Enable(WindowStateFlags::ExclusiveFullscreen);
+
+			if (m_Data.State.HasAny(WindowStateFlags::BorderlessFullscreen)) {
+				m_Data.State.Disable(WindowStateFlags::BorderlessFullscreen);
+				EnableBorders();
+			}
+
 			m_Backup.Pos = { m_Data.X, m_Data.Y };
 			m_Backup.Size = { m_Data.Width, m_Data.Height };
 
 			m_Monitor = monitor;
+
+			if (!mode)
+				mode = monitor->GetVideoMode();
 
 			glfwSetWindowMonitor(
 				GetNativeHandle<GLFWwindow>(),
@@ -253,7 +346,7 @@ namespace Engine {
 	}
 
 	void Window::DisableFullscreen() {
-		m_Data.State.Disable(WindowStateFlags::Fullscreen);
+		m_Data.State.Disable(WindowStateFlags::ExclusiveFullscreen);
 		glfwSetWindowMonitor(
 			GetNativeHandle<GLFWwindow>(),
 			nullptr,
@@ -264,8 +357,11 @@ namespace Engine {
 			GLFW_DONT_CARE
 		);
 
-		SetPos(m_Backup.Pos);
-		SetSize(m_Backup.Size);
+		m_Data.X = m_Backup.Pos.X;
+		m_Data.Y = m_Backup.Pos.Y;
+
+		m_Data.Width = m_Backup.Size.Width;
+		m_Data.Height = m_Backup.Size.Height;
 	}
 
 	void Window::Init(const WindowProperties& props) {
@@ -274,11 +370,14 @@ namespace Engine {
 		m_Data.Title = props.Title;
 		m_Data.State = props.InitialFlags;
 
+		Utils::ApplyWindowHints(props, props.InitialFlags);
+
 		m_Window = Create(static_cast<int>(props.Width), static_cast<int>(props.Height), m_Data.Title, nullptr,
 		                  nullptr);
 
 		m_Monitor = nullptr;
 		m_Context = GraphicContext::Create(this);
+		m_Context->MakeCurrent();
 
 		Vector2i pos;
 		glfwGetWindowPos(GetNativeHandle<GLFWwindow>(), &pos.X, &pos.Y);
@@ -301,6 +400,12 @@ namespace Engine {
 
 		InstallCallbacks();
 
+		if (m_Data.State.HasAny(WindowStateFlags::Bordered)) {
+			EnableBorders();
+		} else {
+			DisableBorders();
+		}
+
 		if (!m_Data.State.HasAny(WindowStateFlags::Visible)) {
 			glfwHideWindow(GetNativeHandle<GLFWwindow>());
 			m_Data.State.Disable(WindowStateFlags::Visible);
@@ -313,18 +418,18 @@ namespace Engine {
 			glfwIconifyWindow(GetNativeHandle<GLFWwindow>());
 		}
 
-		if (m_Data.State.HasAny(WindowStateFlags::Maximized) && !m_Data.State.HasAny(WindowStateFlags::Fullscreen)) {
+		if (m_Data.State.HasAny(WindowStateFlags::Maximized) && !m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen | WindowStateFlags::BorderlessFullscreen)) {
 			glfwMaximizeWindow(GetNativeHandle<GLFWwindow>());
 		}
 
-		if (m_Data.State.HasAny(WindowStateFlags::Fullscreen)) {
-			if (auto primary = MonitorRegistry::Get().GetPrimary()) {
+		if (m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen)) {
+			if (const auto primary = MonitorRegistry::Get().GetPrimary()) {
 				EnableFullscreen(primary, primary->GetVideoMode());
 			} else if (auto *mon = glfwGetPrimaryMonitor()) {
 				if (const GLFWvidmode* vm = glfwGetVideoMode(mon)) {
 					m_Backup.Pos = { m_Data.X, m_Data.Y };
 					m_Backup.Size = {m_Data.Width, m_Data.Height };
-					m_Data.State.Enable(WindowStateFlags::Fullscreen);
+					m_Data.State.Enable(WindowStateFlags::ExclusiveFullscreen);
 					glfwSetWindowMonitor(GetNativeHandle<GLFWwindow>(), mon, 0, 0, vm->width, vm->height, vm->refreshRate);
 				}
 			}
@@ -332,6 +437,25 @@ namespace Engine {
 
 		if (m_Data.State.HasAny(WindowStateFlags::Focused) && m_Data.State.HasAny(WindowStateFlags::Visible)) {
 			glfwFocusWindow(GetNativeHandle<GLFWwindow>());
+		}
+
+		if (props.InitialCursorMode.has_value()) {
+			SetCursorMode(props.InitialCursorMode.value());
+		}
+
+		if (m_Data.State.HasAny(WindowStateFlags::BorderlessFullscreen) && !m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen)) {
+			ToggleBorderlessFullscreen();
+		}
+
+		if (props.StartCentered && !m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen | WindowStateFlags::BorderlessFullscreen) && !m_Data.State.HasAny(WindowStateFlags::Maximized | WindowStateFlags::Minimized)) {
+			if (auto primary = MonitorRegistry::Get().GetPrimary()) {
+				const auto workArea = primary->GetWorkArea();
+				const Vector2u size = GetSize();
+				const int px = workArea.X + (workArea.Width - static_cast<int>(size.Width)) / 2;
+				const int py = workArea.Y + (workArea.Height - static_cast<int>(size.Height)) / 2;
+
+				SetPos(px, py);
+			}
 		}
 	}
 
