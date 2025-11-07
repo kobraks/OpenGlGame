@@ -124,9 +124,21 @@ namespace Engine {
 		if (m_CmdParser->Has("maximize"))
 			m_Specification.Maximized = true;
 
-		const auto width = m_CmdParser->Get("width", "1027");
-		const auto height = m_CmdParser->Get("height", "768");
-		m_Specification.WindowSize = { std::stoul(width), std::stoul(height) };
+		if (m_CmdParser->Has("borderless"))
+			m_Specification.Bordered = false;
+
+		if (m_CmdParser->Has("borderless-fullscreen"))
+			m_Specification.BorderlessFullScreen = true;
+
+		if (m_CmdParser->Has("width")) {
+			const auto width = m_CmdParser->Get("width", "1027");
+			m_Specification.WindowSize.Width = std::stoul(width);
+		}
+
+		if (m_CmdParser->Has("height")) {
+			const auto height = m_CmdParser->Get("height", "768");
+			m_Specification.WindowSize.Height = std::stoul(height);
+		}
 
 		LOG_ENGINE_TRACE("Done parsing command line options");
 	}
