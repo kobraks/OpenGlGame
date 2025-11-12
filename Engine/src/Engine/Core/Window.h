@@ -50,7 +50,7 @@ namespace Engine {
 
 		bool StartCentered = false;
 		bool SRGBCapable = true;
-		int Samples = 0;
+		uint32_t Samples = 0;
 		bool TransparentFrameBuffer = false;
 
 		std::optional <CursorMode> InitialCursorMode = std::nullopt;
@@ -117,6 +117,8 @@ namespace Engine {
 		[[nodiscard]] bool IsFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::ExclusiveFullscreen); }
 		[[nodiscard]] bool IsBorderlessFullscreen() const noexcept { return m_Data.State.HasAny(WindowStateFlags::BorderlessFullscreen); }
 
+		[[nodiscard]] bool HasBorder() const noexcept { return m_Data.State.HasAny(WindowStateFlags::Bordered); }
+
 		[[nodiscard]] float GetContentScaleWidth() const noexcept { return m_Data.ContentScaleX; }
 		[[nodiscard]] float GetContentScaleHeight() const noexcept { return m_Data.ContentScaleY; }
 		[[nodiscard]] Vector2f GetContentScale() const noexcept { return { m_Data.ContentScaleX, m_Data.ContentScaleY }; }
@@ -153,8 +155,6 @@ namespace Engine {
 
 		[[nodiscard]] static bool IsRawMouseInputSupported();
 	protected:
-		static void InitializeGlfw();
-
 		void EnableFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode);
 		void DisableFullscreen();
 
@@ -214,6 +214,11 @@ namespace Engine {
 
 	constexpr WindowStateFlags& operator|=(WindowStateFlags& a, WindowStateFlags b) noexcept {
 		a = a | b;
+		return a;
+	}
+
+	constexpr WindowStateFlags& operator&=(WindowStateFlags& a, WindowStateFlags b) noexcept {
+		a = a & b;
 		return a;
 	}
 }

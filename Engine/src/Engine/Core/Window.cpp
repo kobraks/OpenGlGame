@@ -11,10 +11,9 @@
 #include "Engine/Events/KeyEvent.h"
 #include "Engine/Events/MouseEvent.h"
 
-#include <GLFW/glfw3.h>
+#include "Engine/Utils/GlfwSubsystem.h"
 
-#include <atomic>
-#include <mutex>
+#include <GLFW/glfw3.h>
 
 namespace Engine {
 	namespace Utils {
@@ -64,10 +63,6 @@ namespace Engine {
 			}
 		}
 
-		static void GLFWErrorCallback(int error, const char* desc) {
-			LOG_ENGINE_ERROR("GLFW Error ({0}): {1}", error, desc);
-		}
-
 		static void ApplyWindowHints(const WindowProperties& props, const Flags<WindowStateFlags>& flags) {
 			glfwDefaultWindowHints();
 
@@ -84,7 +79,7 @@ namespace Engine {
 			glfwWindowHint(GLFW_SRGB_CAPABLE, props.SRGBCapable ? GLFW_TRUE : GLFW_FALSE);
 
 			//MSAA samples
-			glfwWindowHint(GLFW_SAMPLES, props.Samples);
+			glfwWindowHint(GLFW_SAMPLES, static_cast<int>(props.Samples));
 
 			//Transparent window
 			glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, props.TransparentFrameBuffer ? GLFW_TRUE : GLFW_FALSE);
@@ -95,9 +90,6 @@ namespace Engine {
 			}
 		}
 	}
-
-	static std::atomic<uint8_t> s_GLFWWindowCount = 0;
-	static std::atomic_bool s_GLFWInitialized = false;
 
 	Scope<Window> Window::Create(const WindowProperties& props) {
 		return Scope<Window>(new Window(props));
@@ -296,24 +288,11 @@ namespace Engine {
 	}
 
 	bool Window::IsRawMouseInputSupported() {
-		InitializeGlfw();
-		return glfwRawMouseMotionSupported() == GLFW_TRUE;
-	}
+		GLFWSubsystem::Acquire();
+		const auto supported = glfwRawMouseMotionSupported() == GLFW_TRUE;
+		GLFWSubsystem::Release();
 
-	void Window::InitializeGlfw() {
-		static std::once_flag glfwInitFlag;
-
-		std::call_once(glfwInitFlag, []() {
-			const int success = glfwInit();
-			ENGINE_ASSERT(success, "Unable to initialize GLFW!");
-			if (success == GLFW_TRUE)
-				s_GLFWInitialized = true;
-			else
-				throw std::runtime_error("Unable to initialize GLFW");
-
-			glfwSetErrorCallback(Utils::GLFWErrorCallback);
-			LOG_ENGINE_INFO("GLFW initialized!");
-		});
+		return supported;
 	}
 
 	void Window::EnableFullscreen(Ref<Monitor> monitor, Ref<VideoMode> mode) {
@@ -357,6 +336,8 @@ namespace Engine {
 			GLFW_DONT_CARE
 		);
 
+		m_Monitor = nullptr;
+
 		m_Data.X = m_Backup.Pos.X;
 		m_Data.Y = m_Backup.Pos.Y;
 
@@ -369,6 +350,8 @@ namespace Engine {
 		m_Data.Height = props.Height;
 		m_Data.Title = props.Title;
 		m_Data.State = props.InitialFlags;
+
+		GLFWSubsystem::Acquire();
 
 		Utils::ApplyWindowHints(props, props.InitialFlags);
 
@@ -462,26 +445,16 @@ namespace Engine {
 	void Window::Shutdown() {
 		glfwDestroyWindow(GetNativeHandle<GLFWwindow>());
 		m_Window = nullptr;
-		--s_GLFWWindowCount;
-
-		if (s_GLFWInitialized && s_GLFWWindowCount == 0) {
-			glfwTerminate();
-			s_GLFWInitialized = false;
-		}
+		GLFWSubsystem::Release();
 	}
 
 	void* Window::Create(int width, int height, const std::string& name, void* monitor, void* share) {
-		if (s_GLFWWindowCount == 0)
-			InitializeGlfw();
-
 		auto window = glfwCreateWindow(width, height, name.c_str(), static_cast<GLFWmonitor*>(monitor),
 		                               static_cast<GLFWwindow*>(share));
 
 		ENGINE_ASSERT(window);
 		if (!window)
 			throw std::runtime_error("Unable to create window");
-
-		++s_GLFWWindowCount;
 
 		return window;
 	}

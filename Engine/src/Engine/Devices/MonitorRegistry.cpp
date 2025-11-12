@@ -5,6 +5,8 @@
 #include "Engine/Devices/Monitor.h"
 #include "Engine/Events/ApplicationEvent.h"
 
+#include "Engine/Utils/GlfwSubsystem.h"
+
 #include "GLFW/glfw3.h"
 
 namespace Engine {
@@ -21,7 +23,7 @@ namespace Engine {
 		LOG_ENGINE_INFO("Initializing monitor registry");
 
 		m_Initialized = true;
-		Window::InitializeGlfw();
+		GLFWSubsystem::Acquire();
 		RegisterCallbacks();
 
 		int count = 0;
@@ -49,6 +51,7 @@ namespace Engine {
 		m_Primary.reset();
 
 		m_Initialized = false;
+		GLFWSubsystem::Release();
 	}
 
 	std::vector<Ref<Monitor>> MonitorRegistry::GetAll() const {
