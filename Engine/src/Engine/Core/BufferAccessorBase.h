@@ -83,7 +83,7 @@ namespace Engine {
 
 		template <typename T>
 		std::span<const T> AsSpan(SizeType offset = 0) const {
-			CheckSpan<T>(Size(), offset);
+			CheckSpan<T>(Size() / sizeof(T), offset);
 			return { reinterpret_cast<const T*>(Data() + offset), (Size() - offset) / sizeof(T) };
 		}
 
