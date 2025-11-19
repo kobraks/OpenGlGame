@@ -17,8 +17,8 @@ namespace Engine {
 
 		void Flush() final { m_Stream.flush(); }
 		bool IsStreamGood() const final { return m_Stream.good(); }
-		std::size_t GetStreamPosition() override { return m_Stream.tellp(); }
-		void SetStreamPosition(std::size_t position) override { m_Stream.seekp(position); }
+		std::size_t GetStreamPosition() const override { return static_cast<std::size_t>(m_Stream.tellp()); }
+		void SetStreamPosition(std::size_t position) override { m_Stream.seekp(static_cast<std::ostream::pos_type>(position)); }
 		bool WriteData(const std::byte *data, std::size_t size) final;
 
 	protected:
@@ -26,7 +26,7 @@ namespace Engine {
 
 	private:
 		std::filesystem::path m_Path;
-		std::ofstream m_Stream;
+		mutable std::ofstream m_Stream;
 	};
 
 	class FileStreamReader : public StreamReader {
@@ -37,8 +37,8 @@ namespace Engine {
 		~FileStreamReader() override;
 
 		bool IsStreamGood() const final { return !StreamFailed(); }
-		std::size_t GetStreamPosition() override { return m_Stream.tellg(); }
-		void SetStreamPosition(std::size_t position) override { m_Stream.seekg(position); }
+		std::size_t GetStreamPosition() const override { return static_cast<std::size_t>(m_Stream.tellg()); }
+		void SetStreamPosition(std::size_t position) override { m_Stream.seekg(static_cast<std::istream::pos_type>(position)); }
 		bool ReadData(std::byte *destination, std::size_t size) final;
 
 	protected:
@@ -46,6 +46,6 @@ namespace Engine {
 
 	private:
 		std::filesystem::path m_Path;
-		std::ifstream m_Stream;
+		mutable std::ifstream m_Stream;
 	};
 }

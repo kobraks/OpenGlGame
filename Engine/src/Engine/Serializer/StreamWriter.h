@@ -1,10 +1,14 @@
 #pragma once
 #include "Engine/Core/Base.h"
-#include "Engine/Core/Buffer.h"
+#include "Engine/Core/BufferView.h"
 
 #include <string>
+#include <string_view>
 #include <map>
 #include <unordered_map>
+#include <vector>
+#include <type_traits>
+#include <cstdint>
 
 namespace Engine {
 	class StreamWriter {
@@ -13,99 +17,130 @@ namespace Engine {
 
 		virtual void Flush() {}
 		virtual bool IsStreamGood() const = 0;
-		virtual std::size_t GetStreamPosition() = 0;
+		virtual std::size_t GetStreamPosition() const = 0;
 		virtual void SetStreamPosition(std::size_t position) = 0;
 		virtual bool WriteData(const std::byte *data, std::size_t size) = 0;
 
 		operator bool() const { return IsStreamGood(); }
 
-		void WriteBuffer(Buffer buffer, bool writeSize = true);
-		void WriteZero(std::size_t size);
-		void WriteString(const std::string &string);
-		void WriteString(std::string_view string);
+		bool WriteBuffer(const BufferView& buffer, bool writeSize = true);
+		bool WriteFill(std::byte value, std::size_t size);
+		bool WriteZero(std::size_t size) { return WriteFill(std::byte{ 0 }, size); }
+		bool WriteString(const std::string &string);
+		bool WriteString(std::string_view string);
 
 		template<typename T>
-		void WriteRaw(const T &type) {
+		bool WriteRaw(const T &type) {
+			static_assert(std::is_trivially_copyable_v<T>, "StreamWriter::ReadWrite<T> requires T to be trivially copyable");
 			bool success = WriteData(reinterpret_cast<const std::byte *>(&type), sizeof(T));
 			ENGINE_ASSERT(success);
+			return success;
 		}
 
 		template<typename T>
-		void WriteObject(const T& object) {
-			T::Serialize(this, object);
+		bool WriteObject(const T& object) {
+			return T::Serialize(*this, object);
 		}
 
 		template<typename Key, typename Value>
-		void WriteMap(const std::map<Key, Value> &map, bool writeSize = true) {
-			if (writeSize)
-				WriteRaw<uint32_t>(static_cast<uint32_t>(map.size()));
+		bool WriteMap(const std::map<Key, Value> &map, bool writeSize = true) {
+			if (writeSize && !WriteRaw<uint32_t>(static_cast<uint32_t>(map.size())))
+				return false;
 
 			for (const auto &[key, value] : map) {
-				if constexpr (std::is_trivial<Key>())
-					WriteRaw<Key>(key);
+				bool success = true;
+				if constexpr (std::is_trivially_copyable_v<Key>)
+					success = WriteRaw<Key>(key);
 				else
-					WriteObject<Key>(key);
+					success = WriteObject<Key>(key);
 
-				if constexpr (std::is_trivial<Value>())
-					WriteRaw<Value>(value);
+				if (!success)
+					return false;
+
+				if constexpr (std::is_trivially_copyable_v<Value>)
+					success = WriteRaw<Value>(value);
 				else
-					WriteObject<Value>(value);
+					success = WriteObject<Value>(value);
+
+
+				if (!success)
+					return false;
 			}
+
+			return true;
 		}
 
 		template<typename Key, typename Value>
-		void WriteMap(const std::unordered_map<Key, Value> &map, bool writeSize = true) {
-			if (writeSize)
-				WriteRaw<uint32_t>(static_cast<uint32_t>(map.size()));
+		bool WriteMap(const std::unordered_map<Key, Value> &map, bool writeSize = true) {
+			if (writeSize && !WriteRaw<uint32_t>(static_cast<uint32_t>(map.size())))
+				return false;
 
 			for (const auto &[key, value] : map) {
-				if constexpr (std::is_trivial<Key>())
-					WriteRaw<Key>(key);
+				bool success = true;
+				if constexpr (std::is_trivially_copyable_v<Key>)
+					success = WriteRaw<Key>(key);
 				else
-					WriteObject<Key>(key);
+					success = WriteObject<Key>(key);
 
-				if constexpr (std::is_trivial<Value>())
-					WriteRaw<Value>(value);
+				if (!success)
+					return false;
+
+				if constexpr (std::is_trivially_copyable_v<Value>)
+					success = WriteRaw<Value>(value);
 				else
-					WriteObject<Value>(value);
+					success = WriteObject<Value>(value);
+
+				if (!success)
+					return false;
 			}
+
+			return true;
 		}
 
 		template<typename Value>
-		void WriteMap(const std::unordered_map<std::string, Value> &map, bool writeSize = true) {
-			if (writeSize)
-				WriteRaw<uint32_t>(static_cast<uint32_t>(map.size()));
+		bool WriteMap(const std::unordered_map<std::string, Value> &map, bool writeSize = true) {
+			if (writeSize && !WriteRaw<uint32_t>(static_cast<uint32_t>(map.size())))
+				return false;
 
 			for (const auto &[key, value] : map) {
-				WriteString(key);
+				bool success = WriteString(key);
 
-				if constexpr (std::is_trivial<Value>())
-					WriteRaw<Value>(value);
+				if (!success)
+					return false;
+
+				if constexpr (std::is_trivially_copyable_v<Value>)
+					success = WriteRaw<Value>(value);
 				else
-					WriteObject<Value>(value);
+					success = WriteObject<Value>(value);
+
+				if (!success)
+					return false;
 			}
+
+			return true;
 		}
 
 		template<typename T>
-		void WriteArray(const std::vector<T> &array, bool writeSize = true) {
-			if (writeSize)
-				WriteRaw<uint32_t>(static_cast<uint32_t>(array.size()));
+		bool WriteArray(const std::vector<T> &array, bool writeSize = true) {
+			if (writeSize && !WriteRaw<uint32_t>(static_cast<uint32_t>(array.size())))
+				return false;
 
 			for (const auto &element : array) {
-				if constexpr (std::is_trivial<T>())
-					WriteRaw<T>(element);
-				else
-					WriteObject<T>(element);
+				bool success = false;
+
+				if constexpr (std::is_same_v<T, std::string>) {
+					success = WriteString(element);
+				} else if constexpr (std::is_trivially_copyable_v<T>) {
+					success = WriteRaw<T>(element);
+				} else {
+					success = WriteObject<T>(element);
+				}
+
+				if (!success)
+					return false;
 			}
-		}
 
-		template<>
-		void WriteArray(const std::vector<std::string> &array, bool writeSize) {
-			if (writeSize)
-				WriteRaw<uint32_t>(static_cast<uint32_t>(array.size()));
-
-			for (const auto &element : array)
-				WriteString(element);
+			return true;
 		}
 	};
 }

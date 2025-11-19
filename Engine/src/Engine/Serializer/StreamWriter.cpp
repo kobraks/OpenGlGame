@@ -1,34 +1,53 @@
 #include "pch.h"
 #include "StreamWriter.h"
 
+#include <array>
+#include <algorithm>
+
 namespace Engine {
-	void StreamWriter::WriteBuffer(Buffer buffer, bool writeSize) {
+	bool StreamWriter::WriteBuffer(const BufferView& buffer, bool writeSize) {
 		if (writeSize) {
-			const auto size = buffer.Size();
-			WriteData(reinterpret_cast<const std::byte*>(&size), sizeof(Buffer::SizeType));
+			if (!WriteRaw<BufferView::SizeType>(buffer.Size()))
+				return false;
 		}
 
-		WriteData(buffer.Data(), buffer.Size());
+		return WriteData(buffer.Data(), buffer.Size());
 	}
 
-	void StreamWriter::WriteZero(std::size_t size) {
-		constexpr std::byte zero(static_cast<std::byte>(0));
+	bool StreamWriter::WriteFill(std::byte value, std::size_t size) {
+		if (size == 0)
+			return true;
 
-		for (std::size_t i = 0; i < size; ++i)
-			WriteData(&zero, 1);
+		constexpr std::size_t chunkSize = 4096;
+		std::array<std::byte, chunkSize> buffer{};
+		buffer.fill(value);
+
+		while (size > 0) {
+			const std::size_t bytesToWrite = std::min(size, chunkSize);
+			if (!WriteData(buffer.data(), bytesToWrite)) {
+				return false;
+			}
+			size -= bytesToWrite;
+		}
+
+		return true;
 	}
 
-	void StreamWriter::WriteString(const std::string &string) {
-		std::size_t size = string.size();
+	bool StreamWriter::WriteString(const std::string &string) {
+		uint64_t size = string.size();
 
-		WriteData(reinterpret_cast<std::byte*>(&size), sizeof(std::size_t));
-		WriteData(reinterpret_cast<const std::byte*>(string.data()), sizeof(std::string::value_type) * size);
+		if (!WriteRaw<uint64_t>(size))
+			return false;
+
+		return WriteData(reinterpret_cast<const std::byte*>(string.data()), sizeof(std::string::value_type) * size);
 	}
 
-	void StreamWriter::WriteString(std::string_view string) {
-		size_t size = string.size();
+	bool StreamWriter::WriteString(std::string_view string) {
+		uint64_t size = string.size();
 
-		WriteData(reinterpret_cast<std::byte*>(&size), sizeof(size_t));
-		WriteData(reinterpret_cast<const std::byte*>(string.data()), sizeof(std::string_view::value_type) * size);
+		if (!WriteRaw<uint64_t>(size))
+			return false;
+
+		return WriteData(reinterpret_cast<const std::byte*>(string.data()), sizeof(std::string_view::value_type) * size);
 	}
 }

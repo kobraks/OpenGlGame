@@ -4,7 +4,7 @@
 namespace Engine {
 	bool StreamReader::ReadBuffer(Buffer &buffer, Buffer::SizeType size) {
 		if(size == 0) {
-			if(!ReadData(reinterpret_cast<std::byte*>(&size), sizeof(Buffer::SizeType)))
+			if(!ReadRaw<Buffer::SizeType>(size))
 				return false;
 		}
 
@@ -13,8 +13,8 @@ namespace Engine {
 	}
 
 	bool StreamReader::ReadString(std::string &string) {
-		std::size_t size;
-		if (!ReadData(reinterpret_cast<std::byte *>(&size), sizeof(std::size_t)))
+		uint64_t size;
+		if (!ReadRaw<uint64_t>(size))
 			return false;
 
 		string.resize(size);

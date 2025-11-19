@@ -6,9 +6,6 @@
 #include "Engine/Serializer/StreamReader.h"
 #include "Engine/Serializer/StreamWriter.h"
 
-#include <filesystem>
-#include <fstream>
-
 namespace Engine {
 	class BufferStreamWriter : public StreamWriter {
 	public:
@@ -17,11 +14,14 @@ namespace Engine {
 		virtual ~BufferStreamWriter() override = default;
 
 		bool IsStreamGood() const final { return static_cast<bool>(m_TargetBuffer); }
-		std::size_t GetStreamPosition() override { return m_BufferPosition; }
+		std::size_t GetStreamPosition() const override { return m_BufferPosition; }
 		void SetStreamPosition(std::size_t position) override { m_BufferPosition = position; }
 		bool WriteData(const std::byte *data, std::size_t size) final;
 
-		BufferView GetBuffer() const { return m_TargetBuffer.Slice(m_BufferBeginPosition, m_BufferPosition); }
+		BufferView GetBuffer() const {
+			const auto length = m_BufferPosition - m_BufferBeginPosition;
+			return m_TargetBuffer.Slice(m_BufferBeginPosition, length);
+		}
 	private:
 		BufferView& m_TargetBuffer;
 		Buffer::SizeType m_BufferPosition = 0;
@@ -31,15 +31,18 @@ namespace Engine {
 	class BufferStreamReader : public StreamReader {
 	public:
 		BufferStreamReader(BufferView& targetBuffer, Buffer::SizeType position = 0);
-		BufferStreamReader(const BufferStreamWriter&) = delete;
+		BufferStreamReader(const BufferStreamReader&) = delete;
 		virtual ~BufferStreamReader() override = default;
 
 		bool IsStreamGood() const final { return static_cast<bool>(m_TargetBuffer); }
-		std::size_t GetStreamPosition() override { return m_BufferPosition; }
+		std::size_t GetStreamPosition() const override { return m_BufferPosition; }
 		void SetStreamPosition(std::size_t position) override { m_BufferPosition = position; }
 		bool ReadData(std::byte *destination, std::size_t size) final;
 
-		BufferView GetBuffer() const { return m_TargetBuffer.Slice(m_BufferBeginPosition, m_BufferPosition);}
+		BufferView GetBuffer() const {
+			const auto length = m_BufferPosition - m_BufferBeginPosition;
+			return m_TargetBuffer.Slice(m_BufferBeginPosition, length);
+		}
 
 	private:
 		BufferView& m_TargetBuffer;

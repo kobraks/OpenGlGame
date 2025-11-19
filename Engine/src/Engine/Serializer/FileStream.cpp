@@ -3,7 +3,7 @@
 
 namespace Engine {
 	FileStreamWriter::FileStreamWriter(const std::filesystem::path &path) : m_Path(path) {
-		m_Stream = std::ofstream(path, std::ifstream::out | std::ifstream::binary);
+		m_Stream = std::ofstream(path, std::ios::out | std::ios::binary);
 	}
 
 	FileStreamWriter::~FileStreamWriter() {
@@ -20,7 +20,7 @@ namespace Engine {
 	}
 
 	FileStreamReader::FileStreamReader(const std::filesystem::path &path) : m_Path(path) {
-		m_Stream = std::ifstream(path, std::ifstream::in | std::ifstream::binary);
+		m_Stream = std::ifstream(path, std::ios::in | std::ios::binary);
 	}
 
 	FileStreamReader::~FileStreamReader() {
