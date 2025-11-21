@@ -10,7 +10,7 @@ namespace Engine {
 		m_Stream.close();
 	}
 
-	bool FileStreamWriter::WriteData(const std::byte *data, size_t size) {
+	bool FileStreamWriter::WriteData(const std::byte *data, Stream::SizeType size) {
 		m_Stream.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(size));
 		return !StreamFailed();
 	}
@@ -27,7 +27,7 @@ namespace Engine {
 		m_Stream.close();
 	}
 
-	bool FileStreamReader::ReadData(std::byte *destination, size_t size) {
+	bool FileStreamReader::ReadData(std::byte *destination, Stream::SizeType size) {
 		m_Stream.read(reinterpret_cast<char*>(destination), static_cast<std::streamsize>(size));
 		return !StreamFailed();
 	}

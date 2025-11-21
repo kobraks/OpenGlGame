@@ -7,7 +7,7 @@ namespace Engine {
 		ENGINE_ASSERT(m_TargetBuffer.IsWritable(), "BufferStreamWriter: Target buffer must be writable.");
 	}
 
-	bool BufferStreamWriter::WriteData(const std::byte *data, std::size_t size) {
+	bool BufferStreamWriter::WriteData(const std::byte *data, Stream::SizeType size) {
 		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
 
 		ENGINE_ASSERT(valid)
@@ -23,7 +23,7 @@ namespace Engine {
 	BufferStreamReader::BufferStreamReader(BufferView& targetBuffer, BufferView::SizeType position) : m_TargetBuffer(targetBuffer),
 		m_BufferPosition(position), m_BufferBeginPosition(position) {}
 
-	bool BufferStreamReader::ReadData(std::byte *destination, std::size_t size) {
+	bool BufferStreamReader::ReadData(std::byte *destination, Stream::SizeType size) {
 		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
 
 		ENGINE_ASSERT(valid);

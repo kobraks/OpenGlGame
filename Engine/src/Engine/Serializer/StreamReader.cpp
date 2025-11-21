@@ -2,19 +2,22 @@
 #include "StreamReader.h"
 
 namespace Engine {
-	bool StreamReader::ReadBuffer(Buffer &buffer, Buffer::SizeType size) {
-		if(size == 0) {
-			if(!ReadRaw<Buffer::SizeType>(size))
-				return false;
-		}
-
-		buffer.Allocate(size);
+	bool StreamReader::ReadBuffer(Buffer &buffer, Stream::BufferSize size) {
+		buffer.Allocate(static_cast<BufferAccessorBase<Buffer>::SizeType>(size));
 		return ReadData(buffer.Data(), buffer.Size());
 	}
 
+	bool StreamReader::ReadBuffer(Buffer& buffer) {
+		Stream::BufferSize size = 0;
+		if (!ReadRaw<Stream::BufferSize>(size))
+			return false;
+
+		return ReadBuffer(buffer, size);
+	}
+
 	bool StreamReader::ReadString(std::string &string) {
-		uint64_t size;
-		if (!ReadRaw<uint64_t>(size))
+		Stream::StringSize size = 0;
+		if (!ReadRaw<Stream::StringSize>(size))
 			return false;
 
 		string.resize(size);

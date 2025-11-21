@@ -16,7 +16,7 @@ namespace Engine {
 		bool IsStreamGood() const final { return static_cast<bool>(m_TargetBuffer); }
 		std::size_t GetStreamPosition() const override { return m_BufferPosition; }
 		void SetStreamPosition(std::size_t position) override { m_BufferPosition = position; }
-		bool WriteData(const std::byte *data, std::size_t size) final;
+		bool WriteData(const std::byte *data, Stream::SizeType size) final;
 
 		BufferView GetBuffer() const {
 			const auto length = m_BufferPosition - m_BufferBeginPosition;
@@ -37,7 +37,7 @@ namespace Engine {
 		bool IsStreamGood() const final { return static_cast<bool>(m_TargetBuffer); }
 		std::size_t GetStreamPosition() const override { return m_BufferPosition; }
 		void SetStreamPosition(std::size_t position) override { m_BufferPosition = position; }
-		bool ReadData(std::byte *destination, std::size_t size) final;
+		bool ReadData(std::byte *destination, Stream::SizeType size) final;
 
 		BufferView GetBuffer() const {
 			const auto length = m_BufferPosition - m_BufferBeginPosition;

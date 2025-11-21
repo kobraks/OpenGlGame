@@ -19,7 +19,7 @@ namespace Engine {
 		bool IsStreamGood() const final { return m_Stream.good(); }
 		std::size_t GetStreamPosition() const override { return static_cast<std::size_t>(m_Stream.tellp()); }
 		void SetStreamPosition(std::size_t position) override { m_Stream.seekp(static_cast<std::ostream::pos_type>(position)); }
-		bool WriteData(const std::byte *data, std::size_t size) final;
+		bool WriteData(const std::byte *data, Stream::SizeType size) final;
 
 	protected:
 		inline bool StreamFailed() const;
@@ -39,7 +39,7 @@ namespace Engine {
 		bool IsStreamGood() const final { return !StreamFailed(); }
 		std::size_t GetStreamPosition() const override { return static_cast<std::size_t>(m_Stream.tellg()); }
 		void SetStreamPosition(std::size_t position) override { m_Stream.seekg(static_cast<std::istream::pos_type>(position)); }
-		bool ReadData(std::byte *destination, std::size_t size) final;
+		bool ReadData(std::byte *destination, Stream::SizeType size) final;
 
 	protected:
 		inline bool StreamFailed() const;
