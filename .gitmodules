@@ -25,3 +25,6 @@
 [submodule "vendor/yaml-cpp"]
 	path = vendor/yaml-cpp
 	url = https://github.com/kobraks/yaml-cpp
+[submodule "vendor/Assimp"]
+	path = vendor/Assimp
+	url = https://github.com/kobraks/assimp.git
