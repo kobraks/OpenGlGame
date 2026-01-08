@@ -48,6 +48,8 @@ project "Engine"
 		"%{IncludeDir.ImGuizmo}",
 		"%{IncludeDir.Entt}",
 		"%{IncludeDir.Yaml}",
+		"%{IncludeDir.Assimp}",
+		"%{IncludeDir.AssimpGen}",
 	}
 
 	links
@@ -60,6 +62,7 @@ project "Engine"
 		"Spdlog",
 		"FreeImage",
 		"yaml-cpp",
+		"assimp",
 		
 		"opengl32.lib",
 	}

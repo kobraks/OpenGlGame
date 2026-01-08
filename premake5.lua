@@ -40,6 +40,7 @@ group "Dependencies"
 	include "vendor/ImGui"
     include "vendor/spdlog"
     include "vendor/yaml-cpp"
+	include "vendor/Assimp"
 group ""
 
 group "Core"

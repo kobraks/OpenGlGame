@@ -15,6 +15,8 @@ IncludeDir["Glm"] = "%{wks.location}/vendor/glm"
 IncludeDir["ImGuizmo"] = "%{wks.location}/vendor/ImGuizmo"
 IncludeDir["Entt"] = "%{wks.location}/vendor/entt"
 IncludeDir["Yaml"] = "%{wks.location}/vendor/yaml-cpp/include"
+IncludeDir["Assimp"] = "%{wks.location}/vendor/Assimp/include"
+IncludeDir["AssimpGen"] = "%{wks.location}/vendor/Assimp/generated/include"
 
 
 LibraryDir = {}
