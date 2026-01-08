@@ -65,10 +65,24 @@ namespace Engine {
 				}
 
 				//TexCoords (optional)
-				//TODO
+				if (mesh->HasTextureCoords(0) && mesh->mTextureCoords[0]) {
+					const aiVector3D textCoords = mesh->mTextureCoords[0][i];
+					vertex.TexCoords = glm::vec2(textCoords.x, textCoords.y);
+				} else {
+					vertex.TexCoords = glm::vec2(0.f);
+				}
 
 				// Tangent/Bitangent (optional)
-				//TODO
+				if (mesh->HasTangentsAndBitangents()) {
+					const aiVector3D tangent = mesh->mTangents[i];
+					const aiVector3D bitangent = mesh->mBitangents[i];
+
+					vertex.Tangent = glm::normalize(normalMatrix * glm::vec3(tangent.x, tangent.y, tangent.z));
+					vertex.Bitangent = glm::normalize(normalMatrix * glm::vec3(bitangent.x, bitangent.y, bitangent.z));
+				} else {
+					vertex.Tangent = glm::vec3(1.0f, 0.0f, 0.0f);
+					vertex.Bitangent = glm::vec3(0.0f, 0.0f, 1.0f);
+				}
 
 				vertices.push_back(vertex);
 			}
