@@ -4,18 +4,18 @@
 #include <glad/glad.h>
 
 namespace Engine {
-	Ref<IndexBuffer> IndexBuffer::Create(std::span<uint32_t> indices, BufferStorageFlags flags) {
+	Ref<IndexBuffer> IndexBuffer::Create(std::span<const uint32_t> indices, BufferStorageFlags flags) {
 		auto buffer = Ref<IndexBuffer>(new IndexBuffer());
-		buffer->Allocate(indices.data(), indices.size_bytes(), flags);
-		buffer->m_Count = indices.size();
+		buffer->Allocate(indices.data(), static_cast<uint32_t>(indices.size_bytes()), flags);
+		buffer->m_Count = static_cast<uint32_t>(indices.size());
 
 		return buffer;
 	}
 
-	Ref<IndexBuffer> IndexBuffer::Create(std::span<uint32_t> indices, BufferUsage usageHint) {
+	Ref<IndexBuffer> IndexBuffer::Create(std::span<const uint32_t> indices, BufferUsage usageHint) {
 		auto buffer = Ref<IndexBuffer>(new IndexBuffer());
-		buffer->Allocate(indices.data(), indices.size_bytes(), usageHint);
-		buffer->m_Count = indices.size();
+		buffer->Allocate(indices.data(), static_cast<uint32_t>(indices.size_bytes()), usageHint);
+		buffer->m_Count = static_cast<uint32_t>(indices.size());
 
 		return buffer;
 	}

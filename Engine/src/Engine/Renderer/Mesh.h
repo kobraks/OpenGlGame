@@ -1,5 +1,6 @@
 #pragma once
 #include "Engine/Core/Base.h"
+#include "Engine/Core/BufferView.h"
 
 #include "Engine/Renderer/VertexBuffer.h"
 #include "Engine/Renderer/IndexBuffer.h"
@@ -10,6 +11,7 @@
 namespace Engine {
 	class Mesh {
 	public:
+		Mesh(const BufferView& vertexData, const BufferView& indexData);
 		Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 
 		const std::vector<Vertex>& GetVertices() const { return m_Vertices; }

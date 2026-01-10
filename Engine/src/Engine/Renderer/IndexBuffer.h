@@ -13,8 +13,8 @@ namespace Engine {
 
 		uint32_t Count() const { return m_Count; }
 
-		static Ref<IndexBuffer> Create(std::span<uint32_t> indices, BufferStorageFlags flags = BufferStorageFlags::None);
-		static Ref<IndexBuffer> Create(std::span<uint32_t> indices, BufferUsage usageHint);
+		static Ref<IndexBuffer> Create(std::span<const uint32_t> indices, BufferStorageFlags flags = BufferStorageFlags::None);
+		static Ref<IndexBuffer> Create(std::span<const uint32_t> indices, BufferUsage usageHint);
 		static Ref<IndexBuffer> Create(const uint32_t* data, uint32_t elementCount, BufferStorageFlags flags = BufferStorageFlags::None);
 		static Ref<IndexBuffer> Create(const uint32_t* data, uint32_t elementCount, BufferUsage usageHint);
 
