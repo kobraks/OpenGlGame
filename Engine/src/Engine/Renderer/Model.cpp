@@ -93,6 +93,12 @@ namespace Engine {
 		static Ref<Mesh> ProcessMesh(const aiMesh* mesh, const glm::mat4& worldTransform) {
 			const glm::mat3 normalMatrix = glm::inverseTranspose(glm::mat3(worldTransform));
 
+			LOG_ENGINE_DEBUG("Mesh: \'{}\': verts={}, faces={}, normals={}, uvs0={}, tangents={}, matIndex={}", mesh->mName.C_Str(), mesh->mNumVertices, mesh->mNumFaces,
+				mesh->HasNormals() ? "yes" : "no",
+				mesh->HasTextureCoords(0) ? "yes" : "no",
+				mesh->HasTangentsAndBitangents() ? "yes" : "no",
+				mesh->mMaterialIndex);
+
 			return MakeRef<Mesh>(ProcessVertices(mesh, worldTransform, normalMatrix), ProcessIndices(mesh));
 		}
 
@@ -116,10 +122,14 @@ namespace Engine {
 	}
 
 	Ref<Model> Model::Load(std::filesystem::path path) {
+		LOG_ENGINE_INFO("Loading model: {}", path.string());
+
 		if (!std::filesystem::exists(path)) {
 			LOG_ENGINE_ERROR("Model file does not exist: {}", path.string());
 			return nullptr;
 		}
+
+		const auto start = std::chrono::high_resolution_clock::now();
 
 		Assimp::Importer importer;
 
@@ -141,10 +151,15 @@ namespace Engine {
 			return nullptr;
 		}
 
+		LOG_ENGINE_INFO("Assimp scene: meshes={}, materials={}, animations={}, textures={}", scene->mNumMeshes, scene->mNumMaterials, scene->mNumAnimations, scene->mNumTextures);
+
 		Ref<Model> model = MakeRef<Model>();
 		ProcessNode(scene->mRootNode, scene, model, glm::mat4(1.0f));
 
-		LOG_ENGINE_INFO("Loaded model '{}', meshes = {}", path.string(), model->GetMeshes().size());
+		const auto end = std::chrono::high_resolution_clock::now();
+
+		LOG_ENGINE_INFO("Model loaded: '{}', meshes = {}", path.string(), model->GetMeshes().size());
+		LOG_ENGINE_INFO("Model load time: {} ms", std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count());
 		return model;
 	}
 
@@ -153,7 +168,9 @@ namespace Engine {
 		if (index >= m_Meshes.size())
 			throw std::out_of_range("Index out of bounds");
 
+		LOG_ENGINE_INFO("Removing mesh at index {} from model", index);
 		m_Meshes.erase(m_Meshes.begin() + index);
+		LOG_ENGINE_INFO("Mesh removed (after count={})", m_Meshes.size());
 	}
 
 	void Model::AddMesh(Ref<Mesh> mesh) {
