@@ -17,8 +17,8 @@ namespace Engine {
 
 		bool HasLayout() const { return m_Layout != nullptr && !m_Layout->GetElements().empty(); }
 
-		static Ref<VertexBuffer> Create(std::span<Vertex> vertices, BufferStorageFlags flags = BufferStorageFlags::None);
-		static Ref<VertexBuffer> Create(std::span<Vertex> vertices, BufferUsage usageHint);
+		static Ref<VertexBuffer> Create(std::span<const Vertex> vertices, BufferStorageFlags flags = BufferStorageFlags::None);
+		static Ref<VertexBuffer> Create(std::span<const Vertex> vertices, BufferUsage usageHint);
 		static Ref<VertexBuffer> Create(uint32_t size, BufferStorageFlags flags = BufferStorageFlags::None);
 		static Ref<VertexBuffer> Create(uint32_t size, BufferUsage usageHint);
 	protected:

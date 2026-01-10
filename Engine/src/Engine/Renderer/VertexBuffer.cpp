@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 
 namespace Engine {
-	Ref<VertexBuffer> VertexBuffer::Create(std::span<Vertex> vertices, BufferStorageFlags flags) {
+	Ref<VertexBuffer> VertexBuffer::Create(std::span<const Vertex> vertices, BufferStorageFlags flags) {
 		auto buffer = Ref<VertexBuffer>(new VertexBuffer());
 		buffer->Allocate(vertices.data(), static_cast<uint32_t>(vertices.size_bytes()), flags);
 		buffer->SetLayout(Vertex::GetLayout());
@@ -12,7 +12,7 @@ namespace Engine {
 		return buffer;
 	}
 
-	Ref<VertexBuffer> VertexBuffer::Create(std::span<Vertex> vertices, BufferUsage usageHint) {
+	Ref<VertexBuffer> VertexBuffer::Create(std::span<const Vertex> vertices, BufferUsage usageHint) {
 		auto buffer = Ref<VertexBuffer>(new VertexBuffer());
 		buffer->Allocate(vertices.data(), static_cast<uint32_t>(vertices.size_bytes()), usageHint);
 		buffer->SetLayout(Vertex::GetLayout());
