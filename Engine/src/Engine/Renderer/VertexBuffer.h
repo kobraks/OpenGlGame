@@ -19,12 +19,30 @@ namespace Engine {
 
 		static Ref<VertexBuffer> Create(std::span<const Vertex> vertices, BufferStorageFlags flags = BufferStorageFlags::None);
 		static Ref<VertexBuffer> Create(std::span<const Vertex> vertices, BufferUsage usageHint);
-		static Ref<VertexBuffer> Create(uint32_t size, BufferStorageFlags flags = BufferStorageFlags::None);
-		static Ref<VertexBuffer> Create(uint32_t size, BufferUsage usageHint);
+
+		static Ref<VertexBuffer> Create(const std::byte* data, uint32_t size, BufferStorageFlags flags = BufferStorageFlags::None);
+		static Ref<VertexBuffer> Create(const std::byte* data, uint32_t size, BufferUsage usageHint);
+
+		static Ref<VertexBuffer> Create(uint32_t size, BufferStorageFlags flags = BufferStorageFlags::None) {
+			return Create(nullptr, size, flags);
+		}
+
+		static Ref<VertexBuffer> Create(uint32_t size, BufferUsage usageHint) {
+			return Create(nullptr, size, usageHint);
+		}
+
+
+		static Ref<VertexBuffer> Create(const BufferView& view, BufferStorageFlags flags = BufferStorageFlags::None) {
+			return Create(view.Data(), static_cast<uint32_t>(view.Size()), flags);
+		}
+
+		static Ref<VertexBuffer> Create(const BufferView& view, BufferUsage usageHint) {
+			return Create(view.Data(), static_cast<uint32_t>(view.Size()), usageHint);
+		}
 	protected:
 		VertexBuffer();
 
 	private:
-		Scope<BufferLayout> m_Layout;
+		Scope<BufferLayout> m_Layout = nullptr;
 	};
 }

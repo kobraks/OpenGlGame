@@ -4,12 +4,7 @@
 namespace Engine {
 	class IndexBuffer : public BufferObject {
 	public:
-		void SetIndices(const uint32_t* data, uint32_t elementCount, uint32_t offset = 0) {
-			ENGINE_ASSERT((offset + elementCount * sizeof(uint32_t)) <= Size(), "IndexBuffer::SetIndices out of bounds");
-
-			m_Count = elementCount;
-			Write({ data,  elementCount * sizeof(uint32_t)}, offset);
-		}
+		void SetIndices(const uint32_t* data, uint32_t elementCount, uint32_t offset = 0);
 
 		uint32_t Count() const { return m_Count; }
 
@@ -18,6 +13,13 @@ namespace Engine {
 		static Ref<IndexBuffer> Create(const uint32_t* data, uint32_t elementCount, BufferStorageFlags flags = BufferStorageFlags::None);
 		static Ref<IndexBuffer> Create(const uint32_t* data, uint32_t elementCount, BufferUsage usageHint);
 
+		static Ref<IndexBuffer> Create(const BufferView& view, BufferStorageFlags flags = BufferStorageFlags::None) {
+			return Create(view.AsSpan<uint32_t>(), flags);
+		}
+
+		static Ref<IndexBuffer> Create(const BufferView& view, BufferUsage usageHint) {
+			return Create(view.AsSpan<uint32_t>(), usageHint);
+		}
 	private:
 		IndexBuffer();
 
