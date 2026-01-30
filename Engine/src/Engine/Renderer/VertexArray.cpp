@@ -8,7 +8,7 @@
 
 namespace Engine {
 	namespace Utils {
-		static constexpr uint32_t CreateVertexArray() {
+		static uint32_t CreateVertexArray() {
 			uint32_t name;
 			glCreateVertexArrays(1, &name);
 
@@ -40,28 +40,38 @@ namespace Engine {
 		static void SetUpFloatAttribute(uint32_t vao, uint32_t attribIndex, uint32_t bindingIndex, const BufferElement& element) {
 			LOG_GL_TRACE("Enabling vertex attribute with ID: {}", attribIndex);
 			glEnableVertexArrayAttrib(vao, attribIndex);
-			LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: Float)", attribIndex);
-			glVertexArrayAttribFormat(vao, attribIndex, static_cast<GLint>(element.GetComponentCount()), ShaderDataTypeToOpenGLBaseType(element.Type), Convert(element.Normalized), static_cast<GLuint>(element.Offset));
+			LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: {}), ComponentCount: {}, Normalized: {}, Offset: {}",
+				attribIndex, element.Type, element.GetComponentCount(), element.Normalized, element.Offset);
+			glVertexArrayAttribFormat(vao, attribIndex, static_cast<GLint>(element.GetComponentCount()), ShaderDataTypeToOpenGLBaseType(element.Type),
+				Convert(element.Normalized), static_cast<GLuint>(element.Offset));
+			LOG_GL_DEBUG("Binding vertex attribute with ID: {} to binding index: {}", attribIndex, bindingIndex);
 			glVertexArrayAttribBinding(vao, attribIndex, bindingIndex);
 		}
 
 		static void SetUpIntAttribute(uint32_t vao, uint32_t attribIndex, uint32_t bindingIndex, const BufferElement& element) {
 			LOG_GL_TRACE("Enabling vertex attribute with ID: {}", attribIndex);
 			glEnableVertexArrayAttrib(vao, attribIndex);
-			LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: Int)", attribIndex);
-			glVertexArrayAttribIFormat(vao, attribIndex, static_cast<GLint>(element.GetComponentCount()), ShaderDataTypeToOpenGLBaseType(element.Type), static_cast<GLuint>(element.Offset));
+			LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: {}), ComponentCount: {}, Offset: {}",
+				attribIndex, element.Type, element.GetComponentCount(), element.Offset);
+			glVertexArrayAttribIFormat(vao, attribIndex, static_cast<GLint>(element.GetComponentCount()), ShaderDataTypeToOpenGLBaseType(element.Type),
+				static_cast<GLuint>(element.Offset));
+			LOG_GL_DEBUG("Binding vertex attribute with ID: {} to binding index: {}", attribIndex, bindingIndex);
 			glVertexArrayAttribBinding(vao, attribIndex, bindingIndex);
 		}
 
 		static void SetUpMatrixAttribute(uint32_t vao, uint32_t& attribIndex, uint32_t bindingIndex, const BufferElement& element) {
-			uint32_t count = element.GetComponentCount();
+			const uint32_t count = element.GetComponentCount();
 
 			for (uint32_t i = 0; i < count; ++i) {
+				const uint64_t offset = element.Offset + sizeof(float) * count * i;
 				LOG_GL_TRACE("Enabling vertex attribute with ID: {}", attribIndex);
 				glEnableVertexArrayAttrib(vao, attribIndex);
 
-				LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: Float)", attribIndex);
-				glVertexArrayAttribFormat(vao, attribIndex, static_cast<GLint>(count), ShaderDataTypeToOpenGLBaseType(element.Type), Convert(element.Normalized), static_cast<GLuint>(element.Offset + sizeof(float) * count * i));
+				LOG_GL_DEBUG("Adding vertex attribute with ID: {} (type: {} (Float)), ComponentCount: {}, Normalized: {}, Offset: {}",
+					attribIndex, element.Type, count, element.Normalized, offset);
+				glVertexArrayAttribFormat(vao, attribIndex, static_cast<GLint>(count), ShaderDataTypeToOpenGLBaseType(element.Type),
+					Convert(element.Normalized), static_cast<GLuint>(offset));
+				LOG_GL_DEBUG("Binding vertex attribute with ID: {} to binding index: {}", attribIndex, bindingIndex);
 				glVertexArrayAttribBinding(vao, attribIndex, bindingIndex);
 				++attribIndex;
 			}
@@ -71,6 +81,7 @@ namespace Engine {
 					LOG_GL_WARN("Matrix attribute with ID: {} is marked for instancing but divisor is 0. Setting to 1.", attribIndex);
 					glVertexArrayBindingDivisor(vao, bindingIndex, 1); // Set divisor to 1 for matrix attributes
 				} else {
+					LOG_GL_DEBUG("Setting matrix attribute with ID: {} divisor to: {}", attribIndex, element.Divisor);
 					glVertexArrayBindingDivisor(vao, bindingIndex, element.Divisor);
 				}
 			}
@@ -124,8 +135,6 @@ namespace Engine {
 		glVertexArrayVertexBuffer(static_cast<IDType>(*this),  m_GLState->BindingIndex, vertexBuffer->RendererID(), 0, static_cast<GLsizei>(layout.GetStride()));
 
 		for (const auto& element : layout) {
-			const auto type = Utils::ShaderDataTypeToOpenGLBaseType(element.Type);
-
 			switch (element.Type) {
 			case ShaderDataType::Float:
 			case ShaderDataType::Float2:
@@ -153,7 +162,7 @@ namespace Engine {
 			}
 			default :
 				ENGINE_ASSERT(false, "Unknown ShaderDataType");
-				throw std::exception("Unknown shaderDataType");
+				throw std::runtime_error("Unknown shaderDataType");
 			}
 		}
 
