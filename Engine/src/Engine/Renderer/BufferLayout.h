@@ -2,6 +2,8 @@
 #include "Engine/Core/Base.h"
 
 #include <vector>
+#include <string_view>
+#include <fmt/format.h>
 
 namespace Engine {
 	enum class ShaderDataType {
@@ -11,6 +13,29 @@ namespace Engine {
 		Mat3, Mat4,
 		Bool
 	};
+
+	constexpr std::string_view ToString(ShaderDataType type) noexcept {
+		switch (type) {
+		case ShaderDataType::None:   return "None";
+
+		case ShaderDataType::Float: return "Float";
+		case ShaderDataType::Float2: return "Float2";
+		case ShaderDataType::Float3: return "Float3";
+		case ShaderDataType::Float4: return "Float4";
+
+		case ShaderDataType::Int: return "Int";
+		case ShaderDataType::Int2: return "Int2";
+		case ShaderDataType::Int3: return "Int3";
+		case ShaderDataType::Int4: return "Int4";
+
+		case ShaderDataType::Mat3: return "Mat3";
+		case ShaderDataType::Mat4: return "Mat4";
+
+		case ShaderDataType::Bool: return "Bool";
+		}
+
+		return "Unknown";
+	}
 
 	static constexpr uint32_t ShaderDataTypeSize(ShaderDataType type) {
 		switch (type) {
@@ -47,10 +72,10 @@ namespace Engine {
 		ShaderDataType Type = ShaderDataType::None;
 		uint32_t Size = 0;
 		uint64_t Offset = 0;
-		bool Normalized = false;
+		bool Normalized = false; // Relevant for float types and matrices
 
-		bool UseInstancing = false;
-		uint32_t Divisor = 0;
+		bool UseInstancing = false; // For matrices
+		uint32_t Divisor = 0; // For matrices
 
 		BufferElement() = default;
 		BufferElement(ShaderDataType type, const std::string& name, bool normalized = false) : Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized) {}
@@ -125,3 +150,10 @@ namespace Engine {
 		uint32_t m_Stride = 0;
 	};
 }
+
+template<>
+struct fmt::formatter<Engine::ShaderDataType> : fmt::formatter<std::string_view> {
+	auto format(Engine::ShaderDataType type, fmt::format_context& ctx) const {
+		return fmt::formatter<std::string_view>::format(Engine::ToString(type), ctx);
+	}
+};
