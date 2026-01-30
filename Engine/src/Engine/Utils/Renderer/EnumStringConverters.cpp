@@ -2,7 +2,7 @@
 #include "EnumStringConverters.h"
 
 namespace Engine::Utils {
-	const char* ToString(WrapMode mode) {
+	std::string_view ToString(WrapMode mode) {
 		switch (mode) {
 		case WrapMode::Repeat: return "Repeat";
 		case WrapMode::ClampEdge: return "ClampEdge";
@@ -12,7 +12,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(FilterMode mode) {
+	std::string_view ToString(FilterMode mode) {
 		switch (mode) {
 		case FilterMode::Nearest: return "Nearest";
 		case FilterMode::Linear: return "Linear";
@@ -24,7 +24,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(BlitFilter filter) {
+	std::string_view ToString(BlitFilter filter) {
 		switch (filter) {
 		case BlitFilter::Nearest: return "Nearest";
 		case BlitFilter::Linear: return "Linear";
@@ -32,7 +32,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(BlitMask mask) {
+	std::string_view ToString(BlitMask mask) {
 		switch (mask) {
 		case BlitMask::Color: return "Color";
 		case BlitMask::Depth: return "Depth";
@@ -41,7 +41,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(DataFormat format) {
+	std::string_view ToString(DataFormat format) {
 		switch (format) {
 		case DataFormat::Red: return "Red";
 		case DataFormat::RG: return "RG";
@@ -62,7 +62,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(ImageFormat format) {
+	std::string_view ToString(ImageFormat format) {
 		switch (format) {
 #define CASE(val) case ImageFormat::val: return #val
 			CASE(CompressedRed);
@@ -153,7 +153,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(DataType type) {
+	std::string_view ToString(DataType type) {
 		switch (type) {
 		case DataType::Byte: return "Byte";
 		case DataType::UnsignedByte: return "UnsignedByte";
@@ -167,7 +167,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(TextureUsage usage) {
+	std::string_view ToString(TextureUsage usage) {
 		switch (usage) {
 		case TextureUsage::Default: return "Default";
 		case TextureUsage::RenderTarget: return "RenderTarget";
@@ -177,7 +177,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(BufferUsage usage) {
+	std::string_view ToString(BufferUsage usage) {
 		switch (usage) {
 		case BufferUsage::StaticDraw: return "StaticDraw";
 		case BufferUsage::StaticRead: return "StaticRead";
@@ -193,27 +193,29 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(BufferStorageFlags flags) {
+	std::string ToString(BufferStorageFlags flags) {
 		if (flags == BufferStorageFlags::None)
 			return "None";
+
 		std::string result;
-		static thread_local char buffer[128];
-		result.clear();
-		if (HasFlag(flags, BufferStorageFlags::Dynamic)) result += "Dynamic | ";
-		if (HasFlag(flags, BufferStorageFlags::MapRead)) result += "MapRead | ";
-		if (HasFlag(flags, BufferStorageFlags::MapWrite)) result += "MapWrite | ";
-		if (HasFlag(flags, BufferStorageFlags::MapPersistent)) result += "MapPersistent | ";
-		if (HasFlag(flags, BufferStorageFlags::MapCoherent)) result += "MapCoherent | ";
-		if (HasFlag(flags, BufferStorageFlags::ClientStorage)) result += "ClientStorage | ";
+		result.reserve(46);
 
-		if (!result.empty())
-			result.pop_back(), result.pop_back(); // Remove trailing " | "
+		auto append = [&](std::string_view name) {
+			if (!result.empty()) result += " | ";
+			result.append(name.data(), name.size());
+			};
 
-		std::snprintf(buffer, sizeof(buffer), "%s", result.c_str());
-		return buffer;
+		if (HasFlag(flags, BufferStorageFlags::Dynamic)) append("Dynamic");
+		if (HasFlag(flags, BufferStorageFlags::MapRead)) append("MapRead");
+		if (HasFlag(flags, BufferStorageFlags::MapWrite)) append("MapWrite");
+		if (HasFlag(flags, BufferStorageFlags::MapPersistent)) append("MapPersistent");
+		if (HasFlag(flags, BufferStorageFlags::MapCoherent)) append("MapCoherent");
+		if (HasFlag(flags, BufferStorageFlags::ClientStorage)) append("ClientStorage");
+
+		return result;
 	}
 
-	const char* ToString(BufferStorageMode mode) {
+	std::string_view ToString(BufferStorageMode mode) {
 		switch (mode) {
 		case BufferStorageMode::Immutable:
 			return "Immutable";
@@ -223,7 +225,7 @@ namespace Engine::Utils {
 		return "Unknown";
 	}
 
-	const char* ToString(BufferAccess access) {
+	std::string_view ToString(BufferAccess access) {
 		switch (access) {
 		case BufferAccess::ReadOnly:
 			return "ReadOnly";
@@ -235,7 +237,7 @@ namespace Engine::Utils {
 		return "Unknown";
 	}
 
-	const char* ToString(BufferTarget target) {
+	std::string_view ToString(BufferTarget target) {
 		switch (target) {
 		case BufferTarget::Array:
 			return "ArrayBuffer";
@@ -266,7 +268,7 @@ namespace Engine::Utils {
 		return "Unknown";
 	}
 
-	const char* ToString(CompareFunction function) {
+	std::string_view ToString(CompareFunction function) {
 		switch (function) {
 		case CompareFunction::Never:
 			return "Never";
@@ -288,7 +290,7 @@ namespace Engine::Utils {
 		return "Unknown";
 	}
 
-	const char* ToString(UniformKind kind) {
+	std::string_view ToString(UniformKind kind) {
 		switch (kind) {
 		case UniformKind::Scalar:
 			return "Scalar";
@@ -308,7 +310,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(ScalarKind kind) {
+	std::string_view ToString(ScalarKind kind) {
 		switch (kind) {
 		case ScalarKind::Bool:
 			return "Bool";
@@ -326,7 +328,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	const char* ToString(TextureDim texture) {
+	std::string_view ToString(TextureDim texture) {
 		switch (texture) {
 		case TextureDim::D1:
 			return "1D";
@@ -359,18 +361,18 @@ namespace Engine::Utils {
 		using namespace std::string_literals;
 		switch (desc.Kind) {
 		case UniformKind::Scalar:
-			return ToString(desc.Scalar);
+			return std::string(ToString(desc.Scalar));
 		case UniformKind::Vector:
 			return std::string(ToString(desc.Scalar)) + " vec" + std::to_string(desc.Rows);
 		case UniformKind::Matrix:
 			return std::string(ToString(desc.Scalar)) + " mat" + std::to_string(desc.Rows) + "x" + std::to_string(desc.Cols);
 		case UniformKind::Sampler: {
-			std::string base = "Sampler"s + ToString(desc.Dim);
+			std::string base = "Sampler"s + std::string(ToString(desc.Dim));
 			if (desc.Shadow) base += "Shadow";
 			return base;
 		}
 		case UniformKind::Image:
-			return "Image"s + ToString(desc.Dim);
+			return "Image"s + std::string(ToString(desc.Dim));
 		case UniformKind::AtomicCounter:
 			return "Atomic_uInt";
 		default:
