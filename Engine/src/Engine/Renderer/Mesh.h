@@ -11,14 +11,17 @@
 namespace Engine {
 	class Mesh {
 	public:
-		Mesh(const BufferView& vertexData, const BufferView& indexData);
-		Mesh(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+		Mesh() = default;
+
+		static Ref<Mesh> Create(const BufferView& vertexData, const BufferView& indexData);
+		static Ref<Mesh> Create(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 
 		const std::vector<Vertex>& GetVertices() const { return m_Vertices; }
 		const std::vector<uint32_t>& GetIndices() const { return m_Indices; }
 
 		Ref<VertexBuffer> GetVertexBuffer() const { return m_VertexBuffer; }
 		Ref<IndexBuffer> GetIndexBuffer() const { return m_IndexBuffer; }
+		Ref<VertexArray> GetVertexArray() const { return m_VertexArray; }
 
 	private:
 		std::vector<Vertex> m_Vertices;

@@ -9,6 +9,8 @@ namespace Engine {
 
 	class Model {
 	public:
+		Model() = default;
+
 		using MeshContainerType = std::vector<Ref<Mesh>>;
 
 		static Ref<Model> Load(std::filesystem::path path);

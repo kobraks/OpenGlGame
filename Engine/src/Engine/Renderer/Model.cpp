@@ -99,7 +99,7 @@ namespace Engine {
 				mesh->HasTangentsAndBitangents() ? "yes" : "no",
 				mesh->mMaterialIndex);
 
-			return MakeRef<Mesh>(ProcessVertices(mesh, worldTransform, normalMatrix), ProcessIndices(mesh));
+			return Mesh::Create(ProcessVertices(mesh, worldTransform, normalMatrix), ProcessIndices(mesh));
 		}
 
 		static void ProcessNode(const aiNode* node, const aiScene* scene, Ref<Model> model, const glm::mat4& parentTransform) {
