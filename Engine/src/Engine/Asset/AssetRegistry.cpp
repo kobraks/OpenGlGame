@@ -2,9 +2,10 @@
 #include "AssetRegistry.h"
 #include <mutex>
 
-#define GAME_ASSET_REGISTRY_LOG 1
-#if GAME_ASSET_REHISTRY_LOG
-#define ASSET_LOG(...) LOG_ENGINE_TRACE("Assert", __VA_ARGS__)
+#define ENGINE_ASSET_REGISTRY_LOG 1
+
+#if ENGINE_ASSET_REGISTRY_LOG
+#define ASSET_LOG(...) LOG_ENGINE_TRACE("Asset", __VA_ARGS__)
 #else
 #define ASSET_LOG(...)
 #endif
