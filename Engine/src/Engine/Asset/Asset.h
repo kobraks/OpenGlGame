@@ -14,6 +14,7 @@ namespace Engine {
 		Shader,
 		Material,
 		Script,
+		Scene,
 		Audio,
 	};
 
@@ -22,6 +23,7 @@ namespace Engine {
 	class Asset {
 		friend class AssetManager;
 	public:
+		virtual ~Asset() = default;
 		AssetHandle Handle() const { return m_Handle; }
 
 		virtual AssetType GetType() const = 0;
@@ -29,4 +31,15 @@ namespace Engine {
 	private:
 		AssetHandle m_Handle;
 	};
+
+	namespace Utils {
+		std::string_view ToString(AssetType type);
+	}
 }
+
+template <>
+struct fmt::formatter<Engine::AssetType> : fmt::formatter<std::string_view> {
+	auto format(Engine::AssetType v, format_context& ctx) const {
+		return fmt::formatter<std::string_view>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
