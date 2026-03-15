@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "EditorAssetManager.h"
+#include "AssetImporter.h"
 
 namespace Engine {
 	bool EditorAssetManager::IsAssetHandleValid(const AssetHandle& handle) const {
@@ -28,7 +29,9 @@ namespace Engine {
 		}
 		else {
 			const AssetMetadata& metadata = GetMetadata(handle);
+			asset = AssetImporter::ImportAsset(handle, metadata);
 
+			if (!asset) {}
 			
 		}
 
