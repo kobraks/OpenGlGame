@@ -16,6 +16,12 @@ namespace Engine {
 		return *this;
 	}
 
+	TextureBuilder& TextureBuilder::ForceCustomSize(bool forceCustomSize) {
+		m_ForceCustomSize = forceCustomSize;
+
+		return *this;
+	}
+
 	TextureBuilder& TextureBuilder::Format(ImageFormat imageFormat) {
 		m_ImageFormat = imageFormat;
 
@@ -138,13 +144,15 @@ namespace Engine {
 		m_PictureMipLevel = 0;
 		m_FlipY = false;
 
+		m_ForceCustomSize = false;
+
 		return *this;
 	}
 
 	TextureSpec TextureBuilder::BuildSpecification() const {
 		TextureSpec spec;
 
-		if (!m_UseRawData && m_Image && (m_Size.Width < m_Image->Width() || m_Size.Height < m_Image->Height())) {
+		if (!m_UseRawData && m_Image && (m_Size.Width < m_Image->Width() || m_Size.Height < m_Image->Height()) && !m_ForceCustomSize) {
 			LOG_ENGINE_WARN("Image provided (Image::Size() = {}) is smaller than builder-set size {}. Using Image::Size() instead.", m_Image->Size(), m_Size);
 		}
 
@@ -154,7 +162,7 @@ namespace Engine {
 		spec.Usage = m_Usage;
 
 		if (m_UseRawData) spec.Size = m_Size;
-		else if (m_Image) {
+		else if (m_Image && !m_ForceCustomSize) {
 			Vector2u size;
 
 			size.Width = std::max(m_Size.Width, m_Image->Width());

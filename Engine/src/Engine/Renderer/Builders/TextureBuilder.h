@@ -7,6 +7,7 @@ namespace Engine {
 	class TextureBuilder {
 	public:
 		TextureBuilder& Size(const Vector2u& size);
+		TextureBuilder& ForceCustomSize(bool forceCustomSize = true);
 		TextureBuilder& Format(ImageFormat imageFormat);
 		TextureBuilder& Filter(FilterMode min, FilterMode mag);
 		TextureBuilder& Wrap(WrapMode s, WrapMode t);
@@ -57,5 +58,6 @@ namespace Engine {
 		uint32_t m_RowStrideBytes = 0;
 		uint32_t m_PictureMipLevel = 0;
 		bool m_FlipY = false;
+		bool m_ForceCustomSize = false;
 	};
 }
