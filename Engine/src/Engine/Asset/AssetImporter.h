@@ -1,6 +1,6 @@
 #pragma once
-#include "AssetMetadata.h"
-#include "Engine/Renderer/Texture.h"
+#include "Engine/Asset/AssetMetadata.h"
+#include "Engine/Asset/TextureAsset.h"
 
 namespace Engine {
 	class AssetImporter {

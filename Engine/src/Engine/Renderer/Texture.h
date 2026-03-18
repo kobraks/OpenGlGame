@@ -5,8 +5,6 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Renderer/GraphicEnums.h"
 
-#include "Engine/Asset/Asset.h"
-
 #include <optional>
 
 namespace Engine {
@@ -39,15 +37,13 @@ namespace Engine {
 		std::optional<InitialPixels> Picture;
 	};
 
-	class Texture : public Asset {
+	class Texture {
 		friend class Framebuffer;
 
 	public:
 		using IDType = uint32_t;
 
 		~Texture() = default;
-
-		AssetType GetType() const override { return AssetType::Texture; }
 
 		[[nodiscard]] explicit operator IDType() const { return m_GLState->ID; }
 		[[nodiscard]] IDType RendererID() const { return m_GLState->ID; }

@@ -3,11 +3,11 @@
 #include "AssetMetadata.h"
 
 namespace Engine {
-	class Texture;
+	class TextureAsset;
 
 	class TextureImporter {
 	public:
-		static Ref<Texture> ImportTexture(AssetHandle handle, const AssetMetadata& metadata);
+		static Ref<TextureAsset> ImportTexture(AssetHandle handle, const AssetMetadata& metadata);
 	};
 
 
