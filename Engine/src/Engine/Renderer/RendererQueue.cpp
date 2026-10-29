@@ -3,14 +3,14 @@
 
 namespace Engine {
 	RendererQueue::RendererQueue() {
-		m_Queue[0] = MakeRef<CommandQueue>();
-		m_Queue[1] = MakeRef<CommandQueue>();
+		m_Queue[0] = MakeScope<CommandQueue>();
+		m_Queue[1] = MakeScope<CommandQueue>();
 
-		m_WriteQueue = m_Queue[0];
-		m_ReadQueue = m_Queue[1];
+		m_WriteQueue = m_Queue[0].get();
+		m_DrawQueue = m_Queue[1].get();
 	}
 
-	void RendererQueue::Submit(std::function<void()> command) {
+	void RendererQueue::Enqueue(std::function<void()> command) {
 		std::scoped_lock lock(m_Mutex);
 
 		m_WriteQueue->emplace_back(std::move(command));
@@ -19,7 +19,7 @@ namespace Engine {
 	void RendererQueue::Execute() {
 		SwapBuffers();
 
-		auto& commands = *m_ReadQueue;
+		auto& commands = *m_DrawQueue;
 		for (auto& command : commands) {
 			command();
 		}
@@ -29,6 +29,11 @@ namespace Engine {
 
 	void RendererQueue::SwapBuffers() {
 		std::scoped_lock lock(m_Mutex);
-		std::swap(m_ReadQueue, m_WriteQueue);
+		std::swap(m_DrawQueue, m_WriteQueue);
+	}
+
+	void RendererQueue::Clear() {
+		std::scoped_lock lock(m_Mutex);
+		m_WriteQueue->clear();
 	}
 }
