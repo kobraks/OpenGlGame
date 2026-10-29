@@ -68,7 +68,7 @@ project "Engine"
 	}
 	
 	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
-		flags { "NoPCH" }
+		enablepch "off"
 		
 	filter "action:vs*"
 		externalanglebrackets "On" --Enable treating <> as external

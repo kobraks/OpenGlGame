@@ -20,10 +20,13 @@ workspace "OpenGlGame"
 		".editorconfig"
 	}
 
-	flags
-	{
-		"MultiProcessorCompile"
-	}
+	--removed as premake5 5.0.0 released
+	--flags
+	--{
+	--	"MultiProcessorCompile"
+	--}
+
+	multiprocessorcompile "on"
 	
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
