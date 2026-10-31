@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Renderer/BufferEnums.h"
+#include "Engine/Renderer/Resources/BufferEnums.h"
 
 namespace Engine {
 	struct BufferUsageIntent {

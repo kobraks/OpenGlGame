@@ -1,9 +1,9 @@
 #pragma once
 
-#include <Engine/Renderer/Framebuffer.h>
+#include <Engine/Renderer/Resources/Framebuffer.h>
 #include <Engine/Scene/Entity.h>
 #include <Engine/Scene/Scene.h>
-#include <Engine/Renderer/EditorCamera.h>
+#include <Engine/Renderer/Cameras/EditorCamera.h>
 #include <glm/glm.hpp>
 
 #include "Engine/Events/KeyEvent.h"

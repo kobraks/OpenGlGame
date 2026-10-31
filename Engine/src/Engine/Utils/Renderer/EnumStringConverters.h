@@ -1,6 +1,6 @@
 #pragma once
-#include "Engine/Renderer/GraphicEnums.h"
-#include "Engine/Renderer/BufferEnums.h"
+#include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/BufferEnums.h"
 
 namespace Engine::Utils {
 	std::string_view ToString(WrapMode mode);

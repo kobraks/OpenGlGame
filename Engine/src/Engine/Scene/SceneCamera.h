@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
-#include "Engine/Renderer/Camera.h"
+#include "Engine/Renderer/Cameras/Camera.h"
 
 #include <glm/trigonometric.hpp>
 

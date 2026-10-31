@@ -1,7 +1,7 @@
 #pragma once
 #include "Asset.h"
 
-#include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/Resources/Texture.h"
 
 namespace Engine {
 	class TextureAsset : public Asset {

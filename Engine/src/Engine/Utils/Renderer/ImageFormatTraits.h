@@ -1,5 +1,5 @@
 #pragma once
-#include "Engine/Renderer/GraphicEnums.h"
+#include "Engine/Renderer/Resources/GraphicEnums.h"
 
 namespace Engine::Utils {
 	bool IsDepthFormat(ImageFormat format);

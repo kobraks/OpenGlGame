@@ -5,13 +5,13 @@
 
 #include "Engine/Asset/TextureAsset.h"
 
-#include "Engine/Renderer/Builders/TextureBuilder.h"
+#include "Engine/Renderer/Resources/Builders/TextureBuilder.h"
 #include "Engine/Core/Image.h"
 
 namespace Engine {
 	Ref<TextureAsset> TextureImporter::ImportTexture(AssetHandle handle, const AssetMetadata& metadata) {
 		TextureBuilder builder;
-		Ref<Image> image = Image::Load(metadata.Get<std::filesystem::path>("Path"));
+		Ref<Image> image = Image::Load(metadata.Get<std::filesystem::path>("ImagePath"));
 
 		builder.FromImage(image);
 

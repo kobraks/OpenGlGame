@@ -2,7 +2,7 @@
 
 #include "../SceneState.h" //TODO fix include path
 
-#include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/Resources/Texture.h"
 
 #include <functional>
 

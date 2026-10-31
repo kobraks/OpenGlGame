@@ -1,7 +1,7 @@
 #include "pch.h"
 #include "Window.h"
 
-#include "Engine/Renderer/GraphicContext.h"
+#include "Engine/Renderer/OpenGL/GraphicContext.h"
 
 #include "Engine/Devices/Cursor.h"
 #include "Engine/Devices/Monitor.h"

@@ -5,10 +5,10 @@
 
 #include "Engine/Devices/Keyboard.h"
 
-#include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/Resources/Texture.h"
 #include "Engine/Renderer/RendererCommand.h"
-#include "Engine/Renderer/Builders/TextureAttachmentBuilder.h"
-#include "Engine/Renderer/Builders/FramebufferBuilder.h"
+#include "Engine/Renderer/Resources/Builders/TextureAttachmentBuilder.h"
+#include "Engine/Renderer/Resources/Builders/FramebufferBuilder.h"
 
 #include "Engine/Math/Math.h"
 

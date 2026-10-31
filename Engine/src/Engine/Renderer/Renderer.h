@@ -1,7 +1,7 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
-#include "Engine/Renderer/EditorCamera.h"
+#include "Engine/Renderer/Cameras/EditorCamera.h"
 #include "Engine/Renderer/RendererCommand.h"
 
 #include "glm/mat4x4.hpp"

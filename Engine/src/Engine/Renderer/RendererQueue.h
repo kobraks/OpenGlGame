@@ -3,41 +3,47 @@
 
 #include <functional>
 #include <vector>
+#include <array>
 #include <mutex>
+#include <concepts>
+#include <iterator>
+#include <utility>
 
 namespace Engine {
 	class RendererQueue {
 	public:
-		using CommandQueue = std::vector<std::function<void()>>;
-		RendererQueue();
+		using Command = std::move_only_function<void()>;
+		using CommandQueue = std::vector<Command>;
 
-		template<typename Iterator>
-		void Enqueue(Iterator begin, Iterator end) {
+		template<std::input_iterator Iterator, std::sentinel_for<Iterator> Sentinel>
+		void Enqueue(Iterator begin, Sentinel end) {
 			std::scoped_lock lock(m_Mutex);
 
-			for (auto i = begin; i != end; ++i) {
-				m_WriteQueue->emplace_back(*i);
+			for (; begin != end; ++begin) {
+				m_WriteQueue->emplace_back(*begin);
 			}
 		}
 
-		template<typename ...Args>
-		void Enqueue(std::function<void()> command, Args&& ... args) {
-			Enqueue(command);
-			Enqueue(std::forward<Args>(args)...);
+		template <typename... Commands> requires (sizeof...(Commands) > 1 && (std::constructible_from<Command, Commands&&> && ...))
+			void Enqueue(Commands&&... commands) {
+			std::scoped_lock lock(m_Mutex);
+
+			(m_WriteQueue->emplace_back(std::forward<Commands>(commands)), ...);
 		}
 
-		void Enqueue(std::function<void()> command);
+
+		void Enqueue(Command command);
+
+		//Must only be called by the render theard
 		void Execute();
 
-		void Clear();
+		void ClearPending();
 	private:
-		void SwapBuffers();
-
 		std::mutex m_Mutex;
 
-		Scope<CommandQueue> m_Queue[2];
+		std::array<CommandQueue, 2> m_Queue;
 
-		CommandQueue* m_DrawQueue = nullptr;
-		CommandQueue* m_WriteQueue = nullptr;
+		CommandQueue* m_DrawQueue = &m_Queue[0];
+		CommandQueue* m_WriteQueue = &m_Queue[1];
 	};
 }

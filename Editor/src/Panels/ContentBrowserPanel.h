@@ -1,7 +1,7 @@
 #pragma once
 #include <filesystem>
 
-#include "Engine/Renderer/Texture.h"
+#include "Engine/Renderer/Resources/Texture.h"
 
 namespace Editor {
 	class ContentBrowserPanel {
