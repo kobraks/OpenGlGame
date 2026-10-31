@@ -56,7 +56,7 @@ namespace Engine {
 
 		uint32_t Size() const { return m_Size; }
 
-		BufferAccess Access() const { return m_Access; }
+		BufferMapFlags Flags() const { return m_Flags; }
 
 		void Flush(uint32_t offset = 0, uint32_t size = 0);
 
@@ -87,15 +87,15 @@ namespace Engine {
 		MappedBufferRegion& operator=(const MappedBufferRegion&) = delete;
 		MappedBufferRegion& operator=(MappedBufferRegion&&) noexcept = delete;
 	protected:
-		MappedBufferRegion(BufferAccess access, const BufferObject& buffer);
-		MappedBufferRegion(BufferAccess access, const BufferObject& buffer, uint32_t size, uint32_t offset);
+		MappedBufferRegion(BufferMapFlags flags, const BufferObject& buffer);
+		MappedBufferRegion(BufferMapFlags flags, const BufferObject& buffer, uint32_t size, uint32_t offset);
 
 	private:
 		std::byte* m_Data = nullptr;
 		uint32_t m_Size = 0;
 		uint32_t m_Offset = 0;
 
-		const BufferAccess m_Access;
+		const BufferMapFlags m_Flags;
 		const BufferObject& m_Buffer;
 	};
 
@@ -115,7 +115,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<T> MappedBufferRegion::AsSpan(uint32_t offset) {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
@@ -131,7 +131,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<const T> MappedBufferRegion::AsSpan(uint32_t offset) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
@@ -149,7 +149,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<T> MappedBufferRegion::AsSpan(uint32_t elementCount, uint32_t offset) {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(IsAligned<T>(offset), "MappedBufferRegion::AsSpan<T>(): Misaligned data access.");
 
@@ -162,7 +162,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<const T> MappedBufferRegion::AsSpan(uint32_t elementCount, uint32_t offset) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(IsAligned<T>(offset), "MappedBufferRegion::AsSpan<T>(): Misaligned data access.");
 

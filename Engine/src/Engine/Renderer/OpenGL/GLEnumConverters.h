@@ -15,6 +15,7 @@ namespace Engine::OpenGL {
 	uint32_t EnumToGLConstant(BlitFilter filter);
 	uint32_t EnumToGLConstant(BlitMask mask);
 
+	uint32_t EnumToGLConstant(BufferMapFlags flags);
 	uint32_t EnumToGLConstant(BufferAccess access);
 	uint32_t EnumToGLConstant(BufferStorageFlags flags);
 	uint32_t EnumToGLConstant(BufferTarget target);

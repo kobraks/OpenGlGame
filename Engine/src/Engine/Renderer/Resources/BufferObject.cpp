@@ -62,18 +62,29 @@ namespace Engine {
 	}
 
 	void BufferObject::AllocateImmutable(const void* data, uint32_t size, BufferStorageFlags flags) {
-		if (Utils::HasFlag(flags, BufferStorageFlags::MapPersistent) && !Utils::HasFlag(flags, BufferStorageFlags::MapWrite)) {
-			ENGINE_ASSERT(false, "Persistent mapping requires MapWrite access.");
-			throw std::runtime_error("Persistent mapping requires MapWrite access.");
+		const bool presitent = Utils::HasFlag(flags, BufferStorageFlags::MapPersistent);
+		const bool readable = Utils::HasFlag(flags, BufferStorageFlags::MapRead);
+		const bool writable = Utils::HasFlag(flags, BufferStorageFlags::MapWrite);
+		const bool coherent = Utils::HasFlag(flags, BufferStorageFlags::MapCoherent);
+
+		if (presitent && !readable && !writable) {
+			ENGINE_ASSERT(false, "Persistent mapping requires read or write access.");
+			throw std::invalid_argument("Persistent mapping requires read or write access.");
+		}
+
+		if (coherent && !presitent) {
+			ENGINE_ASSERT(false, "Coherent storage requires persistent storage.");
+			throw std::invalid_argument("Coherent storage requires persistent storage.");
 		}
 
 		m_State->Flags = flags;
 		LOG_GL_INFO("BufferObject ID={} allocated immutable: size={}, flags=0x{:X}", m_State->RendererID, size, static_cast<uint32_t>(flags));
 		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, OpenGL::EnumToGLConstant(flags));
 
-		if (Utils::HasFlag(flags, BufferStorageFlags::MapPersistent)) {
-			LOG_GL_DEBUG("BufferObject ID={} persistently mapped with access={}", m_State->RendererID, Utils::DetermineAccessFromFlags(flags));
-			m_State->PersistentContent = Map(Utils::DetermineAccessFromFlags(flags));
+		if (presitent) {
+			const auto mappingFlags = Utils::GetPersistentMappingFlags(flags);
+			LOG_GL_DEBUG("BufferObject ID={} persistently mapped with access={} and flags={}", m_State->RendererID, Utils::DetermineAccessFromFlags(flags), mappingFlags);
+			m_State->PersistentContent = Map(mappingFlags);
 		}
 	}
 
@@ -138,41 +149,73 @@ namespace Engine {
 			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, size={}, bufferSize={}", offset, size, Size()));
 
 		auto stagingBuffer = Utils::CreateBuffer();
-		glNamedBufferStorage(stagingBuffer, size, nullptr, 0);
+		glNamedBufferStorage(stagingBuffer, static_cast<GLsizeiptr>(size), nullptr, GL_MAP_READ_BIT);
 		glCopyNamedBufferSubData(m_State->RendererID, stagingBuffer, offset, 0, size);
 
 		Buffer buffer(size);
 
-		if (const void* ptr = glMapNamedBuffer(stagingBuffer, GL_MAP_READ_BIT)) {
+		if (const void* ptr = glMapNamedBuffer(stagingBuffer, GL_READ_ONLY)) {
 			buffer.CopyFrom(ptr, size);
 		}
 
+		glUnmapNamedBuffer(stagingBuffer);
 		glDeleteBuffers(1, &stagingBuffer);
 
 		LOG_GL_TRACE("BufferObject::ReadSafeCopy(): ID={}, offset={}, size={}", m_State->RendererID, offset, size);
 		return buffer;
 	}
 
-	Ref<MappedBufferRegion> BufferObject::Map(BufferAccess access) const {
-		if (!m_State->Content.expired())
+	Ref<MappedBufferRegion> BufferObject::Map(BufferMapFlags flags) const {
+		if (!m_State->Content.expired()) {
 			return m_State->Content.lock();
+		}
 
-		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(access, *this));
+		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(flags, *this));
 		m_State->Content = content;
 
-		LOG_GL_DEBUG("BufferObject::Map(): ID={}, access={}, full size={} mapped", m_State->RendererID, access, m_State->Size);
+		LOG_GL_DEBUG("BufferObject::Map(): ID={}, flags={}, full size={} mapped", m_State->RendererID, flags, m_State->Size);
 		return content;
 	}
 
-	Ref<MappedBufferRegion> BufferObject::Map(BufferAccess access, uint32_t length, uint32_t offset) {
+	Ref<MappedBufferRegion> BufferObject::Map(BufferMapFlags flags, uint32_t length, uint32_t offset) {
 		if (!m_State->Content.expired())
 			return m_State->Content.lock();
 
-		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(access, *this, length, offset));
+		auto content = Ref<MappedBufferRegion>(new MappedBufferRegion(flags, *this, length, offset));
 		m_State->Content = content;
 
-		LOG_GL_DEBUG("BufferObject::Map(): ID={}, access={}, offset={}, length={}", m_State->RendererID, access, offset, length);
+		LOG_GL_DEBUG("BufferObject::Map(): ID={}, flags={}, offset={}, length={}", m_State->RendererID, flags, offset, length);
 		return content;
+	}
+
+	Ref<MappedBufferRegion> BufferObject::Map(BufferAccess access) const {
+		switch (access) {
+		case BufferAccess::ReadOnly:
+			return Map(BufferMapFlags::Read);
+
+		case BufferAccess::WriteOnly:
+			return Map(BufferMapFlags::Write);
+
+		case BufferAccess::ReadWrite:
+			return Map(BufferMapFlags::Read | BufferMapFlags::Write);
+		}
+
+		throw std::invalid_argument("Invalid BufferAccess value");
+	}
+
+	Ref<MappedBufferRegion> BufferObject::Map(BufferAccess access, uint32_t length, uint32_t offset) {
+		switch (access) {
+		case BufferAccess::ReadOnly:
+			return Map(BufferMapFlags::Read, length, offset);
+
+		case BufferAccess::WriteOnly:
+			return Map(BufferMapFlags::Write, length, offset);
+
+		case BufferAccess::ReadWrite:
+			return Map(BufferMapFlags::Read | BufferMapFlags::Write, length, offset);
+		}
+
+		throw std::invalid_argument("Invalid BufferAccess value");
 	}
 
 	void BufferObject::Invalidate() {

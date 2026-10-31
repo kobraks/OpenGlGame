@@ -14,7 +14,7 @@ namespace Engine {
 	}
 
 	const std::byte* MappedBufferRegion::Read(uint32_t offset) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
@@ -24,7 +24,7 @@ namespace Engine {
 	}
 
 	std::byte* MappedBufferRegion::Read(uint32_t offset) {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
@@ -34,7 +34,7 @@ namespace Engine {
 	}
 
 	void MappedBufferRegion::Write(const std::byte* data, uint32_t size, uint32_t offset) {
-		Utils::AssertAccess(m_Access, false, true);
+		Utils::AssertAccess(m_Flags, false, true);
 
 		ENGINE_ASSERT(size + offset <= m_Size);
 		if (size + offset > m_Size)
@@ -44,7 +44,7 @@ namespace Engine {
 	}
 
 	Buffer MappedBufferRegion::ToBuffer() const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 		Buffer buffer(m_Size);
 		std::memcpy(buffer.Data(), m_Data, m_Size);
 		LOG_GL_TRACE("MappedBufferRegion::ToBuffer(): {} bytes copied from mapped region to buffer", m_Size);
@@ -52,8 +52,15 @@ namespace Engine {
 	}
 
 	Buffer MappedBufferRegion::Copy(uint32_t size, uint32_t offset) const {
+		if (offset > m_Size)
+			throw std::out_of_range(fmt::format("Out of bounds access: offset={}, bufferSize={}", offset, m_Size));
+
+		if (size == 0) {
+			size = m_Size - offset;
+		}
+
 		Buffer buffer(size);
-		CopyTo(buffer, offset);
+		CopyTo(buffer, offset, size);
 
 		return buffer;
 	}
@@ -133,7 +140,7 @@ namespace Engine {
 	}
 
 	BufferView MappedBufferRegion::View(uint32_t offset, uint32_t size) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 
 		if (size == 0) {
 			size = m_Size - offset;
@@ -148,27 +155,36 @@ namespace Engine {
 	}
 
 	void MappedBufferRegion::Flush(uint32_t offset, uint32_t size) {
-		if (!(Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapWrite)) ||
-			!(Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapPersistent))) {
-			ENGINE_ASSERT(false, "Flush requires persistent mapped wirteable buffer.");
-			throw std::runtime_error("Flush requires persistent mapped wirteable buffer.");
+		if (!Utils::HasFlag(m_Flags, BufferMapFlags::FlushExplicit)) {
+			ENGINE_ASSERT(false, "Flush requires BufferMapFlags::FlushExplicit.");
+			throw std::logic_error("Mapping was not created with BufferMapFlags::FlushExplicit");
 		}
 
-		if (!Utils::HasFlag(m_Buffer.Flags(), BufferStorageFlags::MapCoherent)) {
-			if (size == 0)
-				size = m_Size;
+		if (offset > m_Size) {
+			ENGINE_ASSERT(false, "Flush offset out of bounds.");
+			throw std::out_of_range(fmt::format("Flush offset out of bounds: offset={}, bufferSize={}", offset, m_Size));
 		}
 
-		ENGINE_ASSERT(offset + size <= m_Size);
-		if (offset + size > m_Size)
-			throw std::out_of_range(fmt::format("Flush out of bounds: offset={}, size={}, bufferSize={}", offset, size, m_Size));
+		if (size == 0) {
+			size = m_Size - offset;
+		}
 
-		glFlushMappedBufferRange(m_Buffer.RendererID(), m_Offset + offset, size);
+		if (size > m_Size - offset) {
+			ENGINE_ASSERT(false, "Flush size out of bounds.");
+			throw std::out_of_range(fmt::format("Flush size out of bounds: offset={}, size={}, bufferSize={}", offset, size, m_Size));
+		}
+
+		if (size == 0) {
+			LOG_GL_TRACE("MappedBufferRegion::Flush(): No bytes to flush from buffer {}", m_Buffer.RendererID());
+			return;
+		}
+
+		glFlushMappedNamedBufferRange(m_Buffer.RendererID(), static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size));
 		LOG_GL_TRACE("MappedBufferRegion::Flush(): {} bytes flushed from offset {} in buffer {}", size, offset, m_Buffer.RendererID());
 	}
 
 	std::span<std::byte> MappedBufferRegion::AsSpan(uint32_t offset) {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
@@ -179,7 +195,7 @@ namespace Engine {
 	}
 
 	std::span<const std::byte> MappedBufferRegion::AsSpan(uint32_t offset) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
@@ -190,7 +206,7 @@ namespace Engine {
 	}
 
 	std::span<std::byte> MappedBufferRegion::AsSpan(uint32_t count, uint32_t offset) {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 		ENGINE_ASSERT(count + offset <= m_Size);
 		if (count + offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
@@ -199,7 +215,7 @@ namespace Engine {
 	}
 
 	std::span<const std::byte> MappedBufferRegion::AsSpan(uint32_t count, uint32_t offset) const {
-		Utils::AssertAccess(m_Access, true, false);
+		Utils::AssertAccess(m_Flags, true, false);
 		ENGINE_ASSERT(count + offset <= m_Size);
 		if (count + offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));
@@ -207,21 +223,23 @@ namespace Engine {
 		return { m_Data + offset, count };
 	}
 
-	MappedBufferRegion::MappedBufferRegion(BufferAccess access, const BufferObject& buffer) : MappedBufferRegion(access, buffer, buffer.Size(), 0) {
+	MappedBufferRegion::MappedBufferRegion(BufferMapFlags flags, const BufferObject& buffer) : MappedBufferRegion(flags, buffer, buffer.Size(), 0) {
 
 	}
 
-	MappedBufferRegion::MappedBufferRegion(BufferAccess access, const BufferObject& buffer, uint32_t size, uint32_t offset) : m_Access(access), m_Buffer(buffer), m_Size(size), m_Offset(offset) {
-		LOG_GL_DEBUG("MappedBufferRegion created: buffer={}, bufferTarget={}, access={}, offset={}, size={}", buffer.RendererID(), Utils::ToString(buffer.Target()), Utils::ToString(access), offset, size);
+	MappedBufferRegion::MappedBufferRegion(BufferMapFlags flags, const BufferObject& buffer, uint32_t size, uint32_t offset) : m_Flags(flags), m_Buffer(buffer), m_Size(size), m_Offset(offset) {
+		LOG_GL_DEBUG("MappedBufferRegion created: buffer={}, bufferTarget={}, access={}, offset={}, size={}", buffer.RendererID(), Utils::ToString(buffer.Target()), Utils::ToString(flags), offset, size);
 
 		ENGINE_ASSERT(buffer.Size() != 0, "Cannot map buffer (size = 0). Buffer must be allocated before mapping.");
 
 		if (buffer.Size() == 0)
-			throw std::runtime_error("Cannot map buffer (size = 0). Buffer must be allocated before mapping.");
+			throw std::invalid_argument("Cannot map buffer (size = 0). Buffer must be allocated before mapping.");
 
-		m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, OpenGL::EnumToGLConstant(m_Access)));
+		m_Data = static_cast<std::byte*>(glMapNamedBufferRange(buffer.RendererID(), offset, size, OpenGL::EnumToGLConstant(m_Flags)));
 
 		ENGINE_ASSERT(m_Data != nullptr, "Mapping buffer failed. Buffer may not be allocated or OpenGL context is not current.");
+		if (m_Data == nullptr)
+			throw std::runtime_error(fmt::format("Failed to map buffer {} (offset={}, size={})", buffer.RendererID(), offset, size));
 
 		if (!m_Data) {
 			LOG_GL_CRITICAL("Failed to map buffer {} (offset={}, size={})", buffer.RendererID(), offset, size);

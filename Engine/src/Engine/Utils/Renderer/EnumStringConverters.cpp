@@ -1,6 +1,8 @@
 #include "pch.h"
 #include "EnumStringConverters.h"
 
+#include <array>
+
 namespace Engine::Utils {
 	std::string_view ToString(WrapMode mode) {
 		switch (mode) {
@@ -163,6 +165,8 @@ namespace Engine::Utils {
 		case PixelDataType::UnsignedInt: return "UnsignedInt";
 		case PixelDataType::Float: return "Float";
 		case PixelDataType::Double: return "Double";
+		case PixelDataType::UnsignedInt24_8: return "UnsignedInt24_8";
+		case PixelDataType::Float32UnsignedInt24_8Rev: return "Float32UnsignedInt24_8Rev";
 		default: return "Unknown";
 		}
 	}
@@ -266,6 +270,38 @@ namespace Engine::Utils {
 		}
 
 		return "Unknown";
+	}
+
+	std::string ToString(BufferMapFlags flags) {
+		if (flags == BufferMapFlags::None)
+			return "None";
+
+		constexpr std::array flagNames = {
+			std::pair{ BufferMapFlags::Read, std::string_view("Read") },
+			std::pair{ BufferMapFlags::Write, std::string_view("Write") },
+			std::pair{ BufferMapFlags::Persistent, std::string_view("Persistent") },
+			std::pair{ BufferMapFlags::Coherent, std::string_view("Coherent") },
+			std::pair{ BufferMapFlags::FlushExplicit, std::string_view("FlushExplicit") },
+			std::pair{ BufferMapFlags::InvalidateRange, std::string_view("InvalidateRange") },
+			std::pair{ BufferMapFlags::InvalidateBuffer, std::string_view("InvalidateBuffer") },
+			std::pair{ BufferMapFlags::Unsynchronized, std::string_view("Unsynchronized") }
+		};
+
+		std::string result;
+
+		for (const auto& [flag, name] : flagNames) {
+			if (!HasFlag(flags, flag)) {
+				continue;
+			}
+
+			if (!result.empty()) {
+				result += " | ";
+			}
+
+			result += name;
+		}
+
+		return result.empty() ? "Unknown" : result;
 	}
 
 	std::string_view ToString(CompareFunction function) {

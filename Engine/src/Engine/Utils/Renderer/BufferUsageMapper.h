@@ -27,6 +27,36 @@ namespace Engine::Utils {
 		throw std::runtime_error("BufferStorageFlags must include MapRead or MapWrite to determine access.");
 	}
 
+	constexpr BufferMapFlags GetPersistentMappingFlags(BufferStorageFlags flags) {
+		BufferMapFlags mappingFlags = BufferMapFlags::Persistent;
+
+		if (Utils::HasFlag(flags, BufferStorageFlags::MapRead)) {
+			mappingFlags |= BufferMapFlags::Read;
+		}
+
+		if (Utils::HasFlag(flags, BufferStorageFlags::MapWrite)) {
+			mappingFlags |= BufferMapFlags::Write;
+		}
+
+		if (Utils::HasFlag(flags, BufferStorageFlags::MapCoherent)) {
+			mappingFlags |= BufferMapFlags::Coherent;
+		}
+
+		return mappingFlags;
+	}
+
+	inline void AssertAccess(BufferMapFlags flags, bool requiresRead, bool requiresWrite) {
+		if (requiresRead && !Utils::HasFlag(flags, BufferMapFlags::Read)) {
+			ENGINE_ASSERT(false, "Attempted to read from a buffer without read access");
+			throw std::runtime_error("Attempted to read from a buffer without read access");
+		}
+
+		if (requiresWrite && !Utils::HasFlag(flags, BufferMapFlags::Read)) {
+			ENGINE_ASSERT(false, "Attempted to write to a buffer without write access");
+			throw std::runtime_error("Attempted to write to a buffer without write access");
+		}
+	}
+
 	inline void AssertAccess(BufferAccess access, bool requiresRead, bool requiresWrite) {
 		if (requiresRead && access == BufferAccess::WriteOnly) {
 			ENGINE_ASSERT(false, "Attempted to read form buffer mapped as WriteOnly");

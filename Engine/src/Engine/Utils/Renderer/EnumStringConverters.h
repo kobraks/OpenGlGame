@@ -20,6 +20,7 @@ namespace Engine::Utils {
 	std::string_view ToString(BufferAccess access);
 	std::string_view ToString(BufferStorageMode mode);
 	std::string_view ToString(BufferTarget target);
+	std::string ToString(BufferMapFlags flags);
 
 	std::string_view ToString(CompareFunction function);
 
@@ -117,6 +118,13 @@ template <>
 struct fmt::formatter<Engine::BufferTarget> : fmt::formatter<std::string_view> {
 	auto format(Engine::BufferTarget v, format_context& ctx) const {
 		return fmt::formatter<std::string_view>::format(Engine::Utils::ToString(v), ctx);
+	}
+};
+
+template <>
+struct fmt::formatter<Engine::BufferMapFlags> : fmt::formatter<std::string> {
+	auto format(Engine::BufferMapFlags v, format_context& ctx) const {
+		return fmt::formatter<std::string>::format(Engine::Utils::ToString(v), ctx);
 	}
 };
 

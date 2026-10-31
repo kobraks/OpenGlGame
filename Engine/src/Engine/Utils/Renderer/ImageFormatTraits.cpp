@@ -12,11 +12,6 @@ namespace Engine::Utils {
 		case TextureInternalFormat::DepthStencil:
 		case TextureInternalFormat::Depth24Stencil8:
 		case TextureInternalFormat::Depth32FStencil8:
-		case TextureInternalFormat::StencilIndex:
-		case TextureInternalFormat::StencilIndex1:
-		case TextureInternalFormat::StencilIndex4:
-		case TextureInternalFormat::StencilIndex8:
-		case TextureInternalFormat::StencilIndex16:
 			return true;
 		default:
 			return false;
@@ -25,12 +20,38 @@ namespace Engine::Utils {
 
 	bool IsStorageCapable(TextureInternalFormat format) {
 		switch (format) {
+		case TextureInternalFormat::R8:
+		case TextureInternalFormat::R8I:
+		case TextureInternalFormat::R8UI:
+		case TextureInternalFormat::R16F:
+		case TextureInternalFormat::R16I:
+		case TextureInternalFormat::R16UI:
+		case TextureInternalFormat::R32F:
+		case TextureInternalFormat::R32I:
 		case TextureInternalFormat::R32UI:
+
+		case TextureInternalFormat::RG8:
+		case TextureInternalFormat::RG8I:
+		case TextureInternalFormat::RG8UI:
+		case TextureInternalFormat::RG16:
+		case TextureInternalFormat::RG16F:
+		case TextureInternalFormat::RG16I:
+		case TextureInternalFormat::RG16UI:
+		case TextureInternalFormat::RG32F:
+		case TextureInternalFormat::RG32I:
+		case TextureInternalFormat::RG32UI:
+
+		case TextureInternalFormat::RGBA8:
+		case TextureInternalFormat::RGBA8I:
+		case TextureInternalFormat::RGBA8UI:
+		case TextureInternalFormat::RGBA16:
+		case TextureInternalFormat::RGBA16F:
+		case TextureInternalFormat::RGBA16I:
+		case TextureInternalFormat::RGBA16UI:
 		case TextureInternalFormat::RGBA32F:
 		case TextureInternalFormat::RGBA32I:
 		case TextureInternalFormat::RGBA32UI:
-		case TextureInternalFormat::R32I:
-		case TextureInternalFormat::R32F:
+
 			return true;
 		default:
 			return false;
@@ -126,7 +147,7 @@ namespace Engine::Utils {
 	}
 
 	bool IsColorFormat(TextureInternalFormat format) {
-		return !IsDepthFormat(format);
+		return !HasDepthAspect(format) && !HasStencilAspect(format);
 	}
 
 	TextureUsage FormatUsageMapping(TextureInternalFormat format) {
@@ -228,8 +249,9 @@ namespace Engine::Utils {
 
 			// Depth-stencil
 		case TextureInternalFormat::Depth24Stencil8:
+			return { PixelFormat::DepthStencil, PixelDataType::UnsignedInt24_8 };
 		case TextureInternalFormat::Depth32FStencil8:
-			return { PixelFormat::DepthStencil, PixelDataType::UnsignedInt };
+			return { PixelFormat::DepthStencil, PixelDataType::Float32UnsignedInt24_8Rev};
 
 		default:
 			LOG_ENGINE_WARN("No default format/type mapping for TextureInternalFormat {}", static_cast<uint32_t>(format));

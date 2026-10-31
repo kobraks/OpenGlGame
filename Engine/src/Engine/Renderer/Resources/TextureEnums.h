@@ -121,7 +121,8 @@ namespace Engine {
 		Byte, UnsignedByte,
 		Short, UnsignedShort,
 		Int, UnsignedInt,
-		Float, Double
+		Float, Double,
+		UnsignedInt24_8, Float32UnsignedInt24_8Rev
 	};
 
 	enum class TextureUsage {

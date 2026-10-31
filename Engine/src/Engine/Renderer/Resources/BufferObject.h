@@ -32,6 +32,9 @@ namespace Engine {
 		Buffer ReadSafeCopy(uint32_t offset = 0) const;
 		Buffer ReadSafeCopy(uint32_t size, uint32_t offset = 0) const;
 
+		Ref<MappedBufferRegion> Map(BufferMapFlags flags) const;
+		Ref<MappedBufferRegion> Map(BufferMapFlags flags, uint32_t length, uint32_t offset = 0);
+
 		Ref<MappedBufferRegion> Map(BufferAccess access = BufferAccess::ReadOnly) const;
 		Ref<MappedBufferRegion> Map(BufferAccess access, uint32_t length, uint32_t offset = 0);
 

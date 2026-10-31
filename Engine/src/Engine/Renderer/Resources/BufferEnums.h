@@ -13,6 +13,18 @@ namespace Engine {
 		ClientStorage = BIT(5)
 	};
 
+	enum class BufferMapFlags : uint32_t {
+		None = 0,
+		Read = BIT(0),
+		Write = BIT(1),
+		Persistent = BIT(2),
+		Coherent = BIT(3),
+		FlushExplicit = BIT(4),
+		InvalidateRange = BIT(5),
+		InvalidateBuffer = BIT(6),
+		Unsynchronized = BIT(7)
+	};
+
 	enum class BufferAccess : uint32_t {
 		ReadOnly = BIT(0),
 		WriteOnly = BIT(1),
@@ -54,28 +66,17 @@ namespace Engine {
 		StreamCopy
 	};
 
-	inline constexpr BufferAccess operator^(BufferAccess a, BufferAccess b) {
-		return static_cast<BufferAccess>(static_cast<uint32_t>(a) ^ static_cast<uint32_t>(b));
+	constexpr BufferMapFlags operator|(BufferMapFlags left, BufferMapFlags right) {
+		return static_cast<BufferMapFlags>(static_cast<uint32_t>(left) | static_cast<uint32_t>(right));
 	}
 
-	inline constexpr BufferAccess operator^=(BufferAccess& a, BufferAccess b) {
-		return a = (a ^ b);
+	constexpr BufferMapFlags& operator|=(BufferMapFlags& left, BufferMapFlags right) {
+		left = left | right;
+		return left;
 	}
 
-	inline constexpr BufferAccess operator|(BufferAccess a, BufferAccess b) {
-		return static_cast<BufferAccess>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
-	}
-
-	inline constexpr BufferAccess operator|=(BufferAccess& a, BufferAccess b) {
-		return a = (a | b);
-	}
-
-	inline constexpr BufferAccess operator & (BufferAccess a, BufferAccess b) {
-		return static_cast<BufferAccess>(static_cast<uint32_t>(a) & static_cast<uint32_t>(b));
-	}
-
-	inline constexpr BufferAccess& operator &= (BufferAccess& a, BufferAccess b) {
-		return a = a & b;
+	constexpr BufferMapFlags operator&(BufferMapFlags left, BufferMapFlags right) {
+		return static_cast<BufferMapFlags>(static_cast<uint32_t>(left) & static_cast<uint32_t>(right));
 	}
 
 	inline constexpr BufferStorageFlags operator^(BufferStorageFlags a, BufferStorageFlags b) {

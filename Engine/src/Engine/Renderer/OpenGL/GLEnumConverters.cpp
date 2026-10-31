@@ -273,6 +273,10 @@ namespace Engine::OpenGL {
 			return GL_FLOAT;
 		case PixelDataType::Double:
 			return GL_DOUBLE;
+		case PixelDataType::UnsignedInt24_8:
+			return GL_UNSIGNED_INT_24_8;
+		case PixelDataType::Float32UnsignedInt24_8Rev:
+			return GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
 		}
 
 		ENGINE_ASSERT(false);
@@ -303,6 +307,22 @@ namespace Engine::OpenGL {
 
 		ENGINE_ASSERT(false);
 		throw std::out_of_range("");
+	}
+
+	uint32_t EnumToGLConstant(BufferMapFlags flags) {
+		GLbitfield result = 0;
+
+		if (Utils::HasFlag(flags, BufferMapFlags::Read)) result |= GL_MAP_READ_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::Write)) result |= GL_MAP_WRITE_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::Persistent)) result |= GL_MAP_PERSISTENT_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::Coherent)) result |= GL_MAP_COHERENT_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::FlushExplicit)) result |= GL_MAP_FLUSH_EXPLICIT_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::InvalidateRange)) result |= GL_MAP_INVALIDATE_RANGE_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::InvalidateBuffer)) result |= GL_MAP_INVALIDATE_BUFFER_BIT;
+		if (Utils::HasFlag(flags, BufferMapFlags::Unsynchronized)) result |= GL_MAP_UNSYNCHRONIZED_BIT;
+
+		return result;
+
 	}
 
 	uint32_t EnumToGLConstant(BufferAccess access) {
