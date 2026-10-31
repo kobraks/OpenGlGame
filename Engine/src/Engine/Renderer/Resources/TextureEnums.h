@@ -146,4 +146,15 @@ namespace Engine {
 		NearestMipmapLinear,
 		LinearMipmapLinear
 	};
+
+	enum class CompareFunction : uint8_t {
+		Never = 0,
+		Less,
+		LEqual,
+		Greater,
+		GEqual,
+		Equal,
+		NotEqual,
+		Always
+	};
 }

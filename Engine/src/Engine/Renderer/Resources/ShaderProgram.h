@@ -2,7 +2,8 @@
 #include "Engine/Core/Base.h"
 
 #include "Engine/Renderer/Resources/ShaderStage.h"
-#include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/ShaderTypes.h"
+
 #include "Engine/Utils/StdUtils.h"
 
 #include <memory>

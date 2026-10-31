@@ -1,7 +1,6 @@
 #pragma once
 #include "Engine/Core/Vector2.h"
 #include "Engine/Renderer/Resources/FramebufferSpecification.h"
-#include "Engine/Renderer/Resources/GraphicEnums.h"
 #include "Engine/Renderer/Resources/TextureEnums.h"
 
 

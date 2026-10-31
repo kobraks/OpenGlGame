@@ -21,9 +21,9 @@
 
 namespace Editor {
 	ViewportPanel::ViewportPanel() {
-		const auto depthTexture = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::Depth24Stencil8).Label("DepthStencilTestViewport");
-		const auto colorBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::RGBA8).Label("ColorBufferViewport");
-		const auto pickerBuffer = Engine::TextureAttachmentBuilder().Format(Engine::ImageFormat::R32I).Label("PickerBufferViewport");
+		const auto depthTexture = Engine::TextureAttachmentBuilder().Format(Engine::TextureInternalFormat::Depth24Stencil8).Label("DepthStencilTestViewport");
+		const auto colorBuffer = Engine::TextureAttachmentBuilder().Format(Engine::TextureInternalFormat::RGBA8).Label("ColorBufferViewport");
+		const auto pickerBuffer = Engine::TextureAttachmentBuilder().Format(Engine::TextureInternalFormat::R32I).Label("PickerBufferViewport");
 
 		m_Framebuffer = Engine::FramebufferBuilder().AddColorAttachment(colorBuffer).
 			AddColorAttachment(pickerBuffer).

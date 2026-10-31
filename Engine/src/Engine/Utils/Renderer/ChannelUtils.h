@@ -1,5 +1,4 @@
 #pragma once
-#include "Engine/Renderer/Resources/GraphicEnums.h"
 #include "Engine/Renderer/Resources/TextureEnums.h"
 #include "Engine/Renderer/Resources/FrameBufferEnums.h"
 
