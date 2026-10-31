@@ -100,7 +100,7 @@ namespace Engine {
 	std::string Texture::DebugInfo() const {
 		return fmt::format("Texture: {:x}, format: {}, levels: {}, samples: {}, usage: {}, label: '{}'",
 		                   m_GLState->Size,
-		                   m_GLState->ImageFormat,
+		                   m_GLState->InternalFormat,
 		                   m_GLState->Levels,
 		                   m_GLState->Samples,
 		                   m_GLState->Usage,
@@ -111,7 +111,7 @@ namespace Engine {
 	}
 
 	void Texture::Initialize(const TextureSpec& spec) {
-		SetupStorage(spec.Levels, spec.Samples, spec.Size, spec.Usage, spec.ImageFormat);
+		SetupStorage(spec.Levels, spec.Samples, spec.Size, spec.Usage, spec.TextureFormat);
 		SetupDefaultParameters(spec.Usage);
 
 		if (!spec.Picture) return;
@@ -120,9 +120,9 @@ namespace Engine {
 
 		const auto picture = *spec.Picture;
 
-		auto [defFormat, defType] = Utils::GetDefaultFormatAndType(spec.ImageFormat);
-		const DataFormat dataFormat = picture.Format.value_or(defFormat);
-		const DataType dataType = picture.DataType.value_or(defType);
+		auto [defFormat, defType] = Utils::GetDefaultFormatAndType(spec.TextureFormat);
+		const PixelFormat dataFormat = picture.Format.value_or(defFormat);
+		const PixelDataType dataType = picture.PixelDataType.value_or(defType);
 
 		if (picture.Pixels) {
 			const auto size = picture.Size == Vector2u{ 0, 0 } ? spec.Size : picture.Size;
@@ -174,19 +174,19 @@ namespace Engine {
 		return texture;
 	}
 
-	Ref<Texture> Texture::Create(const Ref<Image>& image, Engine::ImageFormat imageFormat, uint32_t levels,
+	Ref<Texture> Texture::Create(const Ref<Image>& image, Engine::TextureInternalFormat imageFormat, uint32_t levels,
 	                             uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
 		TextureSpec::InitialPixels initialPicture;
 
-		initialPicture.Format = DataFormat::RGBA;
-		initialPicture.DataType = DataType::UnsignedByte;
+		initialPicture.Format = PixelFormat::RGBA;
+		initialPicture.PixelDataType = PixelDataType::UnsignedByte;
 		initialPicture.Pixels = image->GetPixels().data();
 
 		spec.Picture = initialPicture;
 		spec.Size = image->Size();
-		spec.ImageFormat = imageFormat;
+		spec.TextureFormat = imageFormat;
 		spec.Samples = samples;
 		spec.Levels = levels;
 		spec.Label = label;
@@ -195,19 +195,19 @@ namespace Engine {
 		return Create(spec);
 	}
 
-	Ref<Texture> Texture::Create(const Ref<Image>& image, TextureUsage usage, Engine::ImageFormat imageFormat,
+	Ref<Texture> Texture::Create(const Ref<Image>& image, TextureUsage usage, Engine::TextureInternalFormat imageFormat,
 	                             uint32_t levels, uint32_t samples,
 	                             const std::string& label) {
 		TextureSpec spec;
 		TextureSpec::InitialPixels initialPicture;
 
-		initialPicture.Format = DataFormat::RGBA;
-		initialPicture.DataType = DataType::UnsignedByte;
+		initialPicture.Format = PixelFormat::RGBA;
+		initialPicture.PixelDataType = PixelDataType::UnsignedByte;
 		initialPicture.Pixels = image->GetPixels().data();
 
 		spec.Picture = initialPicture;
 		spec.Size = image->Size();
-		spec.ImageFormat = imageFormat;
+		spec.TextureFormat = imageFormat;
 		spec.Samples = samples;
 		spec.Levels = levels;
 		spec.Label = label;
@@ -290,47 +290,47 @@ namespace Engine {
 	}
 
 	Ref<Image> Texture::ToImage(uint32_t mipLevel) const {
-		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->ImageFormat) && !Utils::IsIntegerColorFormat(m_GLState->ImageFormat))
+		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->InternalFormat) && !Utils::IsIntegerColorFormat(m_GLState->InternalFormat))
 
 		const Vector2u mipSize = Utils::MipSize(m_GLState->Size, mipLevel);
 		const uint64_t pixelCount = static_cast<uint64_t>(mipSize.Width) * static_cast<uint64_t>(mipSize.Height);
 
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
-		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(DataFormat::RGBA, DataType::UnsignedByte);
+		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(PixelFormat::RGBA, PixelDataType::UnsignedByte);
 		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
 		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
 
-		GetImage(pixels.data(), bufSize, DataFormat::RGBA, DataType::UnsignedByte, mipLevel);
+		GetImage(pixels.data(), bufSize, PixelFormat::RGBA, PixelDataType::UnsignedByte, mipLevel);
 		return Image::Create(mipSize, pixels.data());
 	}
 
 	Ref<Image> Texture::GetImage(const Vector2u& size, const Vector2i& offset, uint32_t mipLevel) const {
-		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->ImageFormat) && !Utils::IsIntegerColorFormat(m_GLState->ImageFormat))
+		// ENGINE_ASSERT(Utils::IsColorFormat(m_GLState->InternalFormat) && !Utils::IsIntegerColorFormat(m_GLState->InternalFormat))
 		const uint64_t pixelCount = static_cast<uint64_t>(size.Width) * static_cast<uint64_t>(size.Height);
 
 		std::vector<Color> pixels;
 		pixels.resize(pixelCount);
-		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(DataFormat::RGBA, DataType::UnsignedByte);
+		constexpr uint32_t bytesPerPixel = Utils::BytesPerPixel(PixelFormat::RGBA, PixelDataType::UnsignedByte);
 		const uint32_t bufSize = static_cast<uint32_t>(pixelCount) * bytesPerPixel;
 
 		ENGINE_ASSERT(bufSize == pixels.size() * sizeof(Color));
 
-		GetImage(pixels.data(), bufSize, size, offset, DataFormat::RGBA, DataType::UnsignedByte, mipLevel);
+		GetImage(pixels.data(), bufSize, size, offset, PixelFormat::RGBA, PixelDataType::UnsignedByte, mipLevel);
 		return Image::Create(size, pixels.data());
 	}
 
 	void Texture::Clear(const Color& color) {
-		Clear(&color.Code, DataFormat::RGBA, DataType::UnsignedByte);
+		Clear(&color.Code, PixelFormat::RGBA, PixelDataType::UnsignedByte);
 	}
 
 	void Texture::Clear(int value) {
 		std::array vArray = { value, value, value, value };
-		Clear(vArray.data(), DataFormat::RGBA, DataType::Int);
+		Clear(vArray.data(), PixelFormat::RGBA, PixelDataType::Int);
 	}
 
-	void Texture::Clear(const void* pixels, DataFormat dataFormat, DataType dataType) {
+	void Texture::Clear(const void* pixels, PixelFormat dataFormat, PixelDataType dataType) {
 		Utils::UnpackAlignmentScope unpack(1);
 		glClearTexImage(static_cast<GLuint>(*this), 0, OpenGL::EnumToGLConstant(dataFormat),
 		                OpenGL::EnumToGLConstant(dataType),
@@ -340,16 +340,16 @@ namespace Engine {
 	}
 
 	void Texture::ClearRegion(const Color& color, const Vector2i& offset, const Vector2u& size) {
-		ClearRegion(&color.Code, offset, size, DataFormat::RGBA, DataType::UnsignedByte);
+		ClearRegion(&color.Code, offset, size, PixelFormat::RGBA, PixelDataType::UnsignedByte);
 	}
 
 	void Texture::ClearRegion(int value, const Vector2i& offset, const Vector2u& size) {
 		std::array vArray = { value, value, value, value };
-		ClearRegion(vArray.data(), offset, size, DataFormat::RGBA, DataType::Int);
+		ClearRegion(vArray.data(), offset, size, PixelFormat::RGBA, PixelDataType::Int);
 	}
 
-	void Texture::ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat,
-	                          DataType dataType) {
+	void Texture::ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, PixelFormat dataFormat,
+	                          PixelDataType dataType) {
 		Utils::CheckSubRegionSize(offset, size, Size());
 		Utils::UnpackAlignmentScope unpack(1);
 
@@ -362,7 +362,7 @@ namespace Engine {
 		             offset, size, dataFormat, dataType);
 	}
 
-	void Texture::GetPixels(void* pixels, uint32_t bufSize, DataFormat format, DataType type, uint32_t mipLevel, uint32_t rowStrideBytes) const {
+	void Texture::GetPixels(void* pixels, uint32_t bufSize, PixelFormat format, PixelDataType type, uint32_t mipLevel, uint32_t rowStrideBytes) const {
 		ENGINE_ASSERT(pixels && bufSize != 0);
 		if (!pixels || bufSize == 0)
 			throw std::invalid_argument("Invalid pixel buffer");
@@ -403,13 +403,13 @@ namespace Engine {
 		}
 	}
 
-	void Texture::Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
-	                     DataType dataType) {
+	void Texture::Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat format,
+	                     PixelDataType dataType) {
 		Update(static_cast<const void*>(pixels), size, offset, format, dataType);
 	}
 
 	void Texture::Update(const Color* pixels, const Vector2u& size, const Vector2i& offset) {
-		Update(pixels, size, offset, DataFormat::RGBA, DataType::UnsignedByte);
+		Update(pixels, size, offset, PixelFormat::RGBA, PixelDataType::UnsignedByte);
 	}
 
 	void Texture::Update(const Texture& texture) {
@@ -482,14 +482,14 @@ namespace Engine {
 		return maxSamples;
 	}
 
-	void Texture::Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat,
-	                     DataType dataType) {
+	void Texture::Update(const void* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat dataFormat,
+	                     PixelDataType dataType) {
 		UploadPixels(pixels, size, offset, dataFormat, dataType);
 	}
 
 	void Texture::ReAlloc(const Vector2u& size) {
 		const auto& samples = m_GLState->Samples;
-		const auto& imageFormat = m_GLState->ImageFormat;
+		const auto& imageFormat = m_GLState->InternalFormat;
 		const auto& usage = m_GLState->Usage;
 		const auto& levels = m_GLState->Levels;
 
@@ -497,12 +497,12 @@ namespace Engine {
 	}
 
 	void Texture::SetupStorage(uint32_t levels, uint32_t samples, const Vector2u& size, TextureUsage usage,
-	                           enum ImageFormat imageFormat) {
+	                           enum TextureInternalFormat imageFormat) {
 		Utils::CheckIfValidSize(size);
 
 		m_GLState->MipMapGenerated = false;
 		m_GLState->Size = size;
-		m_GLState->ImageFormat = imageFormat;
+		m_GLState->InternalFormat = imageFormat;
 		m_GLState->Samples = samples;
 		m_GLState->Usage = usage;
 		const auto& imageFormatGL = m_GLState->ImageFormatGL = OpenGL::EnumToGLConstant(imageFormat);
@@ -552,13 +552,13 @@ namespace Engine {
 		             size, imageFormat, usage, samples);
 	}
 
-	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
-	                           DataType dataType) {
+	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat format,
+	                           PixelDataType dataType) {
 		UploadPixels(pixels, size, offset, format, dataType, 0, 0, false);
 	}
 
-	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format,
-		DataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes, bool flipY) {
+	void Texture::UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat format,
+		PixelDataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes, bool flipY) {
 
 		ENGINE_ASSERT(pixels);
 
@@ -623,7 +623,7 @@ namespace Engine {
 		LOG_GL_TRACE("Uploading texture data: size={:x}, offset={:x}, format={}, type={}, stride={} bytes, flipY={}", size, offset, format,	dataType, rowStrideBytes, flipY);
 	}
 
-	void Texture::GetImage(void* pixels, uint32_t bufSize, DataFormat format, DataType dataType, uint32_t mipLevel) const {
+	void Texture::GetImage(void* pixels, uint32_t bufSize, PixelFormat format, PixelDataType dataType, uint32_t mipLevel) const {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			throw std::runtime_error("Received uninitialized pointer to memory");
@@ -645,7 +645,7 @@ namespace Engine {
 		                  pixels);
 	}
 
-	void Texture::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset, DataFormat format, DataType dataType, uint32_t mipLevel) const {
+	void Texture::GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset, PixelFormat format, PixelDataType dataType, uint32_t mipLevel) const {
 		ENGINE_ASSERT(pixels);
 		if (!pixels)
 			throw std::runtime_error("Received uninitialized pointer to memory");

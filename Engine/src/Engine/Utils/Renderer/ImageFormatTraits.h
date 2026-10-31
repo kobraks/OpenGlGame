@@ -1,23 +1,23 @@
 #pragma once
-#include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
 
 namespace Engine::Utils {
-	bool IsDepthFormat(ImageFormat format);
-	bool IsStorageCapable(ImageFormat format);
+	bool IsDepthFormat(TextureInternalFormat format);
+	bool IsStorageCapable(TextureInternalFormat format);
 
-	bool IsStencilOnlyFormat(ImageFormat format);
-	bool IsDepthStencilFormat(ImageFormat format);
+	bool IsStencilOnlyFormat(TextureInternalFormat format);
+	bool IsDepthStencilFormat(TextureInternalFormat format);
 
-	bool IsDepthOnlyFormat(ImageFormat format);
-	bool HasDepthAspect(ImageFormat format);
-	bool HasStencilAspect(ImageFormat format);
+	bool IsDepthOnlyFormat(TextureInternalFormat format);
+	bool HasDepthAspect(TextureInternalFormat format);
+	bool HasStencilAspect(TextureInternalFormat format);
 
-	bool IsIntegerColorFormat(ImageFormat format);
-	bool IsSRGBFormat(ImageFormat format);
+	bool IsIntegerColorFormat(TextureInternalFormat format);
+	bool IsSRGBFormat(TextureInternalFormat format);
 
-	bool IsColorFormat(ImageFormat format);
+	bool IsColorFormat(TextureInternalFormat format);
 
-	TextureUsage FormatUsageMapping(ImageFormat format);
+	TextureUsage FormatUsageMapping(TextureInternalFormat format);
 
-	std::pair<DataFormat, DataType> GetDefaultFormatAndType(ImageFormat format);
+	std::pair<PixelFormat, PixelDataType> GetDefaultFormatAndType(TextureInternalFormat format);
 }

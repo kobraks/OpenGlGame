@@ -8,7 +8,7 @@ namespace Engine {
 	public:
 		TextureBuilder& Size(const Vector2u& size);
 		TextureBuilder& ForceCustomSize(bool forceCustomSize = true);
-		TextureBuilder& Format(ImageFormat imageFormat);
+		TextureBuilder& Format(TextureInternalFormat imageFormat);
 		TextureBuilder& Filter(FilterMode min, FilterMode mag);
 		TextureBuilder& Wrap(WrapMode s, WrapMode t);
 		TextureBuilder& Mipmaps(bool generate = true);
@@ -20,7 +20,7 @@ namespace Engine {
 
 		TextureBuilder& FromImage(const Ref<Image>& image);
 		TextureBuilder& FromImage(const Ref<Image>& image, TextureUsage usage);
-		TextureBuilder& FromRawData(const Buffer& buffer, DataFormat format, DataType type);
+		TextureBuilder& FromRawData(const Buffer& buffer, PixelFormat format, PixelDataType type);
 
 		TextureBuilder& RowStrideBytes(uint32_t bytes);
 		TextureBuilder& FlipY(bool flip = true);
@@ -32,7 +32,7 @@ namespace Engine {
 		Ref<Texture> Build() const;
 	private:
 		Vector2u m_Size{ 1, 1 };
-		ImageFormat m_ImageFormat = ImageFormat::RGBA8;
+		TextureInternalFormat m_ImageFormat = TextureInternalFormat::RGBA8;
 
 		uint32_t m_Samples = 1;
 		uint32_t m_Levels = 1; // Only valid for samples == 1, 0 means auto
@@ -51,8 +51,8 @@ namespace Engine {
 		Ref<Image> m_Image = nullptr;
 
 		Buffer m_Buffer{};
-		DataFormat m_DataFormat = DataFormat::RGBA;
-		DataType m_DataType = DataType::UnsignedByte;
+		PixelFormat m_DataFormat = PixelFormat::RGBA;
+		PixelDataType m_DataType = PixelDataType::UnsignedByte;
 		bool m_UseRawData = false;
 
 		uint32_t m_RowStrideBytes = 0;

@@ -22,7 +22,7 @@ namespace Engine {
 		return *this;
 	}
 
-	TextureBuilder& TextureBuilder::Format(ImageFormat imageFormat) {
+	TextureBuilder& TextureBuilder::Format(TextureInternalFormat imageFormat) {
 		m_ImageFormat = imageFormat;
 
 		return *this;
@@ -91,7 +91,7 @@ namespace Engine {
 		return *this;
 	}
 
-	TextureBuilder& TextureBuilder::FromRawData(const Buffer& buffer, DataFormat format, DataType type) {
+	TextureBuilder& TextureBuilder::FromRawData(const Buffer& buffer, PixelFormat format, PixelDataType type) {
 		m_UseRawData = true;
 		m_Buffer = buffer;
 		m_DataFormat = format;
@@ -117,7 +117,7 @@ namespace Engine {
 
 	TextureBuilder& TextureBuilder::Clear() {
 		m_Size = { 1, 1 };
-		m_ImageFormat = ImageFormat::RGBA8;
+		m_ImageFormat = TextureInternalFormat::RGBA8;
 
 		m_Samples = 1;
 		m_Levels = 1;
@@ -136,8 +136,8 @@ namespace Engine {
 		m_Image = nullptr;
 
 		m_Buffer.Release();
-		m_DataFormat = DataFormat::RGBA;
-		m_DataType = DataType::UnsignedByte;
+		m_DataFormat = PixelFormat::RGBA;
+		m_DataType = PixelDataType::UnsignedByte;
 		m_UseRawData = false;
 
 		m_RowStrideBytes = 0;
@@ -156,7 +156,7 @@ namespace Engine {
 			LOG_ENGINE_WARN("Image provided (Image::Size() = {}) is smaller than builder-set size {}. Using Image::Size() instead.", m_Image->Size(), m_Size);
 		}
 
-		spec.ImageFormat = m_ImageFormat;
+		spec.TextureFormat = m_ImageFormat;
 		spec.Samples = m_Samples;
 		spec.Label = m_Label;
 		spec.Usage = m_Usage;
@@ -184,7 +184,7 @@ namespace Engine {
 			pic.Size = m_Size;
 			pic.RowStrideBytes = m_RowStrideBytes;
 			pic.Format = m_DataFormat;
-			pic.DataType = m_DataType;
+			pic.PixelDataType = m_DataType;
 			pic.FlipY = m_FlipY;
 			pic.MipLevel = m_PictureMipLevel;
 
@@ -195,8 +195,8 @@ namespace Engine {
 			pic.Pixels = m_Image->GetPixels().data();
 			pic.Size = m_Image->Size();
 			pic.RowStrideBytes = 0;
-			pic.Format = DataFormat::RGBA;
-			pic.DataType = DataType::UnsignedByte;
+			pic.Format = PixelFormat::RGBA;
+			pic.PixelDataType = PixelDataType::UnsignedByte;
 			pic.FlipY = m_FlipY;
 			pic.MipLevel = m_PictureMipLevel;
 

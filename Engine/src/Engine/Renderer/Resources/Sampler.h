@@ -2,6 +2,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
 
 namespace Engine {
 	struct SamplerSpec {

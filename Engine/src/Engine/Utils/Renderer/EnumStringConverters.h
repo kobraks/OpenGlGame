@@ -1,5 +1,7 @@
 #pragma once
 #include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
+#include "Engine/Renderer/Resources/FrameBufferEnums.h"
 #include "Engine/Renderer/Resources/BufferEnums.h"
 
 namespace Engine::Utils {
@@ -7,9 +9,9 @@ namespace Engine::Utils {
 	std::string_view ToString(FilterMode mode);
 	std::string_view ToString(BlitFilter filter);
 	std::string_view ToString(BlitMask mask);
-	std::string_view ToString(DataFormat format);
-	std::string_view ToString(ImageFormat format);
-	std::string_view ToString(DataType type);
+	std::string_view ToString(PixelFormat format);
+	std::string_view ToString(TextureInternalFormat format);
+	std::string_view ToString(PixelDataType type);
 	std::string_view ToString(TextureUsage usage);
 
 	std::string_view ToString(BufferUsage usage);
@@ -55,22 +57,22 @@ struct fmt::formatter<Engine::BlitMask> : fmt::formatter<std::string_view> {
 };
 
 template <>
-struct fmt::formatter<Engine::DataFormat> : fmt::formatter<std::string_view> {
-	auto format(Engine::DataFormat v, format_context& ctx) const {
+struct fmt::formatter<Engine::PixelFormat> : fmt::formatter<std::string_view> {
+	auto format(Engine::PixelFormat v, format_context& ctx) const {
 		return fmt::formatter<std::string_view>::format(Engine::Utils::ToString(v), ctx);
 	}
 };
 
 template <>
-struct fmt::formatter<Engine::ImageFormat> : fmt::formatter<std::string_view> {
-	auto format(Engine::ImageFormat v, format_context& ctx) const {
+struct fmt::formatter<Engine::TextureInternalFormat> : fmt::formatter<std::string_view> {
+	auto format(Engine::TextureInternalFormat v, format_context& ctx) const {
 		return fmt::formatter<std::string_view>::format(Engine::Utils::ToString(v), ctx);
 	}
 };
 
 template <>
-struct fmt::formatter<Engine::DataType> : fmt::formatter<std::string_view> {
-	auto format(Engine::DataType v, format_context& ctx) const {
+struct fmt::formatter<Engine::PixelDataType> : fmt::formatter<std::string_view> {
+	auto format(Engine::PixelDataType v, format_context& ctx) const {
 		return fmt::formatter<std::string_view>::format(Engine::Utils::ToString(v), ctx);
 	}
 };

@@ -41,30 +41,30 @@ namespace Engine::Utils {
 		}
 	}
 
-	std::string_view ToString(DataFormat format) {
+	std::string_view ToString(PixelFormat format) {
 		switch (format) {
-		case DataFormat::Red: return "Red";
-		case DataFormat::RG: return "RG";
-		case DataFormat::RGB: return "RGB";
-		case DataFormat::BGR: return "BGR";
-		case DataFormat::RGBA: return "RGBA";
-		case DataFormat::BGRA: return "BGRA";
-		case DataFormat::RedInteger: return "RedInteger";
-		case DataFormat::RGInteger: return "RGInteger";
-		case DataFormat::RGBInteger: return "RGBInteger";
-		case DataFormat::BGRInteger: return "BGRInteger";
-		case DataFormat::RGBAInteger: return "RGBAInteger";
-		case DataFormat::BGRAInteger: return "BGRAInteger";
-		case DataFormat::StencilIndex: return "StencilIndex";
-		case DataFormat::DepthComponent: return "DepthComponent";
-		case DataFormat::DepthStencil: return "DepthStencil";
+		case PixelFormat::Red: return "Red";
+		case PixelFormat::RG: return "RG";
+		case PixelFormat::RGB: return "RGB";
+		case PixelFormat::BGR: return "BGR";
+		case PixelFormat::RGBA: return "RGBA";
+		case PixelFormat::BGRA: return "BGRA";
+		case PixelFormat::RedInteger: return "RedInteger";
+		case PixelFormat::RGInteger: return "RGInteger";
+		case PixelFormat::RGBInteger: return "RGBInteger";
+		case PixelFormat::BGRInteger: return "BGRInteger";
+		case PixelFormat::RGBAInteger: return "RGBAInteger";
+		case PixelFormat::BGRAInteger: return "BGRAInteger";
+		case PixelFormat::StencilIndex: return "StencilIndex";
+		case PixelFormat::DepthComponent: return "DepthComponent";
+		case PixelFormat::DepthStencil: return "DepthStencil";
 		default: return "Unknown";
 		}
 	}
 
-	std::string_view ToString(ImageFormat format) {
+	std::string_view ToString(TextureInternalFormat format) {
 		switch (format) {
-#define CASE(val) case ImageFormat::val: return #val
+#define CASE(val) case TextureInternalFormat::val: return #val
 			CASE(CompressedRed);
 			CASE(CompressedRedRGTC1);
 			CASE(CompressedRG);
@@ -153,16 +153,16 @@ namespace Engine::Utils {
 		}
 	}
 
-	std::string_view ToString(DataType type) {
+	std::string_view ToString(PixelDataType type) {
 		switch (type) {
-		case DataType::Byte: return "Byte";
-		case DataType::UnsignedByte: return "UnsignedByte";
-		case DataType::Short: return "Short";
-		case DataType::UnsignedShort: return "UnsignedShort";
-		case DataType::Int: return "Int";
-		case DataType::UnsignedInt: return "UnsignedInt";
-		case DataType::Float: return "Float";
-		case DataType::Double: return "Double";
+		case PixelDataType::Byte: return "Byte";
+		case PixelDataType::UnsignedByte: return "UnsignedByte";
+		case PixelDataType::Short: return "Short";
+		case PixelDataType::UnsignedShort: return "UnsignedShort";
+		case PixelDataType::Int: return "Int";
+		case PixelDataType::UnsignedInt: return "UnsignedInt";
+		case PixelDataType::Float: return "Float";
+		case PixelDataType::Double: return "Double";
 		default: return "Unknown";
 		}
 	}

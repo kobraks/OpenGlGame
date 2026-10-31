@@ -6,7 +6,7 @@ namespace Engine {
 	public:
 		RenderBufferAttachmentBuilder() = default;
 
-		RenderBufferAttachmentBuilder& Format(ImageFormat format);
+		RenderBufferAttachmentBuilder& Format(TextureInternalFormat format);
 		RenderBufferAttachmentBuilder& Label(const std::string& label);
 
 		RenderBufferAttachmentBuilder& Clear();

@@ -15,7 +15,7 @@ namespace Engine {
 		}
 	}
 
-	Ref<RenderBuffer> RenderBuffer::Create(const Vector2u& size, uint32_t samples, Engine::ImageFormat imageFormat,
+	Ref<RenderBuffer> RenderBuffer::Create(const Vector2u& size, uint32_t samples, Engine::TextureInternalFormat imageFormat,
 		const std::string& label) {
 		auto renderBuffer = Ref<RenderBuffer>(new RenderBuffer(samples > 1));
 
@@ -75,7 +75,7 @@ namespace Engine {
 		glDeleteRenderbuffers(1, &ID);
 	}
 
-	void RenderBuffer::CreateBuffer(uint32_t samples, const Vector2u& size, enum ImageFormat imageFormat) {
+	void RenderBuffer::CreateBuffer(uint32_t samples, const Vector2u& size, TextureInternalFormat imageFormat) {
 		ENGINE_ASSERT(size.Width > 0 && size.Height > 0);
 		ENGINE_ASSERT(samples > 0);
 
@@ -105,7 +105,7 @@ namespace Engine {
 		}
 	}
 
-	void RenderBuffer::Allocate(uint32_t samples, const Vector2u& size, enum Engine::ImageFormat imageFormat) {
+	void RenderBuffer::Allocate(uint32_t samples, const Vector2u& size, TextureInternalFormat imageFormat) {
 		m_GLState->Samples = samples;
 		m_GLState->ImageFormat = imageFormat;
 		m_GLState->Size = size;
@@ -113,7 +113,7 @@ namespace Engine {
 		glNamedRenderbufferStorageMultisample(*this, static_cast<GLsizei>(samples), OpenGL::EnumToGLConstant(imageFormat), static_cast<GLsizei>(size.Width), static_cast<GLsizei>(size.Height));
 	}
 
-	void RenderBuffer::Allocate(const Vector2u& size, enum Engine::ImageFormat imageFormat) {
+	void RenderBuffer::Allocate(const Vector2u& size, TextureInternalFormat imageFormat) {
 		m_GLState->Samples = 1;
 		m_GLState->ImageFormat = imageFormat;
 		m_GLState->Size = size;

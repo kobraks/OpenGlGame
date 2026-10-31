@@ -2,7 +2,7 @@
 #include "RenderBufferAttachmentBuilder.h"
 
 namespace Engine {
-	RenderBufferAttachmentBuilder& RenderBufferAttachmentBuilder::Format(ImageFormat format) {
+	RenderBufferAttachmentBuilder& RenderBufferAttachmentBuilder::Format(TextureInternalFormat format) {
 		m_Spec.Format = format;
 
 		return *this;

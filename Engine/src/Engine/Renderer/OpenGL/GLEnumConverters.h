@@ -1,13 +1,15 @@
 #pragma once
 #include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
+#include "Engine/Renderer/Resources/FrameBufferEnums.h"
 #include "Engine/Renderer/Resources/BufferEnums.h"
 
 namespace Engine::OpenGL {
-	uint32_t EnumToGLConstant(ImageFormat format);
+	uint32_t EnumToGLConstant(TextureInternalFormat format);
 	uint32_t EnumToGLConstant(FilterMode filter);
 	uint32_t EnumToGLConstant(WrapMode wrapMode);
-	uint32_t EnumToGLConstant(DataFormat format);
-	uint32_t EnumToGLConstant(DataType type);
+	uint32_t EnumToGLConstant(PixelFormat format);
+	uint32_t EnumToGLConstant(PixelDataType type);
 
 	uint32_t EnumToGLConstant(BlitFilter filter);
 	uint32_t EnumToGLConstant(BlitMask mask);

@@ -4,7 +4,7 @@
 #include "Engine/Utils/Renderer/FilterModeUtils.h"
 
 namespace Engine {
-	TextureAttachmentBuilder& TextureAttachmentBuilder::Format(ImageFormat format) {
+	TextureAttachmentBuilder& TextureAttachmentBuilder::Format(TextureInternalFormat format) {
 		m_Spec.Format = format;
 
 		return *this;

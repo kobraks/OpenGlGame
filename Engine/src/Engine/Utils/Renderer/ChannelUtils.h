@@ -1,23 +1,25 @@
 #pragma once
 #include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
+#include "Engine/Renderer/Resources/FrameBufferEnums.h"
 
 namespace Engine::Utils {
-	static constexpr uint8_t ChannelsFor(DataFormat dataFormat) {
+	static constexpr uint8_t ChannelsFor(PixelFormat dataFormat) {
 		switch (dataFormat) {
-		case DataFormat::RGBA:
-		case DataFormat::RGBAInteger:
-		case DataFormat::BGRA:
-		case DataFormat::BGRAInteger:
+		case PixelFormat::RGBA:
+		case PixelFormat::RGBAInteger:
+		case PixelFormat::BGRA:
+		case PixelFormat::BGRAInteger:
 			return 4;
 
-		case DataFormat::RGB:
-		case DataFormat::RGBInteger:
-		case DataFormat::BGR:
-		case DataFormat::BGRInteger:
+		case PixelFormat::RGB:
+		case PixelFormat::RGBInteger:
+		case PixelFormat::BGR:
+		case PixelFormat::BGRInteger:
 			return 3;
 
-		case DataFormat::RG:
-		case DataFormat::RGInteger:
+		case PixelFormat::RG:
+		case PixelFormat::RGInteger:
 			return 2;
 
 		default:
@@ -25,29 +27,29 @@ namespace Engine::Utils {
 		}
 	}
 
-	static constexpr uint8_t BytesPerChannel(DataType dataType) {
+	static constexpr uint8_t BytesPerChannel(PixelDataType dataType) {
 		switch (dataType) {
-		case DataType::Byte:
-		case DataType::UnsignedByte:
+		case PixelDataType::Byte:
+		case PixelDataType::UnsignedByte:
 			return 1u;
-		case DataType::Short:
-		case DataType::UnsignedShort:
+		case PixelDataType::Short:
+		case PixelDataType::UnsignedShort:
 			return 2u;
-		case DataType::Int:
-		case DataType::UnsignedInt:
-		case DataType::Float:
+		case PixelDataType::Int:
+		case PixelDataType::UnsignedInt:
+		case PixelDataType::Float:
 			return 4u;
-		case DataType::Double:
+		case PixelDataType::Double:
 			return 8u;
 		default:
 			return 1u;
 		}
 	}
 
-	static constexpr int32_t IndexForChannel(DataFormat dataFormat, Channel channel) {
+	static constexpr int32_t IndexForChannel(PixelFormat dataFormat, Channel channel) {
 		switch (dataFormat) {
-		case DataFormat::RGBA:
-		case DataFormat::RGBAInteger:
+		case PixelFormat::RGBA:
+		case PixelFormat::RGBAInteger:
 			switch (channel) {
 			case Channel::Red: return 0;
 			case Channel::Green: return 1;
@@ -55,8 +57,8 @@ namespace Engine::Utils {
 			case Channel::Alpha: return 3;
 			}
 
-		case DataFormat::BGRA:
-		case DataFormat::BGRAInteger:
+		case PixelFormat::BGRA:
+		case PixelFormat::BGRAInteger:
 			switch (channel) {
 			case Channel::Red: return 2;
 			case Channel::Green: return 1;
@@ -64,8 +66,8 @@ namespace Engine::Utils {
 			case Channel::Alpha: return 3;
 			}
 
-		case DataFormat::RGB:
-		case DataFormat::RGBInteger:
+		case PixelFormat::RGB:
+		case PixelFormat::RGBInteger:
 			switch (channel) {
 			case Channel::Red: return 0;
 			case Channel::Green: return 1;
@@ -73,8 +75,8 @@ namespace Engine::Utils {
 			case Channel::Alpha: return -1;
 			}
 
-		case DataFormat::BGR:
-		case DataFormat::BGRInteger:
+		case PixelFormat::BGR:
+		case PixelFormat::BGRInteger:
 			switch (channel) {
 			case Channel::Red: return 2;
 			case Channel::Green: return 1;
@@ -82,8 +84,8 @@ namespace Engine::Utils {
 			case Channel::Alpha: return -1;
 			}
 
-		case DataFormat::RG:
-		case DataFormat::RGInteger:
+		case PixelFormat::RG:
+		case PixelFormat::RGInteger:
 			switch (channel) {
 			case Channel::Red: return 0;
 			case Channel::Green: return 1;
@@ -96,7 +98,7 @@ namespace Engine::Utils {
 		}
 	}
 
-	static constexpr uint32_t BytesPerPixel(DataFormat dataFormat, DataType dataType) {
+	static constexpr uint32_t BytesPerPixel(PixelFormat dataFormat, PixelDataType dataType) {
 		return ChannelsFor(dataFormat) * BytesPerChannel(dataType);
 	}
 }

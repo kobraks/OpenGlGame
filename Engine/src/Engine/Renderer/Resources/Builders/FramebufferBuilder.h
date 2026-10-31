@@ -2,6 +2,7 @@
 #include "Engine/Core/Vector2.h"
 #include "Engine/Renderer/Resources/FramebufferSpecification.h"
 #include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
 
 
 namespace Engine {
@@ -22,8 +23,8 @@ namespace Engine {
 		FramebufferBuilder& AddColorAttachment(const TextureAttachmentBuilder& builder);
 		FramebufferBuilder& AddColorAttachment(const RenderBufferAttachmentBuilder& builder);
 
-		FramebufferBuilder& AddTextureColorAttachment(ImageFormat format, FilterMode minFilter = FilterMode::Linear, FilterMode magFilter = FilterMode::Linear, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
-		FramebufferBuilder& AddRenderBufferColorAttachment(ImageFormat format, const std::string& label = {});
+		FramebufferBuilder& AddTextureColorAttachment(TextureInternalFormat format, FilterMode minFilter = FilterMode::Linear, FilterMode magFilter = FilterMode::Linear, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
+		FramebufferBuilder& AddRenderBufferColorAttachment(TextureInternalFormat format, const std::string& label = {});
 
 		FramebufferBuilder& DepthAttachment(const FramebufferTextureAttachmentSpecification& specs);
 		FramebufferBuilder& DepthAttachment(const FramebufferRenderBufferAttachmentSpecification& specs);
@@ -31,8 +32,8 @@ namespace Engine {
 		FramebufferBuilder& DepthAttachment(const TextureAttachmentBuilder& builder);
 		FramebufferBuilder& DepthAttachment(const RenderBufferAttachmentBuilder& builder);
 
-		FramebufferBuilder& DepthTextureAttachment(ImageFormat format, FilterMode minFilter = FilterMode::Nearest, FilterMode magFilter = FilterMode::Nearest, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
-		FramebufferBuilder& DepthRenderBufferAttachment(ImageFormat format, const std::string& label = {});
+		FramebufferBuilder& DepthTextureAttachment(TextureInternalFormat format, FilterMode minFilter = FilterMode::Nearest, FilterMode magFilter = FilterMode::Nearest, WrapMode wrapS = WrapMode::ClampEdge, WrapMode wrapT = WrapMode::ClampEdge, bool useSRGB = false, uint32_t mipLevel = 0, uint32_t layer = 0, const std::string& label = {});
+		FramebufferBuilder& DepthRenderBufferAttachment(TextureInternalFormat format, const std::string& label = {});
 
 		FramebufferBuilder& Samples(uint32_t samples);
 		FramebufferBuilder& SwapchainTarget(bool value = true);

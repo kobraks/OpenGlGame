@@ -2,13 +2,13 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Vector2.h"
 
-#include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
 
 #include <variant>
 
 namespace Engine {
 	struct FramebufferAttachmentSpecificationBase {
-		ImageFormat Format = ImageFormat::RGBA8;
+		TextureInternalFormat Format = TextureInternalFormat::RGBA8;
 
 		std::string Label;
 	};

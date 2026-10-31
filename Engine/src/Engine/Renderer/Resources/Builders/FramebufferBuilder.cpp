@@ -12,14 +12,14 @@
 namespace Engine {
 	namespace Utils {
 		constexpr static void SetBaseAttachmentSpecification(FramebufferAttachmentSpecificationBase& baseSpecs,
-		                                                     ImageFormat format,
+		                                                     TextureInternalFormat format,
 		                                                     const std::string& label) {
 			baseSpecs.Format = format;
 			baseSpecs.Label = label;
 		}
 
 		constexpr FramebufferTextureAttachmentSpecification CreateAttachmentTextureSpecification(
-			ImageFormat format, FilterMode minFilter, FilterMode magFilter, WrapMode wrapS, WrapMode wrapT,
+			TextureInternalFormat format, FilterMode minFilter, FilterMode magFilter, WrapMode wrapS, WrapMode wrapT,
 			bool useSRGB, uint32_t mipLevel, uint32_t layer, const std::string& label) {
 			FramebufferTextureAttachmentSpecification textureSpecs;
 
@@ -40,7 +40,7 @@ namespace Engine {
 		}
 
 		constexpr FramebufferAttachmentSpecification CreateAttachmentSpecification(
-			bool renderBuffer, ImageFormat format, uint32_t mipLevel, uint32_t layer, const std::string& label) {
+			bool renderBuffer, TextureInternalFormat format, uint32_t mipLevel, uint32_t layer, const std::string& label) {
 			FramebufferAttachmentSpecification specs;
 
 			if (renderBuffer) {
@@ -65,7 +65,7 @@ namespace Engine {
 		}
 
 		constexpr FramebufferRenderBufferAttachmentSpecification CreateAttachmentRenderBufferSpecification(
-			ImageFormat format, const std::string& label) {
+			TextureInternalFormat format, const std::string& label) {
 			FramebufferRenderBufferAttachmentSpecification specs;
 
 			SetBaseAttachmentSpecification(specs, format, label);
@@ -137,7 +137,7 @@ namespace Engine {
 		return DepthAttachment(builder.Build());
 	}
 
-	FramebufferBuilder& FramebufferBuilder::DepthTextureAttachment(ImageFormat format, FilterMode minFilter,
+	FramebufferBuilder& FramebufferBuilder::DepthTextureAttachment(TextureInternalFormat format, FilterMode minFilter,
 	                                                               FilterMode magFilter, WrapMode wrapS,
 	                                                               WrapMode wrapT, bool useSRGB, uint32_t mipLevel,
 	                                                               uint32_t layer,
@@ -147,11 +147,11 @@ namespace Engine {
 			mipLevel, layer, label));
 	}
 
-	FramebufferBuilder& FramebufferBuilder::DepthRenderBufferAttachment(ImageFormat format, const std::string& label) {
+	FramebufferBuilder& FramebufferBuilder::DepthRenderBufferAttachment(TextureInternalFormat format, const std::string& label) {
 		return DepthAttachment(Utils::CreateAttachmentRenderBufferSpecification(format, label));
 	}
 
-	FramebufferBuilder& FramebufferBuilder::AddTextureColorAttachment(ImageFormat format, FilterMode minFilter,
+	FramebufferBuilder& FramebufferBuilder::AddTextureColorAttachment(TextureInternalFormat format, FilterMode minFilter,
 	                                                                  FilterMode magFilter, WrapMode wrapS,
 	                                                                  WrapMode wrapT, bool useSRGB, uint32_t mipLevel,
 	                                                                  uint32_t layer,
@@ -161,7 +161,7 @@ namespace Engine {
 			                                            layer, label));
 	}
 
-	FramebufferBuilder& FramebufferBuilder::AddRenderBufferColorAttachment(ImageFormat format, const std::string& label) {
+	FramebufferBuilder& FramebufferBuilder::AddRenderBufferColorAttachment(TextureInternalFormat format, const std::string& label) {
 		return AddColorAttachment(Utils::CreateAttachmentRenderBufferSpecification(format, label));
 	}
 

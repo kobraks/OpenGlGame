@@ -108,7 +108,7 @@ namespace Engine {
 			bool HasStencil = false;
 		};
 
-		static DepthAttachmentInfo ToGLDepthAttachmentPoint(ImageFormat format) {
+		static DepthAttachmentInfo ToGLDepthAttachmentPoint(TextureInternalFormat format) {
 			DepthAttachmentInfo info;
 
 			ENGINE_ASSERT(Utils::IsDepthFormat(format), "Non-depth format used in depth attachment!");
@@ -140,7 +140,7 @@ namespace Engine {
 			}
 		}
 
-		static Buffer ReadPixels(uint32_t bufferIndex, uint8_t channelsCount, DataFormat dataFormat, DataType dataType,
+		static Buffer ReadPixels(uint32_t bufferIndex, uint8_t channelsCount, PixelFormat dataFormat, PixelDataType dataType,
 		                         const Vector2u& pos, const Vector2u& size) {
 
 			const auto glFormat = OpenGL::EnumToGLConstant(dataFormat);
@@ -158,7 +158,7 @@ namespace Engine {
 		}
 
 		template <typename T>
-		static std::array<T, 4> ReadPixel(uint32_t bufferIndex, DataFormat dataFormat, DataType dataType, const Vector2u& pos) {
+		static std::array<T, 4> ReadPixel(uint32_t bufferIndex, PixelFormat dataFormat, PixelDataType dataType, const Vector2u& pos) {
 			const auto glFormat = OpenGL::EnumToGLConstant(dataFormat);
 			const auto glType = OpenGL::EnumToGLConstant(dataType);
 
@@ -195,7 +195,7 @@ namespace Engine {
 	}
 
 	template <typename Out>
-	static Out ReadScalarChannel(uint32_t attachmentIndex, const Vector2u& position, ImageFormat internalFormat, DataFormat dataFormat, DataType dataType, Channel channel) {
+	static Out ReadScalarChannel(uint32_t attachmentIndex, const Vector2u& position, TextureInternalFormat internalFormat, PixelFormat dataFormat, PixelDataType dataType, Channel channel) {
 		const int idx = Utils::IndexForChannel(dataFormat, channel);
 
 		if (idx < 0) {
@@ -203,23 +203,23 @@ namespace Engine {
 		}
 
 		switch (dataType) {
-		case DataType::UnsignedByte: {
+		case PixelDataType::UnsignedByte: {
 			const auto v = Utils::ReadPixel<uint8_t>(attachmentIndex, dataFormat, dataType, position);
 			return ConvertComponent<Out>(v[idx]);
 		}
-		case DataType::Int: {
+		case PixelDataType::Int: {
 			const auto v = Utils::ReadPixel<int32_t>(attachmentIndex, dataFormat, dataType, position);
 			return ConvertComponent<Out>(v[idx]);
 		}
-		case DataType::UnsignedInt: {
+		case PixelDataType::UnsignedInt: {
 			const auto v = Utils::ReadPixel<uint32_t>(attachmentIndex, dataFormat, dataType, position);
 			return ConvertComponent<Out>(v[idx]);
 		}
-		case DataType::Float: {
+		case PixelDataType::Float: {
 			const auto v = Utils::ReadPixel<float>(attachmentIndex, dataFormat, dataType, position);
 			return ConvertComponent<Out>(v[idx]);
 		}
-		case DataType::Double: {
+		case PixelDataType::Double: {
 			const auto v = Utils::ReadPixel<double>(attachmentIndex, dataFormat, dataType, position);
 			return ConvertComponent<Out>(v[idx]);
 		}
@@ -445,7 +445,7 @@ namespace Engine {
 	Buffer Framebuffer::ReadPixels(uint32_t attachmentIndex, const Vector2u& position, const Vector2u& size) const {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 
-		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		const TextureInternalFormat format = GetColorAttachmentFormat(attachmentIndex);
 		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
 		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
 
@@ -522,8 +522,8 @@ namespace Engine {
 		}
 		else { //if its not RenderBuffer its must be Texture
 			auto specs = std::get<FramebufferTextureAttachmentSpecification>(specification);
-			if (specs.UseSRGB && specs.Format == ImageFormat::RGBA8)
-				specs.Format = ImageFormat::SRGB8A8;
+			if (specs.UseSRGB && specs.Format == TextureInternalFormat::RGBA8)
+				specs.Format = TextureInternalFormat::SRGB8A8;
 
 			auto attachment = CreateAttachment(specs);
 
@@ -569,7 +569,7 @@ namespace Engine {
 		             Label(), Utils::AttachmentPointToString(attachmentPoint));
 	}
 
-	uint32_t Framebuffer::DepthAttachmentPoint(ImageFormat format) const {
+	uint32_t Framebuffer::DepthAttachmentPoint(TextureInternalFormat format) const {
 		const auto& info = Utils::ToGLDepthAttachmentPoint(format);
 		m_GLState->DepthBuffer = info.HasDepth;
 		m_GLState->Stencil = info.HasStencil;
@@ -577,7 +577,7 @@ namespace Engine {
 		return info.AttachmentPoint;
 	}
 
-	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel) {
+	void Framebuffer::AttachDepth(TextureInternalFormat format, Ref<Texture> attachment, uint32_t mipLevel) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel);
 		m_GLState->DepthAttachment = attachment;
 
@@ -585,7 +585,7 @@ namespace Engine {
 		             Label(), attachment->Label(), format, mipLevel);
 	}
 
-	void Framebuffer::AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
+	void Framebuffer::AttachDepth(TextureInternalFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer) {
 		Attach(DepthAttachmentPoint(format), attachment, mipLevel, layer);
 		m_GLState->DepthAttachment = attachment;
 
@@ -594,7 +594,7 @@ namespace Engine {
 			Label(), attachment->Label(), format, mipLevel, layer);
 	}
 
-	void Framebuffer::AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment) {
+	void Framebuffer::AttachDepth(TextureInternalFormat format, Ref<RenderBuffer> attachment) {
 		Attach(DepthAttachmentPoint(format), attachment);
 		LOG_GL_DEBUG("Framebuffer '{}': Attached renderbuffer as depth attachment (format={})",
 		             Label(), format);
@@ -606,7 +606,7 @@ namespace Engine {
 		TextureSpec spec;
 
 		spec.Size = fb.Size;
-		spec.ImageFormat = tex.Format;
+		spec.TextureFormat = tex.Format;
 		spec.Samples = fb.Samples;
 		spec.Label = tex.Label;
 		spec.Usage = Utils::FormatUsageMapping(tex.Format);
@@ -669,7 +669,7 @@ namespace Engine {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
 
-		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		const TextureInternalFormat format = GetColorAttachmentFormat(attachmentIndex);
 		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
 
 		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
@@ -681,7 +681,7 @@ namespace Engine {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
 
-		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		const TextureInternalFormat format = GetColorAttachmentFormat(attachmentIndex);
 		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
 
 		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
@@ -692,7 +692,7 @@ namespace Engine {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
 
-		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		const TextureInternalFormat format = GetColorAttachmentFormat(attachmentIndex);
 		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
 
 		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
@@ -703,7 +703,7 @@ namespace Engine {
 		ENGINE_ASSERT(attachmentIndex < m_GLState->ColorAttachmentCount);
 		ENGINE_ASSERT(!IsMultisampled() && "Resolve MSAA to non-MSAA before ReadPixel");
 
-		const ImageFormat format = GetColorAttachmentFormat(attachmentIndex);
+		const TextureInternalFormat format = GetColorAttachmentFormat(attachmentIndex);
 		ENGINE_ASSERT(Utils::IsColorFormat(format), "ReadPixel: non-color attachment");
 
 		const auto [dataFormat, dataType] = Utils::GetDefaultFormatAndType(format);
@@ -719,14 +719,14 @@ namespace Engine {
 		return {r, g, b, a};
 	}
 
-	ImageFormat Framebuffer::GetColorAttachmentFormat(uint32_t attachmentIndex) const {
+	TextureInternalFormat Framebuffer::GetColorAttachmentFormat(uint32_t attachmentIndex) const {
 		const auto& attachment = GetColorAttachment(attachmentIndex);
 
 		if (const auto tex = std::get_if<Ref<Texture>>(&attachment)) return (*tex)->ImageFormat();
 		if (const auto rb = std::get_if<Ref<RenderBuffer>>(&attachment)) return (*rb)->ImageFormat();
 
 		ENGINE_ASSERT(false && "Invalid color attachment");
-		return ImageFormat::RGBA8;
+		return TextureInternalFormat::RGBA8;
 	}
 
 	Framebuffer::GLState::GLState(const FramebufferSpecification& specification) : Specification(specification) {

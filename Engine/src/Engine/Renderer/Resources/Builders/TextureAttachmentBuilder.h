@@ -6,7 +6,7 @@ namespace Engine {
 	public:
 		TextureAttachmentBuilder() = default;
 
-		TextureAttachmentBuilder& Format(ImageFormat format);
+		TextureAttachmentBuilder& Format(TextureInternalFormat format);
 		TextureAttachmentBuilder& Label(const std::string& label);
 
 		TextureAttachmentBuilder& Filters(FilterMode min, FilterMode mag);

@@ -3,7 +3,7 @@
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Color.h"
 #include "Engine/Core/Vector2.h"
-#include "Engine/Renderer/Resources/GraphicEnums.h"
+#include "Engine/Renderer/Resources/TextureEnums.h"
 
 #include <optional>
 
@@ -16,15 +16,15 @@ namespace Engine {
 			Vector2u Size{}; // 0, 0 -> default to texture size
 			uint32_t RowStrideBytes = 0; // 0 -> tightly packed (width * bpp)
 
-			std::optional<DataFormat> Format = std::nullopt; // if empty -> derive from ImageFormat
-			std::optional<DataType> DataType = std::nullopt; // if empty -> derive from ImageFormat
+			std::optional<PixelFormat> Format = std::nullopt; // if empty -> derive from TextureInternalFormat
+			std::optional<PixelDataType> PixelDataType = std::nullopt; // if empty -> derive from TextureInternalFormat
 
 			bool FlipY = false; // flip the image data before upload
 			uint32_t MipLevel = 0; // which mip level to upload to
 		};
 
 		Vector2u Size;
-		ImageFormat ImageFormat = ImageFormat::RGBA8;
+		TextureInternalFormat TextureFormat = TextureInternalFormat::RGBA8;
 
 		uint32_t Samples = 1; // multisampled (no pixel upload)
 		uint32_t Levels = 1; // Only valid for samples == 1; 0 means auto
@@ -60,8 +60,8 @@ namespace Engine {
 		void UnbindUnit(uint32_t sampler = 0) const;
 
 		[[nodiscard]] static Ref<Texture> Create(const TextureSpec& spec);
-		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
-		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, TextureUsage usage, ImageFormat imageFormat = ImageFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
+		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, TextureInternalFormat TextureInternalFormat = TextureInternalFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
+		[[nodiscard]] static Ref<Texture> Create(const Ref<Image>& image, TextureUsage usage, TextureInternalFormat TextureInternalFormat = TextureInternalFormat::RGBA8, uint32_t levels = 1, uint32_t samples = 1, const std::string& label = {});
 
 		void SetLabel(const std::string& label);
 
@@ -93,15 +93,15 @@ namespace Engine {
 
 		void Clear(const Color& color);
 		void Clear(int value = 0);
-		void Clear(const void* pixels = nullptr, DataFormat dataFormat = DataFormat::RGBA, DataType dataType = DataType::Int);
+		void Clear(const void* pixels = nullptr, PixelFormat dataFormat = PixelFormat::RGBA, PixelDataType dataType = PixelDataType::Int);
 
 		void ClearRegion(const Color& color, const Vector2i& offset, const Vector2u& size);
 		void ClearRegion(int value, const Vector2i& offset, const Vector2u& size);
-		void ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, DataFormat dataFormat, DataType dataType);
+		void ClearRegion(const void* pixels, const Vector2i& offset, const Vector2u& size, PixelFormat dataFormat, PixelDataType dataType);
 
-		void GetPixels(void* pixels, uint32_t bufSize, DataFormat format, DataType type, uint32_t mipLevel = 0, uint32_t rowStrideBytes = 0) const;
+		void GetPixels(void* pixels, uint32_t bufSize, PixelFormat format, PixelDataType type, uint32_t mipLevel = 0, uint32_t rowStrideBytes = 0) const;
 
-		void Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
+		void Update(const uint8_t* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat format = PixelFormat::RGBA, PixelDataType dataType = PixelDataType::UnsignedByte);
 		void Update(const Color* pixels, const Vector2u& size, const Vector2i& offset);
 
 		void Update(const Texture& texture);
@@ -115,7 +115,7 @@ namespace Engine {
 		TextureUsage GetUsage() const { return m_GLState->Usage; }
 		void SetUsage(TextureUsage usage) { m_GLState->Usage = usage; }
 
-		[[nodiscard]] bool IsSRGB() const { return m_GLState->ImageFormat == ImageFormat::SRGB8 || m_GLState->ImageFormat == ImageFormat::SRGB8A8 || m_GLState->ImageFormat == ImageFormat::SRGBA; }
+		[[nodiscard]] bool IsSRGB() const { return m_GLState->InternalFormat == TextureInternalFormat::SRGB8 || m_GLState->InternalFormat == TextureInternalFormat::SRGB8A8 || m_GLState->InternalFormat == TextureInternalFormat::SRGBA; }
 		[[nodiscard]] bool IsValid() const { return m_GLState && m_GLState->ID != 0; }
 
 		[[nodiscard]] std::string_view Label() const { return m_GLState->Label; }
@@ -133,7 +133,7 @@ namespace Engine {
 		void Resize(const Vector2u& size);
 		void ResizeNoCopy(const Vector2u& size);
 
-		[[nodiscard]] ImageFormat ImageFormat() const { return m_GLState->ImageFormat; }
+		[[nodiscard]] TextureInternalFormat ImageFormat() const { return m_GLState->InternalFormat; }
 
 		void Invalidate();
 		void Recreate(const Vector2u& size);
@@ -143,16 +143,16 @@ namespace Engine {
 		Texture(bool multisampled = false);
 
 		void Initialize(const TextureSpec& spec);
-		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat dataFormat, DataType dataType);
+		void Update(const void* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat dataFormat, PixelDataType dataType);
 
 		void ReAlloc(const Vector2u& size);
-		void SetupStorage(uint32_t levels = 1, uint32_t samples = 1, const Vector2u& size = {1, 1}, TextureUsage usage = TextureUsage::Default, enum ImageFormat imageFormat = ImageFormat::RGBA8);
+		void SetupStorage(uint32_t levels = 1, uint32_t samples = 1, const Vector2u& size = {1, 1}, TextureUsage usage = TextureUsage::Default, enum TextureInternalFormat TextureInternalFormat = TextureInternalFormat::RGBA8);
 
-		void UploadPixels(const void* pixels, const Vector2u& size = {}, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte);
-		void UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, DataFormat format, DataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes = 0, bool flipY = false);
+		void UploadPixels(const void* pixels, const Vector2u& size = {}, const Vector2i& offset = { 0, 0 }, PixelFormat format = PixelFormat::RGBA, PixelDataType dataType = PixelDataType::UnsignedByte);
+		void UploadPixels(const void* pixels, const Vector2u& size, const Vector2i& offset, PixelFormat format, PixelDataType dataType, uint32_t mipLevel, uint32_t rowStrideBytes = 0, bool flipY = false);
 
-		void GetImage(void* pixels, uint32_t bufSize, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte, uint32_t mipLevel = 0) const;
-		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }, DataFormat format = DataFormat::RGBA, DataType dataType = DataType::UnsignedByte, uint32_t mipLevel = 0) const;
+		void GetImage(void* pixels, uint32_t bufSize, PixelFormat format = PixelFormat::RGBA, PixelDataType dataType = PixelDataType::UnsignedByte, uint32_t mipLevel = 0) const;
+		void GetImage(void* pixels, uint32_t bufSize, const Vector2u& size, const Vector2i& offset = { 0, 0 }, PixelFormat format = PixelFormat::RGBA, PixelDataType dataType = PixelDataType::UnsignedByte, uint32_t mipLevel = 0) const;
 
 		void SetParameter(uint32_t name, int parameter);
 		void GetParameter(uint32_t name, int* parameter) const;
@@ -186,7 +186,7 @@ namespace Engine {
 
 			InternalWrapping Wrapping;
 			InternalFilter Filter;
-			enum ImageFormat ImageFormat = ImageFormat::RGBA8;
+			enum TextureInternalFormat InternalFormat = TextureInternalFormat::RGBA8;
 			uint32_t ImageFormatGL = 0;
 			TextureUsage Usage = TextureUsage::Default;
 

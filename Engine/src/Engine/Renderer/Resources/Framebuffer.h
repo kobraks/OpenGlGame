@@ -6,6 +6,7 @@
 #include "Engine/Core/Buffer.h"
 
 #include <Engine/Renderer/Resources/FramebufferSpecification.h>
+#include "Engine/Renderer/Resources/FrameBufferEnums.h"
 
 #include <variant>
 #include <concepts>
@@ -133,11 +134,11 @@ namespace Engine {
 		void Attach(uint32_t attachmentPoint, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
 		void Attach(uint32_t attachmentPoint, Ref<RenderBuffer> attachment);
 
-		uint32_t DepthAttachmentPoint(ImageFormat format) const;
+		uint32_t DepthAttachmentPoint(TextureInternalFormat format) const;
 
-		void AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel);
-		void AttachDepth(ImageFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
-		void AttachDepth(ImageFormat format, Ref<RenderBuffer> attachment);
+		void AttachDepth(TextureInternalFormat format, Ref<Texture> attachment, uint32_t mipLevel);
+		void AttachDepth(TextureInternalFormat format, Ref<Texture> attachment, uint32_t mipLevel, uint32_t layer);
+		void AttachDepth(TextureInternalFormat format, Ref<RenderBuffer> attachment);
 	private:
 		TextureSpec CreateAttachmentSpec(const FramebufferSpecification fb, const FramebufferTextureAttachmentSpecification& tex) const;
 		Ref<Texture> CreateAttachment(const FramebufferTextureAttachmentSpecification& specs) const;
@@ -151,7 +152,7 @@ namespace Engine {
 		double ReadPixelDoubleImpl(uint32_t attachmentIndex, const Vector2u& position, Channel channel) const;
 		Color ReadPixelColorImpl(uint32_t attachmentIndex, const Vector2u& position) const;
 
-		ImageFormat GetColorAttachmentFormat(uint32_t attachmentIndex) const;
+		TextureInternalFormat GetColorAttachmentFormat(uint32_t attachmentIndex) const;
 
 		class GLState {
 		public:

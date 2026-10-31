@@ -2,111 +2,111 @@
 #include "ImageFormatTraits.h"
 
 namespace Engine::Utils {
-	bool IsDepthFormat(ImageFormat format) {
+	bool IsDepthFormat(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::DepthComponent:
-		case ImageFormat::DepthComponent16:
-		case ImageFormat::DepthComponent24:
-		case ImageFormat::DepthComponent32:
-		case ImageFormat::DepthComponent32F:
-		case ImageFormat::DepthStencil:
-		case ImageFormat::Depth24Stencil8:
-		case ImageFormat::Depth32FStencil8:
-		case ImageFormat::StencilIndex:
-		case ImageFormat::StencilIndex1:
-		case ImageFormat::StencilIndex4:
-		case ImageFormat::StencilIndex8:
-		case ImageFormat::StencilIndex16:
+		case TextureInternalFormat::DepthComponent:
+		case TextureInternalFormat::DepthComponent16:
+		case TextureInternalFormat::DepthComponent24:
+		case TextureInternalFormat::DepthComponent32:
+		case TextureInternalFormat::DepthComponent32F:
+		case TextureInternalFormat::DepthStencil:
+		case TextureInternalFormat::Depth24Stencil8:
+		case TextureInternalFormat::Depth32FStencil8:
+		case TextureInternalFormat::StencilIndex:
+		case TextureInternalFormat::StencilIndex1:
+		case TextureInternalFormat::StencilIndex4:
+		case TextureInternalFormat::StencilIndex8:
+		case TextureInternalFormat::StencilIndex16:
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	bool IsStorageCapable(ImageFormat format) {
+	bool IsStorageCapable(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::R32UI:
-		case ImageFormat::RGBA32F:
-		case ImageFormat::RGBA32I:
-		case ImageFormat::RGBA32UI:
-		case ImageFormat::R32I:
-		case ImageFormat::R32F:
+		case TextureInternalFormat::R32UI:
+		case TextureInternalFormat::RGBA32F:
+		case TextureInternalFormat::RGBA32I:
+		case TextureInternalFormat::RGBA32UI:
+		case TextureInternalFormat::R32I:
+		case TextureInternalFormat::R32F:
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	bool IsStencilOnlyFormat(ImageFormat format) {
+	bool IsStencilOnlyFormat(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::StencilIndex:
-		case ImageFormat::StencilIndex1:
-		case ImageFormat::StencilIndex4:
-		case ImageFormat::StencilIndex8:
-		case ImageFormat::StencilIndex16:
+		case TextureInternalFormat::StencilIndex:
+		case TextureInternalFormat::StencilIndex1:
+		case TextureInternalFormat::StencilIndex4:
+		case TextureInternalFormat::StencilIndex8:
+		case TextureInternalFormat::StencilIndex16:
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	bool IsDepthStencilFormat(ImageFormat format) {
+	bool IsDepthStencilFormat(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::DepthStencil:
-		case ImageFormat::Depth24Stencil8:
-		case ImageFormat::Depth32FStencil8:
+		case TextureInternalFormat::DepthStencil:
+		case TextureInternalFormat::Depth24Stencil8:
+		case TextureInternalFormat::Depth32FStencil8:
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	bool IsDepthOnlyFormat(ImageFormat format) {
+	bool IsDepthOnlyFormat(TextureInternalFormat format) {
 		return IsDepthFormat(format) && !IsDepthStencilFormat(format) && !IsStencilOnlyFormat(format);
 	}
 
-	bool HasDepthAspect(ImageFormat format) {
+	bool HasDepthAspect(TextureInternalFormat format) {
 		return IsDepthOnlyFormat(format) || IsDepthStencilFormat(format);
 	}
 
-	bool HasStencilAspect(ImageFormat format) {
+	bool HasStencilAspect(TextureInternalFormat format) {
 		return IsStencilOnlyFormat(format) || IsDepthStencilFormat(format);
 	}
 
-	bool IsIntegerColorFormat(ImageFormat format) {
+	bool IsIntegerColorFormat(TextureInternalFormat format) {
 		switch (format) {
 			// Signed
 			// 8-bit
-		case ImageFormat::R8I:
-		case ImageFormat::RG8I:
-		case ImageFormat::RGB8I:
-		case ImageFormat::RGBA8I:
+		case TextureInternalFormat::R8I:
+		case TextureInternalFormat::RG8I:
+		case TextureInternalFormat::RGB8I:
+		case TextureInternalFormat::RGBA8I:
 			// 16-bit
-		case ImageFormat::R16I:
-		case ImageFormat::RG16I:
-		case ImageFormat::RGB16I:
-		case ImageFormat::RGBA16I:
+		case TextureInternalFormat::R16I:
+		case TextureInternalFormat::RG16I:
+		case TextureInternalFormat::RGB16I:
+		case TextureInternalFormat::RGBA16I:
 			// 32-bit
-		case ImageFormat::R32I:
-		case ImageFormat::RG32I:
-		case ImageFormat::RGB32I:
-		case ImageFormat::RGBA32I:
+		case TextureInternalFormat::R32I:
+		case TextureInternalFormat::RG32I:
+		case TextureInternalFormat::RGB32I:
+		case TextureInternalFormat::RGBA32I:
 			// Unsigned
 			// 8-bit
-		case ImageFormat::R8UI:
-		case ImageFormat::RG8UI:
-		case ImageFormat::RGB8UI:
-		case ImageFormat::RGBA8UI:
+		case TextureInternalFormat::R8UI:
+		case TextureInternalFormat::RG8UI:
+		case TextureInternalFormat::RGB8UI:
+		case TextureInternalFormat::RGBA8UI:
 			// 16-bit
-		case ImageFormat::R16UI:
-		case ImageFormat::RG16UI:
-		case ImageFormat::RGB16UI:
-		case ImageFormat::RGBA16UI:
+		case TextureInternalFormat::R16UI:
+		case TextureInternalFormat::RG16UI:
+		case TextureInternalFormat::RGB16UI:
+		case TextureInternalFormat::RGBA16UI:
 			// 32-bit
-		case ImageFormat::R32UI:
-		case ImageFormat::RG32UI:
-		case ImageFormat::RGB32UI:
-		case ImageFormat::RGBA32UI:
+		case TextureInternalFormat::R32UI:
+		case TextureInternalFormat::RG32UI:
+		case TextureInternalFormat::RGB32UI:
+		case TextureInternalFormat::RGBA32UI:
 			return true;
 
 		default:
@@ -114,126 +114,126 @@ namespace Engine::Utils {
 		}
 	}
 
-	bool IsSRGBFormat(ImageFormat format) {
+	bool IsSRGBFormat(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::SRGB8:
-		case ImageFormat::SRGB8A8:
-		case ImageFormat::SRGBA:
+		case TextureInternalFormat::SRGB8:
+		case TextureInternalFormat::SRGB8A8:
+		case TextureInternalFormat::SRGBA:
 			return true;
 		default:
 			return false;
 		}
 	}
 
-	bool IsColorFormat(ImageFormat format) {
+	bool IsColorFormat(TextureInternalFormat format) {
 		return !IsDepthFormat(format);
 	}
 
-	TextureUsage FormatUsageMapping(ImageFormat format) {
+	TextureUsage FormatUsageMapping(TextureInternalFormat format) {
 		if (IsDepthFormat(format)) return TextureUsage::DepthStencil;
 		if (IsStorageCapable(format)) return TextureUsage::Storage;
 		return TextureUsage::RenderTarget;
 	}
 
-	std::pair<DataFormat, DataType> GetDefaultFormatAndType(ImageFormat format) {
+	std::pair<PixelFormat, PixelDataType> GetDefaultFormatAndType(TextureInternalFormat format) {
 		switch (format) {
-		case ImageFormat::Red:
-		case ImageFormat::R8:
-			return { DataFormat::Red, DataType::UnsignedByte };
+		case TextureInternalFormat::Red:
+		case TextureInternalFormat::R8:
+			return { PixelFormat::Red, PixelDataType::UnsignedByte };
 
-		case ImageFormat::RG:
-		case ImageFormat::RG8:
-			return { DataFormat::RG, DataType::UnsignedByte };
+		case TextureInternalFormat::RG:
+		case TextureInternalFormat::RG8:
+			return { PixelFormat::RG, PixelDataType::UnsignedByte };
 
-		case ImageFormat::RGB:
-		case ImageFormat::RGB8:
-			return { DataFormat::RGB, DataType::UnsignedByte };
+		case TextureInternalFormat::RGB:
+		case TextureInternalFormat::RGB8:
+			return { PixelFormat::RGB, PixelDataType::UnsignedByte };
 
-		case ImageFormat::RGBA:
-		case ImageFormat::RGBA8:
-			return { DataFormat::RGBA, DataType::UnsignedByte };
+		case TextureInternalFormat::RGBA:
+		case TextureInternalFormat::RGBA8:
+			return { PixelFormat::RGBA, PixelDataType::UnsignedByte };
 
-		case ImageFormat::SRGB8:
-			return { DataFormat::RGB, DataType::UnsignedByte };
+		case TextureInternalFormat::SRGB8:
+			return { PixelFormat::RGB, PixelDataType::UnsignedByte };
 
-		case ImageFormat::SRGB8A8:
-			return { DataFormat::RGBA, DataType::UnsignedByte };
+		case TextureInternalFormat::SRGB8A8:
+			return { PixelFormat::RGBA, PixelDataType::UnsignedByte };
 
 			// Float formats
-		case ImageFormat::R16F:
-		case ImageFormat::R32F:
-			return { DataFormat::Red, DataType::Float };
+		case TextureInternalFormat::R16F:
+		case TextureInternalFormat::R32F:
+			return { PixelFormat::Red, PixelDataType::Float };
 
-		case ImageFormat::RG16F:
-		case ImageFormat::RG32F:
-			return { DataFormat::RG, DataType::Float };
+		case TextureInternalFormat::RG16F:
+		case TextureInternalFormat::RG32F:
+			return { PixelFormat::RG, PixelDataType::Float };
 
-		case ImageFormat::RGB16F:
-		case ImageFormat::RGB32F:
-			return { DataFormat::RGB, DataType::Float };
+		case TextureInternalFormat::RGB16F:
+		case TextureInternalFormat::RGB32F:
+			return { PixelFormat::RGB, PixelDataType::Float };
 
-		case ImageFormat::RGBA16F:
-		case ImageFormat::RGBA32F:
-			return { DataFormat::RGBA, DataType::Float };
+		case TextureInternalFormat::RGBA16F:
+		case TextureInternalFormat::RGBA32F:
+			return { PixelFormat::RGBA, PixelDataType::Float };
 
 			// Integer formats
-		case ImageFormat::R8I:
-		case ImageFormat::R16I:
-		case ImageFormat::R32I:
-			return { DataFormat::RedInteger, DataType::Int };
+		case TextureInternalFormat::R8I:
+		case TextureInternalFormat::R16I:
+		case TextureInternalFormat::R32I:
+			return { PixelFormat::RedInteger, PixelDataType::Int };
 
-		case ImageFormat::RG8I:
-		case ImageFormat::RG16I:
-		case ImageFormat::RG32I:
-			return { DataFormat::RGInteger, DataType::Int };
+		case TextureInternalFormat::RG8I:
+		case TextureInternalFormat::RG16I:
+		case TextureInternalFormat::RG32I:
+			return { PixelFormat::RGInteger, PixelDataType::Int };
 
-		case ImageFormat::RGB8I:
-		case ImageFormat::RGB16I:
-		case ImageFormat::RGB32I:
-			return { DataFormat::RGBInteger, DataType::Int };
+		case TextureInternalFormat::RGB8I:
+		case TextureInternalFormat::RGB16I:
+		case TextureInternalFormat::RGB32I:
+			return { PixelFormat::RGBInteger, PixelDataType::Int };
 
-		case ImageFormat::RGBA8I:
-		case ImageFormat::RGBA16I:
-		case ImageFormat::RGBA32I:
-			return { DataFormat::RGBAInteger, DataType::Int };
+		case TextureInternalFormat::RGBA8I:
+		case TextureInternalFormat::RGBA16I:
+		case TextureInternalFormat::RGBA32I:
+			return { PixelFormat::RGBAInteger, PixelDataType::Int };
 
 			// Unsigned integer formats
-		case ImageFormat::R8UI:
-		case ImageFormat::R16UI:
-		case ImageFormat::R32UI:
-			return { DataFormat::RedInteger, DataType::UnsignedInt };
+		case TextureInternalFormat::R8UI:
+		case TextureInternalFormat::R16UI:
+		case TextureInternalFormat::R32UI:
+			return { PixelFormat::RedInteger, PixelDataType::UnsignedInt };
 
-		case ImageFormat::RG8UI:
-		case ImageFormat::RG16UI:
-		case ImageFormat::RG32UI:
-			return { DataFormat::RGInteger, DataType::UnsignedInt };
+		case TextureInternalFormat::RG8UI:
+		case TextureInternalFormat::RG16UI:
+		case TextureInternalFormat::RG32UI:
+			return { PixelFormat::RGInteger, PixelDataType::UnsignedInt };
 
-		case ImageFormat::RGB8UI:
-		case ImageFormat::RGB16UI:
-		case ImageFormat::RGB32UI:
-			return { DataFormat::RGBInteger, DataType::UnsignedInt };
+		case TextureInternalFormat::RGB8UI:
+		case TextureInternalFormat::RGB16UI:
+		case TextureInternalFormat::RGB32UI:
+			return { PixelFormat::RGBInteger, PixelDataType::UnsignedInt };
 
-		case ImageFormat::RGBA8UI:
-		case ImageFormat::RGBA16UI:
-		case ImageFormat::RGBA32UI:
-			return { DataFormat::RGBAInteger, DataType::UnsignedInt };
+		case TextureInternalFormat::RGBA8UI:
+		case TextureInternalFormat::RGBA16UI:
+		case TextureInternalFormat::RGBA32UI:
+			return { PixelFormat::RGBAInteger, PixelDataType::UnsignedInt };
 
 			// Depth formats
-		case ImageFormat::DepthComponent:
-		case ImageFormat::DepthComponent16:
-		case ImageFormat::DepthComponent24:
-		case ImageFormat::DepthComponent32:
-		case ImageFormat::DepthComponent32F:
-			return { DataFormat::DepthComponent, DataType::Float };
+		case TextureInternalFormat::DepthComponent:
+		case TextureInternalFormat::DepthComponent16:
+		case TextureInternalFormat::DepthComponent24:
+		case TextureInternalFormat::DepthComponent32:
+		case TextureInternalFormat::DepthComponent32F:
+			return { PixelFormat::DepthComponent, PixelDataType::Float };
 
 			// Depth-stencil
-		case ImageFormat::Depth24Stencil8:
-		case ImageFormat::Depth32FStencil8:
-			return { DataFormat::DepthStencil, DataType::UnsignedInt };
+		case TextureInternalFormat::Depth24Stencil8:
+		case TextureInternalFormat::Depth32FStencil8:
+			return { PixelFormat::DepthStencil, PixelDataType::UnsignedInt };
 
 		default:
-			LOG_ENGINE_WARN("No default format/type mapping for ImageFormat {}", static_cast<uint32_t>(format));
-			return { DataFormat::RGBA, DataType::UnsignedByte }; // safe fallback
+			LOG_ENGINE_WARN("No default format/type mapping for TextureInternalFormat {}", static_cast<uint32_t>(format));
+			return { PixelFormat::RGBA, PixelDataType::UnsignedByte }; // safe fallback
 		}
 	}
 }
