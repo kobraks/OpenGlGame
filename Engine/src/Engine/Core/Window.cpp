@@ -88,6 +88,11 @@ namespace Engine {
 			if (flags.HasAny(WindowStateFlags::BorderlessFullscreen) && !flags.HasAny(WindowStateFlags::ExclusiveFullscreen)) {
 				glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
 			}
+
+			//DEBUG
+#ifdef GAME_DEBUG
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+#endif
 		}
 	}
 
