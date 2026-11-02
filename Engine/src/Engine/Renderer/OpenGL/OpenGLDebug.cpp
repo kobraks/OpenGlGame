@@ -39,7 +39,7 @@ namespace Engine::OpenGLDebug {
 		const auto sourceStr = Utils::GetStringForSource(source);
 		const auto typeStr = Utils::GetStringForType(type);
 
-		const std::string formatted = fmt::format("[{}][{}][ID:{}]: {}", sourceStr, typeStr, id, message);
+		//const std::string formatted = fmt::format("[{}][{}][ID:{}]: {}", sourceStr, typeStr, id, message);
 		spdlog::level::level_enum logLevel;
 
 		switch (severity) {

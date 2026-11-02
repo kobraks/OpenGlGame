@@ -65,7 +65,8 @@ namespace Engine {
 	}
 
 	bool GraphicContext::IsCurrent() const {
-		return std::this_thread::get_id() == m_Thread;
+		//return std::this_thread::get_id() == m_Thread;
+		return glfwGetCurrentContext() == static_cast<GLFWwindow *>(m_WindowHandle);
 	}
 
 	bool GraphicContext::IsValid() const {
@@ -127,7 +128,7 @@ namespace Engine {
 			glGetIntegerv(GL_MAJOR_VERSION, &m_Version.Major);
 			glGetIntegerv(GL_MINOR_VERSION, &m_Version.Minor);
 
-			s_GraphicInfo = m_Info;
+			s_OpenGLVersion = m_Version;
 			SetGraphicInfo(m_Info);
 		} else {
 			m_Version = s_OpenGLVersion;
