@@ -184,7 +184,7 @@ namespace Engine {
 	}
 
 	std::span<std::byte> MappedBufferRegion::AsSpan(uint32_t offset) {
-		Utils::AssertAccess(m_Flags, true, false);
+		Utils::AssertAccess(m_Flags, true, true);
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(offset): Out of bounds (offset={}, size={})", offset, m_Size));
@@ -206,7 +206,7 @@ namespace Engine {
 	}
 
 	std::span<std::byte> MappedBufferRegion::AsSpan(uint32_t count, uint32_t offset) {
-		Utils::AssertAccess(m_Flags, true, false);
+		Utils::AssertAccess(m_Flags, true, true);
 		ENGINE_ASSERT(count + offset <= m_Size);
 		if (count + offset > m_Size)
 			throw std::out_of_range(fmt::format("MappedBufferRegion::AsSpan<T>(count, offset): Out of bounds (count={}, offset={}, size={})", count, offset, m_Size));

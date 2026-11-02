@@ -115,7 +115,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<T> MappedBufferRegion::AsSpan(uint32_t offset) {
-		Utils::AssertAccess(m_Flags, true, false);
+		Utils::AssertAccess(m_Flags, true, true);
 
 		ENGINE_ASSERT(offset <= m_Size);
 		if (offset > m_Size)
@@ -149,7 +149,7 @@ namespace Engine {
 
 	template <typename T>
 	std::span<T> MappedBufferRegion::AsSpan(uint32_t elementCount, uint32_t offset) {
-		Utils::AssertAccess(m_Flags, true, false);
+		Utils::AssertAccess(m_Flags, true, true);
 
 		ENGINE_ASSERT(IsAligned<T>(offset), "MappedBufferRegion::AsSpan<T>(): Misaligned data access.");
 

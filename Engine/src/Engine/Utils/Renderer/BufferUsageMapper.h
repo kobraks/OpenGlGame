@@ -51,7 +51,7 @@ namespace Engine::Utils {
 			throw std::runtime_error("Attempted to read from a buffer without read access");
 		}
 
-		if (requiresWrite && !Utils::HasFlag(flags, BufferMapFlags::Read)) {
+		if (requiresWrite && !Utils::HasFlag(flags, BufferMapFlags::Write)) {
 			ENGINE_ASSERT(false, "Attempted to write to a buffer without write access");
 			throw std::runtime_error("Attempted to write to a buffer without write access");
 		}
