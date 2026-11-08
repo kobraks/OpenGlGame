@@ -56,8 +56,8 @@ project "Engine"
 	{
 		"Glad",
 		"GLFW",
-		"Lua54",
-		"Fmt",
+		"Lua55",
+		"fmt",
 		"ImGui",
 		"Spdlog",
 		"FreeImage",

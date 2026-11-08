@@ -18,13 +18,13 @@
 	url = https://github.com/ocornut/imgui.git
 [submodule "vendor/ImGuizmo"]
 	path = vendor/ImGuizmo
-	url = https://github.com/kobraks/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git
 [submodule "vendor/spdlog"]
 	path = vendor/spdlog
 	url = https://github.com/gabime/spdlog.git
 [submodule "vendor/yaml-cpp"]
 	path = vendor/yaml-cpp
-	url = https://github.com/kobraks/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
 [submodule "vendor/Assimp"]
 	path = vendor/Assimp
-	url = https://github.com/kobraks/assimp.git
+	url = https://github.com/assimp/assimp.git

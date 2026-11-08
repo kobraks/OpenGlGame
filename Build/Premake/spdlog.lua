@@ -26,18 +26,18 @@ project "spdlog"
         --"src/async.cpp",
         --"src/cfg.cpp",
 
-        "include/**.h",
+        path.join(SPDLogRoot, "include/**.h"),
     }
 
     includedirs
     {
-        path.join(SPDLogRoot, "%{prj.location}/include"),
+        path.join(SPDLogRoot, "include"),
         "%{IncludeDir.Fmt}",
     }
 
     links
     {
-        "Fmt",
+        "fmt",
     }
 
     filter "configurations:Debug"

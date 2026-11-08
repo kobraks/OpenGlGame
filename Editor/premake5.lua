@@ -43,7 +43,7 @@ project "Editor"
 	links
 	{
 		"Engine",
-		"Fmt"
+		"fmt"
 	}
 
 	filter "system:windows"

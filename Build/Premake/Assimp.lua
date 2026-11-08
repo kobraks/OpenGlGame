@@ -25,9 +25,9 @@ newoption { trigger = "zlib-asm686", description = "Enable i686 assembly (zlib)"
 newoption { trigger = "zlib-amd64", description = "Enable amd64 assembly (zlib)", default = "off"}
 
 local function optOn(n) return _OPTIONS[n] == "on" end
-local assimpRoot = path.getabsolute(_SCRIPT_DIR)
+local assimpRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/Assimp") --path.getabsolute(_SCRIPT_DIR)
 
-local genDir = path.join(assimpRoot, "generated")
+local genDir = path.join(_MAIN_SCRIPT_DIR, "Build/Generated/Assimp") --path.join(assimpRoot, "generated")
 local genInc = path.join(genDir, "include")
 
 local function ensureDir(p) os.mkdir(p) end

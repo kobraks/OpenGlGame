@@ -1,21 +1,25 @@
+local YAMLCPPRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/yaml-cpp")
+
 project "yaml-cpp"
 	kind "StaticLib"
 	language "C++"
+
+	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/yaml-cpp"))
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	files
 	{
-		"src/**.h",
-		"src/**.cpp",
+		path.join(YAMLCPPRoot, "src/**.h"),
+		path.join(YAMLCPPRoot, "src/**.cpp"),
 		
-		"include/**.h"
+		path.join(YAMLCPPRoot, "include/**.h")
 	}
 
 	includedirs
 	{
-		"include"
+		path.join(YAMLCPPRoot, "include")
 	}
 
 	defines {
