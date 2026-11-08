@@ -1,18 +1,22 @@
-project "Lua54"
+local LuaRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/lua")
+
+project "Lua55"
     kind "StaticLib"
     language "C"
     staticruntime "off"
+
+    location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Lua"))
     
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
     objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
     files
     {
-		"src/**.h",
-		"src/**.c"
+		path.join(LuaRoot, "src/**.h"),
+		path.join(LuaRoot, "src/**.c")
     }
 
-    removefiles{ "src/luac.c", "src/lua.c" }
+    removefiles{ path.join(LuaRoot, "src/luac.c"), path.join(LuaRoot, "src/lua.c") }
 	
 	defines
 	{
@@ -21,7 +25,7 @@ project "Lua54"
 
     includedirs
     {
-        "src"
+        path.join(LuaRoot, "src")
     }
     
     filter "system:windows"

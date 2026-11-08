@@ -6,22 +6,22 @@
 	url = https://github.com/ThePhD/sol2
 [submodule "vendor/fmt"]
 	path = vendor/fmt
-	url = https://github.com/kobraks/fmt
+	url = https://github.com/fmtlib/fmt.git
 [submodule "vendor/GLFW"]
 	path = vendor/GLFW
-	url = https://github.com/kobraks/glfw
+	url = https://github.com/glfw/glfw.git
 [submodule "vendor/FreeImage"]
 	path = vendor/FreeImage
 	url = https://github.com/kobraks/FreeImage
 [submodule "vendor/ImGui"]
 	path = vendor/ImGui
-	url = https://github.com/kobraks/imgui
+	url = https://github.com/ocornut/imgui.git
 [submodule "vendor/ImGuizmo"]
 	path = vendor/ImGuizmo
 	url = https://github.com/kobraks/ImGuizmo
 [submodule "vendor/spdlog"]
 	path = vendor/spdlog
-	url = https://github.com/kobraks/spdlog.git
+	url = https://github.com/gabime/spdlog.git
 [submodule "vendor/yaml-cpp"]
 	path = vendor/yaml-cpp
 	url = https://github.com/kobraks/yaml-cpp

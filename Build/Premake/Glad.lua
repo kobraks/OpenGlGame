@@ -1,21 +1,25 @@
+local GladRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/glad")
+
 project "Glad"
     kind "StaticLib"
     language "C"
     staticruntime "off"
     
+    location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/glad"))
+
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
     objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
     files
     {
-        "include/glad/glad.h",
-        "include/KHR/khrplatform.h",
-        "src/glad.c"
+        path.join(GladRoot, "include/glad/glad.h"),
+        path.join(GladRoot, "include/KHR/khrplatform.h"),
+        path.join(GladRoot, "src/glad.c")
     }
 
     includedirs
     {
-        "include"
+        path.join(GladRoot, "include")
     }
     
     filter "system:windows"

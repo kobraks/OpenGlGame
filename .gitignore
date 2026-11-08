@@ -2,6 +2,7 @@
 **/bin/
 **/bin-int/
 Intermediates/
+Build/Projects
 x64/
 Debug/
 Release/
