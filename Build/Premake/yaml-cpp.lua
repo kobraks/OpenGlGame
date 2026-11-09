@@ -6,8 +6,8 @@ project "yaml-cpp"
 
 	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/yaml-cpp"))
 
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	files
 	{

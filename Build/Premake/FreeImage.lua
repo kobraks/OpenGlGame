@@ -1,215 +1,176 @@
-include "./Source/ZLib"
-include "./Source/OpenEXR"
-include "./Source/LibJPEG"
-include "./Source/LibTIFF4"
-include "./Source/LibPNG"
-include "./Source/LibOpenJPEG"
-include "./Source/LibRawLite"
-include "./Source/LibJXR"
-include "./Source/LibWebP"
+local FreeImageRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/FreeImage")
+local FreeImageCMakePath = path.join(FreeImageRoot, "CMakeLists.txt")
+local FreeImageVersionHeader = path.join(FreeImageRoot, "Source/FreeImage.h")
 
-project "FreeImage"
-	kind "SharedLib"
-	language "C++"
-    staticruntime "off"
-	characterset "MBCS"
-	
-	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-	
-	files
-    {
-		"Source/*.h",
-		"Source/FreeImage/PSDParser.h",
-		"Source/FreeImage/J2KHelper.h",
-		"Source/Metadata/*.h",
-		"Source/FreeImageToolkit/Resize.h",
-		
-		"Source/FreeImage/*.c",
-		"Source/FreeImage/*.cpp",
-		"Source/Metadata/*.cpp",
-		"Source/FreeImageToolkit/*.cpp",
-    }
-	
-	removefiles
-	{
-	}
-	
-	defines
-	{	
-		"WIN32",
-		"_WINDOWS",
-		"_USRDLL",
-		"OPJ_STATIC",
-		"FREEIMAGE_EXPORTS",
-		"LIBRAW_NODLL",
-		"_CRT_SECURE_NO_DEPRECATE"
-	}
+local function ReadTextFile(FilePath)
+	local FileHandle, ErrorMessage = io.open(FilePath, "rb")
+	if not FileHandle then
+		error("FreeImage: cannot read " .. FilePath .. ": " .. tostring(ErrorMessage))
+	end
 
-    includedirs
-    {
-		"Source/ZLib",
-		"Source/deprecationManager",
-		"Source/FreeImage",
-		"Source/OpenEXR",
-		"Source/OpenEXR/Half",
-		"Source/OpenEXR/Iex",
-		"Source/OpenEXR/IlmImf",
-		"Source/OpenEXR/Imath",
-		"Source/OpenEXR/IlmThread",
-		"Source/LibJXR/jxrgluelib",
-		"Source/LibJXR/image/sys",
-		"Source",
-    }
-	
-	links
-	{
-		"ZLib",
-		"LibJPEG",
-		"LibJXR",
-		"LibOpenJPEG",
-		"LibPNG",
-		"LibRAW",
-		"LibTIFF4",
-		"LibWebP",
-		"OpenEXR",
-	}
-    
-    filter "system:windows"
-        systemversion "latest"
-		files { "FreeImage.rc" }
-		vpaths { ["Resources/*"] = { "*.rc" } }
+	local Content = FileHandle:read("*a")
+	FileHandle:close()
+	return Content
+end
 
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
+local CMakeContent = ReadTextFile(FreeImageCMakePath)
 
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
+local SourceGroups = {
+	"FreeImage_SOURCES",
+	"FreeImage_LIBJPEG_SRCS",
+	"FreeImage_LIBOPENJPEG_SRCS",
+	"FreeImage_ZLIB_SRCS",
+	"FreeImage_LIBPNG_SRCS",
+	"FreeImage_LIBTIFF_SRCS",
+	"FreeImage_JXR_SRCS",
+	"FreeImage_WEBP_SRCS",
+	"FreeImage_LIBRAWLITE_SRCS",
+	"FreeImage_OPENEXR_HALF_SRCS",
+	"FreeImage_IMATH_SRCS",
+	"FreeImage_IEX_SRCS",
+	"FreeImage_ILMTHREAD_SRCS",
+	"FreeImage_OPENEXRCORE_SRCS",
+	"FreeImage_LIBDEFLATE_SRCS",
+	"FreeImage_ZSTD_SRCS",
+	"FreeImage_OPENJPH_SRCS",
+	"FreeImage_OPENEXR_SRCS"
+}
+
+local SourceExtensions = {
+	c = true,
+	cc = true,
+	cpp = true,
+	h = true,
+	hh = true,
+	hpp = true,
+	inl = true
+}
+
+local function CollectFreeImageSources()
+	local CollectedSources = {}
+	local AddedPaths = {}
+
+	for _, GroupName in ipairs(SourceGroups) do
+		local GroupContent = CMakeContent:match("set%s*%(%s*" .. GroupName .. "%s+([^%)]+)%)")
+		if not GroupContent then
+			error("FreeImage: missing upstream CMake source group: " .. GroupName)
+		end
+
+		GroupContent = GroupContent:gsub("#[^\r\n]*", " ")
+		for SourceEntry in GroupContent:gmatch("%S+") do
+			SourceEntry = SourceEntry:gsub('^"', ""):gsub('"$', ""):gsub("^%./", "")
+			local Extension = SourceEntry:match("%.([%a%d]+)$")
+
+			if SourceEntry:sub(1, 7) == "Source/" and SourceExtensions[Extension] then
+				local FullPath = path.join(FreeImageRoot, SourceEntry)
+				if not AddedPaths[FullPath] then
+					AddedPaths[FullPath] = true
+					table.insert(CollectedSources, FullPath)
+				end
+			end
+		end
+	end
+
+	return CollectedSources
+end
+
+local FreeImageSources = CollectFreeImageSources()
 
 project "FreeImageLib"
-    kind "StaticLib"
-    language "C++"
-    staticruntime "off"
-	characterset "MBCS"
-    
-    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
-
-    files
-    {
-		"Source/*.h",
-		"Source/FreeImage/PSDParser.h",
-		"Source/Metadata/*.h",
-		"Source/FreeImageToolkit/Resize.h",
-
-		"Source/FreeImage/*.cpp",
-		"Source/Metadata/*.cpp",
-		"Source/FreeImageToolkit/*.cpp",
-    }
-	
-	removefiles
-	{
-	}
-	
-	defines
-	{
-		"WIN32",
-		"OPJ_STATIC",
-		"FREEIMAGE_LIB",
-		"_CRT_SECURE_NO_DEPRECATE",
-		"LIBRAW_NODLL",
-	}
-
-    includedirs
-    {
-		"Source/ZLib",
-		"Source/deprecationManager",
-		"Source/FreeImage",
-		"Source/OpenEXR",
-		"Source/OpenEXR/Half",
-		"Source/OpenEXR/Iex",
-		"Source/OpenEXR/IlmImf",
-		"Source/OpenEXR/Imath",
-		"Source/OpenEXR/IlmThread",
-		"Source/LibJXR/jxrgluelib",
-		"Source/LibJXR/image/sys",
-		"Source",
-    }
-	
-	links
-	{
-		"ZLib",
-		"LibJPEG",
-		"LibJXR",
-		"LibOpenJPEG",
-		"LibPNG",
-		"LibRAW",
-		"LibTIFF4",
-		"LibWebP",
-		"OpenEXR",
-	}
-    
-    filter "system:windows"
-        systemversion "latest"
-
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
-
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
-		
-project "FreeImagePlus"
 	kind "StaticLib"
-	language "c++"
-	staticruntime "off"
-	characterset "MBCS"
-    
-    targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
-    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+	language "C++"
+	cppdialect "C++17"
+	cdialect "C11"
+	staticruntime "Off"
 
-    files
-    {
-		"Wrapper/FreeImagePlus/*.h",
-		"Wrapper/FreeImagePlus/src/*.cpp",
-    }
+	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects", "FreeImageLib"))
+	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
+
+	files (FreeImageSources)
 	
-	removefiles
-	{
+	includedirs {
+		path.join(FreeImageRoot, "Source"),
+		path.join(FreeImageRoot, "Source/Metadata"),
+		path.join(FreeImageRoot, "Source/FreeImageToolkit"),
+
+		path.join(FreeImageRoot, "Source/LibJPEG"),
+		path.join(FreeImageRoot, "Source/LibOpenJPEG"),
+		path.join(FreeImageRoot, "Source/LibPNG"),
+		path.join(FreeImageRoot, "Source/LibTIFF4"),
+
+		path.join(FreeImageRoot, "Source/LibJXR"),
+		path.join(FreeImageRoot, "Source/LibJXR/image/sys"),
+		path.join(FreeImageRoot, "Source/LibJXR/common/include"),
+		path.join(FreeImageRoot, "Source/LibJXR/jxrgluelib"),
+
+		path.join(FreeImageRoot, "Source/LibWebP"),
+		path.join(FreeImageRoot, "Source/LibWebP/src"),
+		
+		path.join(FreeImageRoot, "Source/LibRawLite"),
+		path.join(FreeImageRoot, "Source/LibRawLite/dcraw"),
+		path.join(FreeImageRoot, "Source/LibRawLite/internal"),
+		path.join(FreeImageRoot, "Source/LibRawLite/libraw"),
+		path.join(FreeImageRoot, "Source/LibRawLite/src"),
+
+		path.join(FreeImageRoot, "Source/OpenEXR"),
+		path.join(FreeImageRoot, "Source/OpenEXR/Half"),
+		path.join(FreeImageRoot, "Source/OpenEXR/Iex"),
+		path.join(FreeImageRoot, "Source/OpenEXR/IlmImf"),
+		path.join(FreeImageRoot, "Source/OpenEXR/IlmThread"),
+		path.join(FreeImageRoot, "Source/OpenEXR/OpenEXRCore"),
+		path.join(FreeImageRoot, "Source/OPENEXR/Zstd/lib"),
+		path.join(FreeImageRoot, "Source/OPENEXR/OpenJPH"),
+		path.join(FreeImageRoot, "Source/OPENEXR/OpenJPH/openjph"),
+
+		path.join(FreeImageRoot, "Source/LibDeflate"),
+		path.join(FreeImageRoot, "Source/Imath"),
+		path.join(FreeImageRoot, "Source/ZLib")
 	}
-	
-	defines
-	{
-		"WIN32",
-		"WIN32_LEAN_AND_MEAN",
-		"VC_EXTRALEAN",
-		"FIP_EXPORTS",
-		"FREEIMAGE_LIB",
-		"_LIB",
-		"_CRT_SECURE_NO_DEPRECATE"
+	defines {
+		"DISABLE_PERF_MEASUREMENT",
+		"OPJ_STATIC",
+		"NO_LCMS",
+		"NO_WINDOWS",
+		"INCLUDE_LIB_ZLIB",
+		"INCLUDE_LIB_TIFF4",
+		"INCLUDE_LIB_JXR",
+		"INCLUDE_LIB_WEBP",
+		"INCLUDE_LIB_RAW",
+		"INCLUDE_LIB_OPENEXR",
+		"LIBRAW_NODLL",
+		"USE_X3FTOOLS",
+		"PNG_ARM_NEON_OPT=0",
+		"ZSTD_DISABLE_ASM",
+		"_CRT_SECURE_NO_WARNINGS",
+		"FREEIMAGE_LIB"
 	}
 
-    includedirs
-    {
-		"Wrapper/FreeImagePlus",
-		"Source",
-    }
-	
-	links
-	{
-		"FreeImageLib",
-	}
-    
-    filter "system:windows"
-        systemversion "latest"
+	filter "system:windows"
+		systemversion "latest"
+		links { "ws2_32" }
+		
+		defines {
+			"WIN32",
+			"WIN32_LEAN_AND_MEAN"
+		}
+		
+		files {
+			path.join(FreeImageRoot, "Source/LibTIFF4/tif_win32.c"),
+			path.join(FreeImageRoot, "FreeImage.rc")
+		}
 
-    filter "configurations:Debug"
-        runtime "Debug"
-        symbols "on"
+		filter "system:linux"
+			defines { "HAVE_UNISTD_H", "_FILE_OFFSET_BITS=64", "__ANSI__" }
+		
+		filter "configurations:Debug"
+			runtime "Debug"
+			symbols "On"
+				
+		filter "configurations:Release"
+			runtime "Release"
+			optimize "On"
 
-    filter "configurations:Release"
-        runtime "Release"
-        optimize "on"
+		filter "configurations:Dist"
+			runtime "Release"
+			optimize "On"

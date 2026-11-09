@@ -6,6 +6,7 @@
 #include "Engine/Core/TimeStepController.h"
 
 #include "Engine/Utils/CommandLineParser.h"
+#include "Engine/Utils/FreeImageRuntime.h"
 
 #include "Engine/Layers/LayerStack.h"
 #include "Engine/Layers/ImGuiLayer.h"
@@ -74,6 +75,7 @@ namespace Engine {
 	private:
 		Scope<Window> m_Window;
 
+		Utils::FreeImageRuntime m_FreeImageRuntime;
 		ApplicationSpecification m_Specification;
 		TimeStepController m_TimeStepController;
 		Scope<CommandLineParser> m_CmdParser;

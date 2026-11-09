@@ -14,12 +14,6 @@ project "Engine"
 	{
 		"src/**.h",
 		"src/**.cpp",
-		
-		"%{wks.location}/vendor/glm/**.hpp",
-		"%{wks.location}/vendor/glm/**.inl",
-		
-		"%{wks.location}/vendor/ImGuizmo/ImGuizmo.h",
-		"%{wks.location}/vendor/ImGuizmo/ImGuizmo.cpp",
 	}
 
 	defines
@@ -29,6 +23,7 @@ project "Engine"
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
 		"YAML_CPP_STATIC_DEFINE",
+		"FREEIMAGE_LIB"
 	}
 
 	includedirs
@@ -56,20 +51,18 @@ project "Engine"
 	{
 		"Glad",
 		"GLFW",
-		"Lua55",
+		"Lua54",
 		"fmt",
 		"ImGui",
 		"Spdlog",
-		"FreeImage",
+		"FreeImageLib",
 		"yaml-cpp",
 		"assimp",
+		"ImGuizmo",
 		
 		"opengl32.lib",
 	}
 	
-	filter "files:**/vendor/ImGuizmo/**.cpp" --Crude fix think about something else
-		enablepch "off"
-		
 	filter "action:vs*"
 		externalanglebrackets "On" --Enable treating <> as external
 		externalwarnings "Off" --Disable external warnings /external:W0
@@ -78,37 +71,17 @@ project "Engine"
 	filter "system:windows"
 		systemversion "latest"
 
-		defines
-		{
-		}
-
-		links
-		{
-		}
-
 	filter "configurations:Debug"
 		defines "GAME_DEBUG"
 		runtime "Debug"
 		symbols "on"
-
-		links
-		{
-		}
 
 	filter "configurations:Release"
 		defines "GAME_RELEASE"
 		runtime "Release"
 		optimize "on"
 
-		links
-		{
-		}
-
 	filter "configurations:Dist"
 		defines "GAME_DIST"
 		runtime "Release"
 		optimize "on"
-
-		links
-		{
-		}

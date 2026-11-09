@@ -12,7 +12,7 @@
 	url = https://github.com/glfw/glfw.git
 [submodule "vendor/FreeImage"]
 	path = vendor/FreeImage
-	url = https://github.com/kobraks/FreeImage
+	url = https://github.com/danoli3/FreeImage.git
 [submodule "vendor/ImGui"]
 	path = vendor/ImGui
 	url = https://github.com/ocornut/imgui.git

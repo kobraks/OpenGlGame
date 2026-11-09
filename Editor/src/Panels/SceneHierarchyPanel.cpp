@@ -34,7 +34,8 @@ namespace Editor {
 		ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
 		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
 
-		float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.f;
+		//float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.f;
+		const float lineHeight = ImGui::GetFrameHeight();
 		ImVec2 buttonSize = {lineHeight + 3.f, lineHeight};
 
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.8f, 0.1f, 0.15f, 1.0f});
@@ -88,14 +89,16 @@ namespace Editor {
 	template <typename T, typename UIFunction>
 	static void DrawComponent(const std::string& name, Engine::Entity entity, UIFunction uiFunction) {
 		constexpr ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed |
-			ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+			ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_FramePadding;
 
 		if (entity.HasComponent<T>()) {
 			auto& component = entity.GetComponent<T>();
 			ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{4, 4});
-			float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+			//float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+			const float lineHeight = ImGui::GetFrameHeight();
+
 			ImGui::Separator();
 			bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, name.c_str());
 			ImGui::PopStyleVar();

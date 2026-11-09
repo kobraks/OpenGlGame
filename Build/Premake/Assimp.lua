@@ -259,6 +259,8 @@ project "assimp"
 
     -- forceincludes { "AssimpPCH.h" }
 
+    location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Assimp"))
+
     targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
@@ -447,6 +449,8 @@ if optOn("assimp-build-zlib") then
         cdialect "C99"
 
         staticruntime (optOn("assimp-static-crt") and "On" or "Off")
+
+        location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/zlibstatic"))
         
         targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	    objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")

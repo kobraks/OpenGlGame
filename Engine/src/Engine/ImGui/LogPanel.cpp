@@ -167,7 +167,7 @@ namespace Engine {
 	}
 
 	void LogPanel::RenderMessagePanel() {
-		ImGui::BeginChild("LogScrollArea", { 0, 0 }, ImGuiChildFlags_Border, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings);
+		ImGui::BeginChild("LogScrollArea", { 0, 0 }, ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoSavedSettings);
 
 		{
 			ScopedID loggerTable("LoggerTable");

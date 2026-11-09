@@ -1,6 +1,6 @@
 local LuaRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/lua")
 
-project "Lua55"
+project "Lua54"
     kind "StaticLib"
     language "C"
     staticruntime "off"
