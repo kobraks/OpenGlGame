@@ -62,17 +62,17 @@ namespace Engine {
 	}
 
 	void BufferObject::AllocateImmutable(const void* data, uint32_t size, BufferStorageFlags flags) {
-		const bool presitent = Utils::HasFlag(flags, BufferStorageFlags::MapPersistent);
+		const bool persistent = Utils::HasFlag(flags, BufferStorageFlags::MapPersistent);
 		const bool readable = Utils::HasFlag(flags, BufferStorageFlags::MapRead);
 		const bool writable = Utils::HasFlag(flags, BufferStorageFlags::MapWrite);
 		const bool coherent = Utils::HasFlag(flags, BufferStorageFlags::MapCoherent);
 
-		if (presitent && !readable && !writable) {
+		if (persistent && !readable && !writable) {
 			ENGINE_ASSERT(false, "Persistent mapping requires read or write access.");
 			throw std::invalid_argument("Persistent mapping requires read or write access.");
 		}
 
-		if (coherent && !presitent) {
+		if (coherent && !persistent) {
 			ENGINE_ASSERT(false, "Coherent storage requires persistent storage.");
 			throw std::invalid_argument("Coherent storage requires persistent storage.");
 		}
@@ -81,7 +81,7 @@ namespace Engine {
 		LOG_GL_INFO("BufferObject ID={} allocated immutable: size={}, flags=0x{:X}", m_State->RendererID, size, static_cast<uint32_t>(flags));
 		glNamedBufferStorage(m_State->RendererID, static_cast<GLsizeiptr>(size), data, OpenGL::EnumToGLConstant(flags));
 
-		if (presitent) {
+		if (persistent) {
 			const auto mappingFlags = Utils::GetPersistentMappingFlags(flags);
 			LOG_GL_DEBUG("BufferObject ID={} persistently mapped with access={} and flags={}", m_State->RendererID, Utils::DetermineAccessFromFlags(flags), mappingFlags);
 			m_State->PersistentContent = Map(mappingFlags);
@@ -121,7 +121,7 @@ namespace Engine {
 	Buffer BufferObject::Read(uint32_t size, uint32_t offset) const {
 		if (IsMapped()) {
 			ENGINE_ASSERT(false, "failed: Buffer is currently mapped.");
-			throw std::runtime_error("BufferObject::Read() failed: buffer is currently mapped.");
+			throw std::logic_error("BufferObject::Read() failed: buffer is currently mapped.");
 		}
 
 		ENGINE_ASSERT(offset + size <= Size());
