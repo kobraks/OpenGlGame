@@ -11,6 +11,8 @@
 #include "Engine/Layers/LayerStack.h"
 #include "Engine/Layers/ImGuiLayer.h"
 
+#include <filesystem>
+
 int main(int arc, char **argv);
 
 namespace Engine {

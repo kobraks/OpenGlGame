@@ -306,7 +306,7 @@ namespace Engine {
 		if (iter != uniforms.end())
 			return *iter;
 
-		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform at given location, {}", location));
+		ENGINE_ASSERT(false, "Shader does not contains uniform at given location, {}", location);
 		throw std::runtime_error(fmt::format("Shader does not contains uniform at given location, {}", location));
 	}
 
@@ -318,7 +318,7 @@ namespace Engine {
 		if (iter != blocks.end())
 			return *iter;
 
-		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform block at given index, {}", index));
+		ENGINE_ASSERT(false, "Shader does not contains uniform block at given index, {}", index);
 		throw std::runtime_error(fmt::format("Shader does not contains uniform block at given index, {}", index));
 	}
 
@@ -330,7 +330,7 @@ namespace Engine {
 		if (iter != uniforms.end())
 			return *iter;
 
-		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform with given name: \"{}\"", name));
+		ENGINE_ASSERT(false, "Shader does not contains uniform with given name: \"{}\"", name);
 		throw std::runtime_error(fmt::format("Shader does not contains uniform with given name: \"{}\"", name));
 	}
 
@@ -342,7 +342,7 @@ namespace Engine {
 		if (iter != blocks.end())
 			return *iter;
 
-		ENGINE_ASSERT(false, fmt::format("Shader does not contains uniform block with given name: \"{}\"", name));
+		ENGINE_ASSERT(false, "Shader does not contains uniform block with given name: \"{}\"", name);
 		throw std::runtime_error(fmt::format("Shader does not contains uniform block with given name: \"{}\"", name));
 	}
 

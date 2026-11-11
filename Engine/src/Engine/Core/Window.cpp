@@ -90,7 +90,7 @@ namespace Engine {
 			}
 
 			//DEBUG
-#ifdef GAME_DEBUG
+#ifdef ENGINE_DEBUG
 			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 #endif
 		}

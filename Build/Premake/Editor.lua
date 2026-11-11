@@ -1,29 +1,35 @@
+local EditorRoot = path.join(_MAIN_SCRIPT_DIR, "Editor")
+
 project "Editor"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++23"
 	staticruntime "off"
 
+	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Editor"))
+
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
-	files
-	{
-		"src/**.h",
-		"src/**.cpp",
+	debugdir (path.join(_MAIN_SCRIPT_DIR, "Editor"))
+
+	files {
+		path.join(EditorRoot, "src/**.h"),
+		path.join(EditorRoot, "src/**.cpp"),
 	}
 	
-	defines 
-	{
+	defines {
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
 		"YAML_CPP_STATIC_DEFINE",
-		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE"
+		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE",
 	}
 	
-	includedirs
-	{
-		"src",
+	includedirs {
+		path.join(EditorRoot, "src"),
+	}
+
+	externalincludedirs {
 		"%{wks.location}/Engine/src",
 		"%{wks.location}/vendor",
 		"%{IncludeDir.Boost}",
@@ -43,32 +49,27 @@ project "Editor"
 	links
 	{
 		"Engine",
-		"fmt"
+		"fmt",
+		"ImGuizmo"
 	}
 
 	filter "system:windows"
 		systemversion "latest"
+
+		defines { 
+			"NOMINMAX",
+			"WIN32_LEAN_AND_MEAN",
+		}
 		
 	filter "action:vs*"
 		externalanglebrackets "On"
 		externalwarnings "Off" --/external:W0
 		-- buildoptions { "/external:W0" }
+		buildoptions { "/Zc:preprocessor" }
 
 	filter "configurations:Debug"
-		runtime "Debug"
-		symbols "on"
-
-		defines { "GAME_DEBUG", "DEBUG" }
+		defines { "ENGINE_DEBUG", "ENGINE_ENABLE_OPENGL_DEBUG" }
 
 	filter "configurations:Release"
-		runtime "Release"
-		optimize "on"
-
-		defines { "GAME_RELEASE", "NDEBUG" }
-
-	filter "configurations:Dist"
-		runtime "Release"
-		optimize "on"
-
-		defines { "GAME_Dist", "NDEBUG" }
+		defines { "ENGINE_RELEASE" }
 

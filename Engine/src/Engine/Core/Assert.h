@@ -1,22 +1,46 @@
 #pragma once
 
-#include "Engine/Core/Base.h"
+#include "Engine/Core/Config.h"
 #include "Engine/Core/Log.h"
 
-#include <filesystem>
+#include <cstdio>
+#include <source_location>
+#include <string>
+#include <string_view>
+#include <utility>
 
-#ifdef GAME_ENABLE_ASSERT
-#define GAME_INTERNAL_ASSERT_IMPL(type, debugBreak, check, msg, ...) {if (!(check)) [[unlikely]] { LOG##type##ERROR(msg, __VA_ARGS__); debugBreak(); } }
+#include <fmt/format.h>
 
-#define GAME_INTERNAL_ASSERT_WITH_MSG(type, debugBreak, check, ...) GAME_INTERNAL_ASSERT_IMPL(type, debugBreak, check, "Assertion failed: {0}", __VA_ARGS__)
-#define GAME_INTERNAL_ASSERT_NO_MSG(type, debugBreak, check) GAME_INTERNAL_ASSERT_IMPL(type, debugBreak, check, "Assertion '{0}' failed at {1}:{2}", GAME_STRINGIFY_MACRO(check), std::filesystem::path(__FILE__).filename().string(), __LINE__)
+namespace Engine::Detail {
+	void WriteAssertionFailure(const Ref<spdlog::logger>& logger, std::string_view condition, std::source_location location, std::string_view additionalMessage = {});
 
-#define GAME_INTERNAL_ASSERT_GET_MACRO_NAME(arg1, arg2, macro, ...) macro
-#define GAME_INTERNAL_ASSERT_GET_MACRO(...) GAME_EXPAND_MACRO(GAME_INTERNAL_ASSERT_GET_MACRO_NAME(__VA_ARGS__, GAME_INTERNAL_ASSERT_WITH_MSG, GAME_INTERNAL_ASSERT_NO_MSG))
+	inline void ReportAssertionFailure(const Ref<spdlog::logger>& logger, std::string_view condition, std::source_location location) {
+		WriteAssertionFailure(logger, condition, location);
+	}
 
-#define GAME_ASSERT(...) GAME_EXPAND_MACRO(GAME_INTERNAL_ASSERT_GET_MACRO(__VA_ARGS__)(_, GAME_DEBUGBREAK_GAME, __VA_ARGS__))
-#define ENGINE_ASSERT(...) GAME_EXPAND_MACRO(GAME_INTERNAL_ASSERT_GET_MACRO(__VA_ARGS__)(_ENGINE_, GAME_DEBUGBREAK_ENGINE, __VA_ARGS__))
+	template<typename... Args>
+	inline void ReportAssertionFailure(const Ref<spdlog::logger>& logger, std::string_view condition, std::source_location location, fmt::format_string<Args...> format, Args&&... args) {
+		WriteAssertionFailure(logger, condition, location, fmt::format(format, std::forward<Args>(args)...));
+	}
+}
+
+#ifdef ENGINE_ENABLE_ASSERTS
+#define ENGINE_INTERNAL_ASSERT(condition, logger, ...) \
+	do { \
+		if (!(condition)) [[unlikely]] { \
+		::Engine::Detail::ReportAssertionFailure(\
+			(logger), #condition, std::source_location::current()\
+			__VA_OPT__(,) __VA_ARGS__ \
+			); \
+			ENGINE_DEBUG_BREAK(); \
+		}\
+	} while (false)
+
+#define ENGINE_ASSERT(condition, ...) ENGINE_INTERNAL_ASSERT(condition, ::Engine::Log::GetEngineLogger() __VA_OPT__(,) __VA_ARGS__)
+
+#define GAME_ASSERT(condition, ...) ENGINE_INTERNAL_ASSERT(condition, ::Engine::Log::GetApplicationLogger() __VA_OPT__(,) __VA_ARGS__)
+
 #else
-#define GAME_ASSERT(...)
-#define ENGINE_ASSERT(...)
+#define ENGINE_ASSERT(condition, ...)
+#define GAME_ASSERT(condition, ...)
 #endif

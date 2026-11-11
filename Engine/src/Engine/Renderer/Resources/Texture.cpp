@@ -41,7 +41,7 @@ namespace Engine {
 			const uint32_t maxSize = Texture::GetMaxSize();
 			const uint32_t buffSize = size.Width * size.Height;
 
-			ENGINE_ASSERT(buffSize != 0)
+			ENGINE_ASSERT(buffSize != 0);
 			ENGINE_ASSERT(size.Width <= maxSize && size.Height <= maxSize);
 
 			if (buffSize == 0)
@@ -382,11 +382,11 @@ namespace Engine {
 			ENGINE_ASSERT(rowStrideBytes >= tightRowBytes, "RowStrideBytes smaller than tight row size");
 
 			const uint64_t minBuf = static_cast<uint64_t>(rowStrideBytes) * static_cast<uint64_t>(mipSize.Height);
-			ENGINE_ASSERT(bufSize >= minBuf)
+			ENGINE_ASSERT(bufSize >= minBuf);
 			if (bufSize < minBuf)
 				throw std::out_of_range("Pixel buffer too small for requested row stride");
 		} else {
-			ENGINE_ASSERT(bufSize >= tightTotal)
+			ENGINE_ASSERT(bufSize >= tightTotal);
 			if (bufSize < tightTotal)
 				throw std::out_of_range("Pixel buffer too small for requested image size");
 		}
@@ -569,8 +569,7 @@ namespace Engine {
 		if (IsMultisampled())
 			throw std::runtime_error("Resolve MSAA texture before upload pixels");
 
-		ENGINE_ASSERT(mipLevel < m_GLState->Levels, fmt::format("Mip level {} out of range for texture with {} levels", mipLevel,
-			m_GLState->Levels));
+		ENGINE_ASSERT(mipLevel < m_GLState->Levels, "Mip level {} out of range for texture with {} levels", mipLevel, m_GLState->Levels);
 
 		if (mipLevel >= m_GLState->Levels) {
 			throw std::out_of_range(fmt::format("Mip level {} out of range for texture with {} levels", mipLevel, m_GLState->Levels));

@@ -70,7 +70,7 @@ namespace Engine {
 
 	void UniformBuffer::BindRange(BindingPointType bindingPoint, uint32_t size, uint32_t offset) const {
 		const uint32_t aligned = AlignToUBOOffset(1);
-		ENGINE_ASSERT((aligned % offset) == 0)
+		ENGINE_ASSERT((aligned % offset) == 0);
 		BufferObject::BindRange(bindingPoint, size, offset);
 	}
 

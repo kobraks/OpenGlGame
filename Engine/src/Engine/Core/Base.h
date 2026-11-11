@@ -2,37 +2,20 @@
 
 #include "Engine/Core/Config.h"
 
-#include <memory>
+#include <cstdint>
+#include <utility>
 
-#ifdef GAME_DEFINE_DISCRETE_GPU_PREFERENCE
+#ifdef ENGINE_PREFER_DISCRETE_GPU
 extern "C" __declspec(dllexport) inline unsigned long NvOptimusEnablement = 0x00000001;
 extern "C" __declspec(dllexport) inline int AmdPowerXpressRequestHighPerformance = 1;
 #endif
 
+#define ENGINE_EXPAND_MACRO(x) x
+#define ENGINE_STRINGIFY_MACRO(x) #x
 
-#define GAME_EXPAND_MACRO(x) x
-#define GAME_STRINGIFY_MACRO(x) #x
-
-#define BIT(x) (1 << x)
+#define BIT(index) (std::uint32_t{1} << (index))
 #define BIND_EVENT_FN(fn) [this](auto &&... args) ->decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 
-namespace Engine {
-	template <typename T>
-	using Ref = std::shared_ptr<T>;
-
-	template <typename T>
-	using Scope = std::unique_ptr<T>;
-
-	template <typename T, typename ... Args>
-	constexpr Ref<T> MakeRef(Args &&...  args) {
-		return std::make_shared<T>(std::forward<Args>(args)...);
-	}
-
-	template <typename T, typename ... Args>
-	constexpr Scope<T> MakeScope(Args &&... args) {
-		return std::make_unique<T>(std::forward<Args>(args)...);
-	}
-}
-
+#include "Engine/Core/Memory.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Assert.h"

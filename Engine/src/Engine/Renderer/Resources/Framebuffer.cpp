@@ -485,7 +485,7 @@ namespace Engine {
 			const std::string msg = fmt::format("{:#x}: '{}'->{}", error.Code, error.Name, error.Desc);
 
 			LOG_GL_ERROR("Framebuffer '{}' incomplete: {} - {}", Label(), error.Name, error.Desc);
-			ENGINE_ASSERT(false, fmt::format("Unable to create framebuffer: {}", msg));
+			ENGINE_ASSERT(false, "Unable to create framebuffer: {}", msg);
 			throw std::runtime_error(fmt::format("Unable to create framebuffer: {}", msg));
 		}
 

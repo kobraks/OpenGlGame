@@ -1,34 +1,38 @@
+local EngineRoot = path.join(_MAIN_SCRIPT_DIR, "Engine")
+
 project "Engine"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++23"
 	staticruntime "off"
 
+	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Engine"))
+
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
 	pchheader "pch.h"
-	pchsource "src/pch.cpp"
+	pchsource (path.join(EngineRoot, "src/pch.cpp"))
 	
-	files
-	{
-		"src/**.h",
-		"src/**.cpp",
+	files {
+		path.join(EngineRoot, "src/**.h"),
+		path.join(EngineRoot, "src/**.cpp"),
 	}
 
-	defines
-	{
+	defines {
 		"_CRT_SECURE_NO_WARNINGS",
 		"GLFW_INCLUDE_NONE",
 		"SPDLOG_FMT_EXTERNAL",
         "SPDLOG_COMPILED_LIB",
 		"YAML_CPP_STATIC_DEFINE",
-		"FREEIMAGE_LIB"
+		"FREEIMAGE_LIB",
 	}
 
-	includedirs
-	{
-		"src",
+	includedirs {
+		path.join(EngineRoot, "src"),
+	}
+
+	externalincludedirs {
 		"%{wks.location}/vendor",
 		"%{IncludeDir.Boost}",
 		"%{IncludeDir.Spdlog}",
@@ -68,20 +72,18 @@ project "Engine"
 		externalwarnings "Off" --Disable external warnings /external:W0
 		warnings "Extra"
 
+		buildoptions { "/Zc:preprocessor" }
+
 	filter "system:windows"
 		systemversion "latest"
 
+		defines { 
+			"NOMINMAX",
+			"WIN32_LEAN_AND_MEAN",
+		}
+
 	filter "configurations:Debug"
-		defines "GAME_DEBUG"
-		runtime "Debug"
-		symbols "on"
+		defines { "ENGINE_DEBUG", "ENGINE_ENABLE_OPENGL_DEBUG" }
 
 	filter "configurations:Release"
-		defines "GAME_RELEASE"
-		runtime "Release"
-		optimize "on"
-
-	filter "configurations:Dist"
-		defines "GAME_DIST"
-		runtime "Release"
-		optimize "on"
+		defines { "ENGINE_RELEASE" }

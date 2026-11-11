@@ -65,7 +65,7 @@ namespace Engine::OpenGLDebug {
 	}
 
 	void Initialize() {
-#ifdef GAME_DEBUG
+#ifdef ENGINE_ENABLE_OPENGL_DEBUG
 		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 		glDebugMessageCallback(OpenGLMessageCallback, nullptr);

@@ -23,7 +23,7 @@ namespace Engine {
 	}
 
 	BufferView::BufferView(const Buffer& buffer, SizeType offset, SizeType length, bool allowWrite) : m_AllowWrite(allowWrite) {
-		ENGINE_ASSERT(offset + length <= buffer.m_Size)
+		ENGINE_ASSERT(offset + length <= buffer.m_Size);
 		if (offset + length > buffer.m_Size)
 			throw std::runtime_error("Buffer overflow!");
 

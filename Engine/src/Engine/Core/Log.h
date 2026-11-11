@@ -1,5 +1,7 @@
 #pragma once
-#include "Engine/Core/Base.h"
+#include "Engine/Core/Memory.h"
+
+#include <source_location>
 
 #include <spdlog/logger.h>
 
@@ -28,7 +30,15 @@ namespace Engine {
 	};
 }
 
-#define LOG_LOGGER_CALL(logger, level, ...) (logger)->log(spdlog::source_loc{__FILE__, __LINE__, static_cast<const char*>(__FUNCTION__)}, level, __VA_ARGS__)
+#define LOG_LOGGER_CALL(logger, level, ...)\
+	do {\
+		const auto severity = (level);\
+		if (auto loggerInstance = (logger);\
+			loggerInstance && loggerInstance->should_log(severity)) {\
+			const auto location = std::source_location::current();\
+			loggerInstance->log(spdlog::source_loc{ location.file_name(), static_cast<int>(location.line()), location.function_name() }, severity, __VA_ARGS__);\
+		}\
+	} while (false)
 
 #define APPLICATION_LOGGER (::Engine::Log::GetApplicationLogger())
 #define SCRIPT_LOGGER (::Engine::Log::GetScriptLogger())

@@ -10,7 +10,7 @@ namespace Engine {
 	bool BufferStreamWriter::WriteData(const std::byte *data, Stream::SizeType size) {
 		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
 
-		ENGINE_ASSERT(valid)
+		ENGINE_ASSERT(valid);
 		if(!valid)
 			return false;
 

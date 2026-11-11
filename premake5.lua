@@ -9,16 +9,16 @@ workspace "OpenGlGame"
 	architecture "x86_64"
 	startproject "Editor"
 
-	configurations
-	{
+	configurations {
 		"Debug",
 		"Release",
 	}
 
-	solution_items
-	{
+	solution_items {
 		".editorconfig"
 	}
+
+	location "."
 
 	--removed as premake5 5.0.0 released
 	--flags
@@ -27,11 +27,29 @@ workspace "OpenGlGame"
 	--}
 
 	multiprocessorcompile "on"
+	staticruntime "off"
 	
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 filter ("action:vs*")
 	buildoptions {"/utf-8"}
+
+filter ("system:windows", "action:vs*")
+	characterset "Unicode"
+
+filter ("configurations:Debug")
+	runtime "Debug"
+	symbols "On"
+	optimize "Off"
+
+	defines { "DEBUG" }
+
+filter ("configurations:Release")
+	runtime "Release"
+	symbols "Off"
+	optimize "On"
+
+	defines { "NDEBUG" }
 
 group "Dependencies"
 	include "vendor/premake"
@@ -49,11 +67,11 @@ group "Dependencies"
 group ""
 
 group "Core"
-	include "Engine"
+	include "Build/Premake/Engine"
 group ""
 
 group "Tools"
-	include "Editor"
+	include "Build/Premake/Editor"
 group ""
 
 --group "Misc"

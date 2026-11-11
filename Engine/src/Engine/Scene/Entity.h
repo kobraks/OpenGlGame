@@ -69,7 +69,7 @@ namespace Engine {
 
 	template <typename Component, typename ... Args>
 	Component & Entity::ReplaceComponent(Args &&...args) {
-		ENGINE_ASSERT(HasComponent<Component>())
+		ENGINE_ASSERT(HasComponent<Component>());
 		Component& component = m_Scene->m_Registry.replace<Component>(m_EntityHandle, std::forward<Args>(args)...);
 		m_Scene->OnComponentAdded<Component>(*this, component);
 

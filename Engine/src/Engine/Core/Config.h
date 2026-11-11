@@ -2,31 +2,34 @@
 
 #ifdef _WIN32
 #ifdef _WIN64
-#define GAME_WINDOWS_PLATFORM
+#define ENGINE_PLATFORM_WINDOWS
 #else
 #error "x86 is unsupported"
 #endif // __WIN64
-#elif defined(__LINUX__)
-#define GAME_LINUX_PLATFORM
+#elif defined(__linux__)
+#define ENGINE_PLATFORM_LINUX
 #else
-#error "Unsuported"
+#error "Unsuported platform"
 #endif //_WIN32
 
-#ifdef GAME_DEBUG
-#define GAME_ENABLE_ASSERT
-#define GAME_ENABLE_PROFILING
+#if defined(ENGINE_DEBUG) && defined(ENGINE_RELEASE)
+#error "ENGINE_DEBUG and ENGINE_RELEASE cannot be defined at the same time"
+#endif
 
-#ifdef GAME_WINDOWS_PLATFORM
-#define GAME_DEBUGBREAK_GAME()   __debugbreak()
-#define GAME_DEBUGBREAK_ENGINE() __debugbreak()
-#elif defined(GAME_LINUX_PLATFORM)
+#if defined(ENGINE_DEBUG) && !defined(ENGINE_DISABLE_ASSERTS)
+#define ENGINE_ENABLE_ASSERTS
+
+#ifdef ENGINE_PLATFORM_WINDOWS
+#if defined(_MSC_VER)
+#include <intrin.h>
+#define ENGINE_DEBUG_BREAK() __debugbreak()
+#endif
+#elif defined(ENGINE_PLATFORM_LINUX)
 #include <signal.h>
-#define GAME_DEBUGBREAK_GAME()   raise(SIGTRAP)
-#define GAME_DEBUGBREAK_ENGINE() raise(SIGTRAP)
+#define ENGINE_DEBUG_BREAK() raise(SIGTRAP)
 #else
 #error "Platform doesn't support debugbreak"
-#endif //GAME_WINDOWS_PLATFORM
+#endif //ENGINE_PLATFORM_WINDOWS
 #else
-#define GAME_DEBUGBREAK_GAME()
-#define GAME_DEBUGBREAK_ENGINE()
-#endif //GAME_DEBUG
+#define ENGINE_DEBUG_BREAK()
+#endif //ENGINE_DEBUG

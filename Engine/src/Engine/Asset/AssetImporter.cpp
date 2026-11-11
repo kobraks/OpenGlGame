@@ -14,7 +14,7 @@ namespace Engine {
 
 	Ref<Asset> AssetImporter::ImportAsset(AssetHandle handle, const AssetMetadata& metadata) {
 		if (!s_AssertImportFunction.contains(metadata.Type)) {
-			ENGINE_ASSERT("No importer available for asset type: {}", metadata.Type);
+			ENGINE_ASSERT(false, "No importer available for asset type: {}", metadata.Type);
 			return nullptr;
 		}
 
