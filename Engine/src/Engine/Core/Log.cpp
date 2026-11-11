@@ -11,18 +11,35 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-#ifdef ENGINE_DEBUG
+#if defined(ENGINE_DEBUG) && defined(ENGINE_PLATFORM_WINDOWS)
 #include <spdlog/sinks/msvc_sink.h>
 #endif
 
 namespace fs = std::filesystem;
 
 namespace Engine {
+	using SinkList = std::vector<spdlog::sink_ptr>;
+
+	static SinkList CreateSharedSinks(const std::string& pattern, bool consoleOutput) {
+		SinkList sinks;
+		sinks.reserve(2);
+
+#if defined(ENGINE_DEBUG) && defined(ENGINE_PLATFORM_WINDOWS)
+		sinks.emplace_back(MakeRef<spdlog::sinks::msvc_sink_mt>());
+#endif
+
+		if (consoleOutput) {
+			sinks.emplace_back(MakeRef<spdlog::sinks::stdout_color_sink_mt>());
+		}
+
+		return sinks;
+	}
+
 	template <typename It>
 	static std::shared_ptr<spdlog::logger> SetUpLogger(const std::string& name, const std::string& pattern, It begin,
 	                                                   It end,
-	                                                   spdlog::level::level_enum loggingLevel = spdlog::level::trace,
-	                                                   spdlog::level::level_enum flushLevel = spdlog::level::trace) {
+	                                                   spdlog::level::level_enum loggingLevel,
+	                                                   spdlog::level::level_enum flushLevel) {
 		auto logger = MakeRef<spdlog::logger>(name, begin, end);
 
 		logger->set_level(loggingLevel);
@@ -35,25 +52,18 @@ namespace Engine {
 	}
 
 	static std::shared_ptr<spdlog::logger> PrepareLogger(const std::string& name, const std::string& pattern,
-	                                                     const std::string& fileName, bool consoleOutput,
+	                                                     const std::string& fileName, const SinkList& sharedSinks,
 	                                                     bool fileOutput,
-	                                                     spdlog::level::level_enum loggingLevel = spdlog::level::trace,
-	                                                     spdlog::level::level_enum flushLevel = spdlog::level::trace) {
-		std::vector<spdlog::sink_ptr> sinks;
-		sinks.reserve(3);
-
-#ifdef ENGINE_DEBUG
-		sinks.emplace_back(std::make_shared<spdlog::sinks::msvc_sink_mt>());
-#endif
-
-		if (consoleOutput)
-			sinks.emplace_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+	                                                     spdlog::level::level_enum loggingLevel,
+	                                                     spdlog::level::level_enum flushLevel) {
+		SinkList sinks = sharedSinks;
+		sinks.reserve(sharedSinks.size() + (fileOutput) ? 1 : 0);
 
 		if (fileOutput) {
-			sinks.emplace_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName, true));
+			sinks.emplace_back(MakeRef<spdlog::sinks::basic_file_sink_mt>(fileName, true));
 		}
 
-		return SetUpLogger(name, pattern, sinks.begin(), sinks.end());
+		return SetUpLogger(name, pattern, sinks.begin(), sinks.end(), loggingLevel, flushLevel);
 	}
 
 	static void CleanOldLogs(const std::string& folderPath, size_t maxFiles) {
@@ -83,10 +93,12 @@ namespace Engine {
 	Ref<spdlog::logger> Log::s_EngineLogger = nullptr;
 
 	void Log::Init(bool consoleOutput, bool fileOutput) {
-		if (fileOutput && !fs::exists("Logs/Application")) fs::create_directories("Logs/Application");
-		if (fileOutput && !fs::exists("Logs/Engine")) fs::create_directories("Logs/Engine");
-		if (fileOutput && !fs::exists("Logs/GL")) fs::create_directories("Logs/GL");
-		if (fileOutput && !fs::exists("Logs/Script")) fs::create_directories("Logs/Script");
+		if (fileOutput) {
+			fs::create_directories("Logs/Application");
+			fs::create_directories("Logs/Engine");
+			fs::create_directories("Logs/GL");
+			fs::create_directories("Logs/Script");
+		}
 
 		std::string timestamp = CrashReporter::GetCurrentTimestamp();
 		std::ranges::replace(timestamp, ':', '-');
@@ -107,14 +119,16 @@ namespace Engine {
 
 		constexpr auto flushLevel = spdlog::level::err;
 
+		const auto sharedSinks = CreateSharedSinks(pattern, consoleOutput);
+
 		s_ApplicationLogger = PrepareLogger(
-			APPLICATION_LOGGER_NAME, pattern, "Logs/Application/Application_" + timestamp + ".log", consoleOutput,
+			APPLICATION_LOGGER_NAME, pattern, "Logs/Application/Application_" + timestamp + ".log", sharedSinks,
 			fileOutput, logLevel, flushLevel);
 		s_EngineLogger = PrepareLogger(ENGINE_LOGGER_NAME, pattern, "Logs/Engine/Engine_" + timestamp + ".log",
-		                               consoleOutput, fileOutput, logLevel, flushLevel);
+		                               sharedSinks, fileOutput, logLevel, flushLevel);
 		s_ScriptLogger = PrepareLogger(SCRIPT_LOGGER_NAME, pattern, "Logs/Script/Script_" + timestamp + ".log",
-		                               consoleOutput, fileOutput, logLevel, flushLevel);
-		s_GLLogger = PrepareLogger(GL_LOGGER_NAME, pattern, "Logs/GL/GL_" + timestamp + ".log", consoleOutput,
+		                               sharedSinks, fileOutput, logLevel, flushLevel);
+		s_GLLogger = PrepareLogger(GL_LOGGER_NAME, pattern, "Logs/GL/GL_" + timestamp + ".log", sharedSinks,
 		                           fileOutput, glLogLevel, flushLevel);
 	}
 
