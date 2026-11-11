@@ -81,6 +81,7 @@ namespace Engine {
 		std::unordered_map<UUID, entt::entity> m_EntityMap;
 
 		friend class Entity;
+		friend class ScriptEngine;
 		friend class SceneSerializer;
 		friend class Editor::SceneHierarchyPanel;
 	};

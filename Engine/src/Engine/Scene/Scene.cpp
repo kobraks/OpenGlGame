@@ -223,6 +223,11 @@ namespace Engine {
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, TransformComponent &component) {}
+	
+	template <>
+	void Scene::OnComponentAdded(Entity &entity, ScriptComponent &component) {
+		//if (m_IsRunning) 
+	}
 
 	template <>
 	void Scene::OnComponentAdded(Entity &entity, CameraComponent &component) {

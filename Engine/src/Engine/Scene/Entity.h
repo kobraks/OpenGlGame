@@ -38,6 +38,8 @@ namespace Engine {
 		Component& GetComponent() const;
 		template <typename Component>
 		void RemoveComponent();
+		template  <typename Component, typename Modifier>
+		void PatchComponent(Modifier&& modifier);
 		template <typename Component>
 		[[nodiscard]] bool HasComponent() const;
 		template <typename ...Components>
@@ -86,6 +88,12 @@ namespace Engine {
 	void Entity::RemoveComponent() {
 		ENGINE_ASSERT(HasComponent<Component>());
 		m_Scene->m_Registry.remove<Component>(m_EntityHandle);
+	}
+
+	template <typename Component, typename Modifier>
+	void Entity::PatchComponent(Modifier &&modifier) {
+		ENGINE_ASSERT(HasComponent<Component>());
+		m_Scene->m_Registry.patch<Component>(m_EntityHandle, std::forward<Modifier>(modifier));
 	}
 
 	template <typename Component>

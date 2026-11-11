@@ -4,11 +4,13 @@
 #include "Engine/Scene/Components/TagComponent.h"
 #include "Engine/Scene/Components/TransformComponent.h"
 #include "Engine/Scene/Components/FlagsComponent.h"
+#include "Engine/Scene/Components/ScriptComponent.h"
 
 namespace Engine {
 	template <typename... Component>
 	struct ComponentGroup{};
 
 	using DefaultComponents = ComponentGroup<IDComponent, TagComponent, FlagsComponent>;
-	using AllComponents = ComponentGroup<IDComponent, TagComponent, TransformComponent, CameraComponent, FlagsComponent>;
+	using AllComponents = ComponentGroup<IDComponent, TagComponent, TransformComponent, CameraComponent, FlagsComponent, ScriptComponent>;
+	using DuplicableComponents = ComponentGroup<TransformComponent, CameraComponent, FlagsComponent, ScriptComponent>;
 }

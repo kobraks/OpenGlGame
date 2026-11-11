@@ -57,17 +57,27 @@ struct fmt::formatter<Engine::UUID> {
 	bool Upper = false;
 
 	auto constexpr parse(auto& ctx) {
-		auto it = ctx.begin(), end = ctx.end();
-		std::string_view spec{ it, static_cast<size_t>(std::distance(it, end)) };
+		auto it = ctx.begin();
+		const auto end = ctx.end();
 
-		if (spec == "#x") { ShowBase = true; Hex = true; }
-		else if (spec == "#X") { ShowBase = true; Hex = true; Upper = true; }
-		else if (spec == "x") { Hex = true; }
-		else if (spec == "X") { Hex = true; Upper = true; }
-		else if (!spec.empty())
-			throw fmt::format_error("invalid format specifier");
+		if (it != end && *it == '#') {
+			ShowBase = true;
+			++it;
+		}
 
-		return end;
+		if (it != end && (*it == 'x' || *it == 'X')) {
+			Hex = true;
+			Upper = (*it == 'X');
+			++it;
+		} else if (ShowBase) {
+			throw fmt::format_error("Invalid UUID format specifier");
+		}
+
+		if (it != end && *it != '}') {
+			throw fmt::format_error("Invalid UUID format specifier");
+		}
+
+		return it;
 	}
 
 	auto format(const Engine::UUID& i, auto& ctx) const {
