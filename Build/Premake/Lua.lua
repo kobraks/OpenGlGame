@@ -1,9 +1,11 @@
 local LuaRoot = path.join(_MAIN_SCRIPT_DIR, "vendor/lua")
 
 project "Lua54"
-    kind "StaticLib"
+    kind "SharedLib"
     language "C"
     staticruntime "off"
+
+    targetname "lua54"
 
     location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Lua"))
     
@@ -34,7 +36,8 @@ project "Lua54"
     filter "configurations:Debug"
         runtime "Debug"
         symbols "on"
+        targetsuffix "_d"
 
     filter "configurations:Release"
         runtime "Release"
-        optimize "on"
+        optimize "Speed"

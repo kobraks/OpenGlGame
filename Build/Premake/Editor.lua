@@ -6,12 +6,12 @@ project "Editor"
 	cppdialect "C++23"
 	staticruntime "off"
 
-	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Editor"))
+	location (EditorRoot)
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
 
-	debugdir (path.join(_MAIN_SCRIPT_DIR, "Editor"))
+	debugdir (EditorRoot)
 
 	files {
 		path.join(EditorRoot, "src/**.h"),
@@ -23,14 +23,15 @@ project "Editor"
         "SPDLOG_COMPILED_LIB",
 		"YAML_CPP_STATIC_DEFINE",
 		"GAME_DEFINE_DISCRETE_GPU_PREFERENCE",
+		"LUA_BUILD_AS_DLL",
 	}
 	
 	includedirs {
+		"%{wks.location}/Engine/src",
 		path.join(EditorRoot, "src"),
 	}
 
 	externalincludedirs {
-		"%{wks.location}/Engine/src",
 		"%{wks.location}/vendor",
 		"%{IncludeDir.Boost}",
 		"%{IncludeDir.Spdlog}",
@@ -50,7 +51,8 @@ project "Editor"
 	{
 		"Engine",
 		"fmt",
-		"ImGuizmo"
+		"ImGuizmo",
+		"lua54",
 	}
 
 	filter "system:windows"
@@ -63,8 +65,7 @@ project "Editor"
 		
 	filter "action:vs*"
 		externalanglebrackets "On"
-		externalwarnings "Off" --/external:W0
-		-- buildoptions { "/external:W0" }
+		externalwarnings "Off"
 		buildoptions { "/Zc:preprocessor" }
 
 	filter "configurations:Debug"

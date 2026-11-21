@@ -34,7 +34,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 filter ("action:vs*")
 	buildoptions {"/utf-8"}
 
-filter ("system:windows", "action:vs*")
+filter {"system:windows", "action:vs*"}
 	characterset "Unicode"
 
 filter ("configurations:Debug")
