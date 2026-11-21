@@ -7,8 +7,8 @@ namespace Engine {
 		UUID ID;
 
 		IDComponent() = default;
-		IDComponent(IDComponent&) = default;
+		IDComponent(const IDComponent&) = default;
 
-		IDComponent(UUID& id) : ID(id) {}
+		explicit IDComponent(UUID& id) : ID(id) {}
 	};
 }

@@ -68,10 +68,16 @@ namespace Engine {
 		return newScene;
 	}
 	Entity Scene::CreateEntity(const std::string &name) {
-		return CreateEntity(UUID(), name);
+		return CreateEntity(UUID::Generate(), name);
 	}
 
 	Entity Scene::CreateEntity(UUID id, const std::string &name) {
+		if (!id.IsValid())
+			throw std::invalid_argument("Cannot create an entity with an invalid UUID");
+
+		if (m_EntityMap.contains(id))
+			throw std::invalid_argument("An entity with this UUID already exits in the scene");
+
 		Entity entity = CreateEmpty();
 		entity.AddComponent<IDComponent>(id);
 		entity.AddComponent<TransformComponent>();

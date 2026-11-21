@@ -7,6 +7,6 @@ namespace Engine {
 
 		TagComponent() = default;
 		TagComponent(TagComponent&) = default;
-		TagComponent(const std::string &tag) : Tag(tag) {}
+		explicit TagComponent(const std::string &tag) : Tag(tag) {}
 	};
 }

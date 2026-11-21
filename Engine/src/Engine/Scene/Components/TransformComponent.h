@@ -16,7 +16,7 @@ namespace Engine {
 		TransformComponent() = default;
 		TransformComponent(TransformComponent&) = default;
 
-		TransformComponent(const glm::vec3 &translation) : Translation(translation) {}
+		explicit TransformComponent(const glm::vec3 &translation) : Translation(translation) {}
 		TransformComponent(const glm::vec3 &translation, const glm::vec3 &rotation) : Translation(translation), Rotation(rotation) {}
 		TransformComponent(const glm::vec3 &translation, const glm::vec3 &rotation, const glm::vec3& scale) : Translation(translation), Rotation(rotation), Scale(scale) {}
 

@@ -1,40 +1,51 @@
 #include "pch.h"
 #include "Engine/Core/UUID.h"
 
-#include <random>
+#include <boost/uuid/name_generator_sha1.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
+#include <stdexcept>
 
 namespace Engine {
-	thread_local std::mt19937_64 th_Engine{ std::random_device{}() };
-
-	static uint64_t Random64() noexcept {
-		std::uniform_int_distribution<uint64_t> dist;
-		return dist(th_Engine);
+	UUID UUID::Generate() {
+		thread_local boost::uuids::random_generator generator;
+		return UUID(generator());
 	}
 
-	inline UUID::Type Combine(uint64_t hi, uint64_t lo) noexcept {
-		return (static_cast<UUID::Type>(hi) << 64) | static_cast<UUID::Type>(lo);
+	UUID UUID::FromName(std::string_view name) {
+		static const UUID s_EngineNamespace = UUID::Parse("2bcfdccd-cb54-4ba1-9970-04b1a6de886d");
+
+		return FromName(name, s_EngineNamespace);
 	}
 
-
-	UUID::UUID() noexcept : m_ID(Combine(Random64(), Random64())){}
-
-	UUID::UUID(Type id) noexcept : m_ID(id) {}
-
-	UUID UUID::FromString(const std::string& name) {
-		static constexpr char salt[] = "ENGINE_ASSET_SALT";
-		boost::hash<std::string> hasher;
-
-		uint64_t hi = hasher(name);
-		uint64_t lo = hasher(name + salt);
-		return UUID(Combine(hi, lo));
-
+	UUID UUID::FromName(std::string_view name, const UUID& namespaceID) {
+		const boost::uuids::name_generator_sha1 generator(namespaceID.Value());
+		return UUID(generator(name.data(), name.size()));
 	}
 
-	std::istream &operator>>(std::istream &in, UUID &rhs) {
-		boost::multiprecision::cpp_int temp;
-		in >> temp;
-		rhs.m_ID = static_cast<UUID::Type>(temp);
+	UUID UUID::Parse(std::string_view text) {
+		const auto result = TryParse(text);
 
-		return in;
+		if (!result)
+			throw std::invalid_argument("Invalid UUID string");
+
+		return *result;
+	}
+
+	std::optional<UUID> UUID::TryParse(std::string_view text) noexcept {
+		if (text.empty())
+			return std::nullopt;
+
+		try {
+			return UUID(boost::uuids::string_generator{}(text.begin(), text.end()));
+		} catch (const std::exception&) {
+			return std::nullopt;
+		}
+	}
+
+	std::string UUID::ToString() const {
+		return boost::uuids::to_string(m_ID);
 	}
 }
