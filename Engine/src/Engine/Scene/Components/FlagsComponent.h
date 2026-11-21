@@ -7,7 +7,7 @@ namespace Engine {
 		FlagsComponent() = default;
 		~FlagsComponent() = default;
 
-		FlagsComponent(uint32_t flags) : Flags(flags) {}
+		explicit FlagsComponent(uint32_t flags) : Flags(flags) {}
 
 		void SetFlag(uint32_t flag) {
 			Flags |= flag;

@@ -1,52 +1,44 @@
 #pragma once
 #include "Engine/Core/Base.h"
 
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/container_hash/hash.hpp>
+#include <boost/uuid/uuid.hpp>
+
 #include <fmt/format.h>
+
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
+#include <string_view>
 
 namespace Engine {
 	class UUID {
 	public:
-		using Type = boost::multiprecision::uint128_t;
+		using Type = boost::uuids::uuid;
 
-		UUID() noexcept;
-		explicit UUID(Type id) noexcept;
+		constexpr UUID() noexcept = default;
+		constexpr explicit UUID(Type identifier) noexcept : m_ID(identifier) {}
 
-		explicit operator Type() const noexcept { return m_ID; }
+		[[nodiscard]] static UUID Generate();
+		[[nodiscard]] static UUID FromName(std::string_view name);
+		[[nodiscard]] static UUID FromName(std::string_view name, const UUID& namespaceID);
 
-		UUID& operator=(const UUID& rhs) noexcept = default;
-		UUID& operator=(const Type& rhs) noexcept { m_ID = rhs; return *this; }
+		[[nodiscard]] static UUID Parse(std::string_view text);
+		[[nodiscard]] static std::optional<UUID> TryParse(std::string_view text) noexcept;
 
-		[[nodiscard]] constexpr bool operator==(Type rhs) const noexcept { return m_ID == rhs; }
+		[[nodiscard]] constexpr static UUID Invalid() noexcept { return UUID{}; }
+		[[nodiscard]] constexpr bool IsValid() const noexcept { return !m_ID.is_nil(); }
+		[[nodiscard]] std::string ToString() const;
+		[[nodiscard]] constexpr const Type& Value() const noexcept { return m_ID; };
 
-		[[nodiscard]] constexpr auto operator<=>(Type rhs) const noexcept {
-			if (m_ID == rhs)
-				return std::strong_ordering::equal;
-			if (m_ID > rhs)
-				return std::strong_ordering::greater;
-			return std::strong_ordering::less;
-		}
+		[[nodiscard]] constexpr bool operator==(const UUID& other) const noexcept = default;
+		[[nodiscard]] constexpr std::strong_ordering operator<=>(const UUID& other) const noexcept = default;
 
-		[[nodiscard]] constexpr bool operator==(const UUID &rhs) const { return m_ID == rhs.m_ID; }
-
-		[[nodiscard]] constexpr auto operator<=>(const UUID &rhs) const {
-			if (m_ID == rhs.m_ID)
-				return std::strong_ordering::equal;
-			if (m_ID > rhs.m_ID)
-				return std::strong_ordering::greater;
-			return std::strong_ordering::less;
-
-		}
-
-		[[nodiscard]] static UUID FromString(const std::string& name);
-
-		friend std::istream &operator>>(std::istream &in, UUID &rhs);
-
-		static UUID Invalid() noexcept { return UUID(0); }
-		[[nodiscard]] constexpr bool IsValid() const noexcept { return m_ID != 0; }
 	private:
-		Type m_ID;
+		Type m_ID{};
 	};
 }
 
@@ -56,45 +48,69 @@ struct fmt::formatter<Engine::UUID> {
 	bool Hex = false;
 	bool Upper = false;
 
-	auto constexpr parse(auto& ctx) {
-		auto it = ctx.begin();
-		const auto end = ctx.end();
+	constexpr auto parse(fmt::format_parse_context& context) {
+		auto iterator = context.begin();
+		const auto end = context.end();
 
-		if (it != end && *it == '#') {
+		if (iterator == end || *iterator == '}')
+			return iterator;
+
+		if (*iterator == '#') {
 			ShowBase = true;
-			++it;
+			++iterator;
 		}
 
-		if (it != end && (*it == 'x' || *it == 'X')) {
+		if (iterator != end && (*iterator == 'x' || *iterator == 'X')) {
 			Hex = true;
-			Upper = (*it == 'X');
-			++it;
-		} else if (ShowBase) {
+			Upper = (*iterator == 'X');
+			++iterator;
+		} else {
 			throw fmt::format_error("Invalid UUID format specifier");
 		}
 
-		if (it != end && *it != '}') {
+		if (iterator != end && *iterator != '}')
 			throw fmt::format_error("Invalid UUID format specifier");
+
+		return iterator;
+	}
+
+	template<typename FormatContext>
+	auto format(const Engine::UUID& identifier, FormatContext& context) const {
+		if (!Hex)
+			return fmt::format_to(context.out(), "{}", identifier.ToString());
+
+		constexpr std::string_view lowerDigits = "0123456789abcdef";
+		constexpr std::string_view upperDigits = "0123456789ABCDEF";
+		const std::string_view digits = Upper ? upperDigits : lowerDigits;
+
+		std::array<char, 32> hexDigits{};
+		std::size_t length = 0;
+		bool hasNonzeroDigit = false;
+
+		for (const std::uint8_t byte : identifier.Value()) {
+			for (const std::uint8_t nibble : {static_cast<std::uint8_t>(byte >> 4), static_cast<std::uint8_t>(byte & 0x0F)}) {
+				if (nibble != 0)
+					hasNonzeroDigit = true;
+				if (hasNonzeroDigit)
+					hexDigits[length++] = digits[nibble];
+			}
 		}
 
-		return it;
-	}
+		if (!hasNonzeroDigit)
+			hexDigits[length++] = '0';
 
-	auto format(const Engine::UUID& i, auto& ctx) const {
-		std::ios_base::fmtflags flags = Hex ? std::ios::hex : std::ios::dec;
-		if (ShowBase)
-			flags |= std::ios::showbase;
-		if (Upper)
-			flags |= std::ios::uppercase;
+		if (ShowBase && hasNonzeroDigit)
+			return fmt::format_to(context.out(), "0x{}", std::string_view(hexDigits.data(), length));
 
-		const auto s = static_cast<Engine::UUID::Type>(i).str(0, flags);
-		return std::copy(s.begin(), s.end(), ctx.out());
+		return fmt::format_to(context.out(), "{}", std::string_view(hexDigits.data(), length));
 	}
 };
 
-template<>
-struct std::hash<Engine::UUID> {
-	std::size_t operator()(const Engine::UUID& i) const noexcept {
-		return boost::multiprecision::hash_value(static_cast<Engine::UUID::Type>(i));
-	}
-};
+namespace std {
+	template <>
+	struct hash<Engine::UUID> {
+		std::size_t operator()(const Engine::UUID& identifier) const noexcept {
+			return boost::uuids::hash_value(identifier.Value());
+		}
+	};
+}

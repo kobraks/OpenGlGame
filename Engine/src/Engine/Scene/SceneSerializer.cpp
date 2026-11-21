@@ -3,6 +3,8 @@
 #include "Engine/Scene/Entity.h"
 #include "Engine/Scene/Components.h"
 
+#include "Engine/Utils/Converters.h"
+
 #include <yaml-cpp/yaml.h>
 #include <sstream>
 #include <fstream>
@@ -23,13 +25,13 @@ namespace Engine {
 			return { node[0].as<float>(), node[1].as<float>(), node[2].as<float>() };
 		}
 
-		UUID ReadUUID(const YAML::Node& node) {
-			UUID result = UUID::Invalid();
-			std::istringstream input(node.as<std::string>());
-			input >> result;
-			if (input.fail()) throw std::runtime_error("Invalid UUID format");
-			return result;
-		}
+		// UUID ReadUUID(const YAML::Node& node) {
+		// 	UUID result = UUID::Invalid();
+		// 	std::istringstream input(node.as<std::string>());
+		// 	input >> result;
+		// 	if (input.fail()) throw std::runtime_error("Invalid UUID format");
+		// 	return result;
+		// }
 
 		void WriteOverride(YAML::Emitter& output, const ScriptUserValue& value) {
 			output << YAML::BeginMap;
@@ -96,7 +98,7 @@ namespace Engine {
 				return data.as<std::string>();
 			}
 			if (type == "UUID") {
-				return ReadUUID(data);
+				return data.as<UUID>();
 			}
 			throw std::runtime_error("Unsupported serialized field type: " + type);
 		}
@@ -184,7 +186,7 @@ namespace Engine {
 
 			m_Scene->SetTitle(root["Scene"].as<std::string>());
 			for (const auto& node : root["Entities"]) {
-				const UUID entityID = ReadUUID(node["Entity"]);
+				const UUID entityID = node["Entity"].as<UUID>();
 				Entity target = m_Scene->CreateEntity(entityID, node["Tag"].as<std::string>());
 				if (node["Flags"]) {
 					target.AddComponent<FlagsComponent>(node["Flags"].as<uint32_t>());
@@ -210,7 +212,7 @@ namespace Engine {
 				if (auto data = node["Script"]) {
 					auto component = target.AddComponent<ScriptComponent>();
 
-					component.ScriptID = ReadUUID(data["ScriptID"]);
+					component.ScriptID = data["ScriptID"].as<UUID>();
 					component.SourcePath = data["SourcePath"].as<std::string>();
 					component.Enabled = data["Enabled"].as<bool>();
 					if (auto fields = data["FieldValues"]) {

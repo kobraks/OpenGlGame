@@ -10,6 +10,6 @@ namespace Engine {
 		bool FixedAspectRatio = false;
 
 		CameraComponent() = default;
-		CameraComponent(CameraComponent&) = default;
+		CameraComponent(const CameraComponent&) = default;
 	};
 }
