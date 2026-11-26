@@ -4,6 +4,9 @@
 
 #include "Engine/Serializer/StreamConfig.h"
 
+#include "Engine/Serializer/Serializers/Serializer.h"
+#include "Engine/Serializer/SerializerConcepts.h"
+
 #include <string>
 #include <string_view>
 #include <map>
@@ -11,6 +14,8 @@
 #include <vector>
 #include <type_traits>
 #include <cstdint>
+#include <limits>
+#include <cstddef>
 
 namespace Engine {
 	class StreamWriter {
@@ -32,16 +37,48 @@ namespace Engine {
 		bool WriteString(std::string_view string);
 
 		template<typename T>
-		bool WriteRaw(const T &type) {
-			static_assert(std::is_trivially_copyable_v<T>, "StreamWriter::WriteRaw<T> requires T to be trivially copyable");
-			bool success = WriteData(reinterpret_cast<const std::byte *>(&type), sizeof(T));
-			ENGINE_ASSERT(success);
-			return success;
+		requires (std:: is_trivially_copyable_v<T> && !std::is_same_v<std::remove_cv_t<T>, std::byte>)
+		bool WriteData(const T* data, std::size_t count) {
+			constexpr auto maxSize = std::numeric_limits<Stream::SizeType>::max();
+
+			if (count > maxSize / sizeof(T))
+				return false;
+
+			if (count == 0)
+				return true;
+
+			if (!data)
+				return false;
+
+			return WriteData(reinterpret_cast<std::byte*>(data), static_cast<Stream::SizeType>(count * sizeof(T)));
+		}
+
+		template<Serialization::RawCopyable T>
+		bool WriteRaw(const T &value) {
+			return WriteData(reinterpret_cast<const std::byte*>(&value), sizeof(T));
 		}
 
 		template<typename T>
 		bool WriteObject(const T& object) {
+			using Serializer = typename Serializer<T>::Type;
 			return T::Serialize(*this, object);
+		}
+
+		template <typename T>
+		bool WriteValue(const T& value) {
+			if constexpr (std::same_as<T, bool>) {
+				const uint8_t data = value ? 1 : 0;
+				return WriteRaw(data);
+			} else if constexpr (Serialization::Scalar<T>) {
+				return WriteRaw(value);
+			} else if constexpr (Serialization::Enum<T>) {
+				using U = std::underlying_type_t<T>;
+				return WriteRaw(static_cast<U>(value));
+			} else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
+				return WriteString(value);
+			}
+			else
+				return WriteObject(value);
 		}
 
 		template<typename Key, typename Value>
@@ -52,6 +89,9 @@ namespace Engine {
 
 		template<typename T>
 		bool WriteArray(const std::vector<T> &array, bool writeSize = true);
+
+		template<typename T, std::size_t N>
+		bool WriteArray(const std::array<T, N>& array);
 	};
 
 	template <typename Key, typename Value>
@@ -60,28 +100,8 @@ namespace Engine {
 			return false;
 
 		for (const auto &[key, value] : map) {
-			if constexpr (std::is_same_v<Key, std::string> || std::is_same_v<Key, std::string_view>) {
-				if (!WriteString(key))
-					return false;
-			} else if constexpr (std::is_trivially_copyable_v<Key>) {
-				if (!WriteRaw<Key>(key))
-					return false;
-			} else {
-				if (!WriteObject<Key>(key))
-					return false;
-			}
-
-			if constexpr (std::is_same_v<Value, std::string> || std::is_same_v<Value, std::string_view>) {
-				if (!WriteString(value))
-					return false;
-			} else if constexpr (std::is_trivially_copyable_v<Value>) {
-				if (!WriteRaw<Value>(value))
-					return false;
-			}
-			else {
-				if (!WriteObject<Value>(value))
-					return false;
-			}
+			WriteValue(key);
+			WriteValue(value);
 		}
 
 		return true;
@@ -93,31 +113,8 @@ namespace Engine {
 			return false;
 
 		for (const auto& [key, value] : map) {
-			if constexpr (std::is_same_v<Key, std::string> || std::is_same_v<Key, std::string_view>) {
-				if (!WriteString(key))
-					return false;
-			}
-			else if constexpr (std::is_trivially_copyable_v<Key>) {
-				if (!WriteRaw<Key>(key))
-					return false;
-			}
-			else {
-				if (!WriteObject<Key>(key))
-					return false;
-			}
-
-			if constexpr (std::is_same_v<Value, std::string> || std::is_same_v<Value, std::string_view>) {
-				if (!WriteString(value))
-					return false;
-			}
-			else if constexpr (std::is_trivially_copyable_v<Value>) {
-				if (!WriteRaw<Value>(value))
-					return false;
-			}
-			else {
-				if (!WriteObject<Value>(value))
-					return false;
-			}
+			WriteValue(key);
+			WriteValue(value);
 		}
 
 		return true;
@@ -129,16 +126,17 @@ namespace Engine {
 			return false;
 
 		for (const auto &element : array) {
-			if constexpr (std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view>) {
-				if (!WriteString(element))
-					return false;
-			} else if constexpr (std::is_trivially_copyable_v<T>) {
-				if (!WriteRaw<T>(element))
-					return false;
-			} else {
-				if (!WriteObject<T>(element))
-					return false;
-			}
+			WriteValue(element);
+		}
+
+		return true;
+	}
+
+	template <typename T, std::size_t N>
+	bool StreamWriter::WriteArray(const std::array<T, N>& array) {
+		for (auto element : array) {
+			if (!WriteValue(element))
+				return false;
 		}
 
 		return true;
