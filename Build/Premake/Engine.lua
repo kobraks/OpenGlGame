@@ -6,7 +6,7 @@ project "Engine"
 	cppdialect "C++23"
 	staticruntime "off"
 
-	location (path.join(_MAIN_SCRIPT_DIR, "Build/Projects/Engine"))
+	location (EngineRoot)
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
