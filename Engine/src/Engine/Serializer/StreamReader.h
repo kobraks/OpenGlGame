@@ -1,7 +1,11 @@
 #pragma once
 #include "Engine/Core/Base.h"
 #include "Engine/Core/Buffer.h"
+
 #include "Engine/Serializer/StreamConfig.h"
+
+#include "Engine/Serializer/Serializers/Serializer.h"
+#include "Engine/Serializer/SerializerConcepts.h"
 
 #include <string>
 #include <map>
@@ -9,6 +13,9 @@
 #include <vector>
 #include <type_traits>
 #include <cstdint>
+#include <limits>
+#include <cstddef>
+#include <concepts>
 
 namespace Engine {
 	class StreamReader {
@@ -20,24 +27,42 @@ namespace Engine {
 		virtual void SetStreamPosition(std::size_t position) = 0;
 		virtual bool ReadData(std::byte *destination, Stream::SizeType size) = 0;
 
-		operator bool() const { return IsStreamGood(); }
+		explicit operator bool() const { return IsStreamGood(); }
 
 		bool ReadBuffer(Buffer &buffer, Stream::BufferSize size);
 		bool ReadBuffer(Buffer& buffer);
 		bool ReadString(std::string &string);
 
 		template<typename T>
-		bool ReadRaw(T &type) {
-			static_assert(std::is_trivially_copyable_v<T>, "StreamReader::ReadRaw<T> requires T to be trivially copyable");
-			bool success = ReadData(reinterpret_cast<std::byte *>(&type), sizeof(T));
-			ENGINE_ASSERT(success);
-			return success;
+		requires(std::is_trivially_copyable_v<T> && !std::is_const_v<T> && !std::is_volatile_v<T> && !std::same_as<T, std::byte>)
+		bool ReadData(T* destination, std::size_t count) {
+			constexpr auto maxSize = std::numeric_limits<Stream::SizeType>::max();
+
+			if (count > maxSize / sizeof(T))
+				return false;
+
+			if (count == 0)
+				return true;
+
+			if (!destination)
+				return false;
+
+			return ReadData(reinterpret_cast<std::byte*>(destination), static_cast<Stream::SizeType>(count * sizeof(T)));
+		}
+
+		template<Serialization::RawCopyable T>
+		bool ReadRaw(T &value) {
+			return ReadData(reinterpret_cast<std::byte*>(&value), sizeof(T));
 		}
 
 		template<typename T>
 		bool ReadObject(T &object) {
-			return T::Deserialize(*this, object);
+			using Serializer = typename Serializer<T>::Type;
+			return Serializer::Deserialize(*this, object);
 		}
+
+		template <typename T>
+		bool ReadValue(T& value);
 
 		template<typename Key, typename Value>
 		bool ReadMap(std::map<Key, Value> &map, Stream::MapSize size);
@@ -56,41 +81,61 @@ namespace Engine {
 
 		template <typename T>
 		bool ReadArray(std::vector<T>& array);
+
+		template <typename T, std::size_t N>
+		bool ReadArray(std::array<T, N>& array);
 	};
+
+	template <typename T>
+	bool StreamReader::ReadValue(T& value) {
+		if constexpr (std::is_same_v<T, bool>) {
+			uint8_t data{};
+			if (!ReadRaw(data) || data > 1)
+				return false;
+
+			value = data != 0;
+		}
+		else if constexpr (Serialization::Scalar<T>) {
+			T temp{};
+
+			if (!ReadRaw(temp)) {
+				return false;
+			}
+
+			value = temp;
+		} else if constexpr (Serialization::Enum<T>) {
+			using U = std::underlying_type_t<T>;
+
+			U data{};
+
+			if (!ReadValue(data))
+				return false;
+
+			value = static_cast<T>(data);
+			return true;
+		} else if constexpr (std::same_as<T, std::string>) {
+			std::string temp;
+
+			if (!ReadString(temp))
+				return false;
+
+			value = std::move(temp);
+		} else {
+			return ReadObject(value);
+		}
+
+		return true;
+	}
 
 	template <typename Key, typename Value>
 	bool StreamReader::ReadMap(std::map<Key, Value>& map, Stream::MapSize size) {
 		for (Stream::MapSize i = 0; i < size; ++i) {
-			Key key;
-			if constexpr (std::is_same_v<Key, std::string>) {
-				if (!ReadString(key)) {
-					return false;
-				}
-			} else if constexpr (std::is_trivially_copyable_v<Key>) {
-				if (!ReadRaw<Key>(key)) {
-					return false;
-				}
-			}
-			else {
-				if (!ReadObject<Key>(key)) {
-					return false;
-				}
-			}
+			Key key {};
+			if (!ReadValue(key))
+				return false;
 
-			if constexpr (std::is_same_v<Value, std::string>) {
-				if (!ReadString(map[key])) {
-					return false;
-				}
-			} else if constexpr (std::is_trivially_copyable_v<Value>) {
-				if (!ReadRaw<Value>(map[key])) {
-					return false;
-				}
-			}
-			else {
-				if (!ReadObject<Value>(map[key])) {
-					return false;
-				}
-			};
+			if (!ReadValue(map[key]))
+				return false;
 		}
 
 		return true;
@@ -109,38 +154,13 @@ namespace Engine {
 	template <typename Key, typename Value>
 	bool StreamReader::ReadMap(std::unordered_map<Key, Value>& map, Stream::MapSize size) {
 		for (Stream::MapSize i = 0; i < size; ++i) {
-			Key key;
-			if constexpr (std::is_same_v<Key, std::string>) {
-				if (!ReadString(key)) {
-					return false;
-				}
-			}
-			else if constexpr (std::is_trivially_copyable_v<Key>) {
-				if (!ReadRaw<Key>(key)) {
-					return false;
-				}
-			}
-			else {
-				if (!ReadObject<Key>(key)) {
-					return false;
-				}
+			Key key{};
+			if (!ReadValue(key)) {
+				return false;
 			}
 
-			if constexpr (std::is_same_v<Value, std::string>) {
-				if (!ReadString(map[key])) {
-					return false;
-				}
-			}
-			else if constexpr (std::is_trivially_copyable_v<Value>) {
-				if (!ReadRaw<Value>(map[key])) {
-					return false;
-				}
-			}
-			else {
-				if (!ReadObject<Value>(map[key])) {
-					return false;
-				}
-			};
+			if (!ReadValue(map[key]))
+				return false;
 		}
 
 		return true;
@@ -161,16 +181,7 @@ namespace Engine {
 		array.resize(size);
 
 		for (Stream::ArraySize i = 0; i < size; ++i) {
-			bool success = true;
-			if constexpr (std::is_same_v<T, std::string>) {
-				success = ReadString(array[i]);
-			} else if constexpr (std::is_trivially_copyable_v<T>) {
-				success = ReadRaw<T>(array[i]);
-			} else {
-				success = ReadObject<T>(array[i]);
-			}
-
-			if (!success)
+			if (!ReadValue(array[i]))
 				return false;
 		}
 
@@ -185,5 +196,18 @@ namespace Engine {
 			return false;
 
 		return ReadArray<T>(array, size);
+	}
+
+	template <typename T, std::size_t N>
+	bool StreamReader::ReadArray(std::array<T, N>& array) {
+		std::array<T, N> temp{};
+
+		for (auto& element : temp) {
+			if (!ReadValue(element))
+				return false;
+		}
+
+		array = std::move(temp);
+		return true;
 	}
 }
