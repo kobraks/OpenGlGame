@@ -8,6 +8,12 @@
 extern Engine::Application* Engine::CreateApplication(const ApplicationCommandLineArgs &args);
 extern Engine::CrashReporter::CrashReporterConfig Engine::InitializeCrashReporter();
 
+
+#if defined(ENGINE_PLATFORM_WINDOWS) && defined(ENGINE_PREFER_DISCRETE_GPU)
+extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
+extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
+#endif
+
 int main(int argc, char **argv) {
 	Engine::CrashReporter::Initialize(Engine::InitializeCrashReporter());
 	Engine::CrashReporter::CleanOldCrashReports();

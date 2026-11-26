@@ -4,7 +4,7 @@
 
 namespace Engine {
 	bool EditorAssetManager::IsAssetHandleValid(const AssetHandle& handle) const {
-		return handle != 0 && m_Registry.Contains(handle);
+		return handle.IsValid() && m_Registry.Contains(handle);
 	}
 
 	bool EditorAssetManager::IsAssetLoaded(const AssetHandle& handle) const {

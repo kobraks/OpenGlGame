@@ -5,11 +5,6 @@
 #include <cstdint>
 #include <utility>
 
-#ifdef ENGINE_PREFER_DISCRETE_GPU
-extern "C" __declspec(dllexport) inline unsigned long NvOptimusEnablement = 0x00000001;
-extern "C" __declspec(dllexport) inline int AmdPowerXpressRequestHighPerformance = 1;
-#endif
-
 #define ENGINE_EXPAND_MACRO(x) x
 #define ENGINE_STRINGIFY_MACRO(x) #x
 
