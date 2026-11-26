@@ -12,7 +12,7 @@ namespace Engine {
 	struct GLMSerializer {
 		template<glm::length_t L, class T, glm::qualifier Q>
 		static bool Serialize(StreamWriter& writer, const glm::vec<L,T,Q>& vec) {
-			return writer.WriteData(glm::value_ptr(vec), sizeof(vec));
+			return writer.WriteData(glm::value_ptr(vec), L);
 		}
 
 		template<glm::length_t L, class T, glm::qualifier Q>
@@ -28,7 +28,7 @@ namespace Engine {
 
 		template<glm::length_t Cols, glm::length_t Rows, class T, glm::qualifier Q>
 		static bool Serialize(StreamWriter& writer, const glm::mat<Cols, Rows, T, Q>& mat) {
-			return writer.WriteData(glm::value_ptr(mat), sizeof(mat));
+			return writer.WriteData(glm::value_ptr(mat), Cols * Rows);
 		}
 
 		template<glm::length_t Cols, glm::length_t Rows, class T, glm::qualifier Q>
@@ -44,7 +44,7 @@ namespace Engine {
 
 		template<class T, glm::qualifier Q>
 		static bool Serialize(StreamWriter& writer, const glm::quat<T, Q>& qat) {
-			return writer.WriteData(glm::value_ptr(qat), sizeof(qat));
+			return writer.WriteData(glm::value_ptr(qat), 4);
 		}
 
 		template<class T, glm::qualifier Q>

@@ -57,8 +57,10 @@ namespace Engine {
 
 		template<typename T>
 		bool ReadObject(T &object) {
-			using Serializer = typename Serializer<T>::Type;
-			return Serializer::Deserialize(*this, object);
+			using S = typename Serializer<T>::Type;
+			static_assert(!std::is_void_v<S>, "No deserializer registered for this type");
+
+			return S::Deserialize(*this, object);
 		}
 
 		template <typename T>

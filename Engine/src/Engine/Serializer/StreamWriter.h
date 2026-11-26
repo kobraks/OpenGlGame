@@ -50,7 +50,7 @@ namespace Engine {
 			if (!data)
 				return false;
 
-			return WriteData(reinterpret_cast<std::byte*>(data), static_cast<Stream::SizeType>(count * sizeof(T)));
+			return WriteData(reinterpret_cast<const std::byte*>(data), static_cast<Stream::SizeType>(count * sizeof(T)));
 		}
 
 		template<Serialization::RawCopyable T>
@@ -60,8 +60,10 @@ namespace Engine {
 
 		template<typename T>
 		bool WriteObject(const T& object) {
-			using Serializer = typename Serializer<T>::Type;
-			return T::Serialize(*this, object);
+			using S = typename Serializer<T>::Type;
+			static_assert(!std::is_void_v<S>, "No serializer registered for this type");
+
+			return S::Serialize(*this, object);
 		}
 
 		template <typename T>
@@ -100,8 +102,8 @@ namespace Engine {
 			return false;
 
 		for (const auto &[key, value] : map) {
-			WriteValue(key);
-			WriteValue(value);
+			if (!WriteValue(key) || !WriteValue(value))
+				return false;
 		}
 
 		return true;
@@ -113,8 +115,8 @@ namespace Engine {
 			return false;
 
 		for (const auto& [key, value] : map) {
-			WriteValue(key);
-			WriteValue(value);
+			if (!WriteValue(key) || !WriteValue(value))
+				return false;
 		}
 
 		return true;
@@ -134,7 +136,7 @@ namespace Engine {
 
 	template <typename T, std::size_t N>
 	bool StreamWriter::WriteArray(const std::array<T, N>& array) {
-		for (auto element : array) {
+		for (const auto& element : array) {
 			if (!WriteValue(element))
 				return false;
 		}
