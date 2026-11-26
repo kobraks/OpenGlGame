@@ -8,10 +8,21 @@ namespace Engine {
 	}
 
 	bool BufferStreamWriter::WriteData(const std::byte *data, Stream::SizeType size) {
-		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
+		const bool valid = m_BufferPosition <= m_TargetBuffer.Size() && size <= m_TargetBuffer.Size() - m_BufferPosition;
 
 		ENGINE_ASSERT(valid);
 		if(!valid)
+			return false;
+
+		ENGINE_ASSERT(data || size == 0);
+		if (!data && size != 0)
+			return false;
+
+		if (size == 0)
+			return true;
+
+		ENGINE_ASSERT(m_TargetBuffer.IsWritable());
+		if (!m_TargetBuffer.IsWritable())
 			return false;
 
 		m_TargetBuffer.Write(data, size, m_BufferPosition);
@@ -24,7 +35,7 @@ namespace Engine {
 		m_BufferPosition(position), m_BufferBeginPosition(position) {}
 
 	bool BufferStreamReader::ReadData(std::byte *destination, Stream::SizeType size) {
-		const bool valid = m_BufferPosition + size <= m_TargetBuffer.Size();
+		const bool valid = m_BufferPosition <= m_TargetBuffer.Size() && size <= m_TargetBuffer.Size() - m_BufferPosition;
 
 		ENGINE_ASSERT(valid);
 		if (!valid)
