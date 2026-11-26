@@ -66,6 +66,9 @@ namespace Engine {
 		template <typename T>
 		bool ReadValue(T& value);
 
+		template <Serialization::Enum Enum>
+		bool ReadEnum(Enum& value);
+
 		template<typename Key, typename Value>
 		bool ReadMap(std::map<Key, Value> &map, Stream::MapSize size);
 
@@ -106,15 +109,7 @@ namespace Engine {
 
 			value = temp;
 		} else if constexpr (Serialization::Enum<T>) {
-			using U = std::underlying_type_t<T>;
-
-			U data{};
-
-			if (!ReadValue(data))
-				return false;
-
-			value = static_cast<T>(data);
-			return true;
+			return ReadEnum(value);
 		} else if constexpr (std::same_as<T, std::string>) {
 			std::string temp;
 
@@ -126,6 +121,17 @@ namespace Engine {
 			return ReadObject(value);
 		}
 
+		return true;
+	}
+
+	template <Serialization::Enum Enum>
+	bool StreamReader::ReadEnum(Enum& value) {
+		using U = std::underlying_type_t<Enum>;
+		U data{};
+		if (!ReadRaw(data))
+			return false;
+
+		value = static_cast<Enum>(data);
 		return true;
 	}
 

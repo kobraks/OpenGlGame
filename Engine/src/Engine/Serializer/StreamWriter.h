@@ -67,20 +67,12 @@ namespace Engine {
 		}
 
 		template <typename T>
-		bool WriteValue(const T& value) {
-			if constexpr (std::same_as<T, bool>) {
-				const uint8_t data = value ? 1 : 0;
-				return WriteRaw(data);
-			} else if constexpr (Serialization::Scalar<T>) {
-				return WriteRaw(value);
-			} else if constexpr (Serialization::Enum<T>) {
-				using U = std::underlying_type_t<T>;
-				return WriteRaw(static_cast<U>(value));
-			} else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
-				return WriteString(value);
-			}
-			else
-				return WriteObject(value);
+		bool WriteValue(const T& value);
+
+		template <Serialization::Enum Enum>
+		bool WriteEnum(const Enum& value) {
+			using U = std::underlying_type_t<Enum>;
+			return WriteRaw(static_cast<U>(value));
 		}
 
 		template<typename Key, typename Value>
@@ -95,6 +87,22 @@ namespace Engine {
 		template<typename T, std::size_t N>
 		bool WriteArray(const std::array<T, N>& array);
 	};
+
+	template <typename T>
+	bool StreamWriter::WriteValue(const T& value) {
+		if constexpr (std::same_as<T, bool>) {
+			const uint8_t data = value ? 1 : 0;
+			return WriteRaw(data);
+		} else if constexpr (Serialization::Scalar<T>) {
+			return WriteRaw(value);
+		} else if constexpr (Serialization::Enum<T>) {
+			return WriteEnum(value);
+		} else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
+			return WriteString(value);
+		}
+		else
+			return WriteObject(value);
+	}
 
 	template <typename Key, typename Value>
 	bool StreamWriter::WriteMap(const std::map<Key, Value>& map, bool writeSize) {
